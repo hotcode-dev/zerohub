@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option go_package = "github.com/ntsd/zero-hub/server/pkg/proto";
+
+// SendOfferMessage is sent offer SDP from offering peer to answer peer
+message SendOfferMessage {
+  uint32 answerPeerID = 1;
+  string offerSDP = 2;
+}
+
+// SendAnswerMessage is sent answer SDP from answer peer to offering peer
+message SendAnswerMessage {
+  uint32 offerPeerID = 1;
+  string answerSDP = 2;
+}
+
+// SendICECandidateMessage is not using yet
+message SendICECandidateMessage {
+  uint32 peerID = 1;
+  string candidate = 2;
+}
+
+// ClientMessage is the message sent from client
+message ClientMessage {
+  oneof message {
+    SendOfferMessage offerMessage = 2;
+    SendAnswerMessage answerMessage = 3;
+    SendICECandidateMessage sendICECandidate = 4;
+  }
+}

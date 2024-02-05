@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+option go_package = "github.com/ntsd/zero-hub/server/pkg/proto";
+
+// Peer includes peer infomation and peer metadata
+message Peer {
+  uint32 id = 1;
+  string metaData = 2;
+  uint32 joinedAt = 3;
+}
+
+// HubInfoMessage includes hub infomation
+message HubInfoMessage {
+  string id = 1;
+  uint32 createdAt = 2;
+  uint32 myPeerID = 3;
+  repeated Peer peers = 4;
+}
+
+// PeerJoinedMessage will send if a peer has joined
+message PeerJoinedMessage {
+  Peer peer = 1;
+}
+
+// PeerDisconnectedMessage will send if a peer has left
+message PeerDisconnectedMessage {
+  uint32 peerID = 1;
+}
+
+// OfferMessage is sent offer SDP from offering peer to answer peer
+message OfferMessage {
+  uint32 offerPeerID = 1;
+  string offerSDP = 2;
+}
+
+// AnswerMessage is sent answer SDP from answer peer to offering peer
+message AnswerMessage {
+  uint32 answerPeerID = 1;
+  string answerSDP = 2;
+}
+
+// ICECandidateMessage is not using yet
+message ICECandidateMessage {
+  uint32 peerID = 1;
+  string candidate = 2;
+}
+
+// ServerMessage is the message sent from server
+message ServerMessage {
+  oneof message {
+    HubInfoMessage hubInfoMessage = 1;
+    PeerJoinedMessage peerJoined = 2;
+    PeerDisconnectedMessage peerDisconnected = 3;
+    OfferMessage offerMessage = 4;
+    AnswerMessage answerMessage = 5;
+    ICECandidateMessage iceCandidateMessage = 6;
+  }
+}
