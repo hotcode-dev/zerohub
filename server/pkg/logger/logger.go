@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"github.com/ntsd/zero-hub/server/pkg/config"
+	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
 )

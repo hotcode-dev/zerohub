@@ -3,7 +3,7 @@ package zerohub
 import (
 	"sync"
 
-	"github.com/ntsd/zero-hub/server/pkg/config"
+	"github.com/hotcode-dev/zerohub/pkg/config"
 )
 
 type ZeroHub interface {

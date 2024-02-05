@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/ntsd/zero-hub/server/pkg/zerohub"
+	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/valyala/fasthttp"
 )
 

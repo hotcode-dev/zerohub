@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/ntsd/zero-hub/server/pkg/proto";
+option go_package = "github.com/hotcode-dev/zerohub/pkg/proto";
 
 // Peer includes peer infomation and peer metadata
 message Peer {

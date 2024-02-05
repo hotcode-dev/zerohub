@@ -30,11 +30,11 @@
     "tsc": "tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json",
     "rollup": "rollup --config rollup.config.js",
     "build": "rm -rf ./dist && npm run tsc && npm run rollup",
-    "docs": "typedoc --options typedoc.json"
+    "docs": "typedoc --plugin typedoc-plugin-markdown --tsconfig tsconfig.json"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ntsd/zero-hub.git"
+    "url": "git+https://github.com/hotcode-dev/zerohub.git"
   },
   "keywords": [
     "webrtc",
@@ -42,9 +42,9 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ntsd/zero-hub/issues"
+    "url": "https://github.com/hotcode-dev/zerohub/issues"
   },
-  "homepage": "https://github.com/ntsd/zero-hub",
+  "homepage": "https://github.com/hotcode-dev/zerohub",
   "devDependencies": {
     "@playwright/test": "^1.40.1",
     "@rollup/plugin-commonjs": "^25.0.7",
@@ -57,6 +57,7 @@
     "ts-proto": "^1.165.2",
     "tslib": "^2.6.2",
     "typedoc": "^0.25.7",
+    "typedoc-plugin-markdown": "^3.17.1",
     "typescript": "^5.3.3"
   },
   "dependencies": {

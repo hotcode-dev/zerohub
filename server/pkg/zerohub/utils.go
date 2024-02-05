@@ -3,7 +3,7 @@ package zerohub
 import (
 	"fmt"
 
-	pb "github.com/ntsd/zero-hub/server/pkg/proto"
+	pb "github.com/hotcode-dev/zerohub/pkg/proto"
 	"google.golang.org/protobuf/proto"
 )
 

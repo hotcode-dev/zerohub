@@ -3,8 +3,8 @@ package handler
 import (
 	"fmt"
 
-	"github.com/ntsd/zero-hub/server/pkg/config"
-	"github.com/ntsd/zero-hub/server/pkg/zerohub"
+	"github.com/hotcode-dev/zerohub/pkg/config"
+	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
 )

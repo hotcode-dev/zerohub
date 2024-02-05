@@ -107,7 +107,6 @@ export class ZeroHubClient<PeerMetaData = object> {
               PeerStatus.Pending,
               peer.metaData ? JSON.parse(peer.metaData) : {},
               new Date(peer.joinedAt),
-              // TODO: should this move on offer function? because the rtc config might difference betwwen peer
               new RTCPeerConnection(this.rtcConfig)
             );
             newPeer.rtcConn.onconnectionstatechange = (ev) => {

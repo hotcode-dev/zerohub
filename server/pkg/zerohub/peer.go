@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/fasthttp/websocket"
-	pb "github.com/ntsd/zero-hub/server/pkg/proto"
+	pb "github.com/hotcode-dev/zerohub/pkg/proto"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
 )

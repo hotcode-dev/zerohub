@@ -4,10 +4,10 @@ import (
 	"fmt"
 	stdLog "log"
 
-	"github.com/ntsd/zero-hub/server/pkg/config"
-	"github.com/ntsd/zero-hub/server/pkg/handler"
-	"github.com/ntsd/zero-hub/server/pkg/logger"
-	"github.com/ntsd/zero-hub/server/pkg/zerohub"
+	"github.com/hotcode-dev/zerohub/pkg/config"
+	"github.com/hotcode-dev/zerohub/pkg/handler"
+	"github.com/hotcode-dev/zerohub/pkg/logger"
+	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 )
 

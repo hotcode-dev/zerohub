@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/ntsd/zero-hub/server/pkg/proto";
+option go_package = "github.com/hotcode-dev/zerohub/pkg/proto";
 
 // SendOfferMessage is sent offer SDP from offering peer to answer peer
 message SendOfferMessage {

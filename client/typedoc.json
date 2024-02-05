@@ -1,0 +1,11 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": [
+        "./src"
+    ],
+    "out": "./docs",
+    "titleLink": "",
+    "navigationLinks": {
+        "Github": "https://github.com/ntsd/overwolf-nanostores"
+    }
+}

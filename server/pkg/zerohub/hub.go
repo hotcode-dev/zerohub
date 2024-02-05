@@ -5,8 +5,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	pb "github.com/hotcode-dev/zerohub/pkg/proto"
 	"github.com/lithammer/shortuuid/v4"
-	pb "github.com/ntsd/zero-hub/server/pkg/proto"
 	"github.com/rs/zerolog/log"
 )
 

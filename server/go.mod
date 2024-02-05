@@ -1,4 +1,4 @@
-module github.com/ntsd/zero-hub/server
+module github.com/hotcode-dev/zerohub
 
 go 1.21.3
 

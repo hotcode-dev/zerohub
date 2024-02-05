@@ -2,7 +2,7 @@ version: "3.9"
 services:
   service-app:
     container_name: zero-hub
-    image: ntsd/zero-hub:latest
+    image: hotcode/zerohub:latest
     build:
       context: .
       dockerfile: ./Dockerfile

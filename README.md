@@ -8,12 +8,6 @@ A WebRTC signaling server for trading session between peers design for minimal a
 - Transfers Session Description Protocol (SDP) over WebSocket (RFC6455)
 - Peer Meta data for specific use cases
 - TypeScript/JavaScript client SDK
-- Rate Limitter (TODO)
-- Error handling and recovery (TODO)
-- Mesh, Star, MCU, or SFU topologies by example (TODO)
-- Pre-generate SDP Offer (TODO)
-- OAuth2 By GigaAuth (TODO)
-- Trickle ICE (TODO)
 
 ## Structure
 
