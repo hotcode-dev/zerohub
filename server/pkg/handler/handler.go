@@ -6,6 +6,9 @@ import (
 	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
+	limiter "github.com/ulule/limiter/v3"
+	limiterFasthttp "github.com/ulule/limiter/v3/drivers/middleware/fasthttp"
+	limiterMemory "github.com/ulule/limiter/v3/drivers/store/memory"
 	"github.com/valyala/fasthttp"
 )
 
@@ -13,6 +16,7 @@ import (
 type Handler interface {
 	CreateHub(ctx *fasthttp.RequestCtx) error
 	JoinHub(ctx *fasthttp.RequestCtx) error
+	Migrate(ctx *fasthttp.RequestCtx) error
 
 	Upgrade(ctx *fasthttp.RequestCtx, hub zerohub.Hub) error
 
@@ -33,6 +37,12 @@ func NewHandler(cfg *config.Config, zh zerohub.ZeroHub) (Handler, error) {
 }
 
 func (h *handler) Serve() error {
+	rate, err := limiter.NewRateFromFormatted("10-H") // 10 requests per hour.
+	if err != nil {
+		return fmt.Errorf("error to create rate: %w", err)
+	}
+	rateLimitMiddleware := limiterFasthttp.NewMiddleware(limiter.New(limiterMemory.NewStore(), rate, limiter.WithTrustForwardHeader(true)))
+
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
 		var err error
 		switch string(ctx.Path()) {
@@ -40,6 +50,8 @@ func (h *handler) Serve() error {
 			err = h.CreateHub(ctx)
 		case "/hubs/join":
 			err = h.JoinHub(ctx)
+		case "/configs/migrate":
+			err = h.Migrate(ctx)
 		default:
 			ctx.Error("unsupported path", fasthttp.StatusNotFound)
 			return
@@ -51,14 +63,14 @@ func (h *handler) Serve() error {
 	}
 
 	server := &fasthttp.Server{
-		Handler: requestHandler,
-		Name:    "zero-hub",
+		Handler: rateLimitMiddleware.Handle(requestHandler),
+		Name:    "ZeroHub",
 	}
 
 	addr := fmt.Sprintf("%s:%s", h.cfg.App.Host, h.cfg.App.Port)
 	log.Info().Msgf("listening to %s", addr)
 	if err := server.ListenAndServe(addr); err != nil {
-		log.Error().Err(fmt.Errorf("error to ListenAndServe: %w", err))
+		return fmt.Errorf("error to ListenAndServe: %w", err)
 	}
 
 	return nil

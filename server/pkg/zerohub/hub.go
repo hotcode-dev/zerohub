@@ -137,7 +137,7 @@ func (h *hub) SendAnswerToPeer(toPeerId uint32, answerPeerID uint32, answerSDP s
 	defer h.mu.RUnlock()
 
 	if (h.Peers[toPeerId] == nil) || (h.Peers[toPeerId].GetWSConn() == nil) {
-		log.Error().Msg("error to send request accept: peer not found")
+		log.Error().Msg("error to send answer to peer: peer not found")
 		return
 	}
 

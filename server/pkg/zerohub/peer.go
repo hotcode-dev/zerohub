@@ -161,7 +161,7 @@ func (p *peer) SendAnswer(answerPeerID uint32, answerSDP string) {
 	}
 	data, err := proto.Marshal(msg)
 	if err != nil {
-		log.Error().Err(fmt.Errorf("error to marshal request accept message: %v", err))
+		log.Error().Err(fmt.Errorf("error to marshal answer message: %v", err))
 		return
 	}
 

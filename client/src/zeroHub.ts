@@ -36,6 +36,15 @@ export class ZeroHubClient<PeerMetaData = object> {
   // onPeerError will be called when a peer error
   public onPeerError?: (peer: Peer<PeerMetaData>, error: Error) => void;
 
+  /**
+   * Creates a new ZeroHub Client class
+   *
+   * @param host ZeroHub host for example `wss://sg1.zerohub.dev`
+   * @param config ZeroHub client configuration
+   * @param rtcConfig default WebRTC configuration
+   *
+   * @returns ZeroHub Client class
+   */
   constructor(
     host: string,
     config: Partial<Config> = {},
@@ -161,10 +170,6 @@ export class ZeroHubClient<PeerMetaData = object> {
         );
         newPeer.rtcConn.onconnectionstatechange = (ev) => {
           this.log("onconnectionstatechange", ev);
-          this.log(
-            "newPeer.rtcConn.connectionState",
-            newPeer.rtcConn.connectionState
-          );
           if (newPeer.rtcConn.connectionState === "connected") {
             this.updatePeerStatus(peer.id, PeerStatus.Connected);
           } else if (newPeer.rtcConn.connectionState === "disconnected") {
@@ -241,6 +246,14 @@ export class ZeroHubClient<PeerMetaData = object> {
     this.updatePeerStatus(peerId, PeerStatus.Answering);
   }
 
+  /**
+   * Create and Send an WebRTC offer to a peer
+   *
+   * @param peerId The peer to send the offer to
+   * @param rtcOfferOptions RTC offer options
+   * @param rtcConfig replace RTC configuration if need
+   *
+   */
   public async sendOffer(
     peerId: number,
     rtcOfferOptions: RTCOfferOptions = {},
@@ -350,6 +363,11 @@ export class ZeroHubClient<PeerMetaData = object> {
     });
   }
 
+  /**
+   *  Creates a new hub on ZeroHub
+   *
+   * @param metaData Peer metadata will share to each peer in the Hub
+   */
   public createHub(metaData?: PeerMetaData) {
     this.metaData = metaData;
 
@@ -359,6 +377,13 @@ export class ZeroHubClient<PeerMetaData = object> {
     this.connectToZeroHub(url);
   }
 
+  /**
+   * Joins an existing hub on ZeroHub
+   *
+   * @param hubId The id of the hub to join
+   * @param metaData Peer metadata will share to each peer in the Hub
+   *
+   */
   public joinHub(hubId: string, metaData?: PeerMetaData) {
     this.metaData = metaData;
 

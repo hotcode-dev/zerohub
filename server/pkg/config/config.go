@@ -26,6 +26,7 @@ type AppConfig struct {
 	Host        string      `env:"APP_HOST,default=0.0.0.0"`
 	Port        string      `env:"APP_PORT,default=8080"`
 	Domain      string      `env:"APP_DOMAIN,default=localhost"`
+	Password    string      `env:"APP_PASSWORD"`
 }
 
 // LoadConfig loads a configuration.

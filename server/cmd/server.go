@@ -32,6 +32,6 @@ func main() {
 	}
 
 	if err := hdl.Serve(); err != nil {
-		log.Panic().Err(fmt.Errorf("error to serve: %w", err)).Send()
+		log.Error().Err(fmt.Errorf("error to serve: %w", err)).Send()
 	}
 }
