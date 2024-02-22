@@ -30,7 +30,8 @@
     "tsc": "tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json",
     "rollup": "rollup --config rollup.config.js",
     "build": "rm -rf ./dist && npm run tsc && npm run rollup",
-    "docs": "typedoc --plugin typedoc-plugin-markdown --tsconfig tsconfig.json"
+    "docs": "typedoc --plugin typedoc-plugin-markdown --tsconfig tsconfig.json",
+    "test": "playwright test -c playwright-ct.config.ts"
   },
   "repository": {
     "type": "git",
@@ -46,11 +47,14 @@
   },
   "homepage": "https://github.com/hotcode-dev/zerohub",
   "devDependencies": {
+    "@playwright/experimental-ct-svelte": "^1.41.2",
     "@playwright/test": "^1.40.1",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.5",
+    "@sveltejs/vite-plugin-svelte": "^3.0.2",
+    "@types/node": "^20.11.19",
     "@types/protobufjs": "^6.0.0",
     "playwright": "^1.40.1",
     "rollup": "^4.9.1",

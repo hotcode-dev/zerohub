@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hotcode-dev/zerohub/pkg/config"
+	"github.com/hotcode-dev/zerohub/pkg/migration"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	limiter "github.com/ulule/limiter/v3"
@@ -25,19 +26,22 @@ type Handler interface {
 
 type handler struct {
 	cfg *config.Config
+	mg  migration.Migration
 	zh  zerohub.ZeroHub
 }
 
 // NewHandler create a new handler
-func NewHandler(cfg *config.Config, zh zerohub.ZeroHub) (Handler, error) {
+func NewHandler(cfg *config.Config, zh zerohub.ZeroHub, mg migration.Migration) (Handler, error) {
 	return &handler{
 		cfg: cfg,
+		mg:  mg,
 		zh:  zh,
 	}, nil
 }
 
 func (h *handler) Serve() error {
-	rate, err := limiter.NewRateFromFormatted("10-H") // 10 requests per hour.
+	// TODO: replace limiter with non library rate limiter
+	rate, err := limiter.NewRateFromFormatted("10-M") // 10 requests per minute.
 	if err != nil {
 		return fmt.Errorf("error to create rate: %w", err)
 	}

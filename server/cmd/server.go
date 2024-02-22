@@ -7,6 +7,7 @@ import (
 	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/handler"
 	"github.com/hotcode-dev/zerohub/pkg/logger"
+	"github.com/hotcode-dev/zerohub/pkg/migration"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 )
@@ -26,7 +27,12 @@ func main() {
 		log.Panic().Err(fmt.Errorf("error to init zero hub: %w", err)).Send()
 	}
 
-	hdl, err := handler.NewHandler(cfg, zh)
+	mg, err := migration.NewMigration()
+	if err != nil {
+		log.Panic().Err(fmt.Errorf("error to init migration: %w", err)).Send()
+	}
+
+	hdl, err := handler.NewHandler(cfg, zh, mg)
 	if err != nil {
 		log.Panic().Err(fmt.Errorf("error to init logger: %w", err)).Send()
 	}

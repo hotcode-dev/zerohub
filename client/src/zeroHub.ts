@@ -368,10 +368,11 @@ export class ZeroHubClient<PeerMetaData = object> {
    *
    * @param metaData Peer metadata will share to each peer in the Hub
    */
-  public createHub(metaData?: PeerMetaData) {
+  public createHub(hubId: string, metaData?: PeerMetaData) {
     this.metaData = metaData;
 
     const url = new URL(`${this.host}/hubs/create`);
+    url.searchParams.set("id", hubId);
     if (metaData) url.searchParams.set("metaData", JSON.stringify(metaData));
 
     this.connectToZeroHub(url);

@@ -17,6 +17,7 @@ type zeroHub struct {
 
 	Hubs map[string]Hub
 
+	// TODO: do we need mutex since Hub ID are unique?
 	mu sync.RWMutex
 }
 

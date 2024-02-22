@@ -6,10 +6,10 @@ import (
 	"time"
 
 	pb "github.com/hotcode-dev/zerohub/pkg/proto"
-	"github.com/lithammer/shortuuid/v4"
 	"github.com/rs/zerolog/log"
 )
 
+// TODO: add Hub timeout to disconnect all the Websockets, then clear the hub memory. (12 Hours)
 type Hub interface {
 	GetID() string
 	GetCreatedAt() time.Time
@@ -35,9 +35,9 @@ type hub struct {
 	mu sync.RWMutex
 }
 
-func NewHub() (Hub, error) {
+func NewHub(hubID string) (Hub, error) {
 	return &hub{
-		ID:        shortuuid.New(),
+		ID:        hubID,
 		CreatedAt: time.Now(),
 		Peers:     make(map[uint32]Peer),
 	}, nil
@@ -123,7 +123,7 @@ func (h *hub) SendOfferToPeer(toPeerId uint32, offerPeerID uint32, offerSDP stri
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
-	if (h.Peers[toPeerId] == nil) || (h.Peers[toPeerId].GetWSConn() == nil) {
+	if h.Peers[toPeerId] == nil || h.Peers[toPeerId].GetWSConn() == nil {
 		log.Error().Msg("error to send request answer: peer not found")
 		return
 	}
@@ -136,7 +136,7 @@ func (h *hub) SendAnswerToPeer(toPeerId uint32, answerPeerID uint32, answerSDP s
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
-	if (h.Peers[toPeerId] == nil) || (h.Peers[toPeerId].GetWSConn() == nil) {
+	if h.Peers[toPeerId] == nil || h.Peers[toPeerId].GetWSConn() == nil {
 		log.Error().Msg("error to send answer to peer: peer not found")
 		return
 	}
