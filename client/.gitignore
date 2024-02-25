@@ -1,8 +1,2 @@
 /node_modules
 /dist
-/playwright-report
-/test-results
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/

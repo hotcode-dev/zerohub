@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "noImplicitAny": true,
+        "exactOptionalPropertyTypes": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "removeComments": true, // Generate source map for IDE
+        "sourceMap": true, // Tells TypeScript to read JS files, as normally they are ignored as source files 
+        "allowJs": true, // Emit additional JavaScript to ease support for importing CommonJS modules.
+        "esModuleInterop": true,
+    },
+    "include": [
+        "tests/**/*.ts"
+    ],
+}

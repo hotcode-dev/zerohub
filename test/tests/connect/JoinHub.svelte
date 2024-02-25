@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LogLevel, PeerStatus, ZeroHubClient } from "../../../src/index";
+  import { LogLevel, ZeroHubClient } from "../../../client/src/index";
   import { HUB_ID } from "./const";
 
   let hubId = "";
@@ -19,19 +19,9 @@
 
   zeroHub.onPeerStatusChange = (peer) => {
     peerStatus = peer.status;
-    switch (peer.status) {
-      case PeerStatus.Connected:
-        break;
-      case PeerStatus.Pending:
-        if (zeroHub.myPeerId && peer.id > zeroHub.myPeerId) {
-          zeroHub.sendOffer(peer.id);
-        }
-        break;
-      case PeerStatus.ZeroHubDisconnected:
-    }
   };
 
-  zeroHub.createHub(HUB_ID, { name: "test" });
+  zeroHub.joinHub(HUB_ID, { name: "test" });
 </script>
 
 HubID:{hubId}

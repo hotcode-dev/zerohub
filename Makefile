@@ -1,7 +1,7 @@
 # spawn 3 processes
 MAKEFLAGS += -j3
 
-test-all: server-serve server-serve2 client-test
+test-all: server-serve server-serve-2 e2e-test
 
 proto-gen:
 	rm -rf ./client/src/proto && rm -rf ./pkg/proto
@@ -10,11 +10,11 @@ proto-gen:
 server-serve:
 	cd server && go run ./cmd/server.go
 
-server-serve2:
+server-serve-2:
 	cd server && APP_PORT=8081 go run ./cmd/server.go
 
 client-build:
 	cd client && npm run build
 
-client-test:
-	cd client && npm run test
+e2e-test:
+	cd test && npm run test
