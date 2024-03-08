@@ -6,7 +6,6 @@ require (
 	github.com/Netflix/go-env v0.0.0-20220526054621-78278af1949d
 	github.com/fasthttp/websocket v1.5.7
 	github.com/joho/godotenv v1.5.1
-	github.com/lithammer/shortuuid/v4 v4.0.0
 	github.com/rs/zerolog v1.31.0
 	github.com/ulule/limiter/v3 v3.11.2
 	github.com/valyala/fasthttp v1.51.0
@@ -17,7 +16,6 @@ require (
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/klauspost/compress v1.17.3 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect

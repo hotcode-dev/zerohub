@@ -12,7 +12,7 @@ func (h *handler) CreateHub(ctx *fasthttp.RequestCtx) error {
 
 	if h.mg.IsMigrating() {
 		h.mg.AddMigrateHubID(hubId)
-		return h.Forward(ctx)
+		return h.ForwardMigrate(ctx)
 	}
 
 	if h := h.zh.GetHubByID(hubId); h != nil {

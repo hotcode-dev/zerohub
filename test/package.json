@@ -16,13 +16,13 @@
     "@playwright/experimental-ct-svelte": "^1.41.2",
     "@playwright/test": "^1.40.1",
     "@sveltejs/vite-plugin-svelte": "^3.0.2",
+    "@tsconfig/svelte": "^5.0.2",
     "@types/node": "^20.11.19",
     "@types/protobufjs": "^6.0.0",
     "playwright": "^1.40.1",
+    "protobufjs": "^7.2.5",
+    "svelte": "^4.2.12",
     "tslib": "^2.6.2",
     "typescript": "^5.3.3"
-  },
-  "dependencies": {
-    "protobufjs": "^7.2.5"
   }
 }

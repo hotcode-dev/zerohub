@@ -30,43 +30,38 @@ func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
 		return fmt.Errorf("invalid authorization code")
 	}
 
-	h.mg.Migrate(string(ctx.QueryArgs().Peek("url")))
+	newReleaseHost := string(ctx.QueryArgs().Peek("host"))
+	if newReleaseHost == "" {
+		return fmt.Errorf("new release host not found")
+	}
 
-	log.Warn().Msg("migrate mode enabled")
+	h.mg.Migrate(newReleaseHost)
+
+	log.Debug().Msg("migrate mode enabled: " + newReleaseHost)
+
+	ctx.SetStatusCode(fasthttp.StatusOK)
 
 	return nil
 }
 
-func (h *handler) Forward(ctx *fasthttp.RequestCtx) error {
-	newReleaseURL := h.mg.GetNewReleaseURL()
+func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
+	newReleaseHost := h.mg.GetNewReleaseHost()
 
-	// TODO
+	// The 301 status is working fine on multi library following the rfc6455
+	// https://www.rfc-editor.org/rfc/rfc6455#section-4.1
+	//
+	// If the status code received from the server is not 101, the
+	// client handles the response per HTTP [RFC2616] procedures.  In
+	// particular, the client might perform authentication if it
+	// receives a 401 status code; the server might redirect the client
+	// using a 3xx status code (but clients are not required to follow
+	// them), etc.
+	//
+	// But the Native browser Websocket not suppot the redirection
+	// If the connection error, client need to call `/status` to get the redirectURL
 
-	req := fasthttp.AcquireRequest()
-	defer fasthttp.ReleaseRequest(req)
-
-	// Set original request body to the new request
-	req.SetBody(ctx.Request.Body())
-
-	// Set original request headers to the new request
-	ctx.Request.Header.CopyTo(&req.Header)
-
-	// Set the request URL to the new release URL
-	req.SetRequestURI(newReleaseURL)
-
-	// Perform the request
-	resp := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseResponse(resp)
-	if err := fasthttp.Do(req, resp); err != nil {
-		return fmt.Errorf("error forwarding request: %w", err)
-	}
-
-	// Write the response back to the original client
-	ctx.SetStatusCode(resp.StatusCode())
-	resp.Header.VisitAll(func(key, value []byte) {
-		ctx.Response.Header.SetBytesKV(key, value)
-	})
-	ctx.Write(resp.Body())
+	ctx.Response.Header.Set("Location", newReleaseHost)
+	ctx.SetStatusCode(fasthttp.StatusMovedPermanently)
 
 	return nil
 }

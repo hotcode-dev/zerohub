@@ -1,21 +1,33 @@
 import { test, expect } from "@playwright/experimental-ct-svelte";
+import type { ComponentProps } from "svelte";
 import CreateHub from "./CreateHub.svelte";
 import JoinHub from "./JoinHub.svelte";
-import { HUB_ID } from "./const";
 
 test.use({ viewport: { width: 500, height: 500 } });
 
 test("create/join hub", async ({ mount }) => {
-  const createHub = await mount(CreateHub);
+  const hubId = "connect-hub-id";
+  const zeroHubURL = "ws://localhost:8080";
 
-  await test.step("create hub success", async () => {
-    await expect(createHub).toContainText(`HubID:${HUB_ID}`);
+  const props: ComponentProps<CreateHub> = {
+    hubId: hubId,
+    zeroHubURL: zeroHubURL,
+  };
+
+  const createHub = await mount(CreateHub, {
+    props: props,
   });
 
-  const joinHub = await mount(JoinHub);
+  await test.step("create hub success", async () => {
+    await expect(createHub).toContainText(`HubID:${hubId}`);
+  });
+
+  const joinHub = await mount(JoinHub, {
+    props: props,
+  });
 
   await test.step("join hub success", async () => {
-    await expect(joinHub).toContainText(`HubID:${HUB_ID}`);
+    await expect(joinHub).toContainText(`HubID:${hubId}`);
   });
 
   await test.step("peer status connected", async () => {

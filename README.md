@@ -5,7 +5,8 @@ A WebRTC signaling server for trading session between peers design for minimal a
 ## Features
 
 - Multipeers WebRTC signaling server
-- Transfers Session Description Protocol (SDP) over WebSocket (RFC6455)
+- Signaling over WebSockets (RFC6455) and WebTransport
+- Transfers Session Description Protocol (SDP)
 - Peer Meta data for specific use cases
 - TypeScript/JavaScript client SDK
 

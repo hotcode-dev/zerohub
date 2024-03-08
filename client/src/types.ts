@@ -17,6 +17,7 @@ export enum LogLevel {
 }
 
 export interface Config {
+  tls: boolean;
   logLevel: LogLevel;
   waitIceCandidatesTimeout: number;
   autoAnswer: boolean;

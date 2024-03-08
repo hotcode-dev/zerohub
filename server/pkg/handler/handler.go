@@ -18,6 +18,7 @@ type Handler interface {
 	CreateHub(ctx *fasthttp.RequestCtx) error
 	JoinHub(ctx *fasthttp.RequestCtx) error
 	Migrate(ctx *fasthttp.RequestCtx) error
+	Status(ctx *fasthttp.RequestCtx) error
 
 	Upgrade(ctx *fasthttp.RequestCtx, hub zerohub.Hub) error
 
@@ -48,13 +49,17 @@ func (h *handler) Serve() error {
 	rateLimitMiddleware := limiterFasthttp.NewMiddleware(limiter.New(limiterMemory.NewStore(), rate, limiter.WithTrustForwardHeader(true)))
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
+		log.Debug().Msgf("%s %s", ctx.Method(), ctx.RequestURI())
+
 		var err error
 		switch string(ctx.Path()) {
+		case "/status":
+			err = h.Status(ctx)
 		case "/hubs/create":
 			err = h.CreateHub(ctx)
 		case "/hubs/join":
 			err = h.JoinHub(ctx)
-		case "/configs/migrate":
+		case "/admin/migrate":
 			err = h.Migrate(ctx)
 		default:
 			ctx.Error("unsupported path", fasthttp.StatusNotFound)

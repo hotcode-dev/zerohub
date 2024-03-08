@@ -1,10 +1,11 @@
 import { Config, LogLevel } from "./types";
 
 export const defaultConfig: Config = {
+  tls: true,
   logLevel: LogLevel.Warning,
   waitIceCandidatesTimeout: 2000,
   autoAnswer: true,
-  autoAcceptAnswer: true,
+  autoAcceptAnswer: true
 };
 
 export const defaultRtcConfig: RTCConfiguration = {

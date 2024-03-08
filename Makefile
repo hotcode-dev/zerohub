@@ -8,7 +8,7 @@ proto-gen:
 	protoc --plugin=./client/node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./client/src --go_out=./server/pkg --go_opt=paths=source_relative ./proto/*.proto
 
 server-serve:
-	cd server && go run ./cmd/server.go
+	cd server && APP_CLIENT_SECRET=client_secret go run ./cmd/server.go
 
 server-serve-2:
 	cd server && APP_PORT=8081 go run ./cmd/server.go

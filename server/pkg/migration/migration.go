@@ -7,12 +7,12 @@ type Migration interface {
 	IsMigrating() bool
 	IsMigratingHubID(hubID string) bool
 	AddMigrateHubID(hubID string)
-	GetNewReleaseURL() string
+	GetNewReleaseHost() string
 }
 
 type migration struct {
 	isMigrating     bool
-	newReleaseURL   string
+	newReleaseHost  string
 	migratingHubIDs map[string]struct{}
 	mu              sync.RWMutex
 }
@@ -20,14 +20,14 @@ type migration struct {
 func NewMigration() (Migration, error) {
 	return &migration{
 		isMigrating:     false,
-		newReleaseURL:   "",
+		newReleaseHost:  "",
 		migratingHubIDs: make(map[string]struct{}),
 	}, nil
 }
 
-func (m *migration) Migrate(newReleaseURL string) {
+func (m *migration) Migrate(newReleaseHost string) {
 	m.isMigrating = true
-	m.newReleaseURL = newReleaseURL
+	m.newReleaseHost = newReleaseHost
 }
 
 func (m *migration) IsMigrating() bool {
@@ -51,6 +51,6 @@ func (m *migration) AddMigrateHubID(hubID string) {
 	m.migratingHubIDs[hubID] = struct{}{}
 }
 
-func (m *migration) GetNewReleaseURL() string {
-	return m.newReleaseURL
+func (m *migration) GetNewReleaseHost() string {
+	return m.newReleaseHost
 }

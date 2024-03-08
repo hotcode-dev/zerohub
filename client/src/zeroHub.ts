@@ -7,6 +7,7 @@ import { Peer } from "./peer";
 import { ClientMessage } from "./proto/client_message";
 import { ServerMessage } from "./proto/server_message";
 import { LogLevel, PeerStatus, type Config, type HubInfo } from "./types";
+import { getHTTP, getWS } from "./utils";
 
 export class ZeroHubClient<PeerMetaData = object> {
   // config ZeroHub client configuration
@@ -22,7 +23,7 @@ export class ZeroHubClient<PeerMetaData = object> {
   // peers a map of peer
   public peers: { [id: number]: Peer<PeerMetaData> };
 
-  // host of ZeroHub
+  // the current host of ZeroHub
   public host: string;
   // ws websocket connection to ZeroHub
   public ws?: WebSocket;
@@ -50,6 +51,7 @@ export class ZeroHubClient<PeerMetaData = object> {
     config: Partial<Config> = {},
     rtcConfig: Partial<RTCConfiguration> = {}
   ) {
+    // TODO: multiple host support, for scalibity
     this.config = Object.assign(defaultConfig, config);
     this.rtcConfig = Object.assign(defaultRtcConfig, rtcConfig);
     this.peers = {};
@@ -58,7 +60,7 @@ export class ZeroHubClient<PeerMetaData = object> {
 
   log(message?: any, ...optionalParams: any[]) {
     if (this.config.logLevel === LogLevel.Debug) {
-      console.log(message, optionalParams);
+      console.log(message, ...optionalParams);
     }
   }
   warn(message?: any, ...optionalParams: any[]) {
@@ -66,7 +68,7 @@ export class ZeroHubClient<PeerMetaData = object> {
       this.config.logLevel === LogLevel.Debug ||
       this.config.logLevel === LogLevel.Warning
     ) {
-      console.warn(message, optionalParams);
+      console.warn(message, ...optionalParams);
     }
   }
   error(message?: any, ...optionalParams: any[]) {
@@ -75,8 +77,46 @@ export class ZeroHubClient<PeerMetaData = object> {
       this.config.logLevel === LogLevel.Warning ||
       this.config.logLevel === LogLevel.Error
     ) {
-      console.error(message, optionalParams);
+      console.error(message, ...optionalParams);
     }
+  }
+
+  // checkZeroHubStatus will check the status of ZeroHub
+  // if it's 301 return the new host
+  checkZeroHubStatus(): Promise<string | void> {
+    return new Promise((resolve, reject) => {
+      fetch(`${getHTTP(this.host, this.config.tls)}/status`)
+        .then((res) => {
+          if (res.status === 200) {
+            this.log("ZeroHub status is OK");
+            resolve();
+            return;
+          } else if (res.status === 301) {
+            res
+              .text()
+              .then((newHost) => {
+                if (newHost) {
+                  resolve(newHost);
+                }
+                reject(
+                  Error(`ZeroHub is not respond the new host: ${newHost}`)
+                );
+              })
+              .catch((err) => {
+                reject(err);
+              });
+            return;
+          } else {
+            reject(
+              Error(`ZeroHub is status is not 200 or 301 status: ${res.status}`)
+            );
+          }
+        })
+        .catch((err) => {
+          console.error("ZeroHub status error", err);
+          reject(err);
+        });
+    });
   }
 
   updatePeerStatus(peerId: number, status: PeerStatus) {
@@ -92,7 +132,9 @@ export class ZeroHubClient<PeerMetaData = object> {
     if (this.onPeerStatusChange) this.onPeerStatusChange(peer);
   }
 
-  public connectToZeroHub(url: string | URL) {
+  public connectToZeroHub(url: URL) {
+    this.log("connecting to ZeroHub:", url);
+
     this.ws = new WebSocket(url);
     this.ws.binaryType = "arraybuffer";
     this.ws.onmessage = (event: MessageEvent<Iterable<number>>) => {
@@ -188,7 +230,7 @@ export class ZeroHubClient<PeerMetaData = object> {
     };
     this.ws.onerror = (event) => {
       if (!this.onZeroHubError) return;
-      this.onZeroHubError(Error(`ZeroHub error: ${event}`));
+      this.onZeroHubError(Error(`ZeroHub error: ${JSON.stringify(event)}`));
     };
     this.ws.onclose = (event) => {
       if (!this.onZeroHubError) return;
@@ -197,9 +239,27 @@ export class ZeroHubClient<PeerMetaData = object> {
       switch (event.code) {
         case 1000:
           return;
+        case 1006:
+          // if the code is 1006 mean the connection was closed abnormally
+          this.checkZeroHubStatus().then((newHost) => {
+            if (newHost) {
+              if (this.host === newHost) {
+                return;
+              }
+              this.warn(
+                `ZeroHub \`${this.host}\` is migrating, the new host will set to: \`${newHost}\``
+              );
+              this.host = newHost;
+							url.host = newHost;
+              this.connectToZeroHub(url); // reconnect to the new host
+            }
+          });
+          return;
         default:
           this.onZeroHubError(
-            Error(`ZeroHub error code ${event.code} reason ${event.reason}`)
+            Error(
+              `ZeroHub error code \`${event.code}\` reason \`${event.reason}\``
+            )
           );
           break;
       }
@@ -371,7 +431,7 @@ export class ZeroHubClient<PeerMetaData = object> {
   public createHub(hubId: string, metaData?: PeerMetaData) {
     this.metaData = metaData;
 
-    const url = new URL(`${this.host}/hubs/create`);
+    const url = new URL("/hubs/create", getWS(this.host, this.config.tls));
     url.searchParams.set("id", hubId);
     if (metaData) url.searchParams.set("metaData", JSON.stringify(metaData));
 
@@ -388,7 +448,7 @@ export class ZeroHubClient<PeerMetaData = object> {
   public joinHub(hubId: string, metaData?: PeerMetaData) {
     this.metaData = metaData;
 
-    const url = new URL(`${this.host}/hubs/join`);
+    const url = new URL("/hubs/join", getWS(this.host, this.config.tls));
     url.searchParams.set("id", hubId);
     if (metaData) url.searchParams.set("metaData", JSON.stringify(metaData));
 
