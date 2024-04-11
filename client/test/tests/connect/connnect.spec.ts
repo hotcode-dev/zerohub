@@ -7,11 +7,11 @@ test.use({ viewport: { width: 500, height: 500 } });
 
 test("create/join hub", async ({ mount }) => {
   const hubId = "connect-hub-id";
-  const zeroHubURL = "ws://localhost:8080";
+  const zeroHubHost = "localhost:8080";
 
   const props: ComponentProps<CreateHub> = {
     hubId: hubId,
-    zeroHubURL: zeroHubURL,
+    zeroHubHost: zeroHubHost,
   };
 
   const createHub = await mount(CreateHub, {

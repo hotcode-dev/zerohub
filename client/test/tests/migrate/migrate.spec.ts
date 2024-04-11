@@ -8,14 +8,14 @@ test.use({ viewport: { width: 500, height: 500 } });
 test("migrate", async ({ mount }) => {
   const hubId = "migrate-hub-id";
   const hubIdNew = "migrate-hub-id-2";
-  const zeroHubURL = "ws://localhost:8080";
-  const zeroHubURLNew = "ws://localhost:8081";
+  const zeroHubHost = "localhost:8080";
+  const zeroHubHostNew = "localhost:8081";
   const migrateURL = "http://localhost:8080/admin/migrate";
   const clientSecret = "client_secret";
 
   const props: ComponentProps<CreateHub> = {
     hubId: hubId,
-    zeroHubURL: zeroHubURL,
+    zeroHubHost: zeroHubHost,
   };
 
   const createHub = await mount(CreateHub, {
@@ -38,7 +38,7 @@ test("migrate", async ({ mount }) => {
   });
 
   // Migrate
-  const res = await fetch(`${migrateURL}?url=${zeroHubURLNew}`, {
+  const res = await fetch(`${migrateURL}?host=${zeroHubHostNew}`, {
     headers: {
       Authorization: Buffer.from(clientSecret).toString("base64"),
     },
@@ -49,7 +49,7 @@ test("migrate", async ({ mount }) => {
 
   const props2: ComponentProps<CreateHub> = {
     hubId: hubIdNew,
-    zeroHubURL: zeroHubURL,
+    zeroHubHost: zeroHubHostNew,
   };
   const createHub2 = await mount(CreateHub, {
     props: props2,

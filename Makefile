@@ -14,7 +14,7 @@ server-serve-2:
 	cd server && APP_PORT=8081 go run ./cmd/server.go
 
 client-build:
-	cd client && npm run build
+	cd ./client && npm run build
 
 e2e-test:
-	cd test && npm run test
+	cd ./client/test && npm run test
