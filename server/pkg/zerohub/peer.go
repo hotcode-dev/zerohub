@@ -15,11 +15,11 @@ type Peer interface {
 	SendBinaryMessage(data []byte)
 	HandleMessage()
 	SendHubInfo(peersProtobuf []*pb.Peer)
-	SendOffer(offerPeerID uint32, offerSDP string)
-	SendAnswer(answerPeerID uint32, answerSDP string)
+	SendOffer(offerPeerId uint32, offerSdp string)
+	SendAnswer(answerPeerId uint32, answerSdp string)
 
-	GetID() uint32
-	SetID(id uint32)
+	GetId() uint32
+	SetId(id uint32)
 	SetHub(hub Hub)
 	GetWSConn() *websocket.Conn
 
@@ -28,33 +28,33 @@ type Peer interface {
 
 // peer represents a node in the mesh network with connections to other peers.
 type peer struct {
-	ID       uint32
+	Id       uint32
 	JoinedAt time.Time
-	MetaData string
+	Metadata string
 
 	Hub    Hub
 	WSConn *websocket.Conn
 }
 
-// NewPeer creates a new empty Peer with no connections. Peer without adding to hub will not have an ID.
-func NewPeer(ws *websocket.Conn, metaData string) Peer {
+// NewPeer creates a new empty Peer with no connections. Peer without adding to hub will not have an Id.
+func NewPeer(ws *websocket.Conn, metadata string) Peer {
 	return &peer{
 		JoinedAt: time.Now(),
 		WSConn:   ws,
-		MetaData: metaData,
+		Metadata: metadata,
 	}
 }
 
-func (p *peer) GetID() uint32 {
-	return p.ID
+func (p *peer) GetId() uint32 {
+	return p.Id
 }
 
 func (p *peer) GetWSConn() *websocket.Conn {
 	return p.WSConn
 }
 
-func (p *peer) SetID(id uint32) {
-	p.ID = id
+func (p *peer) SetId(id uint32) {
+	p.Id = id
 }
 
 func (p *peer) SetHub(hub Hub) {
@@ -94,10 +94,10 @@ func (p *peer) HandleMessage() {
 		}
 
 		switch {
-		case clientMessage.GetOfferMessage() != nil:
-			p.Hub.SendOfferToPeer(clientMessage.GetOfferMessage().AnswerPeerID, p.ID, clientMessage.GetOfferMessage().OfferSDP)
-		case clientMessage.GetAnswerMessage() != nil:
-			p.Hub.SendAnswerToPeer(clientMessage.GetAnswerMessage().OfferPeerID, p.ID, clientMessage.GetAnswerMessage().AnswerSDP)
+		case clientMessage.GetSendOfferMessage() != nil:
+			p.Hub.SendOfferToPeer(clientMessage.GetSendOfferMessage().AnswerPeerId, p.Id, clientMessage.GetSendOfferMessage().OfferSdp)
+		case clientMessage.GetSendAnswerMessage() != nil:
+			p.Hub.SendAnswerToPeer(clientMessage.GetSendAnswerMessage().OfferPeerId, p.Id, clientMessage.GetSendAnswerMessage().AnswerSdp)
 		default:
 			log.Error().Msg("invalid client message type")
 		}
@@ -116,8 +116,8 @@ func (p *peer) SendHubInfo(peersProtobuf []*pb.Peer) {
 	msg := &pb.ServerMessage{
 		Message: &pb.ServerMessage_HubInfoMessage{
 			HubInfoMessage: &pb.HubInfoMessage{
-				Id:        p.Hub.GetID(),
-				MyPeerID:  p.ID,
+				Id:        p.Hub.GetId(),
+				MyPeerId:  p.Id,
 				CreatedAt: uint32(p.Hub.GetCreatedAt().Unix()),
 				Peers:     peersProtobuf,
 			},
@@ -132,12 +132,12 @@ func (p *peer) SendHubInfo(peersProtobuf []*pb.Peer) {
 	p.SendBinaryMessage(data)
 }
 
-func (p *peer) SendOffer(offerPeerID uint32, offerSDP string) {
+func (p *peer) SendOffer(offerPeerId uint32, offerSdp string) {
 	msg := &pb.ServerMessage{
 		Message: &pb.ServerMessage_OfferMessage{
 			OfferMessage: &pb.OfferMessage{
-				OfferPeerID: offerPeerID,
-				OfferSDP:    offerSDP,
+				OfferPeerId: offerPeerId,
+				OfferSdp:    offerSdp,
 			},
 		},
 	}
@@ -150,12 +150,12 @@ func (p *peer) SendOffer(offerPeerID uint32, offerSDP string) {
 	p.SendBinaryMessage(data)
 }
 
-func (p *peer) SendAnswer(answerPeerID uint32, answerSDP string) {
+func (p *peer) SendAnswer(answerPeerId uint32, answerSdp string) {
 	msg := &pb.ServerMessage{
 		Message: &pb.ServerMessage_AnswerMessage{
 			AnswerMessage: &pb.AnswerMessage{
-				AnswerPeerID: answerPeerID,
-				AnswerSDP:    answerSDP,
+				AnswerPeerId: answerPeerId,
+				AnswerSdp:    answerSdp,
 			},
 		},
 	}
@@ -170,8 +170,8 @@ func (p *peer) SendAnswer(answerPeerID uint32, answerSDP string) {
 
 func (p *peer) ToProtobuf() *pb.Peer {
 	return &pb.Peer{
-		Id:       p.ID,
-		MetaData: p.MetaData,
+		Id:       p.Id,
+		Metadata: p.Metadata,
 		JoinedAt: uint32(p.JoinedAt.Unix()),
 	}
 }

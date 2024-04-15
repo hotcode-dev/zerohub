@@ -11,11 +11,11 @@
   let hubInfoId = "";
   let peerStatus = "";
 
-  interface PeerMetaData {
+  interface PeerMetadata {
     name: string;
   }
 
-  const zeroHub = new ZeroHubClient<PeerMetaData>(zeroHubHost, {
+  const zeroHub = new ZeroHubClient<PeerMetadata>(zeroHubHost, {
     logLevel: LogLevel.Debug,
     tls: false,
   });
@@ -41,5 +41,5 @@
   zeroHub.createHub(hubId, { name: "test" });
 </script>
 
-HubID:{hubInfoId}
+HubId:{hubInfoId}
 PeerStatus:{peerStatus}

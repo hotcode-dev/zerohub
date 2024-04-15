@@ -16,20 +16,20 @@ var upgrader = websocket.FastHTTPUpgrader{
 
 func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, hub zerohub.Hub) error {
 	err := upgrader.Upgrade(ctx, func(ws *websocket.Conn) {
-		peer := zerohub.NewPeer(ws, string(ctx.QueryArgs().Peek("metaData")))
+		peer := zerohub.NewPeer(ws, string(ctx.QueryArgs().Peek("metadata")))
 		hub.AddPeer(peer)
 
 		ws.SetCloseHandler(func(code int, text string) error {
 			// https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close
 			ws.Close()
-			hub.RemovePeerByID(peer.GetID())
+			hub.RemovePeerById(peer.GetId())
 			return nil
 		})
 
 		peer.HandleMessage()
 
 		ws.Close()
-		hub.RemovePeerByID(peer.GetID())
+		hub.RemovePeerById(peer.GetId())
 	})
 
 	if err != nil {

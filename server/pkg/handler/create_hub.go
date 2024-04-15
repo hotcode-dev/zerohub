@@ -11,11 +11,11 @@ func (h *handler) CreateHub(ctx *fasthttp.RequestCtx) error {
 	hubId := string(ctx.QueryArgs().Peek("id"))
 
 	if h.mg.IsMigrating() {
-		h.mg.AddMigrateHubID(hubId)
+		h.mg.AddMigrateHubId(hubId)
 		return h.ForwardMigrate(ctx)
 	}
 
-	if h := h.zh.GetHubByID(hubId); h != nil {
+	if h := h.zh.GetHubById(hubId); h != nil {
 		ctx.Error("hub already exists", fasthttp.StatusConflict)
 		return fmt.Errorf("hub with id %s already exists", hubId)
 	}

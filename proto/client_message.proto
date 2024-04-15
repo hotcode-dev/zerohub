@@ -4,27 +4,33 @@ option go_package = "github.com/hotcode-dev/zerohub/pkg/proto";
 
 // SendOfferMessage is sent offer SDP from offering peer to answer peer
 message SendOfferMessage {
-  uint32 answerPeerID = 1;
-  string offerSDP = 2;
+  uint32 answerPeerId = 1;
+  string offerSdp = 2;
 }
 
-// SendAnswerMessage is sent answer SDP from answer peer to offering peer
+// Send answer message is sent answer SDP from answer peer to offering peer
 message SendAnswerMessage {
-  uint32 offerPeerID = 1;
-  string answerSDP = 2;
+  uint32 offerPeerId = 1;
+  string answerSdp = 2;
+}
+// Send ICE candidate message is not using yet
+message SendIceCandidateMessage {
+  uint32 peerId = 1;
+  string candidate = 2;
 }
 
-// SendICECandidateMessage is not using yet
-message SendICECandidateMessage {
-  uint32 peerID = 1;
-  string candidate = 2;
+// Update peer metadata message is for update peer metadata message
+message UpdatePeerMetadataMessage {
+  uint32 peerId = 1;
+  string metadata = 2;
 }
 
 // ClientMessage is the message sent from client
 message ClientMessage {
   oneof message {
-    SendOfferMessage offerMessage = 2;
-    SendAnswerMessage answerMessage = 3;
-    SendICECandidateMessage sendICECandidate = 4;
+    SendOfferMessage sendOfferMessage = 1;
+    SendAnswerMessage sendAnswerMessage = 2;
+    SendIceCandidateMessage sendIceCandidateMessage = 3;
+    UpdatePeerMetadataMessage updatePeerMetadataMessage = 4;
   }
 }

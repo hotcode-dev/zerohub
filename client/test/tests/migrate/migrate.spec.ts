@@ -22,14 +22,14 @@ test("migrate", async ({ mount }) => {
     props: props,
   });
   await test.step("create hub success", async () => {
-    await expect(createHub).toContainText(`HubID:${hubId}`);
+    await expect(createHub).toContainText(`HubId:${hubId}`);
   });
 
   const joinHub = await mount(JoinHub, {
     props: props,
   });
   await test.step("join hub success", async () => {
-    await expect(joinHub).toContainText(`HubID:${hubId}`);
+    await expect(joinHub).toContainText(`HubId:${hubId}`);
   });
 
   await test.step("peer status connected", async () => {
@@ -55,14 +55,14 @@ test("migrate", async ({ mount }) => {
     props: props2,
   });
   await test.step("create hub success", async () => {
-    await expect(createHub2).toContainText(`HubID:${hubIdNew}`);
+    await expect(createHub2).toContainText(`HubId:${hubIdNew}`);
   });
 
   const joinHub2 = await mount(JoinHub, {
     props: props2,
   });
   await test.step("join hub success", async () => {
-    await expect(joinHub2).toContainText(`HubID:${hubIdNew}`);
+    await expect(joinHub2).toContainText(`HubId:${hubIdNew}`);
   });
 
   await test.step("peer status connected", async () => {

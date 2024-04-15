@@ -5,40 +5,47 @@ export const protobufPackage = "";
 
 /** SendOfferMessage is sent offer SDP from offering peer to answer peer */
 export interface SendOfferMessage {
-  answerPeerID: number;
-  offerSDP: string;
+  answerPeerId: number;
+  offerSdp: string;
 }
 
-/** SendAnswerMessage is sent answer SDP from answer peer to offering peer */
+/** Send answer message is sent answer SDP from answer peer to offering peer */
 export interface SendAnswerMessage {
-  offerPeerID: number;
-  answerSDP: string;
+  offerPeerId: number;
+  answerSdp: string;
 }
 
-/** SendICECandidateMessage is not using yet */
-export interface SendICECandidateMessage {
-  peerID: number;
+/** Send ICE candidate message is not using yet */
+export interface SendIceCandidateMessage {
+  peerId: number;
   candidate: string;
+}
+
+/** Update peer metadata message is for update peer metadata message */
+export interface UpdatePeerMetadataMessage {
+  peerId: number;
+  metadata: string;
 }
 
 /** ClientMessage is the message sent from client */
 export interface ClientMessage {
-  offerMessage?: SendOfferMessage | undefined;
-  answerMessage?: SendAnswerMessage | undefined;
-  sendICECandidate?: SendICECandidateMessage | undefined;
+  sendOfferMessage?: SendOfferMessage | undefined;
+  sendAnswerMessage?: SendAnswerMessage | undefined;
+  sendIceCandidateMessage?: SendIceCandidateMessage | undefined;
+  updatePeerMetadataMessage?: UpdatePeerMetadataMessage | undefined;
 }
 
 function createBaseSendOfferMessage(): SendOfferMessage {
-  return { answerPeerID: 0, offerSDP: "" };
+  return { answerPeerId: 0, offerSdp: "" };
 }
 
 export const SendOfferMessage = {
   encode(message: SendOfferMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.answerPeerID !== 0) {
-      writer.uint32(8).uint32(message.answerPeerID);
+    if (message.answerPeerId !== 0) {
+      writer.uint32(8).uint32(message.answerPeerId);
     }
-    if (message.offerSDP !== "") {
-      writer.uint32(18).string(message.offerSDP);
+    if (message.offerSdp !== "") {
+      writer.uint32(18).string(message.offerSdp);
     }
     return writer;
   },
@@ -55,14 +62,14 @@ export const SendOfferMessage = {
             break;
           }
 
-          message.answerPeerID = reader.uint32();
+          message.answerPeerId = reader.uint32();
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.offerSDP = reader.string();
+          message.offerSdp = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -75,18 +82,18 @@ export const SendOfferMessage = {
 
   fromJSON(object: any): SendOfferMessage {
     return {
-      answerPeerID: isSet(object.answerPeerID) ? globalThis.Number(object.answerPeerID) : 0,
-      offerSDP: isSet(object.offerSDP) ? globalThis.String(object.offerSDP) : "",
+      answerPeerId: isSet(object.answerPeerId) ? globalThis.Number(object.answerPeerId) : 0,
+      offerSdp: isSet(object.offerSdp) ? globalThis.String(object.offerSdp) : "",
     };
   },
 
   toJSON(message: SendOfferMessage): unknown {
     const obj: any = {};
-    if (message.answerPeerID !== 0) {
-      obj.answerPeerID = Math.round(message.answerPeerID);
+    if (message.answerPeerId !== 0) {
+      obj.answerPeerId = Math.round(message.answerPeerId);
     }
-    if (message.offerSDP !== "") {
-      obj.offerSDP = message.offerSDP;
+    if (message.offerSdp !== "") {
+      obj.offerSdp = message.offerSdp;
     }
     return obj;
   },
@@ -96,23 +103,23 @@ export const SendOfferMessage = {
   },
   fromPartial<I extends Exact<DeepPartial<SendOfferMessage>, I>>(object: I): SendOfferMessage {
     const message = createBaseSendOfferMessage();
-    message.answerPeerID = object.answerPeerID ?? 0;
-    message.offerSDP = object.offerSDP ?? "";
+    message.answerPeerId = object.answerPeerId ?? 0;
+    message.offerSdp = object.offerSdp ?? "";
     return message;
   },
 };
 
 function createBaseSendAnswerMessage(): SendAnswerMessage {
-  return { offerPeerID: 0, answerSDP: "" };
+  return { offerPeerId: 0, answerSdp: "" };
 }
 
 export const SendAnswerMessage = {
   encode(message: SendAnswerMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.offerPeerID !== 0) {
-      writer.uint32(8).uint32(message.offerPeerID);
+    if (message.offerPeerId !== 0) {
+      writer.uint32(8).uint32(message.offerPeerId);
     }
-    if (message.answerSDP !== "") {
-      writer.uint32(18).string(message.answerSDP);
+    if (message.answerSdp !== "") {
+      writer.uint32(18).string(message.answerSdp);
     }
     return writer;
   },
@@ -129,14 +136,14 @@ export const SendAnswerMessage = {
             break;
           }
 
-          message.offerPeerID = reader.uint32();
+          message.offerPeerId = reader.uint32();
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.answerSDP = reader.string();
+          message.answerSdp = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -149,18 +156,18 @@ export const SendAnswerMessage = {
 
   fromJSON(object: any): SendAnswerMessage {
     return {
-      offerPeerID: isSet(object.offerPeerID) ? globalThis.Number(object.offerPeerID) : 0,
-      answerSDP: isSet(object.answerSDP) ? globalThis.String(object.answerSDP) : "",
+      offerPeerId: isSet(object.offerPeerId) ? globalThis.Number(object.offerPeerId) : 0,
+      answerSdp: isSet(object.answerSdp) ? globalThis.String(object.answerSdp) : "",
     };
   },
 
   toJSON(message: SendAnswerMessage): unknown {
     const obj: any = {};
-    if (message.offerPeerID !== 0) {
-      obj.offerPeerID = Math.round(message.offerPeerID);
+    if (message.offerPeerId !== 0) {
+      obj.offerPeerId = Math.round(message.offerPeerId);
     }
-    if (message.answerSDP !== "") {
-      obj.answerSDP = message.answerSDP;
+    if (message.answerSdp !== "") {
+      obj.answerSdp = message.answerSdp;
     }
     return obj;
   },
@@ -170,20 +177,20 @@ export const SendAnswerMessage = {
   },
   fromPartial<I extends Exact<DeepPartial<SendAnswerMessage>, I>>(object: I): SendAnswerMessage {
     const message = createBaseSendAnswerMessage();
-    message.offerPeerID = object.offerPeerID ?? 0;
-    message.answerSDP = object.answerSDP ?? "";
+    message.offerPeerId = object.offerPeerId ?? 0;
+    message.answerSdp = object.answerSdp ?? "";
     return message;
   },
 };
 
-function createBaseSendICECandidateMessage(): SendICECandidateMessage {
-  return { peerID: 0, candidate: "" };
+function createBaseSendIceCandidateMessage(): SendIceCandidateMessage {
+  return { peerId: 0, candidate: "" };
 }
 
-export const SendICECandidateMessage = {
-  encode(message: SendICECandidateMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.peerID !== 0) {
-      writer.uint32(8).uint32(message.peerID);
+export const SendIceCandidateMessage = {
+  encode(message: SendIceCandidateMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.peerId !== 0) {
+      writer.uint32(8).uint32(message.peerId);
     }
     if (message.candidate !== "") {
       writer.uint32(18).string(message.candidate);
@@ -191,10 +198,10 @@ export const SendICECandidateMessage = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SendICECandidateMessage {
+  decode(input: _m0.Reader | Uint8Array, length?: number): SendIceCandidateMessage {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSendICECandidateMessage();
+    const message = createBaseSendIceCandidateMessage();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -203,7 +210,7 @@ export const SendICECandidateMessage = {
             break;
           }
 
-          message.peerID = reader.uint32();
+          message.peerId = reader.uint32();
           continue;
         case 2:
           if (tag !== 18) {
@@ -221,17 +228,17 @@ export const SendICECandidateMessage = {
     return message;
   },
 
-  fromJSON(object: any): SendICECandidateMessage {
+  fromJSON(object: any): SendIceCandidateMessage {
     return {
-      peerID: isSet(object.peerID) ? globalThis.Number(object.peerID) : 0,
+      peerId: isSet(object.peerId) ? globalThis.Number(object.peerId) : 0,
       candidate: isSet(object.candidate) ? globalThis.String(object.candidate) : "",
     };
   },
 
-  toJSON(message: SendICECandidateMessage): unknown {
+  toJSON(message: SendIceCandidateMessage): unknown {
     const obj: any = {};
-    if (message.peerID !== 0) {
-      obj.peerID = Math.round(message.peerID);
+    if (message.peerId !== 0) {
+      obj.peerId = Math.round(message.peerId);
     }
     if (message.candidate !== "") {
       obj.candidate = message.candidate;
@@ -239,31 +246,113 @@ export const SendICECandidateMessage = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SendICECandidateMessage>, I>>(base?: I): SendICECandidateMessage {
-    return SendICECandidateMessage.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<SendIceCandidateMessage>, I>>(base?: I): SendIceCandidateMessage {
+    return SendIceCandidateMessage.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SendICECandidateMessage>, I>>(object: I): SendICECandidateMessage {
-    const message = createBaseSendICECandidateMessage();
-    message.peerID = object.peerID ?? 0;
+  fromPartial<I extends Exact<DeepPartial<SendIceCandidateMessage>, I>>(object: I): SendIceCandidateMessage {
+    const message = createBaseSendIceCandidateMessage();
+    message.peerId = object.peerId ?? 0;
     message.candidate = object.candidate ?? "";
     return message;
   },
 };
 
+function createBaseUpdatePeerMetadataMessage(): UpdatePeerMetadataMessage {
+  return { peerId: 0, metadata: "" };
+}
+
+export const UpdatePeerMetadataMessage = {
+  encode(message: UpdatePeerMetadataMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.peerId !== 0) {
+      writer.uint32(8).uint32(message.peerId);
+    }
+    if (message.metadata !== "") {
+      writer.uint32(18).string(message.metadata);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdatePeerMetadataMessage {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdatePeerMetadataMessage();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.peerId = reader.uint32();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.metadata = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdatePeerMetadataMessage {
+    return {
+      peerId: isSet(object.peerId) ? globalThis.Number(object.peerId) : 0,
+      metadata: isSet(object.metadata) ? globalThis.String(object.metadata) : "",
+    };
+  },
+
+  toJSON(message: UpdatePeerMetadataMessage): unknown {
+    const obj: any = {};
+    if (message.peerId !== 0) {
+      obj.peerId = Math.round(message.peerId);
+    }
+    if (message.metadata !== "") {
+      obj.metadata = message.metadata;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UpdatePeerMetadataMessage>, I>>(base?: I): UpdatePeerMetadataMessage {
+    return UpdatePeerMetadataMessage.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdatePeerMetadataMessage>, I>>(object: I): UpdatePeerMetadataMessage {
+    const message = createBaseUpdatePeerMetadataMessage();
+    message.peerId = object.peerId ?? 0;
+    message.metadata = object.metadata ?? "";
+    return message;
+  },
+};
+
 function createBaseClientMessage(): ClientMessage {
-  return { offerMessage: undefined, answerMessage: undefined, sendICECandidate: undefined };
+  return {
+    sendOfferMessage: undefined,
+    sendAnswerMessage: undefined,
+    sendIceCandidateMessage: undefined,
+    updatePeerMetadataMessage: undefined,
+  };
 }
 
 export const ClientMessage = {
   encode(message: ClientMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.offerMessage !== undefined) {
-      SendOfferMessage.encode(message.offerMessage, writer.uint32(18).fork()).ldelim();
+    if (message.sendOfferMessage !== undefined) {
+      SendOfferMessage.encode(message.sendOfferMessage, writer.uint32(10).fork()).ldelim();
     }
-    if (message.answerMessage !== undefined) {
-      SendAnswerMessage.encode(message.answerMessage, writer.uint32(26).fork()).ldelim();
+    if (message.sendAnswerMessage !== undefined) {
+      SendAnswerMessage.encode(message.sendAnswerMessage, writer.uint32(18).fork()).ldelim();
     }
-    if (message.sendICECandidate !== undefined) {
-      SendICECandidateMessage.encode(message.sendICECandidate, writer.uint32(34).fork()).ldelim();
+    if (message.sendIceCandidateMessage !== undefined) {
+      SendIceCandidateMessage.encode(message.sendIceCandidateMessage, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.updatePeerMetadataMessage !== undefined) {
+      UpdatePeerMetadataMessage.encode(message.updatePeerMetadataMessage, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -275,26 +364,33 @@ export const ClientMessage = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.sendOfferMessage = SendOfferMessage.decode(reader, reader.uint32());
+          continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.offerMessage = SendOfferMessage.decode(reader, reader.uint32());
+          message.sendAnswerMessage = SendAnswerMessage.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.answerMessage = SendAnswerMessage.decode(reader, reader.uint32());
+          message.sendIceCandidateMessage = SendIceCandidateMessage.decode(reader, reader.uint32());
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.sendICECandidate = SendICECandidateMessage.decode(reader, reader.uint32());
+          message.updatePeerMetadataMessage = UpdatePeerMetadataMessage.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -307,24 +403,32 @@ export const ClientMessage = {
 
   fromJSON(object: any): ClientMessage {
     return {
-      offerMessage: isSet(object.offerMessage) ? SendOfferMessage.fromJSON(object.offerMessage) : undefined,
-      answerMessage: isSet(object.answerMessage) ? SendAnswerMessage.fromJSON(object.answerMessage) : undefined,
-      sendICECandidate: isSet(object.sendICECandidate)
-        ? SendICECandidateMessage.fromJSON(object.sendICECandidate)
+      sendOfferMessage: isSet(object.sendOfferMessage) ? SendOfferMessage.fromJSON(object.sendOfferMessage) : undefined,
+      sendAnswerMessage: isSet(object.sendAnswerMessage)
+        ? SendAnswerMessage.fromJSON(object.sendAnswerMessage)
+        : undefined,
+      sendIceCandidateMessage: isSet(object.sendIceCandidateMessage)
+        ? SendIceCandidateMessage.fromJSON(object.sendIceCandidateMessage)
+        : undefined,
+      updatePeerMetadataMessage: isSet(object.updatePeerMetadataMessage)
+        ? UpdatePeerMetadataMessage.fromJSON(object.updatePeerMetadataMessage)
         : undefined,
     };
   },
 
   toJSON(message: ClientMessage): unknown {
     const obj: any = {};
-    if (message.offerMessage !== undefined) {
-      obj.offerMessage = SendOfferMessage.toJSON(message.offerMessage);
+    if (message.sendOfferMessage !== undefined) {
+      obj.sendOfferMessage = SendOfferMessage.toJSON(message.sendOfferMessage);
     }
-    if (message.answerMessage !== undefined) {
-      obj.answerMessage = SendAnswerMessage.toJSON(message.answerMessage);
+    if (message.sendAnswerMessage !== undefined) {
+      obj.sendAnswerMessage = SendAnswerMessage.toJSON(message.sendAnswerMessage);
     }
-    if (message.sendICECandidate !== undefined) {
-      obj.sendICECandidate = SendICECandidateMessage.toJSON(message.sendICECandidate);
+    if (message.sendIceCandidateMessage !== undefined) {
+      obj.sendIceCandidateMessage = SendIceCandidateMessage.toJSON(message.sendIceCandidateMessage);
+    }
+    if (message.updatePeerMetadataMessage !== undefined) {
+      obj.updatePeerMetadataMessage = UpdatePeerMetadataMessage.toJSON(message.updatePeerMetadataMessage);
     }
     return obj;
   },
@@ -334,15 +438,20 @@ export const ClientMessage = {
   },
   fromPartial<I extends Exact<DeepPartial<ClientMessage>, I>>(object: I): ClientMessage {
     const message = createBaseClientMessage();
-    message.offerMessage = (object.offerMessage !== undefined && object.offerMessage !== null)
-      ? SendOfferMessage.fromPartial(object.offerMessage)
+    message.sendOfferMessage = (object.sendOfferMessage !== undefined && object.sendOfferMessage !== null)
+      ? SendOfferMessage.fromPartial(object.sendOfferMessage)
       : undefined;
-    message.answerMessage = (object.answerMessage !== undefined && object.answerMessage !== null)
-      ? SendAnswerMessage.fromPartial(object.answerMessage)
+    message.sendAnswerMessage = (object.sendAnswerMessage !== undefined && object.sendAnswerMessage !== null)
+      ? SendAnswerMessage.fromPartial(object.sendAnswerMessage)
       : undefined;
-    message.sendICECandidate = (object.sendICECandidate !== undefined && object.sendICECandidate !== null)
-      ? SendICECandidateMessage.fromPartial(object.sendICECandidate)
-      : undefined;
+    message.sendIceCandidateMessage =
+      (object.sendIceCandidateMessage !== undefined && object.sendIceCandidateMessage !== null)
+        ? SendIceCandidateMessage.fromPartial(object.sendIceCandidateMessage)
+        : undefined;
+    message.updatePeerMetadataMessage =
+      (object.updatePeerMetadataMessage !== undefined && object.updatePeerMetadataMessage !== null)
+        ? UpdatePeerMetadataMessage.fromPartial(object.updatePeerMetadataMessage)
+        : undefined;
     return message;
   },
 };

@@ -4,9 +4,6 @@
   "description": "ZeroHub Client SDK",
   "author": "Jirawat Boonkumnerd <contact@ntsd.dev> (https://ntsd.dev)",
   "type": "module",
-  "main": "./dist/cjs/index.js",
-  "types": "./dist/types/index.d.ts",
-  "module": "./dist/esm/index.js",
   "files": [
     "./dist/**/*",
     "./src/**/*"

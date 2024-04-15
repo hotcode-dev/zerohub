@@ -19,7 +19,7 @@ test("create/join hub", async ({ mount }) => {
   });
 
   await test.step("create hub success", async () => {
-    await expect(createHub).toContainText(`HubID:${hubId}`);
+    await expect(createHub).toContainText(`HubId:${hubId}`);
   });
 
   const joinHub = await mount(JoinHub, {
@@ -27,7 +27,7 @@ test("create/join hub", async ({ mount }) => {
   });
 
   await test.step("join hub success", async () => {
-    await expect(joinHub).toContainText(`HubID:${hubId}`);
+    await expect(joinHub).toContainText(`HubId:${hubId}`);
   });
 
   await test.step("peer status connected", async () => {

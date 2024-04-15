@@ -6,7 +6,7 @@ export const protobufPackage = "";
 /** Peer includes peer infomation and peer metadata */
 export interface Peer {
   id: number;
-  metaData: string;
+  metadata: string;
   joinedAt: number;
 }
 
@@ -14,7 +14,7 @@ export interface Peer {
 export interface HubInfoMessage {
   id: string;
   createdAt: number;
-  myPeerID: number;
+  myPeerId: number;
   peers: Peer[];
 }
 
@@ -25,39 +25,39 @@ export interface PeerJoinedMessage {
 
 /** PeerDisconnectedMessage will send if a peer has left */
 export interface PeerDisconnectedMessage {
-  peerID: number;
+  peerId: number;
 }
 
 /** OfferMessage is sent offer SDP from offering peer to answer peer */
 export interface OfferMessage {
-  offerPeerID: number;
-  offerSDP: string;
+  offerPeerId: number;
+  offerSdp: string;
 }
 
 /** AnswerMessage is sent answer SDP from answer peer to offering peer */
 export interface AnswerMessage {
-  answerPeerID: number;
-  answerSDP: string;
+  answerPeerId: number;
+  answerSdp: string;
 }
 
-/** ICECandidateMessage is not using yet */
-export interface ICECandidateMessage {
-  peerID: number;
+/** IceCandidateMessage is not using yet */
+export interface IceCandidateMessage {
+  peerId: number;
   candidate: string;
 }
 
 /** ServerMessage is the message sent from server */
 export interface ServerMessage {
   hubInfoMessage?: HubInfoMessage | undefined;
-  peerJoined?: PeerJoinedMessage | undefined;
-  peerDisconnected?: PeerDisconnectedMessage | undefined;
+  peerJoinedMessage?: PeerJoinedMessage | undefined;
+  peerDisconnectedMessage?: PeerDisconnectedMessage | undefined;
   offerMessage?: OfferMessage | undefined;
   answerMessage?: AnswerMessage | undefined;
-  iceCandidateMessage?: ICECandidateMessage | undefined;
+  iceCandidateMessage?: IceCandidateMessage | undefined;
 }
 
 function createBasePeer(): Peer {
-  return { id: 0, metaData: "", joinedAt: 0 };
+  return { id: 0, metadata: "", joinedAt: 0 };
 }
 
 export const Peer = {
@@ -65,8 +65,8 @@ export const Peer = {
     if (message.id !== 0) {
       writer.uint32(8).uint32(message.id);
     }
-    if (message.metaData !== "") {
-      writer.uint32(18).string(message.metaData);
+    if (message.metadata !== "") {
+      writer.uint32(18).string(message.metadata);
     }
     if (message.joinedAt !== 0) {
       writer.uint32(24).uint32(message.joinedAt);
@@ -93,7 +93,7 @@ export const Peer = {
             break;
           }
 
-          message.metaData = reader.string();
+          message.metadata = reader.string();
           continue;
         case 3:
           if (tag !== 24) {
@@ -114,7 +114,7 @@ export const Peer = {
   fromJSON(object: any): Peer {
     return {
       id: isSet(object.id) ? globalThis.Number(object.id) : 0,
-      metaData: isSet(object.metaData) ? globalThis.String(object.metaData) : "",
+      metadata: isSet(object.metadata) ? globalThis.String(object.metadata) : "",
       joinedAt: isSet(object.joinedAt) ? globalThis.Number(object.joinedAt) : 0,
     };
   },
@@ -124,8 +124,8 @@ export const Peer = {
     if (message.id !== 0) {
       obj.id = Math.round(message.id);
     }
-    if (message.metaData !== "") {
-      obj.metaData = message.metaData;
+    if (message.metadata !== "") {
+      obj.metadata = message.metadata;
     }
     if (message.joinedAt !== 0) {
       obj.joinedAt = Math.round(message.joinedAt);
@@ -139,14 +139,14 @@ export const Peer = {
   fromPartial<I extends Exact<DeepPartial<Peer>, I>>(object: I): Peer {
     const message = createBasePeer();
     message.id = object.id ?? 0;
-    message.metaData = object.metaData ?? "";
+    message.metadata = object.metadata ?? "";
     message.joinedAt = object.joinedAt ?? 0;
     return message;
   },
 };
 
 function createBaseHubInfoMessage(): HubInfoMessage {
-  return { id: "", createdAt: 0, myPeerID: 0, peers: [] };
+  return { id: "", createdAt: 0, myPeerId: 0, peers: [] };
 }
 
 export const HubInfoMessage = {
@@ -157,8 +157,8 @@ export const HubInfoMessage = {
     if (message.createdAt !== 0) {
       writer.uint32(16).uint32(message.createdAt);
     }
-    if (message.myPeerID !== 0) {
-      writer.uint32(24).uint32(message.myPeerID);
+    if (message.myPeerId !== 0) {
+      writer.uint32(24).uint32(message.myPeerId);
     }
     for (const v of message.peers) {
       Peer.encode(v!, writer.uint32(34).fork()).ldelim();
@@ -192,7 +192,7 @@ export const HubInfoMessage = {
             break;
           }
 
-          message.myPeerID = reader.uint32();
+          message.myPeerId = reader.uint32();
           continue;
         case 4:
           if (tag !== 34) {
@@ -214,7 +214,7 @@ export const HubInfoMessage = {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
-      myPeerID: isSet(object.myPeerID) ? globalThis.Number(object.myPeerID) : 0,
+      myPeerId: isSet(object.myPeerId) ? globalThis.Number(object.myPeerId) : 0,
       peers: globalThis.Array.isArray(object?.peers) ? object.peers.map((e: any) => Peer.fromJSON(e)) : [],
     };
   },
@@ -227,8 +227,8 @@ export const HubInfoMessage = {
     if (message.createdAt !== 0) {
       obj.createdAt = Math.round(message.createdAt);
     }
-    if (message.myPeerID !== 0) {
-      obj.myPeerID = Math.round(message.myPeerID);
+    if (message.myPeerId !== 0) {
+      obj.myPeerId = Math.round(message.myPeerId);
     }
     if (message.peers?.length) {
       obj.peers = message.peers.map((e) => Peer.toJSON(e));
@@ -243,7 +243,7 @@ export const HubInfoMessage = {
     const message = createBaseHubInfoMessage();
     message.id = object.id ?? "";
     message.createdAt = object.createdAt ?? 0;
-    message.myPeerID = object.myPeerID ?? 0;
+    message.myPeerId = object.myPeerId ?? 0;
     message.peers = object.peers?.map((e) => Peer.fromPartial(e)) || [];
     return message;
   },
@@ -307,13 +307,13 @@ export const PeerJoinedMessage = {
 };
 
 function createBasePeerDisconnectedMessage(): PeerDisconnectedMessage {
-  return { peerID: 0 };
+  return { peerId: 0 };
 }
 
 export const PeerDisconnectedMessage = {
   encode(message: PeerDisconnectedMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.peerID !== 0) {
-      writer.uint32(8).uint32(message.peerID);
+    if (message.peerId !== 0) {
+      writer.uint32(8).uint32(message.peerId);
     }
     return writer;
   },
@@ -330,7 +330,7 @@ export const PeerDisconnectedMessage = {
             break;
           }
 
-          message.peerID = reader.uint32();
+          message.peerId = reader.uint32();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -342,13 +342,13 @@ export const PeerDisconnectedMessage = {
   },
 
   fromJSON(object: any): PeerDisconnectedMessage {
-    return { peerID: isSet(object.peerID) ? globalThis.Number(object.peerID) : 0 };
+    return { peerId: isSet(object.peerId) ? globalThis.Number(object.peerId) : 0 };
   },
 
   toJSON(message: PeerDisconnectedMessage): unknown {
     const obj: any = {};
-    if (message.peerID !== 0) {
-      obj.peerID = Math.round(message.peerID);
+    if (message.peerId !== 0) {
+      obj.peerId = Math.round(message.peerId);
     }
     return obj;
   },
@@ -358,22 +358,22 @@ export const PeerDisconnectedMessage = {
   },
   fromPartial<I extends Exact<DeepPartial<PeerDisconnectedMessage>, I>>(object: I): PeerDisconnectedMessage {
     const message = createBasePeerDisconnectedMessage();
-    message.peerID = object.peerID ?? 0;
+    message.peerId = object.peerId ?? 0;
     return message;
   },
 };
 
 function createBaseOfferMessage(): OfferMessage {
-  return { offerPeerID: 0, offerSDP: "" };
+  return { offerPeerId: 0, offerSdp: "" };
 }
 
 export const OfferMessage = {
   encode(message: OfferMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.offerPeerID !== 0) {
-      writer.uint32(8).uint32(message.offerPeerID);
+    if (message.offerPeerId !== 0) {
+      writer.uint32(8).uint32(message.offerPeerId);
     }
-    if (message.offerSDP !== "") {
-      writer.uint32(18).string(message.offerSDP);
+    if (message.offerSdp !== "") {
+      writer.uint32(18).string(message.offerSdp);
     }
     return writer;
   },
@@ -390,14 +390,14 @@ export const OfferMessage = {
             break;
           }
 
-          message.offerPeerID = reader.uint32();
+          message.offerPeerId = reader.uint32();
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.offerSDP = reader.string();
+          message.offerSdp = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -410,18 +410,18 @@ export const OfferMessage = {
 
   fromJSON(object: any): OfferMessage {
     return {
-      offerPeerID: isSet(object.offerPeerID) ? globalThis.Number(object.offerPeerID) : 0,
-      offerSDP: isSet(object.offerSDP) ? globalThis.String(object.offerSDP) : "",
+      offerPeerId: isSet(object.offerPeerId) ? globalThis.Number(object.offerPeerId) : 0,
+      offerSdp: isSet(object.offerSdp) ? globalThis.String(object.offerSdp) : "",
     };
   },
 
   toJSON(message: OfferMessage): unknown {
     const obj: any = {};
-    if (message.offerPeerID !== 0) {
-      obj.offerPeerID = Math.round(message.offerPeerID);
+    if (message.offerPeerId !== 0) {
+      obj.offerPeerId = Math.round(message.offerPeerId);
     }
-    if (message.offerSDP !== "") {
-      obj.offerSDP = message.offerSDP;
+    if (message.offerSdp !== "") {
+      obj.offerSdp = message.offerSdp;
     }
     return obj;
   },
@@ -431,23 +431,23 @@ export const OfferMessage = {
   },
   fromPartial<I extends Exact<DeepPartial<OfferMessage>, I>>(object: I): OfferMessage {
     const message = createBaseOfferMessage();
-    message.offerPeerID = object.offerPeerID ?? 0;
-    message.offerSDP = object.offerSDP ?? "";
+    message.offerPeerId = object.offerPeerId ?? 0;
+    message.offerSdp = object.offerSdp ?? "";
     return message;
   },
 };
 
 function createBaseAnswerMessage(): AnswerMessage {
-  return { answerPeerID: 0, answerSDP: "" };
+  return { answerPeerId: 0, answerSdp: "" };
 }
 
 export const AnswerMessage = {
   encode(message: AnswerMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.answerPeerID !== 0) {
-      writer.uint32(8).uint32(message.answerPeerID);
+    if (message.answerPeerId !== 0) {
+      writer.uint32(8).uint32(message.answerPeerId);
     }
-    if (message.answerSDP !== "") {
-      writer.uint32(18).string(message.answerSDP);
+    if (message.answerSdp !== "") {
+      writer.uint32(18).string(message.answerSdp);
     }
     return writer;
   },
@@ -464,14 +464,14 @@ export const AnswerMessage = {
             break;
           }
 
-          message.answerPeerID = reader.uint32();
+          message.answerPeerId = reader.uint32();
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.answerSDP = reader.string();
+          message.answerSdp = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -484,18 +484,18 @@ export const AnswerMessage = {
 
   fromJSON(object: any): AnswerMessage {
     return {
-      answerPeerID: isSet(object.answerPeerID) ? globalThis.Number(object.answerPeerID) : 0,
-      answerSDP: isSet(object.answerSDP) ? globalThis.String(object.answerSDP) : "",
+      answerPeerId: isSet(object.answerPeerId) ? globalThis.Number(object.answerPeerId) : 0,
+      answerSdp: isSet(object.answerSdp) ? globalThis.String(object.answerSdp) : "",
     };
   },
 
   toJSON(message: AnswerMessage): unknown {
     const obj: any = {};
-    if (message.answerPeerID !== 0) {
-      obj.answerPeerID = Math.round(message.answerPeerID);
+    if (message.answerPeerId !== 0) {
+      obj.answerPeerId = Math.round(message.answerPeerId);
     }
-    if (message.answerSDP !== "") {
-      obj.answerSDP = message.answerSDP;
+    if (message.answerSdp !== "") {
+      obj.answerSdp = message.answerSdp;
     }
     return obj;
   },
@@ -505,20 +505,20 @@ export const AnswerMessage = {
   },
   fromPartial<I extends Exact<DeepPartial<AnswerMessage>, I>>(object: I): AnswerMessage {
     const message = createBaseAnswerMessage();
-    message.answerPeerID = object.answerPeerID ?? 0;
-    message.answerSDP = object.answerSDP ?? "";
+    message.answerPeerId = object.answerPeerId ?? 0;
+    message.answerSdp = object.answerSdp ?? "";
     return message;
   },
 };
 
-function createBaseICECandidateMessage(): ICECandidateMessage {
-  return { peerID: 0, candidate: "" };
+function createBaseIceCandidateMessage(): IceCandidateMessage {
+  return { peerId: 0, candidate: "" };
 }
 
-export const ICECandidateMessage = {
-  encode(message: ICECandidateMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.peerID !== 0) {
-      writer.uint32(8).uint32(message.peerID);
+export const IceCandidateMessage = {
+  encode(message: IceCandidateMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.peerId !== 0) {
+      writer.uint32(8).uint32(message.peerId);
     }
     if (message.candidate !== "") {
       writer.uint32(18).string(message.candidate);
@@ -526,10 +526,10 @@ export const ICECandidateMessage = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ICECandidateMessage {
+  decode(input: _m0.Reader | Uint8Array, length?: number): IceCandidateMessage {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseICECandidateMessage();
+    const message = createBaseIceCandidateMessage();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -538,7 +538,7 @@ export const ICECandidateMessage = {
             break;
           }
 
-          message.peerID = reader.uint32();
+          message.peerId = reader.uint32();
           continue;
         case 2:
           if (tag !== 18) {
@@ -556,17 +556,17 @@ export const ICECandidateMessage = {
     return message;
   },
 
-  fromJSON(object: any): ICECandidateMessage {
+  fromJSON(object: any): IceCandidateMessage {
     return {
-      peerID: isSet(object.peerID) ? globalThis.Number(object.peerID) : 0,
+      peerId: isSet(object.peerId) ? globalThis.Number(object.peerId) : 0,
       candidate: isSet(object.candidate) ? globalThis.String(object.candidate) : "",
     };
   },
 
-  toJSON(message: ICECandidateMessage): unknown {
+  toJSON(message: IceCandidateMessage): unknown {
     const obj: any = {};
-    if (message.peerID !== 0) {
-      obj.peerID = Math.round(message.peerID);
+    if (message.peerId !== 0) {
+      obj.peerId = Math.round(message.peerId);
     }
     if (message.candidate !== "") {
       obj.candidate = message.candidate;
@@ -574,12 +574,12 @@ export const ICECandidateMessage = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ICECandidateMessage>, I>>(base?: I): ICECandidateMessage {
-    return ICECandidateMessage.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<IceCandidateMessage>, I>>(base?: I): IceCandidateMessage {
+    return IceCandidateMessage.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<ICECandidateMessage>, I>>(object: I): ICECandidateMessage {
-    const message = createBaseICECandidateMessage();
-    message.peerID = object.peerID ?? 0;
+  fromPartial<I extends Exact<DeepPartial<IceCandidateMessage>, I>>(object: I): IceCandidateMessage {
+    const message = createBaseIceCandidateMessage();
+    message.peerId = object.peerId ?? 0;
     message.candidate = object.candidate ?? "";
     return message;
   },
@@ -588,8 +588,8 @@ export const ICECandidateMessage = {
 function createBaseServerMessage(): ServerMessage {
   return {
     hubInfoMessage: undefined,
-    peerJoined: undefined,
-    peerDisconnected: undefined,
+    peerJoinedMessage: undefined,
+    peerDisconnectedMessage: undefined,
     offerMessage: undefined,
     answerMessage: undefined,
     iceCandidateMessage: undefined,
@@ -601,11 +601,11 @@ export const ServerMessage = {
     if (message.hubInfoMessage !== undefined) {
       HubInfoMessage.encode(message.hubInfoMessage, writer.uint32(10).fork()).ldelim();
     }
-    if (message.peerJoined !== undefined) {
-      PeerJoinedMessage.encode(message.peerJoined, writer.uint32(18).fork()).ldelim();
+    if (message.peerJoinedMessage !== undefined) {
+      PeerJoinedMessage.encode(message.peerJoinedMessage, writer.uint32(18).fork()).ldelim();
     }
-    if (message.peerDisconnected !== undefined) {
-      PeerDisconnectedMessage.encode(message.peerDisconnected, writer.uint32(26).fork()).ldelim();
+    if (message.peerDisconnectedMessage !== undefined) {
+      PeerDisconnectedMessage.encode(message.peerDisconnectedMessage, writer.uint32(26).fork()).ldelim();
     }
     if (message.offerMessage !== undefined) {
       OfferMessage.encode(message.offerMessage, writer.uint32(34).fork()).ldelim();
@@ -614,7 +614,7 @@ export const ServerMessage = {
       AnswerMessage.encode(message.answerMessage, writer.uint32(42).fork()).ldelim();
     }
     if (message.iceCandidateMessage !== undefined) {
-      ICECandidateMessage.encode(message.iceCandidateMessage, writer.uint32(50).fork()).ldelim();
+      IceCandidateMessage.encode(message.iceCandidateMessage, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -638,14 +638,14 @@ export const ServerMessage = {
             break;
           }
 
-          message.peerJoined = PeerJoinedMessage.decode(reader, reader.uint32());
+          message.peerJoinedMessage = PeerJoinedMessage.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.peerDisconnected = PeerDisconnectedMessage.decode(reader, reader.uint32());
+          message.peerDisconnectedMessage = PeerDisconnectedMessage.decode(reader, reader.uint32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -666,7 +666,7 @@ export const ServerMessage = {
             break;
           }
 
-          message.iceCandidateMessage = ICECandidateMessage.decode(reader, reader.uint32());
+          message.iceCandidateMessage = IceCandidateMessage.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -680,14 +680,16 @@ export const ServerMessage = {
   fromJSON(object: any): ServerMessage {
     return {
       hubInfoMessage: isSet(object.hubInfoMessage) ? HubInfoMessage.fromJSON(object.hubInfoMessage) : undefined,
-      peerJoined: isSet(object.peerJoined) ? PeerJoinedMessage.fromJSON(object.peerJoined) : undefined,
-      peerDisconnected: isSet(object.peerDisconnected)
-        ? PeerDisconnectedMessage.fromJSON(object.peerDisconnected)
+      peerJoinedMessage: isSet(object.peerJoinedMessage)
+        ? PeerJoinedMessage.fromJSON(object.peerJoinedMessage)
+        : undefined,
+      peerDisconnectedMessage: isSet(object.peerDisconnectedMessage)
+        ? PeerDisconnectedMessage.fromJSON(object.peerDisconnectedMessage)
         : undefined,
       offerMessage: isSet(object.offerMessage) ? OfferMessage.fromJSON(object.offerMessage) : undefined,
       answerMessage: isSet(object.answerMessage) ? AnswerMessage.fromJSON(object.answerMessage) : undefined,
       iceCandidateMessage: isSet(object.iceCandidateMessage)
-        ? ICECandidateMessage.fromJSON(object.iceCandidateMessage)
+        ? IceCandidateMessage.fromJSON(object.iceCandidateMessage)
         : undefined,
     };
   },
@@ -697,11 +699,11 @@ export const ServerMessage = {
     if (message.hubInfoMessage !== undefined) {
       obj.hubInfoMessage = HubInfoMessage.toJSON(message.hubInfoMessage);
     }
-    if (message.peerJoined !== undefined) {
-      obj.peerJoined = PeerJoinedMessage.toJSON(message.peerJoined);
+    if (message.peerJoinedMessage !== undefined) {
+      obj.peerJoinedMessage = PeerJoinedMessage.toJSON(message.peerJoinedMessage);
     }
-    if (message.peerDisconnected !== undefined) {
-      obj.peerDisconnected = PeerDisconnectedMessage.toJSON(message.peerDisconnected);
+    if (message.peerDisconnectedMessage !== undefined) {
+      obj.peerDisconnectedMessage = PeerDisconnectedMessage.toJSON(message.peerDisconnectedMessage);
     }
     if (message.offerMessage !== undefined) {
       obj.offerMessage = OfferMessage.toJSON(message.offerMessage);
@@ -710,7 +712,7 @@ export const ServerMessage = {
       obj.answerMessage = AnswerMessage.toJSON(message.answerMessage);
     }
     if (message.iceCandidateMessage !== undefined) {
-      obj.iceCandidateMessage = ICECandidateMessage.toJSON(message.iceCandidateMessage);
+      obj.iceCandidateMessage = IceCandidateMessage.toJSON(message.iceCandidateMessage);
     }
     return obj;
   },
@@ -723,12 +725,13 @@ export const ServerMessage = {
     message.hubInfoMessage = (object.hubInfoMessage !== undefined && object.hubInfoMessage !== null)
       ? HubInfoMessage.fromPartial(object.hubInfoMessage)
       : undefined;
-    message.peerJoined = (object.peerJoined !== undefined && object.peerJoined !== null)
-      ? PeerJoinedMessage.fromPartial(object.peerJoined)
+    message.peerJoinedMessage = (object.peerJoinedMessage !== undefined && object.peerJoinedMessage !== null)
+      ? PeerJoinedMessage.fromPartial(object.peerJoinedMessage)
       : undefined;
-    message.peerDisconnected = (object.peerDisconnected !== undefined && object.peerDisconnected !== null)
-      ? PeerDisconnectedMessage.fromPartial(object.peerDisconnected)
-      : undefined;
+    message.peerDisconnectedMessage =
+      (object.peerDisconnectedMessage !== undefined && object.peerDisconnectedMessage !== null)
+        ? PeerDisconnectedMessage.fromPartial(object.peerDisconnectedMessage)
+        : undefined;
     message.offerMessage = (object.offerMessage !== undefined && object.offerMessage !== null)
       ? OfferMessage.fromPartial(object.offerMessage)
       : undefined;
@@ -736,7 +739,7 @@ export const ServerMessage = {
       ? AnswerMessage.fromPartial(object.answerMessage)
       : undefined;
     message.iceCandidateMessage = (object.iceCandidateMessage !== undefined && object.iceCandidateMessage !== null)
-      ? ICECandidateMessage.fromPartial(object.iceCandidateMessage)
+      ? IceCandidateMessage.fromPartial(object.iceCandidateMessage)
       : undefined;
     return message;
   },

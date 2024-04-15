@@ -10,8 +10,8 @@ import (
 // CreateJoinedSignalProtobuf creates a protobuf message for a joined signal.
 func CreateJoinedSignalProtobuf(peerProtobuf *pb.Peer) ([]byte, error) {
 	msg := &pb.ServerMessage{
-		Message: &pb.ServerMessage_PeerJoined{
-			PeerJoined: &pb.PeerJoinedMessage{
+		Message: &pb.ServerMessage_PeerJoinedMessage{
+			PeerJoinedMessage: &pb.PeerJoinedMessage{
 				Peer: peerProtobuf,
 			},
 		},
@@ -27,9 +27,9 @@ func CreateJoinedSignalProtobuf(peerProtobuf *pb.Peer) ([]byte, error) {
 // CreateDisconnectSignalProtobuf creates a protobuf message for a disconnect signal.
 func CreateDisconnectSignalProtobuf(peerId uint32) ([]byte, error) {
 	msg := &pb.ServerMessage{
-		Message: &pb.ServerMessage_PeerDisconnected{
-			PeerDisconnected: &pb.PeerDisconnectedMessage{
-				PeerID: peerId,
+		Message: &pb.ServerMessage_PeerDisconnectedMessage{
+			PeerDisconnectedMessage: &pb.PeerDisconnectedMessage{
+				PeerId: peerId,
 			},
 		},
 	}

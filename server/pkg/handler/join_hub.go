@@ -5,11 +5,11 @@ import (
 )
 
 func (h *handler) JoinHub(ctx *fasthttp.RequestCtx) error {
-	if h.mg.IsMigrating() && h.mg.IsMigratingHubID(string(ctx.QueryArgs().Peek("id"))) {
+	if h.mg.IsMigrating() && h.mg.IsMigratingHubId(string(ctx.QueryArgs().Peek("id"))) {
 		return h.ForwardMigrate(ctx)
 	}
 
-	hub := h.zh.GetHubByID(string(ctx.QueryArgs().Peek("id")))
+	hub := h.zh.GetHubById(string(ctx.QueryArgs().Peek("id")))
 	if hub == nil {
 		if h.mg.IsMigrating() {
 			return h.ForwardMigrate(ctx)

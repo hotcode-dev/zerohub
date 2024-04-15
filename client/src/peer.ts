@@ -1,22 +1,22 @@
 import { PeerStatus } from "./types";
 
-export class Peer<PeerMetaData = object> {
+export class Peer<PeerMetadata = object> {
   public id: number;
   public status: PeerStatus;
-  public metaData: PeerMetaData;
+  public metadata: PeerMetadata;
   public joinedAt: Date;
   public rtcConn: RTCPeerConnection;
 
   constructor(
     id: number,
     status: PeerStatus,
-    metaData: PeerMetaData,
+    metadata: PeerMetadata,
     joinedAt: Date,
     rtcConn: RTCPeerConnection
   ) {
     this.id = id;
     this.status = status;
-    this.metaData = metaData;
+    this.metadata = metadata;
     this.joinedAt = joinedAt;
     this.rtcConn = rtcConn;
   }

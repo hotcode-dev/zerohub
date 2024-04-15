@@ -8,8 +8,8 @@ import (
 
 type ZeroHub interface {
 	AddHub(hub Hub)
-	GetHubByID(id string) Hub
-	RemoveHubByID(id string)
+	GetHubById(id string) Hub
+	RemoveHubById(id string)
 }
 
 type zeroHub struct {
@@ -17,7 +17,7 @@ type zeroHub struct {
 
 	Hubs map[string]Hub
 
-	// TODO: do we need mutex since Hub ID are unique?
+	// TODO: do we need mutex since Hub Id are unique?
 	mu sync.RWMutex
 }
 
@@ -34,17 +34,17 @@ func (z *zeroHub) AddHub(hub Hub) {
 	z.mu.Lock()
 	defer z.mu.Unlock()
 
-	z.Hubs[hub.GetID()] = hub
+	z.Hubs[hub.GetId()] = hub
 }
 
-func (z *zeroHub) GetHubByID(id string) Hub {
+func (z *zeroHub) GetHubById(id string) Hub {
 	z.mu.RLock()
 	defer z.mu.RUnlock()
 
 	return z.Hubs[id]
 }
 
-func (z *zeroHub) RemoveHubByID(id string) {
+func (z *zeroHub) RemoveHubById(id string) {
 	z.mu.RLock()
 	defer z.mu.RUnlock()
 
