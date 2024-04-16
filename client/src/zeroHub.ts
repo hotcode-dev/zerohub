@@ -7,7 +7,7 @@ import { Peer } from "./peer";
 import { ClientMessage } from "./proto/client_message";
 import { ServerMessage } from "./proto/server_message";
 import { LogLevel, PeerStatus, type Config, type HubInfo } from "./types";
-import { getHTTP, getWS } from "./utils";
+import { fetchWithTimeout, getHTTP, getWS } from "./utils";
 
 export class ZeroHubClient<PeerMetadata = object> {
   // config ZeroHub client configuration
@@ -23,7 +23,11 @@ export class ZeroHubClient<PeerMetadata = object> {
   // peers a map of peer
   public peers: { [id: number]: Peer<PeerMetadata> };
 
-  // the current host of ZeroHub
+  // the hosts of ZeroHub without protocal. if the first host is not working, it will try to connect to the next host
+  public hosts: string[];
+  // the current ZeroHub host index
+  public hostIndex: number;
+  // the current ZeroHub host without protocal
   public host: string;
   // ws websocket connection to ZeroHub
   public ws?: WebSocket;
@@ -40,22 +44,27 @@ export class ZeroHubClient<PeerMetadata = object> {
   /**
    * Creates a new ZeroHub Client class
    *
-   * @param host ZeroHub host for example `wss://sg1.zerohub.dev`
+   * @param hosts ZeroHub hosts without protocol. if the first host is not working, it will try to connect to the next host. for example `['sg1.zerohub.dev', 'sg2.zerohub.dev']`
    * @param config ZeroHub client configuration
    * @param rtcConfig default WebRTC configuration
    *
    * @returns ZeroHub Client class
    */
   constructor(
-    host: string,
+    hosts: string[],
     config: Partial<Config> = {},
     rtcConfig: Partial<RTCConfiguration> = {}
   ) {
-    // TODO: multiple host support, for scalibity
+    if (!hosts || hosts.length < 1) {
+      throw new Error("The hosts must be at least one");
+    }
+
     this.config = Object.assign(defaultConfig, config);
     this.rtcConfig = Object.assign(defaultRtcConfig, rtcConfig);
     this.peers = {};
-    this.host = host;
+    this.hosts = hosts;
+    this.hostIndex = 0;
+    this.host = hosts[this.hostIndex];
   }
 
   log(message?: any, ...optionalParams: any[]) {
@@ -91,7 +100,20 @@ export class ZeroHubClient<PeerMetadata = object> {
    */
   checkZeroHubStatus(): Promise<string | void> {
     return new Promise((resolve, reject) => {
-      fetch(`${getHTTP(this.host, this.config.tls)}/status`)
+      const resolveNextHost = () => {
+        if (this.hostIndex >= this.hosts.length - 1) {
+          reject(
+            new Error(
+              "all ZeroHub hosts are not working, please check the ZeroHub hosts"
+            )
+          );
+          return;
+        }
+        this.hostIndex = this.hostIndex + 1;
+        resolve(this.hosts[this.hostIndex]);
+      };
+
+      fetchWithTimeout(`${getHTTP(this.host, this.config.tls)}/status`)
         .then((res) => {
           if (res.status === 200) {
             this.log("ZeroHub status is OK");
@@ -105,29 +127,28 @@ export class ZeroHubClient<PeerMetadata = object> {
                 if (newHost) {
                   resolve(newHost);
                 } else {
-                  reject(
-                    new Error(
-                      `status 301, but ZeroHub is not responding with a new host: ${newHost}`
-                    )
+                  console.error(
+                    `status 301, but ZeroHub is not responding with a new host: ${newHost}`
                   );
+                  resolveNextHost();
                 }
               })
               .catch((err) => {
-                reject(err);
+                console.error(`cannot get new host from status 301: ${err}`);
+                resolveNextHost();
               });
             return;
           } else {
-            // If status is not 200 or 301, reject with an Error
-            reject(
-              new Error(
-                `ZeroHub is not responding with a valid status: ${res.status}`
-              )
+            // If status is not 200 or 301, resolve with the next host
+            console.error(
+              `ZeroHub is not responding with a valid status: ${res.status}`
             );
+            resolveNextHost();
           }
         })
         .catch((err) => {
           console.error("ZeroHub status error", err);
-          reject(err);
+          resolveNextHost();
         });
     });
   }
@@ -149,6 +170,23 @@ export class ZeroHubClient<PeerMetadata = object> {
 
     peer.status = status;
     if (this.onPeerStatusChange) this.onPeerStatusChange(peer);
+  }
+
+  // reconnect check the current host status then reconnect to the new host
+  public reconnect(currentURL: URL) {
+    this.checkZeroHubStatus().then((newHost) => {
+      if (newHost) {
+        if (this.host === newHost) {
+          return;
+        }
+        this.warn(
+          `ZeroHub \`${this.host}\` is migrating, the new host will set to: \`${newHost}\``
+        );
+        this.host = newHost;
+        currentURL.host = newHost;
+        this.connectToZeroHub(currentURL); // reconnect to the new host
+      }
+    });
   }
 
   /**
@@ -253,38 +291,28 @@ export class ZeroHubClient<PeerMetadata = object> {
       }
     };
     this.ws.onerror = (event) => {
-      if (!this.onZeroHubError) return;
-      this.onZeroHubError(Error(`ZeroHub error: ${JSON.stringify(event)}`));
+      if (this.onZeroHubError) {
+        this.onZeroHubError(Error(`ZeroHub error: ${JSON.stringify(event)}`));
+      }
+      this.reconnect(url);
     };
     this.ws.onclose = (event) => {
-      if (!this.onZeroHubError) return;
-
       // See https://www.rfc-editor.org/rfc/rfc6455#section-7.4.1
       switch (event.code) {
         case 1000:
           return;
         case 1006:
           // if the code is 1006 mean the connection was closed abnormally
-          this.checkZeroHubStatus().then((newHost) => {
-            if (newHost) {
-              if (this.host === newHost) {
-                return;
-              }
-              this.warn(
-                `ZeroHub \`${this.host}\` is migrating, the new host will set to: \`${newHost}\``
-              );
-              this.host = newHost;
-              url.host = newHost;
-              this.connectToZeroHub(url); // reconnect to the new host
-            }
-          });
+          this.reconnect(url);
           return;
         default:
-          this.onZeroHubError(
-            Error(
-              `ZeroHub error code \`${event.code}\` reason \`${event.reason}\``
-            )
-          );
+          if (this.onZeroHubError) {
+            this.onZeroHubError(
+              Error(
+                `ZeroHub error code \`${event.code}\` reason \`${event.reason}\``
+              )
+            );
+          }
           break;
       }
     };

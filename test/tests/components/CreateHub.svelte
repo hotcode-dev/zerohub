@@ -3,10 +3,10 @@
     LogLevel,
     PeerStatus,
     ZeroHubClient,
-  } from "../../../src/index";
+  } from "../../../client/src/index";
 
   export let hubId: string;
-  export let zeroHubHost: string;
+  export let zeroHubHosts: string[];
 
   let hubInfoId = "";
   let peerStatus = "";
@@ -15,7 +15,7 @@
     name: string;
   }
 
-  const zeroHub = new ZeroHubClient<PeerMetadata>(zeroHubHost, {
+  const zeroHub = new ZeroHubClient<PeerMetadata>(zeroHubHosts, {
     logLevel: LogLevel.Debug,
     tls: false,
   });

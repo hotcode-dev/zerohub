@@ -1,17 +1,18 @@
 import { test, expect } from "@playwright/experimental-ct-svelte";
 import type { ComponentProps } from "svelte";
-import CreateHub from "./CreateHub.svelte";
-import JoinHub from "./JoinHub.svelte";
+import CreateHub from "./components/CreateHub.svelte";
+import JoinHub from "./components/JoinHub.svelte";
+import { v4 as uuidv4 } from "uuid";
 
 test.use({ viewport: { width: 500, height: 500 } });
 
 test("create/join hub", async ({ mount }) => {
-  const hubId = "connect-hub-id";
+  const hubId = uuidv4();
   const zeroHubHost = "localhost:8080";
 
   const props: ComponentProps<CreateHub> = {
     hubId: hubId,
-    zeroHubHost: zeroHubHost,
+    zeroHubHosts: [zeroHubHost],
   };
 
   const createHub = await mount(CreateHub, {

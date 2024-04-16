@@ -16,5 +16,9 @@ server-serve-2:
 client-build:
 	cd ./client && npm run build
 
+kill-server:
+	-pkill -f "APP_CLIENT_SECRET=client_secret go run ./cmd/server.go"
+	-pkill -f "APP_PORT=8081 go run ./cmd/server.go"
+
 e2e-test:
-	cd ./client/test && npm run test
+	cd ./test && npm run test

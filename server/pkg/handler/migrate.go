@@ -9,18 +9,19 @@ import (
 )
 
 // Migrate
+// Seamless migration to the new server.
 // Set the server to migrate mode. It will forward all new hub to the new server url,
 // until this server got no Hub left for graceful shutdown.
-// The DNS need to change to the new server
 //
 // Example deploy scenario,
 // 1. Current DNS sg1.zerohub.dev to old-server-url
 // 2. Deploy the new server
-// 3. Change DNS sg1.zerohub.dev to new-server-url (not affect immediatly, waiting TTL or update)
-// 4. Call `old-server-url/configs/migrate?url=new-server-url`
-// 5. All the new create Hub request will forward to `new-server-url`, and store the new hub id
-// 6. If join request have the new hub id, it will forward to the new server
-// 7. If no hub left, the old server will shutdown
+// 3. Call `old-server-url/configs/migrate?url=new-server-url`
+// 4. All the new create Hub request will forward to `new-server-url`, and store the new hub id
+// 5. If join request have the new hub id, it will forward to the new server
+// 6. Wait until no hub left
+// 7. Change DNS sg1.zerohub.dev to new-server-url (not affect immediatly)
+// 8. Graceful shutdown the old server
 func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
 	authCode, err := base64.StdEncoding.DecodeString(string(ctx.Request.Header.Peek("Authorization")))
 	if err != nil {

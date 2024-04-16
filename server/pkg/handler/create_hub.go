@@ -11,7 +11,6 @@ func (h *handler) CreateHub(ctx *fasthttp.RequestCtx) error {
 	hubId := string(ctx.QueryArgs().Peek("id"))
 
 	if h.mg.IsMigrating() {
-		h.mg.AddMigrateHubId(hubId)
 		return h.ForwardMigrate(ctx)
 	}
 

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { LogLevel, ZeroHubClient } from "../../../src/index";
+  import { LogLevel, ZeroHubClient } from "../../../client/src/index";
 
   export let hubId: string;
-  export let zeroHubHost: string;
+  export let zeroHubHosts: string[];
 
   let hubInfoID = "";
   let peerStatus = "";
@@ -11,7 +11,7 @@
     name: string;
   }
 
-  const zeroHub = new ZeroHubClient<PeerMetadata>(zeroHubHost, {
+  const zeroHub = new ZeroHubClient<PeerMetadata>(zeroHubHosts, {
     logLevel: LogLevel.Debug,
     tls: false,
   });
