@@ -116,10 +116,11 @@ func (p *peer) SendHubInfo(peersProtobuf []*pb.Peer) {
 	msg := &pb.ServerMessage{
 		Message: &pb.ServerMessage_HubInfoMessage{
 			HubInfoMessage: &pb.HubInfoMessage{
-				Id:        p.Hub.GetId(),
-				MyPeerId:  p.Id,
-				CreatedAt: uint32(p.Hub.GetCreatedAt().Unix()),
-				Peers:     peersProtobuf,
+				Id:          p.Hub.GetId(),
+				MyPeerId:    p.Id,
+				CreatedAt:   uint32(p.Hub.GetCreatedAt().Unix()),
+				Peers:       peersProtobuf,
+				HubMetadata: p.Hub.GetMetadata(),
 			},
 		},
 	}

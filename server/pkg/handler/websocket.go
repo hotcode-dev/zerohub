@@ -4,19 +4,21 @@ import (
 	"fmt"
 
 	"github.com/fasthttp/websocket"
+	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/valyala/fasthttp"
 )
 
 var upgrader = websocket.FastHTTPUpgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin:     func(ctx *fasthttp.RequestCtx) bool { return true },
+	HandshakeTimeout: config.WSHandshakeTimeout,
+	ReadBufferSize:   config.WSReadBufferSize,
+	WriteBufferSize:  config.WSWriteBufferSize,
+	CheckOrigin:      func(ctx *fasthttp.RequestCtx) bool { return true },
 }
 
 func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, hub zerohub.Hub) error {
 	err := upgrader.Upgrade(ctx, func(ws *websocket.Conn) {
-		peer := zerohub.NewPeer(ws, string(ctx.QueryArgs().Peek("metadata")))
+		peer := zerohub.NewPeer(ws, string(ctx.QueryArgs().Peek("peerMetadata")))
 		hub.AddPeer(peer)
 
 		ws.SetCloseHandler(func(code int, text string) error {

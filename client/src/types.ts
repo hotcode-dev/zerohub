@@ -24,7 +24,8 @@ export interface Config {
   autoAcceptAnswer: boolean;
 }
 
-export interface HubInfo {
+export interface HubInfo<HubMetadata = object> {
   id: string;
+  metadata: HubMetadata;
   createdAt: Date;
 }

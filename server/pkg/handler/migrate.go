@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/base64"
 	"fmt"
 
 	"github.com/rs/zerolog/log"
@@ -9,26 +8,20 @@ import (
 )
 
 // Migrate
-// Seamless migration to the new server.
-// Set the server to migrate mode. It will forward all new hub to the new server url,
-// until this server got no Hub left for graceful shutdown.
+// Seamless deployment to the new version.
+// Set the server to migrate mode. The server will not receive any create Hub request
+// until the server got no Hub left for graceful shutdown.
 //
 // Example deploy scenario,
-// 1. Current DNS sg1.zerohub.dev to old-server-url
-// 2. Deploy the new server
-// 3. Call `old-server-url/configs/migrate?url=new-server-url`
-// 4. All the new create Hub request will forward to `new-server-url`, and store the new hub id
-// 5. If join request have the new hub id, it will forward to the new server
-// 6. Wait until no hub left
-// 7. Change DNS sg1.zerohub.dev to new-server-url (not affect immediatly)
-// 8. Graceful shutdown the old server
+// 1. Call `admin/migrate?host=localhost:8080`.
+// 2. All the new create Hub request will be rejected.
+// 3. Client will need to use the forward host instead
+// 4. Wait until no hub left.
+// 5. Graceful shutdown.
+// 6. redeploy the new version of server.
 func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
-	authCode, err := base64.StdEncoding.DecodeString(string(ctx.Request.Header.Peek("Authorization")))
-	if err != nil {
-		return fmt.Errorf("error decoding authorization code: %w", err)
-	}
-	if string(authCode) != h.cfg.App.ClientSecret {
-		return fmt.Errorf("invalid authorization code")
+	if err := h.CheckAdminAuth(ctx); err != nil {
+		return err
 	}
 
 	newReleaseHost := string(ctx.QueryArgs().Peek("host"))
@@ -46,7 +39,7 @@ func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
 }
 
 func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
-	newReleaseHost := h.mg.GetNewReleaseHost()
+	backupHost := h.mg.GetBackupHost()
 
 	// The 301 status is working fine on multi library following the rfc6455
 	// https://www.rfc-editor.org/rfc/rfc6455#section-4.1
@@ -61,8 +54,8 @@ func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
 	// But the Native browser Websocket not suppot the redirection
 	// If the connection error, client need to call `/status` to get the redirectURL
 
-	ctx.Response.Header.Set("Location", newReleaseHost)
-	ctx.SetStatusCode(fasthttp.StatusMovedPermanently)
+	ctx.Response.Header.Set("Location", backupHost)
+	h.Response(ctx, fasthttp.StatusMovedPermanently, map[string]string{"backupHost": backupHost})
 
 	return nil
 }

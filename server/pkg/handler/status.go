@@ -8,13 +8,8 @@ func (h *handler) Status(ctx *fasthttp.RequestCtx) error {
 	ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", ctx.Request.Header.Peek("Origin"))
 
 	if h.mg.IsMigrating() {
-		ctx.SetStatusCode(fasthttp.StatusMovedPermanently)
-		ctx.SetBody([]byte(h.mg.GetNewReleaseHost()))
-
-		return nil
+		return h.Response(ctx, fasthttp.StatusOK, map[string]string{"status": "migrating", "backupHost": h.mg.GetBackupHost()})
 	}
 
-	ctx.SetStatusCode(fasthttp.StatusOK)
-
-	return nil
+	return h.Response(ctx, fasthttp.StatusOK, map[string]string{"status": "ok"})
 }

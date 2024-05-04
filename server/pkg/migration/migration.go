@@ -1,32 +1,32 @@
 package migration
 
 type Migration interface {
-	Migrate(newReleaseURL string)
+	Migrate(backupHost string)
 	IsMigrating() bool
-	GetNewReleaseHost() string
+	GetBackupHost() string
 }
 
 type migration struct {
-	isMigrating    bool
-	newReleaseHost string
+	isMigrating bool
+	backupHost  string
 }
 
 func NewMigration() (Migration, error) {
 	return &migration{
-		isMigrating:    false,
-		newReleaseHost: "",
+		isMigrating: false,
+		backupHost:  "",
 	}, nil
 }
 
-func (m *migration) Migrate(newReleaseHost string) {
+func (m *migration) Migrate(backupHost string) {
 	m.isMigrating = true
-	m.newReleaseHost = newReleaseHost
+	m.backupHost = backupHost
 }
 
 func (m *migration) IsMigrating() bool {
 	return m.isMigrating
 }
 
-func (m *migration) GetNewReleaseHost() string {
-	return m.newReleaseHost
+func (m *migration) GetBackupHost() string {
+	return m.backupHost
 }

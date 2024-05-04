@@ -12,6 +12,7 @@ import (
 // TODO: add Hub timeout to disconnect all the Websockets, then clear the hub memory. (12 Hours)
 type Hub interface {
 	GetId() string
+	GetMetadata() string
 	GetCreatedAt() time.Time
 	GetPeers() map[uint32]Peer
 	SetZeroHub(zeroHub ZeroHub)
@@ -24,22 +25,26 @@ type Hub interface {
 }
 
 type hub struct {
-	Id        string
-	CreatedAt time.Time
+	Id          string    `json:"id"`
+	CreatedAt   time.Time `json:"createdAt"`
+	Metadata    string    `json:"metadata"`
+	IsPermanent bool      `json:"isPermanent"`
 
-	CurrentPeerId atomic.Uint32
-	Peers         map[uint32]Peer
+	CurrentPeerId atomic.Uint32   `json:"-"`
+	Peers         map[uint32]Peer `json:"-"`
 
-	ZeroHub ZeroHub
+	ZeroHub ZeroHub `json:"-"`
 
-	mu sync.RWMutex
+	mu sync.RWMutex `json:"-"`
 }
 
-func NewHub(hubId string) (Hub, error) {
+func NewHub(hubId string, metadata string, isPermanent bool) (Hub, error) {
 	return &hub{
-		Id:        hubId,
-		CreatedAt: time.Now(),
-		Peers:     make(map[uint32]Peer),
+		Id:          hubId,
+		CreatedAt:   time.Now(),
+		Peers:       make(map[uint32]Peer),
+		Metadata:    metadata,
+		IsPermanent: isPermanent,
 	}, nil
 }
 
@@ -93,6 +98,10 @@ func (h *hub) RemovePeerById(id uint32) {
 		}
 	}
 
+	if h.IsPermanent {
+		return
+	}
+
 	// remove hub if it has no peers left
 	if len(h.Peers) == 0 {
 		h.ZeroHub.RemoveHubById(h.Id)
@@ -101,6 +110,10 @@ func (h *hub) RemovePeerById(id uint32) {
 
 func (h *hub) GetId() string {
 	return h.Id
+}
+
+func (h *hub) GetMetadata() string {
+	return h.Metadata
 }
 
 func (h *hub) GetCreatedAt() time.Time {

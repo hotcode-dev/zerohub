@@ -15,11 +15,17 @@ import (
 
 // Handler is the http and websocket handlers interface
 type Handler interface {
+	// public api
 	CreateHub(ctx *fasthttp.RequestCtx) error
 	JoinHub(ctx *fasthttp.RequestCtx) error
-	Migrate(ctx *fasthttp.RequestCtx) error
 	Status(ctx *fasthttp.RequestCtx) error
+	GetHub(ctx *fasthttp.RequestCtx) error
 
+	// admin api
+	Migrate(ctx *fasthttp.RequestCtx) error
+	CreateHubPermanent(ctx *fasthttp.RequestCtx) error
+
+	// websocket upgrade
 	Upgrade(ctx *fasthttp.RequestCtx, hub zerohub.Hub) error
 
 	Serve() error
@@ -57,10 +63,14 @@ func (h *handler) Serve() error {
 			err = h.Status(ctx)
 		case "/hubs/create":
 			err = h.CreateHub(ctx)
+		case "/hubs/get":
+			err = h.GetHub(ctx)
 		case "/hubs/join":
 			err = h.JoinHub(ctx)
 		case "/admin/migrate":
 			err = h.Migrate(ctx)
+		case "/admin/create":
+			err = h.CreateHubPermanent(ctx)
 		default:
 			ctx.Error("unsupported path", fasthttp.StatusNotFound)
 			return
@@ -72,8 +82,9 @@ func (h *handler) Serve() error {
 	}
 
 	server := &fasthttp.Server{
-		Handler: rateLimitMiddleware.Handle(requestHandler),
-		Name:    "ZeroHub",
+		Handler:            rateLimitMiddleware.Handle(requestHandler),
+		Name:               "ZeroHub",
+		MaxRequestBodySize: config.HTTPMaxRequestBodySize,
 	}
 
 	addr := fmt.Sprintf("%s:%s", h.cfg.App.Host, h.cfg.App.Port)

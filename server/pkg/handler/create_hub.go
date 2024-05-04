@@ -3,29 +3,30 @@ package handler
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
+	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
 )
 
 func (h *handler) CreateHub(ctx *fasthttp.RequestCtx) error {
-	hubId := string(ctx.QueryArgs().Peek("id"))
-
 	if h.mg.IsMigrating() {
 		return h.ForwardMigrate(ctx)
 	}
 
-	if h := h.zh.GetHubById(hubId); h != nil {
-		ctx.Error("hub already exists", fasthttp.StatusConflict)
-		return fmt.Errorf("hub with id %s already exists", hubId)
-	}
-
-	hub, err := zerohub.NewHub(hubId)
+	hub, err := zerohub.NewHub(uuid.NewString(), string(ctx.QueryArgs().Peek("hubMetadata")), false)
 	if err != nil {
-		ctx.Error("hub error", fasthttp.StatusServiceUnavailable)
-		return fmt.Errorf("new hub error: %w", err)
+		log.Error().Err(fmt.Errorf("new hub error: %w", err)).Send()
+		return h.Response(ctx, fasthttp.StatusInternalServerError, map[string]string{"error": "create hub error"})
 	}
-
 	h.zh.AddHub(hub)
 
-	return h.Upgrade(ctx, hub)
+	if err := h.Upgrade(ctx, hub); err != nil {
+		// remove the hub if if the upgrad failed
+		h.zh.RemoveHubById(hub.GetId())
+		log.Error().Err(fmt.Errorf("websocket upgrade error: %w", err)).Send()
+		return err
+	}
+
+	return nil
 }

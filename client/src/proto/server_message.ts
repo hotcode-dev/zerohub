@@ -15,6 +15,7 @@ export interface HubInfoMessage {
   id: string;
   createdAt: number;
   myPeerId: number;
+  hubMetadata: string;
   peers: Peer[];
 }
 
@@ -146,7 +147,7 @@ export const Peer = {
 };
 
 function createBaseHubInfoMessage(): HubInfoMessage {
-  return { id: "", createdAt: 0, myPeerId: 0, peers: [] };
+  return { id: "", createdAt: 0, myPeerId: 0, hubMetadata: "", peers: [] };
 }
 
 export const HubInfoMessage = {
@@ -160,8 +161,11 @@ export const HubInfoMessage = {
     if (message.myPeerId !== 0) {
       writer.uint32(24).uint32(message.myPeerId);
     }
+    if (message.hubMetadata !== "") {
+      writer.uint32(34).string(message.hubMetadata);
+    }
     for (const v of message.peers) {
-      Peer.encode(v!, writer.uint32(34).fork()).ldelim();
+      Peer.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -199,6 +203,13 @@ export const HubInfoMessage = {
             break;
           }
 
+          message.hubMetadata = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.peers.push(Peer.decode(reader, reader.uint32()));
           continue;
       }
@@ -215,6 +226,7 @@ export const HubInfoMessage = {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
       myPeerId: isSet(object.myPeerId) ? globalThis.Number(object.myPeerId) : 0,
+      hubMetadata: isSet(object.hubMetadata) ? globalThis.String(object.hubMetadata) : "",
       peers: globalThis.Array.isArray(object?.peers) ? object.peers.map((e: any) => Peer.fromJSON(e)) : [],
     };
   },
@@ -230,6 +242,9 @@ export const HubInfoMessage = {
     if (message.myPeerId !== 0) {
       obj.myPeerId = Math.round(message.myPeerId);
     }
+    if (message.hubMetadata !== "") {
+      obj.hubMetadata = message.hubMetadata;
+    }
     if (message.peers?.length) {
       obj.peers = message.peers.map((e) => Peer.toJSON(e));
     }
@@ -244,6 +259,7 @@ export const HubInfoMessage = {
     message.id = object.id ?? "";
     message.createdAt = object.createdAt ?? 0;
     message.myPeerId = object.myPeerId ?? 0;
+    message.hubMetadata = object.hubMetadata ?? "";
     message.peers = object.peers?.map((e) => Peer.fromPartial(e)) || [];
     return message;
   },

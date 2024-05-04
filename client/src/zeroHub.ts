@@ -9,17 +9,19 @@ import { ServerMessage } from "./proto/server_message";
 import { LogLevel, PeerStatus, type Config, type HubInfo } from "./types";
 import { fetchWithTimeout, getHTTP, getWS } from "./utils";
 
-export class ZeroHubClient<PeerMetadata = object> {
+export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   // config ZeroHub client configuration
   public config: Config;
   // rtcConfig WebRTC configuration
   public rtcConfig: RTCConfiguration;
-  // metadata my peer metadata will send to ZeroHub and another peer
-  public metadata: PeerMetadata | undefined;
+  // hubMetadata my hub metadata will send to ZeroHub
+  public hubMetadata: HubMetadata | undefined;
+  // peerMetadata my peer metadata will send to ZeroHub and another peer
+  public peerMetadata: PeerMetadata | undefined;
   // myPeerId my peer id
   public myPeerId?: number;
   // hubInfo hub info of ZeroHub
-  public hubInfo?: HubInfo;
+  public hubInfo?: HubInfo<HubMetadata>;
   // peers a map of peer
   public peers: { [id: number]: Peer<PeerMetadata> };
 
@@ -35,7 +37,7 @@ export class ZeroHubClient<PeerMetadata = object> {
   // onZeroHubError will be called when ZeroHub error
   public onZeroHubError?: (error: Error) => void;
   // onHubInfo will be called when hub info changes
-  public onHubInfo?: (hubInfo: HubInfo) => void;
+  public onHubInfo?: (hubInfo: HubInfo<HubMetadata>) => void;
   // onPeerStatusChange will be called when a peer status changes
   public onPeerStatusChange?: (peer: Peer<PeerMetadata>) => void;
   // onPeerError will be called when a peer error
@@ -91,14 +93,14 @@ export class ZeroHubClient<PeerMetadata = object> {
   }
 
   /**
-   * Check the status of ZeroHub.
-   * If the status is 301, it will return the new host.
+   * Check the status of ZeroHub and return the backup host if exist.
+   * If the ZeroHub status is 301, it will return the backup host.
    *
-   * @returns A Promise that resolves to the new host if status is 301,
+   * @returns A Promise that resolves to the backup host if exist,
    *          or resolves to undefined if status is 200.
    * @throws Error if the status is not 200 or 301.
    */
-  checkZeroHubStatus(): Promise<string | void> {
+  getZeroHubBackupHost(): Promise<string | void> {
     return new Promise((resolve, reject) => {
       const resolveNextHost = () => {
         if (this.hostIndex >= this.hosts.length - 1) {
@@ -122,8 +124,9 @@ export class ZeroHubClient<PeerMetadata = object> {
           } else if (res.status === 301) {
             // If status is 301, get the new host and resolve with it
             res
-              .text()
-              .then((newHost) => {
+              .json()
+              .then((data) => {
+                const newHost = data.backupHost;
                 if (newHost) {
                   resolve(newHost);
                 } else {
@@ -174,19 +177,27 @@ export class ZeroHubClient<PeerMetadata = object> {
 
   // reconnect check the current host status then reconnect to the new host
   public reconnect(currentURL: URL) {
-    this.checkZeroHubStatus().then((newHost) => {
-      if (newHost) {
-        if (this.host === newHost) {
-          return;
+    this.getZeroHubBackupHost()
+      .then((newHost) => {
+        if (newHost) {
+          if (this.host === newHost) {
+            this.error(`zero hub reconnecting failed: not retying`);
+            return;
+          }
+
+          // reconnect to the new host
+          this.warn(
+            `ZeroHub \`${this.host}\` is reconnecting the new host: \`${newHost}\``
+          );
+
+          this.host = newHost;
+          currentURL.host = newHost;
+          this.connectToZeroHub(currentURL);
         }
-        this.warn(
-          `ZeroHub \`${this.host}\` is migrating, the new host will set to: \`${newHost}\``
-        );
-        this.host = newHost;
-        currentURL.host = newHost;
-        this.connectToZeroHub(currentURL); // reconnect to the new host
-      }
-    });
+      })
+      .catch((err) => {
+        this.error(`zero hub reconnecting failed: ${err}`);
+      });
   }
 
   /**
@@ -208,6 +219,7 @@ export class ZeroHubClient<PeerMetadata = object> {
         this.myPeerId = hubInfoMsg.myPeerId;
         this.hubInfo = {
           id: hubInfoMsg.id,
+          metadata: JSON.parse(hubInfoMsg.hubMetadata),
           createdAt: new Date(hubInfoMsg.createdAt),
         };
         if (this.onHubInfo) this.onHubInfo(this.hubInfo);
@@ -509,14 +521,20 @@ export class ZeroHubClient<PeerMetadata = object> {
   /**
    *  Creates a new hub on ZeroHub
    *
-   * @param metadata Peer metadata will share to each peer in the Hub
+   *
+   * @param hubMetaData Hub metadata will share to each peer in the Hub
+   * @param peerMetadata Peer metadata will share to each peer in the Hub
    */
-  public createHub(hubId: string, metadata?: PeerMetadata) {
-    this.metadata = metadata;
-
+  public createHub(hubMetadata?: HubMetadata, peerMetadata?: PeerMetadata) {
     const url = new URL("/hubs/create", getWS(this.host, this.config.tls));
-    url.searchParams.set("id", hubId);
-    if (metadata) url.searchParams.set("metadata", JSON.stringify(metadata));
+    if (hubMetadata) {
+      this.hubMetadata = hubMetadata;
+      url.searchParams.set("hubMetadata", JSON.stringify(hubMetadata));
+    }
+    if (peerMetadata) {
+      this.peerMetadata = peerMetadata;
+      url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
+    }
 
     this.connectToZeroHub(url);
   }
@@ -525,15 +543,16 @@ export class ZeroHubClient<PeerMetadata = object> {
    * Joins an existing hub on ZeroHub
    *
    * @param hubId The id of the hub to join
-   * @param metadata Peer metadata will share to each peer in the Hub
+   * @param peerMetadata Peer metadata will share to each peer in the Hub
    *
    */
-  public joinHub(hubId: string, metadata?: PeerMetadata) {
-    this.metadata = metadata;
+  public joinHub(hubId: string, peerMetadata?: PeerMetadata) {
+    this.peerMetadata = peerMetadata;
 
     const url = new URL("/hubs/join", getWS(this.host, this.config.tls));
     url.searchParams.set("id", hubId);
-    if (metadata) url.searchParams.set("metadata", JSON.stringify(metadata));
+    if (peerMetadata)
+      url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
 
     this.connectToZeroHub(url);
   }

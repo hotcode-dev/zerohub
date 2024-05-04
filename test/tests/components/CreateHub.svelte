@@ -5,10 +5,11 @@
     ZeroHubClient,
   } from "../../../client/src/index";
 
-  export let hubId: string;
+  export let componentId: string;
   export let zeroHubHosts: string[];
 
-  let hubInfoId = "";
+  let hubInfoID = "";
+  let hubMetadata = {};
   let peerStatus = "";
 
   interface PeerMetadata {
@@ -21,13 +22,14 @@
   });
 
   zeroHub.onHubInfo = (hubInfo) => {
-    hubInfoId = hubInfo.id;
+    hubInfoID = hubInfo.id;
+    hubMetadata = hubInfo.metadata;
   };
 
   zeroHub.onPeerStatusChange = (peer) => {
-    peerStatus = peer.status;
     switch (peer.status) {
       case PeerStatus.Connected:
+        peerStatus = peer.status;
         break;
       case PeerStatus.Pending:
         if (zeroHub.myPeerId && peer.id > zeroHub.myPeerId) {
@@ -38,8 +40,8 @@
     }
   };
 
-  zeroHub.createHub(hubId, { name: "test" });
+  zeroHub.createHub({ foo: "bar" }, { name: "test" });
 </script>
 
-HubId:{hubInfoId}
-PeerStatus:{peerStatus}
+<div data-testid={`create-hub-id-${componentId}`}>{hubInfoID}</div>
+<div data-testid={`create-peer-status-${componentId}`}>{peerStatus}</div>

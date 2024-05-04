@@ -1,10 +1,16 @@
 <script lang="ts">
-  import { LogLevel, ZeroHubClient } from "../../../client/src/index";
+  import {
+    LogLevel,
+    PeerStatus,
+    ZeroHubClient,
+  } from "../../../client/src/index";
 
+  export let componentId: string;
   export let hubId: string;
   export let zeroHubHosts: string[];
 
   let hubInfoID = "";
+  let hubMetadata = {};
   let peerStatus = "";
 
   interface PeerMetadata {
@@ -18,14 +24,21 @@
 
   zeroHub.onHubInfo = (hubInfo) => {
     hubInfoID = hubInfo.id;
+    hubMetadata = hubInfo.metadata;
   };
 
   zeroHub.onPeerStatusChange = (peer) => {
-    peerStatus = peer.status;
+    switch (peer.status) {
+      case PeerStatus.Connected:
+        peerStatus = peer.status;
+        break;
+      case PeerStatus.Pending:
+      case PeerStatus.ZeroHubDisconnected:
+    }
   };
 
   zeroHub.joinHub(hubId, { name: "test" });
 </script>
 
-HubId:{hubInfoID}
-PeerStatus:{peerStatus}
+<div data-testid={`join-hub-id-${componentId}`}>{hubInfoID}</div>
+<div data-testid={`join-peer-status-${componentId}`}>{peerStatus}</div>
