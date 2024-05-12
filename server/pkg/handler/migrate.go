@@ -24,14 +24,15 @@ func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
 		return err
 	}
 
-	newReleaseHost := string(ctx.QueryArgs().Peek("host"))
-	if newReleaseHost == "" {
+	backupHost := string(ctx.QueryArgs().Peek("host"))
+	if backupHost == "" {
 		return fmt.Errorf("new release host not found")
 	}
 
-	h.mg.Migrate(newReleaseHost)
+	h.isMigrating = true
+	h.backupHost = backupHost
 
-	log.Debug().Msg("migrate mode enabled: " + newReleaseHost)
+	log.Debug().Msg("migrate mode enabled backup host: " + backupHost)
 
 	ctx.SetStatusCode(fasthttp.StatusOK)
 
@@ -39,7 +40,7 @@ func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
 }
 
 func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
-	backupHost := h.mg.GetBackupHost()
+	backupHost := h.backupHost
 
 	// The 301 status is working fine on multi library following the rfc6455
 	// https://www.rfc-editor.org/rfc/rfc6455#section-4.1

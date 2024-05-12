@@ -28,12 +28,12 @@ type Peer interface {
 
 // peer represents a node in the mesh network with connections to other peers.
 type peer struct {
-	Id       uint32
-	JoinedAt time.Time
-	Metadata string
+	Id       uint32    `json:"id"`
+	JoinedAt time.Time `json:"joinedAt"`
+	Metadata string    `json:"metadata"`
 
-	Hub    Hub
-	WSConn *websocket.Conn
+	Hub    Hub             `json:"-"`
+	WSConn *websocket.Conn `json:"-"`
 }
 
 // NewPeer creates a new empty Peer with no connections. Peer without adding to hub will not have an Id.

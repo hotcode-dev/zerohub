@@ -31,7 +31,7 @@ type hub struct {
 	IsPermanent bool      `json:"isPermanent"`
 
 	CurrentPeerId atomic.Uint32   `json:"-"`
-	Peers         map[uint32]Peer `json:"-"`
+	Peers         map[uint32]Peer `json:"peers"`
 
 	ZeroHub ZeroHub `json:"-"`
 

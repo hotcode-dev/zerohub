@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hotcode-dev/zerohub/pkg/config"
-	"github.com/hotcode-dev/zerohub/pkg/migration"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	limiter "github.com/ulule/limiter/v3"
@@ -32,17 +31,23 @@ type Handler interface {
 }
 
 type handler struct {
-	cfg *config.Config
-	mg  migration.Migration
-	zh  zerohub.ZeroHub
+	address      string
+	clientSecret string
+
+	isMigrating bool
+	backupHost  string
+
+	zh zerohub.ZeroHub
 }
 
 // NewHandler create a new handler
-func NewHandler(cfg *config.Config, zh zerohub.ZeroHub, mg migration.Migration) (Handler, error) {
+func NewHandler(cfg *config.Config, zh zerohub.ZeroHub) (Handler, error) {
 	return &handler{
-		cfg: cfg,
-		mg:  mg,
-		zh:  zh,
+		address:      fmt.Sprintf("%s:%s", cfg.App.Host, cfg.App.Port),
+		clientSecret: cfg.App.ClientSecret,
+		isMigrating:  false,
+		backupHost:   "",
+		zh:           zh,
 	}, nil
 }
 
@@ -87,9 +92,8 @@ func (h *handler) Serve() error {
 		MaxRequestBodySize: config.HTTPMaxRequestBodySize,
 	}
 
-	addr := fmt.Sprintf("%s:%s", h.cfg.App.Host, h.cfg.App.Port)
-	log.Info().Msgf("listening to %s", addr)
-	if err := server.ListenAndServe(addr); err != nil {
+	log.Info().Msgf("listening to %s", h.address)
+	if err := server.ListenAndServe(h.address); err != nil {
 		return fmt.Errorf("error to ListenAndServe: %w", err)
 	}
 

@@ -21,6 +21,11 @@
       "import": "./dist/esm/*.js",
       "default": "./dist/esm/*.js"
     },
+    "./src/*": {
+      "types": "./src/*.ts",
+      "import": "./src/*.ts",
+      "default": "./src/*.ts"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {

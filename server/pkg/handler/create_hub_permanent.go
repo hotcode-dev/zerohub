@@ -9,7 +9,7 @@ import (
 )
 
 func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
-	if h.mg.IsMigrating() {
+	if h.isMigrating {
 		return h.ForwardMigrate(ctx)
 	}
 

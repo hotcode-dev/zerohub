@@ -14,7 +14,7 @@ func (h *handler) CheckAdminAuth(ctx *fasthttp.RequestCtx) error {
 		log.Error().Err(fmt.Errorf("error decoding authorization code: %w", err)).Send()
 		return h.Response(ctx, fasthttp.StatusUnauthorized, map[string]string{"error": "invalid authorization code"})
 	}
-	if string(authCode) != h.cfg.App.ClientSecret {
+	if string(authCode) != h.clientSecret {
 		log.Error().Err(fmt.Errorf("invalid authorization code")).Send()
 		return h.Response(ctx, fasthttp.StatusUnauthorized, map[string]string{"error": "invalid authorization code"})
 	}
