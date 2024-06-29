@@ -1,6 +1,6 @@
 {
   "name": "@zero-hub/client",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "ZeroHub Client SDK",
   "author": "Jirawat Boonkumnerd <contact@ntsd.dev> (https://ntsd.dev)",
   "type": "module",
@@ -8,6 +8,8 @@
     "./dist/**/*",
     "./src/**/*"
   ],
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",

@@ -201,6 +201,102 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
+   * Handles a message received from the ZeroHub server.
+   *
+   * @param {ServerMessage} serverMessage - The message received from the server.
+   */
+  handleZeroHubMessage(serverMessage: ServerMessage) {
+    if (serverMessage.hubInfoMessage) {
+      const hubInfoMsg = serverMessage.hubInfoMessage;
+
+      this.myPeerId = hubInfoMsg.myPeerId;
+      this.hubInfo = {
+        id: hubInfoMsg.id,
+        metadata: JSON.parse(hubInfoMsg.hubMetadata),
+        createdAt: new Date(hubInfoMsg.createdAt),
+      };
+      if (this.onHubInfo) this.onHubInfo(this.hubInfo);
+
+      // new peer if not exists
+      for (const peer of hubInfoMsg.peers) {
+        if (peer.id !== this.myPeerId && !(peer.id in this.peers)) {
+          const newPeer = new Peer<PeerMetadata>(
+            peer.id,
+            PeerStatus.Pending,
+            peer.metadata ? JSON.parse(peer.metadata) : {},
+            new Date(peer.joinedAt),
+            new RTCPeerConnection(this.rtcConfig)
+          );
+          newPeer.rtcConn.onconnectionstatechange = (ev) => {
+            this.log("onconnectionstatechange", ev);
+            if (newPeer.rtcConn.connectionState === "connected") {
+              this.updatePeerStatus(peer.id, PeerStatus.Connected);
+            } else if (newPeer.rtcConn.connectionState === "disconnected") {
+              this.updatePeerStatus(peer.id, PeerStatus.WebRTCDisconnected);
+            }
+          };
+          newPeer.rtcConn.oniceconnectionstatechange = (ev) => {
+            // https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation#explicit_restartice_method_added
+            this.log("onconnectionstatechange", ev);
+            if (newPeer.rtcConn.iceConnectionState === "failed") {
+              newPeer.rtcConn.restartIce();
+            }
+          };
+
+          this.peers[peer.id] = newPeer;
+
+          this.updatePeerStatus(peer.id, PeerStatus.Pending);
+        }
+      }
+    } else if (serverMessage.offerMessage) {
+      const offerPeerId = serverMessage.offerMessage.offerPeerId;
+      const offerSdp = serverMessage.offerMessage.offerSdp;
+
+      this.updatePeerStatus(offerPeerId, PeerStatus.AnswerPending);
+
+      if (this.config.autoAnswer) {
+        this.sendAnswer(offerPeerId, offerSdp);
+      }
+    } else if (serverMessage.answerMessage) {
+      const answerPeerId = serverMessage.answerMessage.answerPeerId;
+      const answerSdp = serverMessage.answerMessage.answerSdp;
+
+      this.updatePeerStatus(answerPeerId, PeerStatus.AcceptPending);
+
+      if (this.config.autoAcceptAnswer) {
+        this.acceptAnswer(answerPeerId, answerSdp);
+      }
+    } else if (serverMessage.peerJoinedMessage) {
+      const peer = serverMessage.peerJoinedMessage.peer;
+      if (!peer || !this.hubInfo) return;
+
+      const newPeer = new Peer<PeerMetadata>(
+        peer.id,
+        PeerStatus.Pending,
+        peer.metadata ? JSON.parse(peer.metadata) : {},
+        new Date(peer.joinedAt),
+        new RTCPeerConnection(this.rtcConfig)
+      );
+      newPeer.rtcConn.onconnectionstatechange = (ev) => {
+        this.log("onconnectionstatechange", ev);
+        if (newPeer.rtcConn.connectionState === "connected") {
+          this.updatePeerStatus(peer.id, PeerStatus.Connected);
+        } else if (newPeer.rtcConn.connectionState === "disconnected") {
+          this.updatePeerStatus(peer.id, PeerStatus.WebRTCDisconnected);
+        }
+      };
+
+      this.peers[peer.id] = newPeer;
+
+      this.updatePeerStatus(peer.id, PeerStatus.Pending);
+    } else if (serverMessage.peerDisconnectedMessage) {
+      const peerId = serverMessage.peerDisconnectedMessage.peerId;
+
+      this.updatePeerStatus(peerId, PeerStatus.ZeroHubDisconnected);
+    }
+  }
+
+  /**
    * Connects to the ZeroHub using the provided URL and sets up WebSocket event handlers for receiving messages, errors, and close events.
    *
    * @param {URL} url - The URL of the ZeroHub to connect to
@@ -212,96 +308,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     this.ws.binaryType = "arraybuffer";
     this.ws.onmessage = (event: MessageEvent<Iterable<number>>) => {
       const serverMessage = ServerMessage.decode(new Uint8Array(event.data));
-      this.log("received server message", serverMessage);
-      if (serverMessage.hubInfoMessage) {
-        const hubInfoMsg = serverMessage.hubInfoMessage;
-
-        this.myPeerId = hubInfoMsg.myPeerId;
-        this.hubInfo = {
-          id: hubInfoMsg.id,
-          metadata: JSON.parse(hubInfoMsg.hubMetadata),
-          createdAt: new Date(hubInfoMsg.createdAt),
-        };
-        if (this.onHubInfo) this.onHubInfo(this.hubInfo);
-
-        // new peer if not exists
-        for (const peer of hubInfoMsg.peers) {
-          if (peer.id !== this.myPeerId && !(peer.id in this.peers)) {
-            const newPeer = new Peer<PeerMetadata>(
-              peer.id,
-              PeerStatus.Pending,
-              peer.metadata ? JSON.parse(peer.metadata) : {},
-              new Date(peer.joinedAt),
-              new RTCPeerConnection(this.rtcConfig)
-            );
-            newPeer.rtcConn.onconnectionstatechange = (ev) => {
-              this.log("onconnectionstatechange", ev);
-              if (newPeer.rtcConn.connectionState === "connected") {
-                this.updatePeerStatus(peer.id, PeerStatus.Connected);
-              } else if (newPeer.rtcConn.connectionState === "disconnected") {
-                this.updatePeerStatus(peer.id, PeerStatus.WebRTCDisconnected);
-              }
-            };
-            newPeer.rtcConn.oniceconnectionstatechange = (ev) => {
-              // https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation#explicit_restartice_method_added
-              this.log("onconnectionstatechange", ev);
-              if (newPeer.rtcConn.iceConnectionState === "failed") {
-                newPeer.rtcConn.restartIce();
-              }
-            };
-
-            this.peers[peer.id] = newPeer;
-
-            this.updatePeerStatus(peer.id, PeerStatus.Pending);
-          }
-        }
-      } else if (serverMessage.offerMessage) {
-        const offerPeerId = serverMessage.offerMessage.offerPeerId;
-        const offerSdp = serverMessage.offerMessage.offerSdp;
-
-        this.updatePeerStatus(offerPeerId, PeerStatus.AnswerPending);
-
-        if (this.config.autoAnswer) {
-          this.sendAnswer(offerPeerId, offerSdp);
-        }
-      } else if (serverMessage.answerMessage) {
-        const answerPeerId = serverMessage.answerMessage.answerPeerId;
-        const answerSdp = serverMessage.answerMessage.answerSdp;
-
-        this.updatePeerStatus(answerPeerId, PeerStatus.AcceptPending);
-
-        if (this.config.autoAcceptAnswer) {
-          this.acceptAnswer(answerPeerId, answerSdp);
-        }
-      } else if (serverMessage.peerJoinedMessage) {
-        const peer = serverMessage.peerJoinedMessage.peer;
-        if (!peer || !this.hubInfo) return;
-
-        const newPeer = new Peer<PeerMetadata>(
-          peer.id,
-          PeerStatus.Pending,
-          peer.metadata ? JSON.parse(peer.metadata) : {},
-          new Date(peer.joinedAt),
-          new RTCPeerConnection(this.rtcConfig)
-        );
-        newPeer.rtcConn.onconnectionstatechange = (ev) => {
-          this.log("onconnectionstatechange", ev);
-          if (newPeer.rtcConn.connectionState === "connected") {
-            this.updatePeerStatus(peer.id, PeerStatus.Connected);
-          } else if (newPeer.rtcConn.connectionState === "disconnected") {
-            this.updatePeerStatus(peer.id, PeerStatus.WebRTCDisconnected);
-          }
-        };
-
-        this.peers[peer.id] = newPeer;
-
-        this.updatePeerStatus(peer.id, PeerStatus.Pending);
-      } else if (serverMessage.peerDisconnectedMessage) {
-        const peerId = serverMessage.peerDisconnectedMessage.peerId;
-
-        this.updatePeerStatus(peerId, PeerStatus.ZeroHubDisconnected);
-      }
+      this.log("received zerohub message", serverMessage);
+      this.handleZeroHubMessage(serverMessage);
     };
+    // TODO: wait for error, close, or open to response promise result
     this.ws.onerror = (event) => {
       if (this.onZeroHubError) {
         this.onZeroHubError(Error(`ZeroHub error: ${JSON.stringify(event)}`));
