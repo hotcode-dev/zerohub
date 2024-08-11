@@ -212,7 +212,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       this.myPeerId = hubInfoMsg.myPeerId;
       this.hubInfo = {
         id: hubInfoMsg.id,
-        metadata: JSON.parse(hubInfoMsg.hubMetadata),
+        metadata: hubInfoMsg.hubMetadata
+          ? JSON.parse(hubInfoMsg.hubMetadata)
+          : {},
         createdAt: new Date(hubInfoMsg.createdAt),
       };
       if (this.onHubInfo) this.onHubInfo(this.hubInfo);
@@ -532,11 +534,18 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    *  Creates a new hub on ZeroHub
    *
    *
-   * @param hubMetaData Hub metadata will share to each peer in the Hub
+   * @param hubId The id of the hub to create
    * @param peerMetadata Peer metadata will share to each peer in the Hub
+   * @param hubMetaData Hub metadata will share to each peer in the Hub
    */
-  public createHub(hubMetadata?: HubMetadata, peerMetadata?: PeerMetadata) {
+  public createHub(
+    hubId: string,
+    peerMetadata?: PeerMetadata,
+    hubMetadata?: HubMetadata
+  ) {
     const url = new URL("/hubs/create", getWS(this.host, this.config.tls));
+    url.searchParams.set("id", hubId);
+
     if (hubMetadata) {
       this.hubMetadata = hubMetadata;
       url.searchParams.set("hubMetadata", JSON.stringify(hubMetadata));
@@ -550,19 +559,31 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
-   * Joins an existing hub on ZeroHub
+   * Joins an existing hub or create if not on ZeroHub
    *
-   * @param hubId The id of the hub to join
+   * @param hubId The id of the hub to join or create
    * @param peerMetadata Peer metadata will share to each peer in the Hub
+   * @param hubMetaData (will only use if no hub exist) Hub metadata will share to each peer in the Hub
    *
    */
-  public joinHub(hubId: string, peerMetadata?: PeerMetadata) {
+  public joinHub(
+    hubId: string,
+    peerMetadata?: PeerMetadata,
+    hubMetadata?: HubMetadata
+  ) {
     this.peerMetadata = peerMetadata;
 
     const url = new URL("/hubs/join", getWS(this.host, this.config.tls));
     url.searchParams.set("id", hubId);
-    if (peerMetadata)
+
+    if (hubMetadata) {
+      this.hubMetadata = hubMetadata;
+      url.searchParams.set("hubMetadata", JSON.stringify(hubMetadata));
+    }
+    if (peerMetadata) {
+      this.peerMetadata = peerMetadata;
       url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
+    }
 
     this.connectToZeroHub(url);
   }

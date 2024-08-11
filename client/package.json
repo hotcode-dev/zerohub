@@ -8,7 +8,7 @@
     "./dist/**/*",
     "./src/**/*"
   ],
-  "module": "./dist/esm/index.js",
+  "main": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {

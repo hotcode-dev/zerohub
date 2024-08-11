@@ -1,6 +1,9 @@
 # spawn 3 processes
 MAKEFLAGS += -j3
 
+.PHONY: default
+default: server-serve
+
 test-all: server-serve server-serve-2 e2e-test
 
 proto-gen:

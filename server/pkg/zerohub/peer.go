@@ -3,6 +3,7 @@ package zerohub
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/fasthttp/websocket"
@@ -34,6 +35,8 @@ type peer struct {
 
 	Hub    Hub             `json:"-"`
 	WSConn *websocket.Conn `json:"-"`
+
+	mu sync.RWMutex `json:"-"`
 }
 
 // NewPeer creates a new empty Peer with no connections. Peer without adding to hub will not have an Id.
@@ -68,9 +71,36 @@ func (p *peer) SendBinaryMessage(data []byte) {
 		return
 	}
 
+	// 	panic: concurrent write to websocket connection
+
+	// goroutine 107 [running]:
+	// github.com/fasthttp/websocket.(*messageWriter).flushFrame(0x140000c6c18, 0x1, {0x140002eae00?, 0x0?, 0x211e?})
+	//         /Users/ntsd/.asdf/installs/golang/1.22.5/packages/pkg/mod/github.com/fasthttp/websocket@v1.5.7/conn.go:672 +0x480
+	// github.com/fasthttp/websocket.(*Conn).WriteMessage(0x140001d8160, 0x140002eaa00?, {0x140002eaa00, 0x211e, 0x211e})
+	//         /Users/ntsd/.asdf/installs/golang/1.22.5/packages/pkg/mod/github.com/fasthttp/websocket@v1.5.7/conn.go:830 +0xfc
+	// github.com/hotcode-dev/zerohub/pkg/zerohub.(*peer).SendBinaryMessage(0x100e7f3f8?, {0x140002eaa00?, 0x140002e6000?, 0x211e?})
+	//         /Users/ntsd/git/hotcode/zerohub/server/pkg/zerohub/peer.go:71 +0x38
+	// github.com/hotcode-dev/zerohub/pkg/zerohub.(*peer).SendOffer(0x14000288050, 0x3, {0x140002e8500, 0x2116})
+	//         /Users/ntsd/git/hotcode/zerohub/server/pkg/zerohub/peer.go:151 +0x174
+	// github.com/hotcode-dev/zerohub/pkg/zerohub.(*hub).SendOfferToPeer(0x140001503f0, 0x7, 0x3, {0x140002e8500, 0x2116})
+	//         /Users/ntsd/git/hotcode/zerohub/server/pkg/zerohub/hub.go:144 +0x1a0
+	// github.com/hotcode-dev/zerohub/pkg/zerohub.(*peer).HandleMessage(0x140000b40f0)
+	//         /Users/ntsd/git/hotcode/zerohub/server/pkg/zerohub/peer.go:98 +0x134
+	// github.com/hotcode-dev/zerohub/pkg/handler.(*handler).Upgrade.func1(0x1400015c2c0)
+	//         /Users/ntsd/git/hotcode/zerohub/server/pkg/handler/websocket.go:31 +0x254
+	// github.com/fasthttp/websocket.(*FastHTTPUpgrader).Upgrade.func1({0x100e85fd8, 0x140000be090})
+	//         /Users/ntsd/.asdf/installs/golang/1.22.5/packages/pkg/mod/github.com/fasthttp/websocket@v1.5.7/server_fasthttp.go:200 +0x154
+	// github.com/valyala/fasthttp.hijackConnHandler(0x1400027a008, {0x100e803c0, 0x140000b0300}, {0x100e86088, 0x14000116058}, 0x140001e2000, 0x140000ae100)
+	//         /Users/ntsd/.asdf/installs/golang/1.22.5/packages/pkg/mod/github.com/valyala/fasthttp@v1.51.0/server.go:2499 +0x58
+	// created by github.com/valyala/fasthttp.(*Server).serveConn in goroutine 106
+	//         /Users/ntsd/.asdf/installs/golang/1.22.5/packages/pkg/mod/github.com/valyala/fasthttp@v1.51.0/server.go:2454 +0x13d8
+	// exit status 2
+	// make: *** [server-serve] Error 1
+	p.mu.Lock()
 	if err := p.WSConn.WriteMessage(websocket.BinaryMessage, data); err != nil {
 		log.Error().Err(fmt.Errorf("error to send binary message: %v", err))
 	}
+	p.mu.Unlock()
 }
 
 func (p *peer) HandleMessage() {
@@ -105,10 +135,6 @@ func (p *peer) HandleMessage() {
 
 	if exitErr != nil {
 		log.Error().Err(exitErr)
-		if err := p.WSConn.WriteMessage(websocket.CloseMessage, []byte(exitErr.Error())); err != nil {
-			log.Error().Err(fmt.Errorf("error write close message: %v", err))
-			return
-		}
 	}
 }
 

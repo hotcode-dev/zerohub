@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
@@ -14,7 +13,13 @@ func (h *handler) CreateHub(ctx *fasthttp.RequestCtx) error {
 		return h.ForwardMigrate(ctx)
 	}
 
-	hub, err := zerohub.NewHub(uuid.NewString(), string(ctx.QueryArgs().Peek("hubMetadata")), false)
+	hubId := string(ctx.QueryArgs().Peek("id"))
+	if h.zh.GetHubById(hubId) != nil {
+		log.Error().Err(fmt.Errorf("hub with id %s already exists", hubId)).Send()
+		return h.Response(ctx, fasthttp.StatusConflict, map[string]string{"error": "hub id already exists"})
+	}
+
+	hub, err := zerohub.NewHub(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), false)
 	if err != nil {
 		log.Error().Err(fmt.Errorf("new hub error: %w", err)).Send()
 		return h.Response(ctx, fasthttp.StatusInternalServerError, map[string]string{"error": "create hub error"})
