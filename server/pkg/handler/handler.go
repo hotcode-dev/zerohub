@@ -72,6 +72,8 @@ func (h *handler) Serve() error {
 			err = h.GetHub(ctx)
 		case "/hubs/join":
 			err = h.JoinHub(ctx)
+		case "/hubs/join-or-create":
+			err = h.JoinOrCreateHub(ctx)
 		case "/admin/migrate":
 			err = h.Migrate(ctx)
 		case "/admin/create":

@@ -27,10 +27,10 @@ func (h *handler) CreateHub(ctx *fasthttp.RequestCtx) error {
 	h.zh.AddHub(hub)
 
 	if err := h.Upgrade(ctx, hub); err != nil {
-		// remove the hub if if the upgrad failed
+		// remove the hub if the upgrade failed
 		h.zh.RemoveHubById(hub.GetId())
 		log.Error().Err(fmt.Errorf("websocket upgrade error: %w", err)).Send()
-		return err
+		return h.Response(ctx, fasthttp.StatusInternalServerError, map[string]string{"error": "websocket upgrade error"})
 	}
 
 	return nil

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	goEnv "github.com/Netflix/go-env"
@@ -33,7 +34,7 @@ type AppConfig struct {
 func LoadConfig() (*Config, error) {
 	configLogger, err := zap.NewProduction()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error to new zap: %w", err)
 	}
 
 	envFile := os.Getenv("ENV_FILE")
@@ -48,7 +49,7 @@ func LoadConfig() (*Config, error) {
 	var cfg Config
 	_, err = goEnv.UnmarshalFromEnviron(&cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error to unmarshall environments: %w", err)
 	}
 
 	return &cfg, nil
