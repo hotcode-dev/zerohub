@@ -610,4 +610,55 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
 
     this.connectToZeroHub(url);
   }
+
+  /**
+   * Join an existing hub or create if the IP hub on ZeroHub
+   * The IP Hub is a hub that will use the IP address as the hub id
+   *
+   * @param peerMetadata Peer metadata will share to each peer in the Hub
+   * @param hubMetaData (will only use if no hub exist) Hub metadata will share to each peer in the Hub
+   *
+   */
+  public joinOrCreateIPHub(
+    peerMetadata?: PeerMetadata,
+    hubMetadata?: HubMetadata
+  ) {
+    this.peerMetadata = peerMetadata;
+
+    const url = new URL(
+      "/ip-hubs/join-or-create",
+      getWS(this.host, this.config.tls)
+    );
+
+    if (hubMetadata) {
+      this.hubMetadata = hubMetadata;
+      url.searchParams.set("hubMetadata", JSON.stringify(hubMetadata));
+    }
+    if (peerMetadata) {
+      this.peerMetadata = peerMetadata;
+      url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
+    }
+
+    this.connectToZeroHub(url);
+  }
+
+  /**
+   * Join an existing IP Hub on ZeroHub
+   *
+   * @param {string} hubId The id of the IP Hub to join
+   * @param peerMetadata Peer metadata will share to each peer in the Hub
+   */
+  public joinIPHub(hubId: string, peerMetadata?: PeerMetadata) {
+    this.peerMetadata = peerMetadata;
+
+    const url = new URL("/ip-hubs/join", getWS(this.host, this.config.tls));
+    url.searchParams.set("id", hubId);
+
+    if (peerMetadata) {
+      this.peerMetadata = peerMetadata;
+      url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
+    }
+
+    this.connectToZeroHub(url);
+  }
 }

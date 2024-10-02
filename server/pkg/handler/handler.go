@@ -94,6 +94,8 @@ func (h *handler) Serve() error {
 			err = h.JoinHub(ctx, h.zeroHubRandom)
 		case "/ip-hubs/join-or-create":
 			err = h.JoinOrCreateHubIP(ctx, h.zeroHubIP)
+		case "/ip-hubs/join":
+			err = h.JoinHub(ctx, h.zeroHubIP)
 		case "/admin/migrate":
 			err = h.Migrate(ctx)
 		// TODO: separate permenant zero hub
