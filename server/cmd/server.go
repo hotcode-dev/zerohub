@@ -21,12 +21,22 @@ func main() {
 		stdLog.Panic(fmt.Errorf("error to init logger: %w", err))
 	}
 
-	zh, err := zerohub.NewZeroHub(cfg)
+	zeroHub, err := zerohub.NewZeroHub(cfg)
 	if err != nil {
 		log.Panic().Err(fmt.Errorf("error to init zero hub: %w", err)).Send()
 	}
 
-	hdl, err := handler.NewHandler(cfg, zh)
+	zeroHubRandom, err := zerohub.NewZeroHub(cfg)
+	if err != nil {
+		log.Panic().Err(fmt.Errorf("error to init zero hub: %w", err)).Send()
+	}
+
+	zeroHubIP, err := zerohub.NewZeroHub(cfg)
+	if err != nil {
+		log.Panic().Err(fmt.Errorf("error to init zero hub: %w", err)).Send()
+	}
+
+	hdl, err := handler.NewHandler(cfg, zeroHub, zeroHubRandom, zeroHubIP)
 	if err != nil {
 		log.Panic().Err(fmt.Errorf("error to init logger: %w", err)).Send()
 	}

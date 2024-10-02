@@ -18,7 +18,7 @@ func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
 	}
 
 	hubId := string(ctx.QueryArgs().Peek("id"))
-	if h.zh.GetHubById(hubId) != nil {
+	if h.zeroHub.GetHubById(hubId) != nil {
 		log.Error().Err(fmt.Errorf("hub with id %s already exists", hubId)).Send()
 		return h.Response(ctx, fasthttp.StatusConflict, map[string]string{"error": "hub id already exists"})
 	}
@@ -28,7 +28,7 @@ func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
 		log.Error().Err(fmt.Errorf("new hub error: %w", err)).Send()
 		return h.Response(ctx, fasthttp.StatusInternalServerError, map[string]string{"error": "create hub error"})
 	}
-	h.zh.AddHub(hub)
+	h.zeroHub.AddHub(hub)
 
 	return h.Response(ctx, fasthttp.StatusOK, hub)
 }

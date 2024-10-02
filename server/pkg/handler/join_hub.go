@@ -3,18 +3,19 @@ package handler
 import (
 	"fmt"
 
+	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
 )
 
-func (h *handler) JoinHub(ctx *fasthttp.RequestCtx) error {
+func (h *handler) JoinHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 	if h.isMigrating {
 		return h.ForwardMigrate(ctx)
 	}
 
 	hubId := string(ctx.QueryArgs().Peek("id"))
 
-	hub := h.zh.GetHubById(hubId)
+	hub := zh.GetHubById(hubId)
 	if hub == nil {
 		return h.Response(ctx, fasthttp.StatusNotFound, map[string]string{"error": "hub not found"})
 	}

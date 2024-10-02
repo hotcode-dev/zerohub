@@ -15,10 +15,18 @@ import (
 // Handler is the http and websocket handlers interface
 type Handler interface {
 	// public api
-	CreateHub(ctx *fasthttp.RequestCtx) error
-	JoinHub(ctx *fasthttp.RequestCtx) error
+	CreateHubStatic(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error
+	CreateHubRandom(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error
+	JoinHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error
+	JoinOrCreateHubStatic(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error
+	JoinOrCreateHubIP(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error
+	GetHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error
+
 	Status(ctx *fasthttp.RequestCtx) error
-	GetHub(ctx *fasthttp.RequestCtx) error
+
+	// reuse functions
+	CreateHubByID(ctx *fasthttp.RequestCtx, zeroHub zerohub.ZeroHub, hubId string) error
+	JoinOrCreateHubByID(ctx *fasthttp.RequestCtx, zeroHub zerohub.ZeroHub, hubId string) error
 
 	// admin api
 	Migrate(ctx *fasthttp.RequestCtx) error
@@ -37,17 +45,21 @@ type handler struct {
 	isMigrating bool
 	backupHost  string
 
-	zh zerohub.ZeroHub
+	zeroHub       zerohub.ZeroHub
+	zeroHubRandom zerohub.ZeroHub
+	zeroHubIP     zerohub.ZeroHub
 }
 
 // NewHandler create a new handler
-func NewHandler(cfg *config.Config, zh zerohub.ZeroHub) (Handler, error) {
+func NewHandler(cfg *config.Config, zeroHub zerohub.ZeroHub, zeroHubRandom zerohub.ZeroHub, zeroHubIP zerohub.ZeroHub) (Handler, error) {
 	return &handler{
-		address:      fmt.Sprintf("%s:%s", cfg.App.Host, cfg.App.Port),
-		clientSecret: cfg.App.ClientSecret,
-		isMigrating:  false,
-		backupHost:   "",
-		zh:           zh,
+		address:       fmt.Sprintf("%s:%s", cfg.App.Host, cfg.App.Port),
+		clientSecret:  cfg.App.ClientSecret,
+		isMigrating:   false,
+		backupHost:    "",
+		zeroHub:       zeroHub,
+		zeroHubRandom: zeroHubRandom,
+		zeroHubIP:     zeroHubIP,
 	}, nil
 }
 
@@ -67,15 +79,24 @@ func (h *handler) Serve() error {
 		case "/status":
 			err = h.Status(ctx)
 		case "/hubs/create":
-			err = h.CreateHub(ctx)
+			err = h.CreateHubStatic(ctx, h.zeroHub)
 		case "/hubs/get":
-			err = h.GetHub(ctx)
+			err = h.GetHub(ctx, h.zeroHub)
 		case "/hubs/join":
-			err = h.JoinHub(ctx)
+			err = h.JoinHub(ctx, h.zeroHub)
 		case "/hubs/join-or-create":
-			err = h.JoinOrCreateHub(ctx)
+			err = h.JoinOrCreateHubStatic(ctx, h.zeroHub)
+		case "/random-hubs/create":
+			err = h.CreateHubRandom(ctx, h.zeroHubRandom)
+		case "/random-hubs/get":
+			err = h.GetHub(ctx, h.zeroHubRandom)
+		case "/random-hubs/join":
+			err = h.JoinHub(ctx, h.zeroHubRandom)
+		case "/ip-hubs/join-or-create":
+			err = h.JoinOrCreateHubIP(ctx, h.zeroHubIP)
 		case "/admin/migrate":
 			err = h.Migrate(ctx)
+		// TODO: separate permenant zero hub
 		case "/admin/create":
 			err = h.CreateHubPermanent(ctx)
 		default:

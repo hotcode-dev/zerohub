@@ -6,6 +6,7 @@ require (
 	github.com/Netflix/go-env v0.0.0-20220526054621-78278af1949d
 	github.com/bytedance/sonic v1.12.2
 	github.com/fasthttp/websocket v1.5.7
+	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/rs/zerolog v1.31.0
 	github.com/ulule/limiter/v3 v3.11.2

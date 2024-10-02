@@ -8,14 +8,8 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-func (h *handler) JoinOrCreateHub(ctx *fasthttp.RequestCtx) error {
-	if h.isMigrating {
-		return h.ForwardMigrate(ctx)
-	}
-
-	hubId := string(ctx.QueryArgs().Peek("id"))
-
-	hub := h.zh.GetHubById(hubId)
+func (h *handler) JoinOrCreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string) error {
+	hub := zh.GetHubById(hubId)
 	if hub == nil {
 		// create a new hub if it does not exist
 		newHub, err := zerohub.NewHub(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), false)
@@ -23,7 +17,7 @@ func (h *handler) JoinOrCreateHub(ctx *fasthttp.RequestCtx) error {
 			log.Error().Err(fmt.Errorf("new hub error: %w", err)).Send()
 			return h.Response(ctx, fasthttp.StatusInternalServerError, map[string]string{"error": "create hub error"})
 		}
-		h.zh.AddHub(newHub)
+		zh.AddHub(newHub)
 		hub = newHub
 	}
 
