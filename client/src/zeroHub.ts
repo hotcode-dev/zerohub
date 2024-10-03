@@ -661,4 +661,52 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
 
     this.connectToZeroHub(url);
   }
+
+  /**
+   * Creates a new Random Hub on ZeroHub
+   * The Random Hub is a hub that will use a random id as the hub id
+   *
+   * @param peerMetadata Peer metadata will share to each peer in the Hub
+   * @param hubMetaData Hub metadata will share to each peer in the Hub
+   */
+  public createRandomHub(
+    peerMetadata?: PeerMetadata,
+    hubMetadata?: HubMetadata
+  ) {
+    const url = new URL(
+      "/random-hubs/create",
+      getWS(this.host, this.config.tls)
+    );
+
+    if (hubMetadata) {
+      this.hubMetadata = hubMetadata;
+      url.searchParams.set("hubMetadata", JSON.stringify(hubMetadata));
+    }
+    if (peerMetadata) {
+      this.peerMetadata = peerMetadata;
+      url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
+    }
+
+    this.connectToZeroHub(url);
+  }
+
+  /**
+   * Join an existing Random Hub on ZeroHub
+   *
+   * @param {string} hubId The id of the hub to join
+   * @param peerMetadata Peer metadata will share to each peer in the Hub
+   */
+  public joinRandomHub(hubId: string, peerMetadata?: PeerMetadata) {
+    this.peerMetadata = peerMetadata;
+
+    const url = new URL("/random-hubs/join", getWS(this.host, this.config.tls));
+    url.searchParams.set("id", hubId);
+
+    if (peerMetadata) {
+      this.peerMetadata = peerMetadata;
+      url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
+    }
+
+    this.connectToZeroHub(url);
+  }
 }
