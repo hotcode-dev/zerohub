@@ -11,6 +11,7 @@ require (
 	github.com/rs/zerolog v1.31.0
 	github.com/ulule/limiter/v3 v3.11.2
 	github.com/valyala/fasthttp v1.51.0
+	github.com/zeebo/xxh3 v1.0.2
 	go.uber.org/mock v0.4.0
 	go.uber.org/zap v1.26.0
 	google.golang.org/protobuf v1.31.0
