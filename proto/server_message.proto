@@ -4,7 +4,7 @@ option go_package = "github.com/hotcode-dev/zerohub/pkg/proto";
 
 // Peer includes peer infomation and peer metadata
 message Peer {
-  uint32 id = 1;
+  string id = 1;
   string metadata = 2;
   uint32 joinedAt = 3;
 }
@@ -13,7 +13,7 @@ message Peer {
 message HubInfoMessage {
   string id = 1;
   uint32 createdAt = 2;
-  uint32 myPeerId = 3;
+  string myPeerId = 3;
   string hubMetadata = 4;
   repeated Peer peers = 5;
 }
@@ -25,24 +25,24 @@ message PeerJoinedMessage {
 
 // PeerDisconnectedMessage will send if a peer has left
 message PeerDisconnectedMessage {
-  uint32 peerId = 1;
+  string peerId = 1;
 }
 
 // OfferMessage is sent offer SDP from offering peer to answer peer
 message OfferMessage {
-  uint32 offerPeerId = 1;
+  string offerPeerId = 1;
   string offerSdp = 2;
 }
 
 // AnswerMessage is sent answer SDP from answer peer to offering peer
 message AnswerMessage {
-  uint32 answerPeerId = 1;
+  string answerPeerId = 1;
   string answerSdp = 2;
 }
 
 // IceCandidateMessage is not using yet
 message IceCandidateMessage {
-  uint32 peerId = 1;
+  string peerId = 1;
   string candidate = 2;
 }
 

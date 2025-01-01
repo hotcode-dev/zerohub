@@ -1,6 +1,8 @@
 module github.com/hotcode-dev/zerohub
 
-go 1.21.3
+go 1.23.3
+
+toolchain go1.23.4
 
 require (
 	github.com/Netflix/go-env v0.0.0-20220526054621-78278af1949d
@@ -8,6 +10,7 @@ require (
 	github.com/fasthttp/websocket v1.5.7
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
+	github.com/ntsd/gache/v2 v2.0.0-20250101163922-c8d7e530ffbd
 	github.com/rs/zerolog v1.31.0
 	github.com/ulule/limiter/v3 v3.11.2
 	github.com/valyala/fasthttp v1.51.0
@@ -16,6 +19,8 @@ require (
 	go.uber.org/zap v1.26.0
 	google.golang.org/protobuf v1.31.0
 )
+
+require github.com/kpango/fastime v1.1.9 // indirect
 
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect

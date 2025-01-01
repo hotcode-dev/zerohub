@@ -1,4 +1,4 @@
-package zerohub
+package hub
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ func CreateJoinedSignalProtobuf(peerProtobuf *pb.Peer) ([]byte, error) {
 }
 
 // CreateDisconnectSignalProtobuf creates a protobuf message for a disconnect signal.
-func CreateDisconnectSignalProtobuf(peerId uint32) ([]byte, error) {
+func CreateDisconnectSignalProtobuf(peerId string) ([]byte, error) {
 	msg := &pb.ServerMessage{
 		Message: &pb.ServerMessage_PeerDisconnectedMessage{
 			PeerDisconnectedMessage: &pb.PeerDisconnectedMessage{
