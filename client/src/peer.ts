@@ -1,14 +1,14 @@
 import { PeerStatus } from "./types";
 
 export class Peer<PeerMetadata = object> {
-  public id: number;
+  public id: string;
   public status: PeerStatus;
   public metadata: PeerMetadata;
   public joinedAt: Date;
   public rtcConn: RTCPeerConnection;
 
   constructor(
-    id: number,
+    id: string,
     status: PeerStatus,
     metadata: PeerMetadata,
     joinedAt: Date,
