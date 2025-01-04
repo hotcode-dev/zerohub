@@ -7,7 +7,6 @@ import (
 	"github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/peer"
 	"github.com/hotcode-dev/zerohub/pkg/storage"
-	"github.com/rs/zerolog/log"
 )
 
 type ZeroHub interface {
@@ -63,7 +62,6 @@ func (z *zeroHub) NewHub(hubId string, metadata string, isPermanent bool) (hub.H
 func (z *zeroHub) GetHubById(id string) hub.Hub {
 	hub, err := z.HubStorage.Get(id)
 	if err != nil {
-		log.Error().Err(fmt.Errorf("get hub error: %w", err)).Send()
 		return nil
 	}
 	return hub
