@@ -10,7 +10,7 @@ import (
 
 func (h *handler) JoinOrCreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string) error {
 	newHub := zh.GetHubById(hubId)
-	if h == nil {
+	if newHub == nil {
 		// create a new hub if it does not exist
 		hub, err := zh.NewHub(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), false)
 		if err != nil {
