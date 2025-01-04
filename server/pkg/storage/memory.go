@@ -6,31 +6,31 @@ import (
 	"sync"
 )
 
-type MemoryStorage[T any] struct {
-	Data map[string]T
+type memoryStorage[T any] struct {
+	data map[string]T
 
 	mu sync.RWMutex
 }
 
 func NewMemoryStorage[T any]() Storage[T] {
-	return &MemoryStorage[T]{
-		Data: make(map[string]T),
+	return &memoryStorage[T]{
+		data: make(map[string]T),
 	}
 }
 
-func (s *MemoryStorage[T]) Add(id string, data T) {
+func (s *memoryStorage[T]) Add(id string, data T) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.Data[id] = data
+	s.data[id] = data
 }
 
-func (s *MemoryStorage[T]) GetAll() iter.Seq[T] {
+func (s *memoryStorage[T]) GetAll() iter.Seq[T] {
 	return func(yield func(T) bool) {
 		s.mu.RLock()
 		defer s.mu.RUnlock()
 
-		for _, v := range s.Data {
+		for _, v := range s.data {
 			if !yield(v) {
 				break
 			}
@@ -38,33 +38,33 @@ func (s *MemoryStorage[T]) GetAll() iter.Seq[T] {
 	}
 }
 
-func (s *MemoryStorage[T]) Get(id string) (T, error) {
+func (s *memoryStorage[T]) Get(id string) (T, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if _, ok := s.Data[id]; !ok {
-		return s.Data[id], errors.New("not found")
+	if _, ok := s.data[id]; !ok {
+		return s.data[id], errors.New("not found")
 	}
-	return s.Data[id], nil
+	return s.data[id], nil
 }
 
-func (s *MemoryStorage[T]) Update(id string, data T) {
+func (s *memoryStorage[T]) Update(id string, data T) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.Data[id] = data
+	s.data[id] = data
 }
 
-func (s *MemoryStorage[T]) Delete(id string) {
+func (s *memoryStorage[T]) Delete(id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	delete(s.Data, id)
+	delete(s.data, id)
 }
 
-func (s *MemoryStorage[T]) IsEmpty() bool {
+func (s *memoryStorage[T]) IsEmpty() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	return len(s.Data) == 0
+	return len(s.data) == 0
 }
