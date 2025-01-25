@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hotcode-dev/zerohub/pkg/config"
+	"github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	limiter "github.com/ulule/limiter/v3"
@@ -33,7 +34,7 @@ type Handler interface {
 	CreateHubPermanent(ctx *fasthttp.RequestCtx) error
 
 	// websocket upgrade
-	Upgrade(ctx *fasthttp.RequestCtx, hub zerohub.Hub) error
+	Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.Hub) error
 
 	Serve() error
 }
@@ -45,21 +46,23 @@ type handler struct {
 	isMigrating bool
 	backupHost  string
 
-	zeroHub       zerohub.ZeroHub
-	zeroHubRandom zerohub.ZeroHub
-	zeroHubIP     zerohub.ZeroHub
+	zeroHub          zerohub.ZeroHub
+	zeroHubRandom    zerohub.ZeroHub
+	zeroHubIP        zerohub.ZeroHub
+	zeroHubPermanent zerohub.ZeroHub
 }
 
 // NewHandler create a new handler
-func NewHandler(cfg *config.Config, zeroHub zerohub.ZeroHub, zeroHubRandom zerohub.ZeroHub, zeroHubIP zerohub.ZeroHub) (Handler, error) {
+func NewHandler(cfg *config.Config, zeroHub zerohub.ZeroHub, zeroHubRandom zerohub.ZeroHub, zeroHubIP zerohub.ZeroHub, zerohubPermanent zerohub.ZeroHub) (Handler, error) {
 	return &handler{
-		address:       fmt.Sprintf("%s:%s", cfg.App.Host, cfg.App.Port),
-		clientSecret:  cfg.App.ClientSecret,
-		isMigrating:   false,
-		backupHost:    "",
-		zeroHub:       zeroHub,
-		zeroHubRandom: zeroHubRandom,
-		zeroHubIP:     zeroHubIP,
+		address:          fmt.Sprintf("%s:%s", cfg.App.Host, cfg.App.Port),
+		clientSecret:     cfg.App.ClientSecret,
+		isMigrating:      false,
+		backupHost:       "",
+		zeroHub:          zeroHub,
+		zeroHubRandom:    zeroHubRandom,
+		zeroHubIP:        zeroHubIP,
+		zeroHubPermanent: zerohubPermanent,
 	}, nil
 }
 
@@ -98,8 +101,9 @@ func (h *handler) Serve() error {
 			err = h.JoinHub(ctx, h.zeroHubIP)
 		case "/admin/migrate":
 			err = h.Migrate(ctx)
-		// TODO: separate permenant zero hub
-		case "/admin/create":
+		case "/permanent-hubs/join":
+			err = h.JoinHub(ctx, h.zeroHubPermanent)
+		case "/permanent-hubs/create":
 			err = h.CreateHubPermanent(ctx)
 		default:
 			ctx.Error("unsupported path", fasthttp.StatusNotFound)

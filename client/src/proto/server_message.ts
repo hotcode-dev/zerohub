@@ -5,7 +5,7 @@ export const protobufPackage = "";
 
 /** Peer includes peer infomation and peer metadata */
 export interface Peer {
-  id: number;
+  id: string;
   metadata: string;
   joinedAt: number;
 }
@@ -14,7 +14,7 @@ export interface Peer {
 export interface HubInfoMessage {
   id: string;
   createdAt: number;
-  myPeerId: number;
+  myPeerId: string;
   hubMetadata: string;
   peers: Peer[];
 }
@@ -26,24 +26,24 @@ export interface PeerJoinedMessage {
 
 /** PeerDisconnectedMessage will send if a peer has left */
 export interface PeerDisconnectedMessage {
-  peerId: number;
+  peerId: string;
 }
 
 /** OfferMessage is sent offer SDP from offering peer to answer peer */
 export interface OfferMessage {
-  offerPeerId: number;
+  offerPeerId: string;
   offerSdp: string;
 }
 
 /** AnswerMessage is sent answer SDP from answer peer to offering peer */
 export interface AnswerMessage {
-  answerPeerId: number;
+  answerPeerId: string;
   answerSdp: string;
 }
 
 /** IceCandidateMessage is not using yet */
 export interface IceCandidateMessage {
-  peerId: number;
+  peerId: string;
   candidate: string;
 }
 
@@ -58,13 +58,13 @@ export interface ServerMessage {
 }
 
 function createBasePeer(): Peer {
-  return { id: 0, metadata: "", joinedAt: 0 };
+  return { id: "", metadata: "", joinedAt: 0 };
 }
 
 export const Peer = {
   encode(message: Peer, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== 0) {
-      writer.uint32(8).uint32(message.id);
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
     }
     if (message.metadata !== "") {
       writer.uint32(18).string(message.metadata);
@@ -83,11 +83,11 @@ export const Peer = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.id = reader.uint32();
+          message.id = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -114,7 +114,7 @@ export const Peer = {
 
   fromJSON(object: any): Peer {
     return {
-      id: isSet(object.id) ? globalThis.Number(object.id) : 0,
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
       metadata: isSet(object.metadata) ? globalThis.String(object.metadata) : "",
       joinedAt: isSet(object.joinedAt) ? globalThis.Number(object.joinedAt) : 0,
     };
@@ -122,8 +122,8 @@ export const Peer = {
 
   toJSON(message: Peer): unknown {
     const obj: any = {};
-    if (message.id !== 0) {
-      obj.id = Math.round(message.id);
+    if (message.id !== "") {
+      obj.id = message.id;
     }
     if (message.metadata !== "") {
       obj.metadata = message.metadata;
@@ -139,7 +139,7 @@ export const Peer = {
   },
   fromPartial<I extends Exact<DeepPartial<Peer>, I>>(object: I): Peer {
     const message = createBasePeer();
-    message.id = object.id ?? 0;
+    message.id = object.id ?? "";
     message.metadata = object.metadata ?? "";
     message.joinedAt = object.joinedAt ?? 0;
     return message;
@@ -147,7 +147,7 @@ export const Peer = {
 };
 
 function createBaseHubInfoMessage(): HubInfoMessage {
-  return { id: "", createdAt: 0, myPeerId: 0, hubMetadata: "", peers: [] };
+  return { id: "", createdAt: 0, myPeerId: "", hubMetadata: "", peers: [] };
 }
 
 export const HubInfoMessage = {
@@ -158,8 +158,8 @@ export const HubInfoMessage = {
     if (message.createdAt !== 0) {
       writer.uint32(16).uint32(message.createdAt);
     }
-    if (message.myPeerId !== 0) {
-      writer.uint32(24).uint32(message.myPeerId);
+    if (message.myPeerId !== "") {
+      writer.uint32(26).string(message.myPeerId);
     }
     if (message.hubMetadata !== "") {
       writer.uint32(34).string(message.hubMetadata);
@@ -192,11 +192,11 @@ export const HubInfoMessage = {
           message.createdAt = reader.uint32();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag !== 26) {
             break;
           }
 
-          message.myPeerId = reader.uint32();
+          message.myPeerId = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
@@ -225,7 +225,7 @@ export const HubInfoMessage = {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
-      myPeerId: isSet(object.myPeerId) ? globalThis.Number(object.myPeerId) : 0,
+      myPeerId: isSet(object.myPeerId) ? globalThis.String(object.myPeerId) : "",
       hubMetadata: isSet(object.hubMetadata) ? globalThis.String(object.hubMetadata) : "",
       peers: globalThis.Array.isArray(object?.peers) ? object.peers.map((e: any) => Peer.fromJSON(e)) : [],
     };
@@ -239,8 +239,8 @@ export const HubInfoMessage = {
     if (message.createdAt !== 0) {
       obj.createdAt = Math.round(message.createdAt);
     }
-    if (message.myPeerId !== 0) {
-      obj.myPeerId = Math.round(message.myPeerId);
+    if (message.myPeerId !== "") {
+      obj.myPeerId = message.myPeerId;
     }
     if (message.hubMetadata !== "") {
       obj.hubMetadata = message.hubMetadata;
@@ -258,7 +258,7 @@ export const HubInfoMessage = {
     const message = createBaseHubInfoMessage();
     message.id = object.id ?? "";
     message.createdAt = object.createdAt ?? 0;
-    message.myPeerId = object.myPeerId ?? 0;
+    message.myPeerId = object.myPeerId ?? "";
     message.hubMetadata = object.hubMetadata ?? "";
     message.peers = object.peers?.map((e) => Peer.fromPartial(e)) || [];
     return message;
@@ -323,13 +323,13 @@ export const PeerJoinedMessage = {
 };
 
 function createBasePeerDisconnectedMessage(): PeerDisconnectedMessage {
-  return { peerId: 0 };
+  return { peerId: "" };
 }
 
 export const PeerDisconnectedMessage = {
   encode(message: PeerDisconnectedMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.peerId !== 0) {
-      writer.uint32(8).uint32(message.peerId);
+    if (message.peerId !== "") {
+      writer.uint32(10).string(message.peerId);
     }
     return writer;
   },
@@ -342,11 +342,11 @@ export const PeerDisconnectedMessage = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.peerId = reader.uint32();
+          message.peerId = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -358,13 +358,13 @@ export const PeerDisconnectedMessage = {
   },
 
   fromJSON(object: any): PeerDisconnectedMessage {
-    return { peerId: isSet(object.peerId) ? globalThis.Number(object.peerId) : 0 };
+    return { peerId: isSet(object.peerId) ? globalThis.String(object.peerId) : "" };
   },
 
   toJSON(message: PeerDisconnectedMessage): unknown {
     const obj: any = {};
-    if (message.peerId !== 0) {
-      obj.peerId = Math.round(message.peerId);
+    if (message.peerId !== "") {
+      obj.peerId = message.peerId;
     }
     return obj;
   },
@@ -374,19 +374,19 @@ export const PeerDisconnectedMessage = {
   },
   fromPartial<I extends Exact<DeepPartial<PeerDisconnectedMessage>, I>>(object: I): PeerDisconnectedMessage {
     const message = createBasePeerDisconnectedMessage();
-    message.peerId = object.peerId ?? 0;
+    message.peerId = object.peerId ?? "";
     return message;
   },
 };
 
 function createBaseOfferMessage(): OfferMessage {
-  return { offerPeerId: 0, offerSdp: "" };
+  return { offerPeerId: "", offerSdp: "" };
 }
 
 export const OfferMessage = {
   encode(message: OfferMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.offerPeerId !== 0) {
-      writer.uint32(8).uint32(message.offerPeerId);
+    if (message.offerPeerId !== "") {
+      writer.uint32(10).string(message.offerPeerId);
     }
     if (message.offerSdp !== "") {
       writer.uint32(18).string(message.offerSdp);
@@ -402,11 +402,11 @@ export const OfferMessage = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.offerPeerId = reader.uint32();
+          message.offerPeerId = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -426,15 +426,15 @@ export const OfferMessage = {
 
   fromJSON(object: any): OfferMessage {
     return {
-      offerPeerId: isSet(object.offerPeerId) ? globalThis.Number(object.offerPeerId) : 0,
+      offerPeerId: isSet(object.offerPeerId) ? globalThis.String(object.offerPeerId) : "",
       offerSdp: isSet(object.offerSdp) ? globalThis.String(object.offerSdp) : "",
     };
   },
 
   toJSON(message: OfferMessage): unknown {
     const obj: any = {};
-    if (message.offerPeerId !== 0) {
-      obj.offerPeerId = Math.round(message.offerPeerId);
+    if (message.offerPeerId !== "") {
+      obj.offerPeerId = message.offerPeerId;
     }
     if (message.offerSdp !== "") {
       obj.offerSdp = message.offerSdp;
@@ -447,20 +447,20 @@ export const OfferMessage = {
   },
   fromPartial<I extends Exact<DeepPartial<OfferMessage>, I>>(object: I): OfferMessage {
     const message = createBaseOfferMessage();
-    message.offerPeerId = object.offerPeerId ?? 0;
+    message.offerPeerId = object.offerPeerId ?? "";
     message.offerSdp = object.offerSdp ?? "";
     return message;
   },
 };
 
 function createBaseAnswerMessage(): AnswerMessage {
-  return { answerPeerId: 0, answerSdp: "" };
+  return { answerPeerId: "", answerSdp: "" };
 }
 
 export const AnswerMessage = {
   encode(message: AnswerMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.answerPeerId !== 0) {
-      writer.uint32(8).uint32(message.answerPeerId);
+    if (message.answerPeerId !== "") {
+      writer.uint32(10).string(message.answerPeerId);
     }
     if (message.answerSdp !== "") {
       writer.uint32(18).string(message.answerSdp);
@@ -476,11 +476,11 @@ export const AnswerMessage = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.answerPeerId = reader.uint32();
+          message.answerPeerId = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -500,15 +500,15 @@ export const AnswerMessage = {
 
   fromJSON(object: any): AnswerMessage {
     return {
-      answerPeerId: isSet(object.answerPeerId) ? globalThis.Number(object.answerPeerId) : 0,
+      answerPeerId: isSet(object.answerPeerId) ? globalThis.String(object.answerPeerId) : "",
       answerSdp: isSet(object.answerSdp) ? globalThis.String(object.answerSdp) : "",
     };
   },
 
   toJSON(message: AnswerMessage): unknown {
     const obj: any = {};
-    if (message.answerPeerId !== 0) {
-      obj.answerPeerId = Math.round(message.answerPeerId);
+    if (message.answerPeerId !== "") {
+      obj.answerPeerId = message.answerPeerId;
     }
     if (message.answerSdp !== "") {
       obj.answerSdp = message.answerSdp;
@@ -521,20 +521,20 @@ export const AnswerMessage = {
   },
   fromPartial<I extends Exact<DeepPartial<AnswerMessage>, I>>(object: I): AnswerMessage {
     const message = createBaseAnswerMessage();
-    message.answerPeerId = object.answerPeerId ?? 0;
+    message.answerPeerId = object.answerPeerId ?? "";
     message.answerSdp = object.answerSdp ?? "";
     return message;
   },
 };
 
 function createBaseIceCandidateMessage(): IceCandidateMessage {
-  return { peerId: 0, candidate: "" };
+  return { peerId: "", candidate: "" };
 }
 
 export const IceCandidateMessage = {
   encode(message: IceCandidateMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.peerId !== 0) {
-      writer.uint32(8).uint32(message.peerId);
+    if (message.peerId !== "") {
+      writer.uint32(10).string(message.peerId);
     }
     if (message.candidate !== "") {
       writer.uint32(18).string(message.candidate);
@@ -550,11 +550,11 @@ export const IceCandidateMessage = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.peerId = reader.uint32();
+          message.peerId = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -574,15 +574,15 @@ export const IceCandidateMessage = {
 
   fromJSON(object: any): IceCandidateMessage {
     return {
-      peerId: isSet(object.peerId) ? globalThis.Number(object.peerId) : 0,
+      peerId: isSet(object.peerId) ? globalThis.String(object.peerId) : "",
       candidate: isSet(object.candidate) ? globalThis.String(object.candidate) : "",
     };
   },
 
   toJSON(message: IceCandidateMessage): unknown {
     const obj: any = {};
-    if (message.peerId !== 0) {
-      obj.peerId = Math.round(message.peerId);
+    if (message.peerId !== "") {
+      obj.peerId = message.peerId;
     }
     if (message.candidate !== "") {
       obj.candidate = message.candidate;
@@ -595,7 +595,7 @@ export const IceCandidateMessage = {
   },
   fromPartial<I extends Exact<DeepPartial<IceCandidateMessage>, I>>(object: I): IceCandidateMessage {
     const message = createBaseIceCandidateMessage();
-    message.peerId = object.peerId ?? 0;
+    message.peerId = object.peerId ?? "";
     message.candidate = object.candidate ?? "";
     return message;
   },

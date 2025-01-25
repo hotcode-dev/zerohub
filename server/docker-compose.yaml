@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   service-app:
     container_name: zerohub
@@ -8,4 +7,11 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - 8080:8080
+    restart: on-failure
+
+  service-redis:
+    container_name: redis
+    image: redis:latest
+    ports:
+      - 6379:6379
     restart: on-failure

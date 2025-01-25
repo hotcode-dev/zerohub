@@ -18,13 +18,15 @@ server-serve-2:
 
 server-mock:
 	# Reflex mode read ZeroHub mock
-	cd server/pkg/zerohub && mockgen -destination mock.go -package zerohub -self_package github.com/hotcode-dev/zerohub/pkg/zerohub . Hub,Peer,ZeroHub
+	cd server && mockgen -source=./pkg/zerohub/zerohub.go -destination ./pkg/zerohub/mock.go -package zerohub -self_package github.com/hotcode-dev/zerohub/pkg/zerohub ZeroHub
+	cd server && mockgen -source=./pkg/hub/hub.go -destination ./pkg/hub/mock.go -package hub -self_package github.com/hotcode-dev/zerohub/pkg/hub /pkg/hub Hub
+	cd server && mockgen -source=./pkg/peer/peer.go -destination ./pkg/peer/mock.go -package peer -self_package github.com/hotcode-dev/zerohub/pkg/peer /pkg/peer Peer
 
 server-test:
-	cd server && go test -v
+	cd server && go test -v ./...
 
 server-bench:
-	cd server/pkg/zerohub && go test -bench . -benchmem -benchtime=1000x
+	cd server && go test -bench ./pkg/*** -benchmem -benchtime=1000x
 
 client-build:
 	cd ./client && npm run build

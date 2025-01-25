@@ -190,3 +190,29 @@ Dynamic selection: Continuously monitor peer resource availability and network m
 Manual selection: Analyze offline data like individual peer resource limitations and network topology before starting the session. Based on this analysis, manually designate the most suitable peer as the hub.
 
 Hybrid approach: Combine elements of both methods. Start with a pre-selected or manually chosen hub, but have a secondary selection process based on real-time performance metrics in case the chosen hub experiences issues.
+
+## Benchmark
+
+Memory Storage
+
+```
+goos: darwin
+goarch: arm64
+pkg: github.com/hotcode-dev/zerohub/pkg/hub
+cpu: Apple M3
+BenchmarkHubAddPeer/benchmark_hub_add_peer-8         	   10000	   1616131 ns/op	 4043998 B/op	   25550 allocs/op
+PASS
+ok  	github.com/hotcode-dev/zerohub/pkg/hub	16.542s
+```
+
+Gache Storage
+
+```
+goos: darwin
+goarch: arm64
+pkg: github.com/hotcode-dev/zerohub/pkg/hub
+cpu: Apple M3
+BenchmarkGacheStorageHubAddPeer/benchmark_hub_add_peer-8         	   10000	   1900886 ns/op	 4088601 B/op	   27604 allocs/op
+PASS
+ok  	github.com/hotcode-dev/zerohub/pkg/hub	19.244s
+```

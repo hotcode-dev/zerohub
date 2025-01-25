@@ -28,6 +28,8 @@ type AppConfig struct {
 	Port         string      `env:"APP_PORT,default=8080"`
 	Domain       string      `env:"APP_DOMAIN,default=localhost"`
 	ClientSecret string      `env:"APP_CLIENT_SECRET"`
+	HubStorage   string      `env:"APP_HUB_STORAGE,default=memory"`
+	PeerStorage  string      `env:"APP_PEER_STORAGE,default=memory"`
 }
 
 // LoadConfig loads a configuration.

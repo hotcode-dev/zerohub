@@ -20,7 +20,7 @@ func (h *handler) JoinHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 		return h.Response(ctx, fasthttp.StatusNotFound, map[string]string{"error": "hub not found"})
 	}
 
-	if err := h.Upgrade(ctx, hub); err != nil {
+	if err := h.Upgrade(ctx, zh, hub); err != nil {
 		log.Error().Err(fmt.Errorf("websocket upgrade error: %w", err)).Send()
 		return h.Response(ctx, fasthttp.StatusInternalServerError, map[string]string{"error": "websocket upgrade error"})
 	}
