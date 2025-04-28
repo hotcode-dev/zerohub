@@ -543,7 +543,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     peerMetadata?: PeerMetadata,
     hubMetadata?: HubMetadata
   ) {
-    const url = new URL("/hubs/create", getWS(this.host, this.config.tls));
+    const url = new URL("/v1/hubs/create", getWS(this.host, this.config.tls));
     url.searchParams.set("id", hubId);
 
     if (hubMetadata) {
@@ -567,7 +567,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   public joinHub(hubId: string, peerMetadata?: PeerMetadata) {
     this.peerMetadata = peerMetadata;
 
-    const url = new URL("/hubs/join", getWS(this.host, this.config.tls));
+    const url = new URL("/v1/hubs/join", getWS(this.host, this.config.tls));
     url.searchParams.set("id", hubId);
 
     if (peerMetadata) {
@@ -594,7 +594,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     this.peerMetadata = peerMetadata;
 
     const url = new URL(
-      "/hubs/join-or-create",
+      "/v1/hubs/join-or-create",
       getWS(this.host, this.config.tls)
     );
     url.searchParams.set("id", hubId);
@@ -626,7 +626,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     this.peerMetadata = peerMetadata;
 
     const url = new URL(
-      "/ip-hubs/join-or-create",
+      "/v1/ip-hubs/join-or-create",
       getWS(this.host, this.config.tls)
     );
 
@@ -651,7 +651,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   public joinIPHub(hubId: string, peerMetadata?: PeerMetadata) {
     this.peerMetadata = peerMetadata;
 
-    const url = new URL("/ip-hubs/join", getWS(this.host, this.config.tls));
+    const url = new URL("/v1/ip-hubs/join", getWS(this.host, this.config.tls));
     url.searchParams.set("id", hubId);
 
     if (peerMetadata) {
@@ -674,7 +674,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     hubMetadata?: HubMetadata
   ) {
     const url = new URL(
-      "/random-hubs/create",
+      "/v1/random-hubs/create",
       getWS(this.host, this.config.tls)
     );
 
@@ -699,7 +699,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   public joinRandomHub(hubId: string, peerMetadata?: PeerMetadata) {
     this.peerMetadata = peerMetadata;
 
-    const url = new URL("/random-hubs/join", getWS(this.host, this.config.tls));
+    const url = new URL("/v1/random-hubs/join", getWS(this.host, this.config.tls));
     url.searchParams.set("id", hubId);
 
     if (peerMetadata) {

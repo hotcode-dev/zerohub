@@ -7,8 +7,8 @@ A WebRTC signaling server for trading session between peers design for minimal a
 - Multipeers WebRTC signaling server
 - Signaling over WebSockets (RFC6455) and WebTransport
 - Transfers Session Description Protocol (SDP)
-- Peer Meta data for specific use cases
 - TypeScript/JavaScript client SDK
+- Peer Meta data for customize use cases
 
 ## Structure
 
@@ -26,7 +26,7 @@ There are endpoints to connect the ZeroHub websocket, User can create hub or joi
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Server
+    participant Server as ZeroHub
     Client->>Server: GET /hub/create HTTP/1.1
     Client->>Server: Upgrade: websocket
     Client->>Server: Connection: Upgrade

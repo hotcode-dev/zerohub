@@ -79,31 +79,31 @@ func (h *handler) Serve() error {
 
 		var err error
 		switch string(ctx.Path()) {
-		case "/status":
+		case "/v1/status":
 			err = h.Status(ctx)
-		case "/hubs/create":
+		case "/v1/hubs/create":
 			err = h.CreateHubStatic(ctx, h.zeroHub)
-		case "/hubs/get":
+		case "/v1/hubs/get":
 			err = h.GetHub(ctx, h.zeroHub)
-		case "/hubs/join":
+		case "/v1/hubs/join":
 			err = h.JoinHub(ctx, h.zeroHub)
-		case "/hubs/join-or-create":
+		case "/v1/hubs/join-or-create":
 			err = h.JoinOrCreateHubStatic(ctx, h.zeroHub)
-		case "/random-hubs/create":
+		case "/v1/random-hubs/create":
 			err = h.CreateHubRandom(ctx, h.zeroHubRandom)
-		case "/random-hubs/get":
+		case "/v1/random-hubs/get":
 			err = h.GetHub(ctx, h.zeroHubRandom)
-		case "/random-hubs/join":
+		case "/v1/random-hubs/join":
 			err = h.JoinHub(ctx, h.zeroHubRandom)
-		case "/ip-hubs/join-or-create":
+		case "/v1/ip-hubs/join-or-create":
 			err = h.JoinOrCreateHubIP(ctx, h.zeroHubIP)
-		case "/ip-hubs/join":
+		case "/v1/ip-hubs/join":
 			err = h.JoinHub(ctx, h.zeroHubIP)
-		case "/admin/migrate":
+		case "/v1/admin/migrate":
 			err = h.Migrate(ctx)
-		case "/permanent-hubs/join":
+		case "/v1/permanent-hubs/join":
 			err = h.JoinHub(ctx, h.zeroHubPermanent)
-		case "/permanent-hubs/create":
+		case "/v1/permanent-hubs/create":
 			err = h.CreateHubPermanent(ctx)
 		default:
 			ctx.Error("unsupported path", fasthttp.StatusNotFound)
