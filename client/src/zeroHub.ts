@@ -6,6 +6,8 @@ import {
 import { Peer } from "./peer";
 import { ClientMessage } from "./proto/client_message";
 import { ServerMessage } from "./proto/server_message";
+import { Topology } from "./topology";
+import { MeshTopology } from "./topology/meshTopology";
 import { LogLevel, PeerStatus, type Config, type HubInfo } from "./types";
 import { fetchWithTimeout, getHTTP, getWS } from "./utils";
 
@@ -25,7 +27,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   // peers a map of peer
   public peers: { [id: string]: Peer<PeerMetadata> };
 
-  // the hosts of ZeroHub without protocal. if the first host is not working, it will try to connect to the next host
+  // topology is the WebRTC topology for this client
+  // the default topology is a mesh topology
+  // the topology will be used to connect to other peers
+  public topology: Topology<PeerMetadata, HubMetadata> | undefined;
+
+  // the hosts of ZeroHub without protocol. if the first host is not working, it will try to connect to the next host
   public hosts: string[];
   // the current ZeroHub host index
   public hostIndex: number;
@@ -55,7 +62,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   constructor(
     hosts: string[],
     config: Partial<Config> = {},
-    rtcConfig: Partial<RTCConfiguration> = {}
+    rtcConfig: Partial<RTCConfiguration> = {},
+    topology: Topology<PeerMetadata, HubMetadata>
   ) {
     if (!hosts || hosts.length < 1) {
       throw new Error("The hosts must be at least one");
@@ -67,6 +75,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     this.hosts = hosts;
     this.hostIndex = 0;
     this.host = hosts[this.hostIndex];
+    this.topology = topology;
   }
 
   log(message?: any, ...optionalParams: any[]) {
@@ -305,6 +314,11 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    */
   public connectToZeroHub(url: URL) {
     this.log("connecting to ZeroHub:", url);
+
+    if (this.topology) {
+      this.log(`using ${this.topology.constructor.name} topology`);
+      this.topology.init(this);
+    }
 
     this.ws = new WebSocket(url);
     this.ws.binaryType = "arraybuffer";
@@ -699,7 +713,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   public joinRandomHub(hubId: string, peerMetadata?: PeerMetadata) {
     this.peerMetadata = peerMetadata;
 
-    const url = new URL("/v1/random-hubs/join", getWS(this.host, this.config.tls));
+    const url = new URL(
+      "/v1/random-hubs/join",
+      getWS(this.host, this.config.tls)
+    );
     url.searchParams.set("id", hubId);
 
     if (peerMetadata) {
