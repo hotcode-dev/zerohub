@@ -63,7 +63,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     hosts: string[],
     config: Partial<Config> = {},
     rtcConfig: Partial<RTCConfiguration> = {},
-    topology: Topology<PeerMetadata, HubMetadata>
+    topology?: Topology<PeerMetadata, HubMetadata>
   ) {
     if (!hosts || hosts.length < 1) {
       throw new Error("The hosts must be at least one");
