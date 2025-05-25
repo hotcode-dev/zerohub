@@ -3,32 +3,47 @@ import { PeerStatus } from "../types";
 import { ZeroHubClient } from "../zeroHub";
 import { Topology } from ".";
 
+interface DataChannelConfig<PeerMetadata = object> {
+  rtcDataChannelInit?: RTCDataChannelInit;
+  onDataChannel: (
+    peer: Peer<PeerMetadata>,
+    dataChannel: RTCDataChannel,
+    isOwner: boolean
+  ) => void;
+}
+
+interface MediaChannelConfig<PeerMetadata = object> {
+  localStream?: MediaStream;
+  onTrack: (peer: Peer<PeerMetadata>, event: RTCTrackEvent) => void;
+}
+
 export class MeshTopology<PeerMetadata = object, HubMetadata = object>
   implements Topology<PeerMetadata, HubMetadata>
 {
+  /**
+   * The ZeroHub client instance.
+   * This is initialized in the init method and used to manage peer connections.
+   */
   zeroHub: ZeroHubClient<PeerMetadata, HubMetadata> | undefined;
-  dataChannelConfig: RTCDataChannelInit;
 
-  onDataChannel?:
-    | ((
-        peer: Peer<PeerMetadata>,
-        dataChannel: RTCDataChannel,
-        isOwner: boolean
-      ) => void)
-    | undefined;
+  /**
+   * Configuration for data channels.
+   * If provided, it will create a data channel for each peer when they connect.
+   */
+  dataChannelConfig: DataChannelConfig<PeerMetadata> | undefined;
+
+  /**
+   * Configuration for media channels.
+   * If provided, it will create a media channel for each peer when they connect.
+   */
+  mediaChannelConfig: MediaChannelConfig<PeerMetadata> | undefined;
 
   constructor(
-    dataChannelConfig: RTCDataChannelInit = {
-      ordered: false,
-    },
-    onDataChannel?: (
-      peer: Peer<PeerMetadata>,
-      dataChannel: RTCDataChannel,
-      isOwner: boolean
-    ) => void
+    dataChannelConfig?: DataChannelConfig<PeerMetadata>,
+    mediaChannelConfig?: MediaChannelConfig<PeerMetadata>
   ) {
     this.dataChannelConfig = dataChannelConfig;
-    this.onDataChannel = onDataChannel;
+    this.mediaChannelConfig = mediaChannelConfig;
   }
 
   init(zeroHub: ZeroHubClient<PeerMetadata, HubMetadata>) {
@@ -49,24 +64,47 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
       case PeerStatus.Pending:
         // if peer id is greater than local peer id, create offer
         if (this.zeroHub?.myPeerId && peer.id > this.zeroHub.myPeerId) {
-          if (this.onDataChannel) {
+          if (this.dataChannelConfig?.onDataChannel) {
             // create data channel
             const dataChannel = peer.rtcConn.createDataChannel(
               "data",
-              this.dataChannelConfig
+              this.dataChannelConfig.rtcDataChannelInit
             );
-            this.onDataChannel(peer, dataChannel, true);
+            this.dataChannelConfig.onDataChannel?.(peer, dataChannel, true);
           }
 
           // offer should send after create data channel
           this.zeroHub.sendOffer(peer.id);
         } else {
-          if (this.onDataChannel) {
+          if (this.dataChannelConfig?.onDataChannel) {
             // handle incoming data channel
             peer.rtcConn.ondatachannel = (event) => {
-              this.onDataChannel?.(peer, event.channel, false);
+              this.dataChannelConfig?.onDataChannel?.(
+                peer,
+                event.channel,
+                false
+              );
             };
           }
+        }
+
+        // if media channel config is provided, set up media stream handling
+        if (this.mediaChannelConfig) {
+          // if local stream is available, add tracks to peer connection
+          if (this.mediaChannelConfig.localStream) {
+            this.mediaChannelConfig.localStream.getTracks().forEach((track) => {
+              if (this.mediaChannelConfig?.localStream)
+                peer.rtcConn.addTrack(
+                  track,
+                  this.mediaChannelConfig.localStream
+                );
+            });
+          }
+
+          // handle incoming media stream
+          peer.rtcConn.ontrack = (event) => {
+            this.mediaChannelConfig?.onTrack?.(peer, event);
+          };
         }
         break;
       case PeerStatus.ZeroHubDisconnected:
