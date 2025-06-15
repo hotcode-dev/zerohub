@@ -5,6 +5,7 @@
     ZeroHubClient,
   } from "../../../client/src/index";
 
+  export let testName: string;
   export let componentId: string;
   export let zeroHubHosts: string[];
 
@@ -40,8 +41,12 @@
     }
   };
 
-  zeroHub.createHub({ foo: "bar" }, { name: "test" });
+  zeroHub.createRandomHub({ name: "test" });
 </script>
 
+<h2>Create Hub</h2>
+<div>Test Name: {testName}</div>
+<div>Hub ID: {hubInfoID}</div>
+<div>Component ID: {componentId}</div>
 <div data-testid={`create-hub-id-${componentId}`}>{hubInfoID}</div>
 <div data-testid={`create-peer-status-${componentId}`}>{peerStatus}</div>

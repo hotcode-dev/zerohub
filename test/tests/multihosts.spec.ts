@@ -13,6 +13,7 @@ test("multi hosts", async ({ mount }) => {
 
   const createHub = await mount(CreateHub, {
     props: {
+      testName: "multi hosts, create hub",
       zeroHubHosts: [zeroHubBadHost, zeroHubGoodHost],
       componentId: componentId,
     },
@@ -30,6 +31,7 @@ test("multi hosts", async ({ mount }) => {
 
   const joinHub = await mount(JoinHub, {
     props: {
+      testName: "multi hosts, join hub",
       hubId: hubId,
       zeroHubHosts: [zeroHubBadHost, zeroHubGoodHost],
       componentId: componentId,

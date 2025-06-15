@@ -36,4 +36,4 @@ kill-server:
 	-pkill -f "APP_PORT=8081 go run ./cmd/server.go"
 
 e2e-test:
-	cd ./test && npm run test
+	cd ./test && PWDEBUG=console npm run test

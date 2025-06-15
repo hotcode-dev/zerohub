@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 
+	"github.com/fasthttp/websocket"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
 )
@@ -32,7 +33,7 @@ func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
 	h.isMigrating = true
 	h.backupHost = backupHost
 
-	log.Debug().Msg("migrate mode enabled backup host: " + backupHost)
+	log.Info().Msg("migrate mode enabled backup host: " + backupHost)
 
 	ctx.SetStatusCode(fasthttp.StatusOK)
 
@@ -42,21 +43,32 @@ func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
 func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
 	backupHost := h.backupHost
 
-	// The 301 status is working fine on multi library following the rfc6455
-	// https://www.rfc-editor.org/rfc/rfc6455#section-4.1
-	//
-	// If the status code received from the server is not 101, the
-	// client handles the response per HTTP [RFC2616] procedures.  In
-	// particular, the client might perform authentication if it
-	// receives a 401 status code; the server might redirect the client
-	// using a 3xx status code (but clients are not required to follow
-	// them), etc.
-	//
-	// But the Native browser Websocket not suppot the redirection
+	// The 301 status is not working on multi library following the rfc6455
+	// But the Native browser Websocket not support the redirection
 	// If the connection error, client need to call `/status` to get the redirectURL
+	// https://www.rfc-editor.org/rfc/rfc6455#section-4.1
 
-	ctx.Response.Header.Set("Location", backupHost)
-	h.Response(ctx, fasthttp.StatusMovedPermanently, map[string]string{"backupHost": backupHost})
+	// We decide to upgrade the connection to send a close message
+	// to the client, so that the client can handle the redirection
+	// and reconnect to the new host.
+	if backupHost == "" {
+		return fmt.Errorf("backup host not found, please call /admin/migrate?host=localhost:8080")
+	}
+	err := upgrader.Upgrade(ctx, func(ws *websocket.Conn) {
+		closeErr := ws.WriteMessage(websocket.CloseMessage,
+			websocket.FormatCloseMessage(websocket.CloseGoingAway, backupHost))
+		if closeErr != nil {
+			log.Error().Msgf("error sending close message: %v", closeErr)
+		}
+		ws.Close()
+	})
+
+	if err != nil {
+		if _, ok := err.(websocket.HandshakeError); ok {
+			return fmt.Errorf("websocket handshake: %v", err)
+		}
+		return fmt.Errorf("websocket upgrade error: %v", err)
+	}
 
 	return nil
 }

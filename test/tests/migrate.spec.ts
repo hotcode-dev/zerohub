@@ -12,11 +12,12 @@ test("migrate", async ({ mount }) => {
   const componentIdNew = uuidv4();
   const zeroHubHost = "localhost:8080";
   const zeroHubHostNew = "localhost:8081";
-  const migrateURL = "http://localhost:8080/admin/migrate";
+  const migrateURL = "http://localhost:8080/v1/admin/migrate";
   const clientSecret = "client_secret";
 
   const createHub = await mount(CreateHub, {
     props: {
+      testName: "migrate, create hub",
       zeroHubHosts: [zeroHubHost],
       componentId: componentId,
     },
@@ -44,15 +45,22 @@ test("migrate", async ({ mount }) => {
   // test join the first hub after migrate
   const joinHub = await mount(JoinHub, {
     props: {
+      testName: "migrate, join hub",
       hubId: hubId,
       zeroHubHosts: [zeroHubHost],
       componentId: componentId,
     },
   });
+
   await test.step("join hub success", async () => {
-    await expect(
-      joinHub.getByTestId(`join-hub-id-${componentId}`).first()
-    ).toHaveText(hubId);
+    console.log(`Join hub with id: ${hubId} on componentId: ${componentId}`);
+    const joinHubIdLoc = joinHub
+      .getByTestId(`join-hub-id-${componentId}`)
+      .first();
+    console.log(`Join hub id element: ${joinHubIdLoc}`);
+    console.log(`Join hub id text: ${await joinHubIdLoc.textContent()}`);
+
+    await expect(joinHubIdLoc).toHaveText(hubId);
   });
   await test.step("peer status connected", async () => {
     await expect(

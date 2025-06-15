@@ -7,7 +7,6 @@ import { Peer } from "./peer";
 import { ClientMessage } from "./proto/client_message";
 import { ServerMessage } from "./proto/server_message";
 import { Topology } from "./topology";
-import { MeshTopology } from "./topology/meshTopology";
 import { LogLevel, PeerStatus, type Config, type HubInfo } from "./types";
 import { fetchWithTimeout, getHTTP, getWS } from "./utils";
 
@@ -102,66 +101,26 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
-   * Check the status of ZeroHub and return the backup host if exist.
-   * If the ZeroHub status is 301, it will return the backup host.
+   * Gets the next ZeroHub backup host.
    *
-   * @returns A Promise that resolves to the backup host if exist,
-   *          or resolves to undefined if status is 200.
-   * @throws Error if the status is not 200 or 301.
+   * If the current host is the last one in the list, it will reject with an error.
+   * If there are more hosts available, it increments the host index and resolves with the next host.
+   *
+   * @returns {Promise<string | void>} A promise that resolves with the next ZeroHub host or rejects with an error if no more hosts are available.
+   * @throws {Error} If all ZeroHub hosts are not working.
    */
-  getZeroHubBackupHost(): Promise<string | void> {
+  getZeroHubBackupHost(): Promise<string> {
     return new Promise((resolve, reject) => {
-      const resolveNextHost = () => {
-        if (this.hostIndex >= this.hosts.length - 1) {
-          reject(
-            new Error(
-              "all ZeroHub hosts are not working, please check the ZeroHub hosts"
-            )
-          );
-          return;
-        }
-        this.hostIndex = this.hostIndex + 1;
-        resolve(this.hosts[this.hostIndex]);
-      };
-
-      fetchWithTimeout(`${getHTTP(this.host, this.config.tls)}/status`)
-        .then((res) => {
-          if (res.status === 200) {
-            this.log("ZeroHub status is OK");
-            resolve();
-            return;
-          } else if (res.status === 301) {
-            // If status is 301, get the new host and resolve with it
-            res
-              .json()
-              .then((data) => {
-                const newHost = data.backupHost;
-                if (newHost) {
-                  resolve(newHost);
-                } else {
-                  console.error(
-                    `status 301, but ZeroHub is not responding with a new host: ${newHost}`
-                  );
-                  resolveNextHost();
-                }
-              })
-              .catch((err) => {
-                console.error(`cannot get new host from status 301: ${err}`);
-                resolveNextHost();
-              });
-            return;
-          } else {
-            // If status is not 200 or 301, resolve with the next host
-            console.error(
-              `ZeroHub is not responding with a valid status: ${res.status}`
-            );
-            resolveNextHost();
-          }
-        })
-        .catch((err) => {
-          console.error("ZeroHub status error", err);
-          resolveNextHost();
-        });
+      if (this.hostIndex >= this.hosts.length - 1) {
+        reject(
+          new Error(
+            "all ZeroHub hosts are not working, please check the ZeroHub hosts"
+          )
+        );
+        return;
+      }
+      this.hostIndex = this.hostIndex + 1;
+      resolve(this.hosts[this.hostIndex]);
     });
   }
 
@@ -184,25 +143,38 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     if (this.onPeerStatusChange) this.onPeerStatusChange(peer);
   }
 
-  // reconnect check the current host status then reconnect to the new host
-  public reconnect(currentURL: URL) {
+  /**
+   * Reconnects to ZeroHub with the current URL and an optional new host.
+   * If a new host is provided, it updates the current URL's host and reconnects.
+   * If no new host is provided, it fetches a backup host and reconnects to it.
+   *
+   * @param {URL} currentURL - The current URL of the ZeroHub connection.
+   * @param {string} [newHost] - An optional new host to connect to.
+   */
+  public reconnect(currentURL: URL, newHost?: string) {
+    if (newHost) {
+      this.warn(
+        `ZeroHub \`${this.host}\` is redirecting to \`${newHost}\`, reconnecting...`
+      );
+      currentURL.host = newHost;
+      this.connectToZeroHub(currentURL);
+      return;
+    }
     this.getZeroHubBackupHost()
       .then((newHost) => {
-        if (newHost) {
-          if (this.host === newHost) {
-            this.error(`zero hub reconnecting failed: not retying`);
-            return;
-          }
-
-          // reconnect to the new host
-          this.warn(
-            `ZeroHub \`${this.host}\` is reconnecting the new host: \`${newHost}\``
-          );
-
-          this.host = newHost;
-          currentURL.host = newHost;
-          this.connectToZeroHub(currentURL);
+        if (this.host === newHost) {
+          this.error(`zero hub reconnecting failed: not retying`);
+          return;
         }
+
+        // reconnect to the new host
+        this.warn(
+          `ZeroHub \`${this.host}\` is reconnecting the new host: \`${newHost}\``
+        );
+
+        this.host = newHost;
+        currentURL.host = newHost;
+        this.connectToZeroHub(currentURL);
       })
       .catch((err) => {
         this.error(`zero hub reconnecting failed: ${err}`);
@@ -329,8 +301,11 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     };
     // TODO: wait for error, close, or open to response promise result
     this.ws.onerror = (event) => {
+      this.error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`);
       if (this.onZeroHubError) {
-        this.onZeroHubError(Error(`ZeroHub error: ${JSON.stringify(event)}`));
+        this.onZeroHubError(
+          Error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`)
+        );
       }
       this.reconnect(url);
     };
@@ -339,8 +314,20 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       switch (event.code) {
         case 1000:
           return;
+        case 1001:
+          // 1001 is going away
+          this.warn(
+            `ZeroHub WebSocket closed: ${event.reason}, code: ${event.code}`,
+            event
+          );
+          if (typeof event.reason === "string") {
+            this.reconnect(url, event.reason);
+          }
+          return;
         case 1006:
-          // if the code is 1006 mean the connection was closed abnormally
+        case 1011:
+          // 1006 is abnormal closure
+          // 1011 is internal error
           this.reconnect(url);
           return;
         default:

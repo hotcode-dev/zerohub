@@ -12,6 +12,7 @@ test("create/join hub", async ({ mount }) => {
 
   const createHub = await mount(CreateHub, {
     props: {
+      testName: "create/join hub, create hub",
       zeroHubHosts: [zeroHubHost],
       componentId: componentId,
     },
@@ -29,6 +30,7 @@ test("create/join hub", async ({ mount }) => {
 
   const joinHub = await mount(JoinHub, {
     props: {
+      testName: "create/join hub, join hub",
       zeroHubHosts: [zeroHubHost],
       hubId: hubId,
       componentId: componentId,
