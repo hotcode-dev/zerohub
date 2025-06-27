@@ -1,20 +1,14 @@
-import {
-  defaultConfig,
-  defaultRtcConfig,
-  defaultRtcOfferOptions,
-} from "./const";
+import { defaultConfig, defaultRtcOfferOptions } from "./const";
 import { Peer } from "./peer";
 import { ClientMessage } from "./proto/client_message";
 import { ServerMessage } from "./proto/server_message";
 import { Topology } from "./topology";
 import { LogLevel, PeerStatus, type Config, type HubInfo } from "./types";
-import { fetchWithTimeout, getHTTP, getWS } from "./utils";
+import { getWS } from "./utils";
 
 export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   // config ZeroHub client configuration
   public config: Config;
-  // rtcConfig WebRTC configuration
-  public rtcConfig: RTCConfiguration;
   // hubMetadata my hub metadata will send to ZeroHub
   public hubMetadata: HubMetadata | undefined;
   // peerMetadata my peer metadata will send to ZeroHub and another peer
@@ -61,15 +55,19 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   constructor(
     hosts: string[],
     config: Partial<Config> = {},
-    rtcConfig: Partial<RTCConfiguration> = {},
     topology?: Topology<PeerMetadata, HubMetadata>
   ) {
     if (!hosts || hosts.length < 1) {
       throw new Error("The hosts must be at least one");
     }
 
+    // Set default config
     this.config = Object.assign(defaultConfig, config);
-    this.rtcConfig = Object.assign(defaultRtcConfig, rtcConfig);
+    this.config.rtcConfig = Object.assign(
+      defaultConfig.rtcConfig,
+      config.rtcConfig
+    );
+
     this.peers = {};
     this.hosts = hosts;
     this.hostIndex = 0;
@@ -208,7 +206,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
             PeerStatus.Pending,
             peer.metadata ? JSON.parse(peer.metadata) : {},
             new Date(peer.joinedAt),
-            new RTCPeerConnection(this.rtcConfig)
+            new RTCPeerConnection(this.config.rtcConfig)
           );
           newPeer.rtcConn.onconnectionstatechange = (ev) => {
             this.log("onconnectionstatechange", ev);
@@ -258,7 +256,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         PeerStatus.Pending,
         peer.metadata ? JSON.parse(peer.metadata) : {},
         new Date(peer.joinedAt),
-        new RTCPeerConnection(this.rtcConfig)
+        new RTCPeerConnection(this.config.rtcConfig)
       );
       newPeer.rtcConn.onconnectionstatechange = (ev) => {
         this.log("onconnectionstatechange", ev);

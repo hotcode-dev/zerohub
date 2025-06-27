@@ -1,13 +1,5 @@
 import { type Config, LogLevel } from "./types";
 
-export const defaultConfig: Config = {
-  tls: true,
-  logLevel: LogLevel.Warning,
-  waitIceCandidatesTimeout: 2000,
-  autoAnswer: true,
-  autoAcceptAnswer: true,
-};
-
 export const defaultRtcConfig: RTCConfiguration = {
   iceServers: [
     {
@@ -21,6 +13,15 @@ export const defaultRtcConfig: RTCConfiguration = {
     },
   ],
   bundlePolicy: "balanced",
+};
+
+export const defaultConfig: Config = {
+  tls: true,
+  logLevel: LogLevel.Warning,
+  waitIceCandidatesTimeout: 2000,
+  autoAnswer: true,
+  autoAcceptAnswer: true,
+  rtcConfig: defaultRtcConfig,
 };
 
 export const defaultRtcOfferOptions: RTCOfferOptions = {

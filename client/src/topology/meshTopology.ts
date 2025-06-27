@@ -3,7 +3,7 @@ import { PeerStatus } from "../types";
 import { ZeroHubClient } from "../zeroHub";
 import { Topology } from ".";
 
-interface DataChannelConfig<PeerMetadata = object> {
+export interface DataChannelConfig<PeerMetadata = object> {
   rtcDataChannelInit?: RTCDataChannelInit;
   onDataChannel: (
     peer: Peer<PeerMetadata>,
@@ -12,9 +12,15 @@ interface DataChannelConfig<PeerMetadata = object> {
   ) => void;
 }
 
-interface MediaChannelConfig<PeerMetadata = object> {
+export interface MediaChannelConfig<PeerMetadata = object> {
   localStream?: MediaStream;
   onTrack: (peer: Peer<PeerMetadata>, event: RTCTrackEvent) => void;
+}
+
+export interface MeshTopologyConfig<PeerMetadata = object> {
+  rtcOfferOptions?: RTCOfferOptions;
+  dataChannelConfig?: DataChannelConfig<PeerMetadata>;
+  mediaChannelConfig?: MediaChannelConfig<PeerMetadata>;
 }
 
 export class MeshTopology<PeerMetadata = object, HubMetadata = object>
@@ -25,6 +31,12 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
    * This is initialized in the init method and used to manage peer connections.
    */
   zeroHub: ZeroHubClient<PeerMetadata, HubMetadata> | undefined;
+
+  /**
+   * RTC offer options for the mesh topology.
+   * This can be used to customize the offer sent to peers.
+   */
+  rtcOfferOptions: RTCOfferOptions | undefined;
 
   /**
    * Configuration for data channels.
@@ -38,12 +50,10 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
    */
   mediaChannelConfig: MediaChannelConfig<PeerMetadata> | undefined;
 
-  constructor(
-    dataChannelConfig?: DataChannelConfig<PeerMetadata>,
-    mediaChannelConfig?: MediaChannelConfig<PeerMetadata>
-  ) {
-    this.dataChannelConfig = dataChannelConfig;
-    this.mediaChannelConfig = mediaChannelConfig;
+  constructor(config: MeshTopologyConfig<PeerMetadata> = {}) {
+    this.rtcOfferOptions = config.rtcOfferOptions;
+    this.dataChannelConfig = config.dataChannelConfig;
+    this.mediaChannelConfig = config.mediaChannelConfig;
   }
 
   init(zeroHub: ZeroHubClient<PeerMetadata, HubMetadata>) {
@@ -74,7 +84,7 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
           }
 
           // offer should send after create data channel
-          this.zeroHub.sendOffer(peer.id);
+          this.zeroHub.sendOffer(peer.id, this.rtcOfferOptions);
         } else {
           if (this.dataChannelConfig?.onDataChannel) {
             // handle incoming data channel

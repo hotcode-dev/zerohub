@@ -21,7 +21,10 @@ export interface Config {
   logLevel: LogLevel;
   waitIceCandidatesTimeout: number;
   autoAnswer: boolean;
+  // autoAcceptAnswer indicates whether to automatically accept the answer from the remote peer, default is true.
   autoAcceptAnswer: boolean;
+  // rtcConfig WebRTC configuration
+  rtcConfig: RTCConfiguration;
 }
 
 export interface HubInfo<HubMetadata = object> {
