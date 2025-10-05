@@ -1,5 +1,5 @@
 import { Peer } from "../peer";
-import { DataChannelConfig, MediaChannelConfig, PeerStatus } from "../types";
+import { PeerStatus } from "../types";
 import { ZeroHubClient } from "../zeroHub";
 import { Topology } from ".";
 
@@ -29,67 +29,76 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
       if (prevOnPeerStatusChange) {
         prevOnPeerStatusChange(peer);
       }
-      this.onPeerStatusChange(
-        peer,
-        this.zeroHub?.config.rtcOfferOptions,
-        this.zeroHub?.config.dataChannelConfig,
-        this.zeroHub?.config.mediaChannelConfig
-      );
+      this.onPeerStatusChange(peer);
     };
   }
 
-  onPeerStatusChange(
-    peer: Peer<PeerMetadata>,
-    rtcOfferOptions?: RTCOfferOptions,
-    dataChannelConfig?: DataChannelConfig<PeerMetadata>,
-    mediaChannelConfig?: MediaChannelConfig<PeerMetadata>
-  ) {
+  onPeerStatusChange(peer: Peer<PeerMetadata>) {
+    if (!this.zeroHub) {
+      throw new Error("ZeroHub is not initialized");
+    }
+
     switch (peer.status) {
       case PeerStatus.Connected:
         break;
       case PeerStatus.Pending:
         // if peer id is greater than local peer id, create offer
-        if (this.zeroHub?.myPeerId && peer.id > this.zeroHub.myPeerId) {
-          if (dataChannelConfig?.onDataChannel) {
+        if (this.zeroHub.myPeerId && peer.id > this.zeroHub.myPeerId) {
+          if (this.zeroHub.config.dataChannelConfig?.onDataChannel) {
             // create data channel
             const dataChannel = peer.rtcConn.createDataChannel(
               "data",
-              dataChannelConfig.rtcDataChannelInit
+              this.zeroHub.config.dataChannelConfig.rtcDataChannelInit
             );
-            dataChannelConfig.onDataChannel?.(peer, dataChannel, true);
+            this.zeroHub.config.dataChannelConfig.onDataChannel?.(
+              peer,
+              dataChannel,
+              true
+            );
           }
 
           // offer should send after create data channel
-          this.zeroHub.sendOffer(peer.id, rtcOfferOptions).catch((err) => {
-            this.zeroHub?.logger.error(
-              "Failed to send offer to peer",
-              peer.id,
-              err
-            );
-          });
+          this.zeroHub
+            .sendOffer(peer.id, this.zeroHub.config.rtcOfferOptions)
+            .catch((err) => {
+              this.zeroHub?.logger.error(
+                "Failed to send offer to peer",
+                peer.id,
+                err
+              );
+            });
         } else {
-          if (dataChannelConfig?.onDataChannel) {
+          if (this.zeroHub.config.dataChannelConfig?.onDataChannel) {
             // handle incoming data channel
             peer.rtcConn.ondatachannel = (event) => {
-              dataChannelConfig?.onDataChannel?.(peer, event.channel, false);
+              this.zeroHub?.config.dataChannelConfig?.onDataChannel?.(
+                peer,
+                event.channel,
+                false
+              );
             };
           }
         }
 
         // if media channel config is provided, set up media stream handling
-        if (mediaChannelConfig) {
+        if (this.zeroHub.config.mediaChannelConfig) {
           // if local stream is available, add tracks to peer connection
-          if (mediaChannelConfig.localStream) {
-            mediaChannelConfig.localStream.getTracks().forEach((track) => {
-              if (mediaChannelConfig?.localStream) {
-                peer.rtcConn.addTrack(track, mediaChannelConfig.localStream);
-              }
-            });
+          if (this.zeroHub.config.mediaChannelConfig.localStream) {
+            this.zeroHub.config.mediaChannelConfig.localStream
+              .getTracks()
+              .forEach((track) => {
+                if (this.zeroHub?.config.mediaChannelConfig?.localStream) {
+                  peer.rtcConn.addTrack(
+                    track,
+                    this.zeroHub.config.mediaChannelConfig.localStream
+                  );
+                }
+              });
           }
 
           // handle incoming media stream
           peer.rtcConn.ontrack = (event) => {
-            mediaChannelConfig?.onTrack?.(peer, event);
+            this.zeroHub?.config.mediaChannelConfig?.onTrack?.(peer, event);
           };
         }
         break;

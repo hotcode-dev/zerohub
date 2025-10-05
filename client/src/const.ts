@@ -15,6 +15,11 @@ export const DEFAULT_RTC_CONFIG: RTCConfiguration = {
   bundlePolicy: "balanced",
 };
 
+export const DEFAULT_RTC_OFFER_OPTIONS: RTCOfferOptions = {
+  offerToReceiveAudio: false,
+  offerToReceiveVideo: false,
+};
+
 export const DEFAULT_CONFIG: Config = {
   tls: true,
   logLevel: LogLevel.Warning,
@@ -23,10 +28,5 @@ export const DEFAULT_CONFIG: Config = {
   autoAnswer: true,
   autoAcceptAnswer: true,
   rtcConfig: DEFAULT_RTC_CONFIG,
-};
-
-export const DEFAULT_RTC_OFFER_OPTIONS: RTCOfferOptions = {
-  iceRestart: true,
-  offerToReceiveAudio: true,
-  offerToReceiveVideo: true,
+  rtcOfferOptions: DEFAULT_RTC_OFFER_OPTIONS,
 };

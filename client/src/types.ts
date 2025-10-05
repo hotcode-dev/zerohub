@@ -114,7 +114,7 @@ export interface Config<PeerMetadata = object> {
    * RTC offer options for the mesh topology.
    * This can be used to customize the offer sent to peers.
    */
-  rtcOfferOptions?: RTCOfferOptions;
+  rtcOfferOptions: RTCOfferOptions;
   /**
    * Configuration for data channels.
    * If provided, it will create a data channel for each peer when they connect.
@@ -132,7 +132,13 @@ export interface Config<PeerMetadata = object> {
  * @template HubMetadata - The type of metadata associated with the hub.
  */
 export interface HubInfo<HubMetadata = object> {
+  /**
+   * The unique identifier of the hub.
+   */
   id: string;
+  /**
+   * The metadata associated with the hub.
+   */
   metadata: HubMetadata;
   createdAt: Date;
 }

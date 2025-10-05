@@ -80,6 +80,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     // Set default config
     this.config = Object.assign(DEFAULT_CONFIG, config);
     this.config.rtcConfig = Object.assign(DEFAULT_RTC_CONFIG, config.rtcConfig);
+    this.config.rtcOfferOptions = Object.assign(
+      DEFAULT_RTC_OFFER_OPTIONS,
+      config.rtcOfferOptions
+    );
 
     this.logger = new ZeroHubLogger(this.config.logger, this.config.logLevel);
 
@@ -408,7 +412,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * Send an offer to the specified peer using WebRTC.
    *
    * @param {string} peerId - The ID of the peer to send the offer to
-   * @param {RTCOfferOptions} rtcOfferOptions - The options for the WebRTC offer
+   * @param {RTCOfferOptions} rtcOfferOptions - The options for the WebRTC offer (default: { offerToReceiveAudio: false, offerToReceiveVideo: false })
    * @param {RTCConfiguration} [rtcConfig] - The configuration for the WebRTC connection
    */
   public async sendOffer(
@@ -421,7 +425,11 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         "send offer error: ZeroHub not connected, please connect to ZeroHub by `createHub` or `joinHub`"
       );
     }
-    rtcOfferOptions = Object.assign(DEFAULT_RTC_OFFER_OPTIONS, rtcOfferOptions);
+
+    rtcOfferOptions = Object.assign(
+      this.config.rtcOfferOptions,
+      rtcOfferOptions
+    );
     const peer = this.peers[peerId];
     if (!peer) {
       this.logger.error(`send offer error: peer id ${peerId} not found`);
@@ -464,7 +472,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    *
    * @param {string} peerId - The ID of the peer
    * @param {string} offerSdp - The offer SDP
-   * @param {RTCOfferOptions} rtcOfferOptions - Options for the RTC offer (default: {})
+   * @param {RTCOfferOptions} rtcOfferOptions - Options for the RTC offer (default: { offerToReceiveAudio: false, offerToReceiveVideo: false })
    * @param {RTCConfiguration} rtcConfig - Optional RTC configuration
    * @return {void}
    */
@@ -480,7 +488,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       );
     }
 
-    rtcOfferOptions = Object.assign(DEFAULT_RTC_OFFER_OPTIONS, rtcOfferOptions);
+    rtcOfferOptions = Object.assign(
+      this.config.rtcOfferOptions,
+      rtcOfferOptions
+    );
 
     const peer = this.peers[peerId];
     if (!peer) {
