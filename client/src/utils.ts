@@ -26,10 +26,18 @@ export function getWS(host: string, tls: boolean) {
   return `ws://${host}`;
 }
 
+/**
+ * Fetch with a timeout.
+ * @param {string | URL | Request} input - The resource that you wish to fetch.
+ * @param {RequestInit} [init] - An object containing any custom settings that you want to apply to the request.
+ * @param {number} [timeout=2000] - The timeout in milliseconds. Default is 2000ms.
+ * @return {Promise<Response>} A Promise that resolves to the Response object.
+ * @throws {DOMException} Throws a DOMException if the request times out.
+ */
 export async function fetchWithTimeout(
   input: string | URL | globalThis.Request,
   init?: RequestInit,
-  timeout: number = 2000
+  timeout = 2000
 ) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);

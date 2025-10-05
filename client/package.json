@@ -1,11 +1,12 @@
 {
   "name": "@zero-hub/client",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "ZeroHub Client SDK",
   "author": "Jirawat Boonkumnerd <contact@ntsd.dev> (https://ntsd.dev)",
   "type": "module",
   "files": [
-    "./dist/**/*"
+    "./dist/**/*",
+    "./src/**/*"
   ],
   "main": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
@@ -33,7 +34,13 @@
     "tsc": "tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json",
     "rollup": "rollup --config rollup.config.js",
     "build": "rm -rf ./dist && npm run tsc && npm run rollup",
-    "docs": "typedoc --plugin typedoc-plugin-markdown --tsconfig tsconfig.json"
+    "docs": "typedoc --plugin typedoc-plugin-markdown --tsconfig tsconfig.json",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "format": "prettier --write \"src/**/*.{ts,js,json,md}\" \"!src/proto/**\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json,md}\" \"!src/proto/**\"",
+    "check": "npm run lint && npm run format:check && npm run tsc",
+    "fix": "npm run lint:fix && npm run format"
   },
   "repository": {
     "type": "git",
@@ -49,18 +56,24 @@
   },
   "homepage": "https://github.com/hotcode-dev/zerohub",
   "devDependencies": {
+    "@eslint/js": "^9.36.0",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.5",
-    "@types/node": "^20.11.19",
+    "@types/node": "^22.7.5",
     "@types/protobufjs": "^6.0.0",
+    "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "prettier": "^3.6.2",
+    "typescript-eslint": "^8.44.1",
     "rollup": "^4.9.1",
     "ts-proto": "^1.165.2",
     "tslib": "^2.6.2",
-    "typedoc": "^0.25.7",
-    "typedoc-plugin-markdown": "^3.17.1",
-    "typescript": "^5.3.3"
+    "typedoc": "^0.28.0",
+    "typedoc-plugin-markdown": "^4.9.0",
+    "typescript": "^5.6.3"
   },
   "dependencies": {
     "protobufjs": "^7.2.5"

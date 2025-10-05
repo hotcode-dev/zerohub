@@ -1,14 +1,24 @@
-import { defaultConfig, defaultRtcOfferOptions } from "./const";
+import {
+  DEFAULT_CONFIG,
+  DEFAULT_RTC_CONFIG,
+  DEFAULT_RTC_OFFER_OPTIONS,
+} from "./const";
+import { ZeroHubLogger } from "./logger";
 import { Peer } from "./peer";
 import { ClientMessage } from "./proto/client_message";
 import { ServerMessage } from "./proto/server_message";
-import { Topology } from "./topology";
-import { LogLevel, PeerStatus, type Config, type HubInfo } from "./types";
+import { MeshTopology, Topology } from "./topology";
+import { PeerStatus, type Config, type HubInfo } from "./types";
 import { getWS } from "./utils";
 
+/**
+ * Represents a ZeroHub client that manages connections to a ZeroHub server and handles peer-to-peer WebRTC connections.
+ * @template PeerMetadata - The type of metadata associated with the peer.
+ * @template HubMetadata - The type of metadata associated with the hub.
+ */
 export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   // config ZeroHub client configuration
-  public config: Config;
+  public config: Config<PeerMetadata>;
   // hubMetadata my hub metadata will send to ZeroHub
   public hubMetadata: HubMetadata | undefined;
   // peerMetadata my peer metadata will send to ZeroHub and another peer
@@ -23,7 +33,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   // topology is the WebRTC topology for this client
   // the default topology is a mesh topology
   // the topology will be used to connect to other peers
-  public topology: Topology<PeerMetadata, HubMetadata> | undefined;
+  public topology: Topology<PeerMetadata, HubMetadata>;
 
   // the hosts of ZeroHub without protocol. if the first host is not working, it will try to connect to the next host
   public hosts: string[];
@@ -43,59 +53,41 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   // onPeerError will be called when a peer error
   public onPeerError?: (peer: Peer<PeerMetadata>, error: Error) => void;
 
+  // logger is used to log messages
+  public logger: ZeroHubLogger;
+
   /**
    * Creates a new ZeroHub Client class
    *
    * @param hosts ZeroHub hosts without protocol. if the first host is not working, it will try to connect to the next host. for example `['sg1.zerohub.dev', 'sg2.zerohub.dev']`
    * @param config ZeroHub client configuration
-   * @param rtcConfig default WebRTC configuration
+   * @param topology WebRTC topology for this client, default is mesh topology
    *
    * @returns ZeroHub Client class
    */
   constructor(
     hosts: string[],
-    config: Partial<Config> = {},
-    topology?: Topology<PeerMetadata, HubMetadata>
+    config: Partial<Config<PeerMetadata>> = {},
+    topology: Topology<PeerMetadata, HubMetadata> = new MeshTopology<
+      PeerMetadata,
+      HubMetadata
+    >()
   ) {
     if (!hosts || hosts.length < 1) {
       throw new Error("The hosts must be at least one");
     }
 
     // Set default config
-    this.config = Object.assign(defaultConfig, config);
-    this.config.rtcConfig = Object.assign(
-      defaultConfig.rtcConfig,
-      config.rtcConfig
-    );
+    this.config = Object.assign(DEFAULT_CONFIG, config);
+    this.config.rtcConfig = Object.assign(DEFAULT_RTC_CONFIG, config.rtcConfig);
+
+    this.logger = new ZeroHubLogger(this.config.logger, this.config.logLevel);
 
     this.peers = {};
     this.hosts = hosts;
     this.hostIndex = 0;
     this.host = hosts[this.hostIndex];
     this.topology = topology;
-  }
-
-  log(message?: any, ...optionalParams: any[]) {
-    if (this.config.logLevel === LogLevel.Debug) {
-      console.log(message, ...optionalParams);
-    }
-  }
-  warn(message?: any, ...optionalParams: any[]) {
-    if (
-      this.config.logLevel === LogLevel.Debug ||
-      this.config.logLevel === LogLevel.Warning
-    ) {
-      console.warn(message, ...optionalParams);
-    }
-  }
-  error(message?: any, ...optionalParams: any[]) {
-    if (
-      this.config.logLevel === LogLevel.Debug ||
-      this.config.logLevel === LogLevel.Warning ||
-      this.config.logLevel === LogLevel.Error
-    ) {
-      console.error(message, ...optionalParams);
-    }
   }
 
   /**
@@ -131,14 +123,16 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   updatePeerStatus(peerId: string, status: PeerStatus) {
     const peer = this.peers[peerId];
     if (!peer) {
-      this.error(
+      this.logger.error(
         `update status error: peer id ${peerId} not found, status ${status}`
       );
       return;
     }
 
     peer.status = status;
-    if (this.onPeerStatusChange) this.onPeerStatusChange(peer);
+    if (this.onPeerStatusChange) {
+      this.onPeerStatusChange(peer);
+    }
   }
 
   /**
@@ -151,7 +145,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    */
   public reconnect(currentURL: URL, newHost?: string) {
     if (newHost) {
-      this.warn(
+      this.logger.warn(
         `ZeroHub \`${this.host}\` is redirecting to \`${newHost}\`, reconnecting...`
       );
       currentURL.host = newHost;
@@ -161,12 +155,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     this.getZeroHubBackupHost()
       .then((newHost) => {
         if (this.host === newHost) {
-          this.error(`zero hub reconnecting failed: not retying`);
+          this.logger.error("zero hub reconnecting failed: not retying");
           return;
         }
 
         // reconnect to the new host
-        this.warn(
+        this.logger.warn(
           `ZeroHub \`${this.host}\` is reconnecting the new host: \`${newHost}\``
         );
 
@@ -175,7 +169,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         this.connectToZeroHub(currentURL);
       })
       .catch((err) => {
-        this.error(`zero hub reconnecting failed: ${err}`);
+        this.logger.error(`zero hub reconnecting failed: ${err}`);
       });
   }
 
@@ -191,12 +185,14 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       this.myPeerId = hubInfoMsg.myPeerId;
       this.hubInfo = {
         id: hubInfoMsg.id,
-        metadata: hubInfoMsg.hubMetadata
+        metadata: (hubInfoMsg.hubMetadata
           ? JSON.parse(hubInfoMsg.hubMetadata)
-          : {},
+          : {}) as HubMetadata,
         createdAt: new Date(hubInfoMsg.createdAt),
       };
-      if (this.onHubInfo) this.onHubInfo(this.hubInfo);
+      if (this.onHubInfo) {
+        this.onHubInfo(this.hubInfo);
+      }
 
       // new peer if not exists
       for (const peer of hubInfoMsg.peers) {
@@ -204,12 +200,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
           const newPeer = new Peer<PeerMetadata>(
             peer.id,
             PeerStatus.Pending,
-            peer.metadata ? JSON.parse(peer.metadata) : {},
+            (peer.metadata ? JSON.parse(peer.metadata) : {}) as PeerMetadata,
             new Date(peer.joinedAt),
             new RTCPeerConnection(this.config.rtcConfig)
           );
           newPeer.rtcConn.onconnectionstatechange = (ev) => {
-            this.log("onconnectionstatechange", ev);
+            this.logger.log("onconnectionstatechange", ev);
             if (newPeer.rtcConn.connectionState === "connected") {
               this.updatePeerStatus(peer.id, PeerStatus.Connected);
             } else if (newPeer.rtcConn.connectionState === "disconnected") {
@@ -218,7 +214,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
           };
           newPeer.rtcConn.oniceconnectionstatechange = (ev) => {
             // https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation#explicit_restartice_method_added
-            this.log("onconnectionstatechange", ev);
+            this.logger.log("onconnectionstatechange", ev);
             if (newPeer.rtcConn.iceConnectionState === "failed") {
               newPeer.rtcConn.restartIce();
             }
@@ -236,7 +232,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       this.updatePeerStatus(offerPeerId, PeerStatus.AnswerPending);
 
       if (this.config.autoAnswer) {
-        this.sendAnswer(offerPeerId, offerSdp);
+        this.sendAnswer(offerPeerId, offerSdp).catch((err) => {
+          this.logger.error("Failed to send answer to peer", offerPeerId, err);
+        });
       }
     } else if (serverMessage.answerMessage) {
       const answerPeerId = serverMessage.answerMessage.answerPeerId;
@@ -245,21 +243,29 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       this.updatePeerStatus(answerPeerId, PeerStatus.AcceptPending);
 
       if (this.config.autoAcceptAnswer) {
-        this.acceptAnswer(answerPeerId, answerSdp);
+        this.acceptAnswer(answerPeerId, answerSdp).catch((err) => {
+          this.logger.error(
+            "Failed to accept answer to peer",
+            answerPeerId,
+            err
+          );
+        });
       }
     } else if (serverMessage.peerJoinedMessage) {
       const peer = serverMessage.peerJoinedMessage.peer;
-      if (!peer || !this.hubInfo) return;
+      if (!peer || !this.hubInfo) {
+        return;
+      }
 
       const newPeer = new Peer<PeerMetadata>(
         peer.id,
         PeerStatus.Pending,
-        peer.metadata ? JSON.parse(peer.metadata) : {},
+        (peer.metadata ? JSON.parse(peer.metadata) : {}) as PeerMetadata,
         new Date(peer.joinedAt),
         new RTCPeerConnection(this.config.rtcConfig)
       );
       newPeer.rtcConn.onconnectionstatechange = (ev) => {
-        this.log("onconnectionstatechange", ev);
+        this.logger.log("onconnectionstatechange", ev);
         if (newPeer.rtcConn.connectionState === "connected") {
           this.updatePeerStatus(peer.id, PeerStatus.Connected);
         } else if (newPeer.rtcConn.connectionState === "disconnected") {
@@ -283,10 +289,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * @param {URL} url - The URL of the ZeroHub to connect to
    */
   public connectToZeroHub(url: URL) {
-    this.log("connecting to ZeroHub:", url);
+    this.logger.log("connecting to ZeroHub:", url);
 
     if (this.topology) {
-      this.log(`using ${this.topology.constructor.name} topology`);
+      this.logger.log(`using ${this.topology.constructor.name} topology`);
       this.topology.init(this);
     }
 
@@ -294,12 +300,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     this.ws.binaryType = "arraybuffer";
     this.ws.onmessage = (event: MessageEvent<Iterable<number>>) => {
       const serverMessage = ServerMessage.decode(new Uint8Array(event.data));
-      this.log("received zerohub message", serverMessage);
+      this.logger.log("received zerohub message", serverMessage);
       this.handleZeroHubMessage(serverMessage);
     };
     // TODO: wait for error, close, or open to response promise result
     this.ws.onerror = (event) => {
-      this.error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`);
+      this.logger.error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`);
       if (this.onZeroHubError) {
         this.onZeroHubError(
           Error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`)
@@ -314,7 +320,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
           return;
         case 1001:
           // 1001 is going away
-          this.warn(
+          this.logger.warn(
             `ZeroHub WebSocket closed: ${event.reason}, code: ${event.code}`,
             event
           );
@@ -339,7 +345,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
           break;
       }
     };
-    this.ws.onopen = (event) => {};
+    this.ws.onopen = () => {};
   }
 
   /**
@@ -415,10 +421,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         "send offer error: ZeroHub not connected, please connect to ZeroHub by `createHub` or `joinHub`"
       );
     }
-    rtcOfferOptions = Object.assign(defaultRtcOfferOptions, rtcOfferOptions);
+    rtcOfferOptions = Object.assign(DEFAULT_RTC_OFFER_OPTIONS, rtcOfferOptions);
     const peer = this.peers[peerId];
     if (!peer) {
-      this.error(`send offer error: peer id ${peerId} not found`);
+      this.logger.error(`send offer error: peer id ${peerId} not found`);
       return;
     }
 
@@ -430,7 +436,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     let isSent = false;
 
     peer.rtcConn.onicecandidate = (event) => {
-      if (!peer.rtcConn.localDescription || isSent || event.candidate) return;
+      if (!peer.rtcConn.localDescription || isSent || event.candidate) {
+        return;
+      }
 
       isSent = true;
       this.sendOfferToWebsocket(peerId, peer.rtcConn.localDescription);
@@ -441,8 +449,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
 
     // stop waiting for ice candidates if longer than timeout
     setTimeout(() => {
-      this.warn("timeout waiting ICE candidates");
-      if (!peer.rtcConn.localDescription || isSent) return;
+      this.logger.warn("timeout waiting ICE candidates");
+      if (!peer.rtcConn.localDescription || isSent) {
+        return;
+      }
 
       isSent = true;
       this.sendOfferToWebsocket(peerId, peer.rtcConn.localDescription);
@@ -470,11 +480,11 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       );
     }
 
-    rtcOfferOptions = Object.assign(defaultRtcOfferOptions, rtcOfferOptions);
+    rtcOfferOptions = Object.assign(DEFAULT_RTC_OFFER_OPTIONS, rtcOfferOptions);
 
     const peer = this.peers[peerId];
     if (!peer) {
-      console.error(`send answer error: peer id ${peerId} not found`);
+      this.logger.error(`send answer error: peer id ${peerId} not found`);
       return;
     }
 
@@ -490,8 +500,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
 
     let isSent = false;
     peer.rtcConn.onicecandidate = (event) => {
-      this.log("onicecandidate", event);
-      if (!peer.rtcConn.localDescription || isSent || event.candidate) return;
+      this.logger.log("onicecandidate", event);
+      if (!peer.rtcConn.localDescription || isSent || event.candidate) {
+        return;
+      }
 
       isSent = true;
       this.sendAnswerToWebsocket(peerId, peer.rtcConn.localDescription);
@@ -502,8 +514,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
 
     // stop waiting for ice candidates if longer than timeout
     setTimeout(() => {
-      this.warn("timeout waiting ICE candidates");
-      if (!peer.rtcConn.localDescription || isSent) return;
+      this.logger.warn("timeout waiting ICE candidates");
+      if (!peer.rtcConn.localDescription || isSent) {
+        return;
+      }
 
       isSent = true;
       this.sendAnswerToWebsocket(peerId, peer.rtcConn.localDescription);
@@ -519,7 +533,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   public async acceptAnswer(peerId: string, answerSdp: string) {
     const peer = this.peers[peerId];
     if (!peer) {
-      console.error(`accept answer error: peer id ${peerId} not found`);
+      this.logger.error(`accept answer error: peer id ${peerId} not found`);
       return;
     }
 

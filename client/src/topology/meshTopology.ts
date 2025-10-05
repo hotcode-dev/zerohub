@@ -1,28 +1,16 @@
 import { Peer } from "../peer";
-import { PeerStatus } from "../types";
+import { DataChannelConfig, MediaChannelConfig, PeerStatus } from "../types";
 import { ZeroHubClient } from "../zeroHub";
 import { Topology } from ".";
 
-export interface DataChannelConfig<PeerMetadata = object> {
-  rtcDataChannelInit?: RTCDataChannelInit;
-  onDataChannel: (
-    peer: Peer<PeerMetadata>,
-    dataChannel: RTCDataChannel,
-    isOwner: boolean
-  ) => void;
-}
-
-export interface MediaChannelConfig<PeerMetadata = object> {
-  localStream?: MediaStream;
-  onTrack: (peer: Peer<PeerMetadata>, event: RTCTrackEvent) => void;
-}
-
-export interface MeshTopologyConfig<PeerMetadata = object> {
-  rtcOfferOptions?: RTCOfferOptions;
-  dataChannelConfig?: DataChannelConfig<PeerMetadata>;
-  mediaChannelConfig?: MediaChannelConfig<PeerMetadata>;
-}
-
+/**
+ * MeshTopology implements a full mesh WebRTC topology.
+ * Each peer connects to every other peer directly.
+ * This is the simplest topology and is suitable for small groups of peers.
+ * For larger groups, consider using a different topology such as SFU or MCU.
+ * The MeshTopology handles peer status changes and sets up data channels and media streams as needed.
+ * It uses the peer IDs to determine which peer should create the offer to avoid offer collisions.
+ */
 export class MeshTopology<PeerMetadata = object, HubMetadata = object>
   implements Topology<PeerMetadata, HubMetadata>
 {
@@ -32,88 +20,76 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
    */
   zeroHub: ZeroHubClient<PeerMetadata, HubMetadata> | undefined;
 
-  /**
-   * RTC offer options for the mesh topology.
-   * This can be used to customize the offer sent to peers.
-   */
-  rtcOfferOptions: RTCOfferOptions | undefined;
-
-  /**
-   * Configuration for data channels.
-   * If provided, it will create a data channel for each peer when they connect.
-   */
-  dataChannelConfig: DataChannelConfig<PeerMetadata> | undefined;
-
-  /**
-   * Configuration for media channels.
-   * If provided, it will create a media channel for each peer when they connect.
-   */
-  mediaChannelConfig: MediaChannelConfig<PeerMetadata> | undefined;
-
-  constructor(config: MeshTopologyConfig<PeerMetadata> = {}) {
-    this.rtcOfferOptions = config.rtcOfferOptions;
-    this.dataChannelConfig = config.dataChannelConfig;
-    this.mediaChannelConfig = config.mediaChannelConfig;
-  }
-
   init(zeroHub: ZeroHubClient<PeerMetadata, HubMetadata>) {
     this.zeroHub = zeroHub;
 
     // override onPeerStatusChange to handle data channel
     const prevOnPeerStatusChange = this.zeroHub.onPeerStatusChange;
     this.zeroHub.onPeerStatusChange = (peer: Peer<PeerMetadata>) => {
-      if (prevOnPeerStatusChange) prevOnPeerStatusChange(peer);
-      this.onPeerStatusChange(peer);
+      if (prevOnPeerStatusChange) {
+        prevOnPeerStatusChange(peer);
+      }
+      this.onPeerStatusChange(
+        peer,
+        this.zeroHub?.config.rtcOfferOptions,
+        this.zeroHub?.config.dataChannelConfig,
+        this.zeroHub?.config.mediaChannelConfig
+      );
     };
   }
 
-  onPeerStatusChange(peer: Peer<PeerMetadata>) {
+  onPeerStatusChange(
+    peer: Peer<PeerMetadata>,
+    rtcOfferOptions?: RTCOfferOptions,
+    dataChannelConfig?: DataChannelConfig<PeerMetadata>,
+    mediaChannelConfig?: MediaChannelConfig<PeerMetadata>
+  ) {
     switch (peer.status) {
       case PeerStatus.Connected:
         break;
       case PeerStatus.Pending:
         // if peer id is greater than local peer id, create offer
         if (this.zeroHub?.myPeerId && peer.id > this.zeroHub.myPeerId) {
-          if (this.dataChannelConfig?.onDataChannel) {
+          if (dataChannelConfig?.onDataChannel) {
             // create data channel
             const dataChannel = peer.rtcConn.createDataChannel(
               "data",
-              this.dataChannelConfig.rtcDataChannelInit
+              dataChannelConfig.rtcDataChannelInit
             );
-            this.dataChannelConfig.onDataChannel?.(peer, dataChannel, true);
+            dataChannelConfig.onDataChannel?.(peer, dataChannel, true);
           }
 
           // offer should send after create data channel
-          this.zeroHub.sendOffer(peer.id, this.rtcOfferOptions);
+          this.zeroHub.sendOffer(peer.id, rtcOfferOptions).catch((err) => {
+            this.zeroHub?.logger.error(
+              "Failed to send offer to peer",
+              peer.id,
+              err
+            );
+          });
         } else {
-          if (this.dataChannelConfig?.onDataChannel) {
+          if (dataChannelConfig?.onDataChannel) {
             // handle incoming data channel
             peer.rtcConn.ondatachannel = (event) => {
-              this.dataChannelConfig?.onDataChannel?.(
-                peer,
-                event.channel,
-                false
-              );
+              dataChannelConfig?.onDataChannel?.(peer, event.channel, false);
             };
           }
         }
 
         // if media channel config is provided, set up media stream handling
-        if (this.mediaChannelConfig) {
+        if (mediaChannelConfig) {
           // if local stream is available, add tracks to peer connection
-          if (this.mediaChannelConfig.localStream) {
-            this.mediaChannelConfig.localStream.getTracks().forEach((track) => {
-              if (this.mediaChannelConfig?.localStream)
-                peer.rtcConn.addTrack(
-                  track,
-                  this.mediaChannelConfig.localStream
-                );
+          if (mediaChannelConfig.localStream) {
+            mediaChannelConfig.localStream.getTracks().forEach((track) => {
+              if (mediaChannelConfig?.localStream) {
+                peer.rtcConn.addTrack(track, mediaChannelConfig.localStream);
+              }
             });
           }
 
           // handle incoming media stream
           peer.rtcConn.ontrack = (event) => {
-            this.mediaChannelConfig?.onTrack?.(peer, event);
+            mediaChannelConfig?.onTrack?.(peer, event);
           };
         }
         break;

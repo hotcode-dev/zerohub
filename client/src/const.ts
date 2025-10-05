@@ -1,6 +1,6 @@
 import { type Config, LogLevel } from "./types";
 
-export const defaultRtcConfig: RTCConfiguration = {
+export const DEFAULT_RTC_CONFIG: RTCConfiguration = {
   iceServers: [
     {
       urls: [
@@ -15,16 +15,17 @@ export const defaultRtcConfig: RTCConfiguration = {
   bundlePolicy: "balanced",
 };
 
-export const defaultConfig: Config = {
+export const DEFAULT_CONFIG: Config = {
   tls: true,
   logLevel: LogLevel.Warning,
+  logger: console,
   waitIceCandidatesTimeout: 2000,
   autoAnswer: true,
   autoAcceptAnswer: true,
-  rtcConfig: defaultRtcConfig,
+  rtcConfig: DEFAULT_RTC_CONFIG,
 };
 
-export const defaultRtcOfferOptions: RTCOfferOptions = {
+export const DEFAULT_RTC_OFFER_OPTIONS: RTCOfferOptions = {
   iceRestart: true,
   offerToReceiveAudio: true,
   offerToReceiveVideo: true,
