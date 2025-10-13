@@ -24,58 +24,51 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
     this.zeroHub = zeroHub;
 
     // override onPeerStatusChange to handle data channel
-    const prevOnPeerStatusChange = this.zeroHub.onPeerStatusChange;
+    const currentOnPeerStatusChange = this.zeroHub.onPeerStatusChange;
     this.zeroHub.onPeerStatusChange = (peer: Peer<PeerMetadata>) => {
-      if (prevOnPeerStatusChange) {
-        prevOnPeerStatusChange(peer);
-      }
       this.onPeerStatusChange(peer);
+
+      if (currentOnPeerStatusChange) {
+        currentOnPeerStatusChange(peer);
+      }
     };
   }
 
   onPeerStatusChange(peer: Peer<PeerMetadata>) {
-    if (!this.zeroHub) {
+    if (!this.zeroHub || !this.zeroHub.myPeerId) {
       throw new Error("ZeroHub is not initialized");
     }
+
+    // if peer id is greater than local peer id, create offer
+    const isOfferer = parseInt(peer.id) > parseInt(this.zeroHub.myPeerId);
 
     switch (peer.status) {
       case PeerStatus.Connected:
         break;
       case PeerStatus.Pending:
-        // if peer id is greater than local peer id, create offer
-        if (this.zeroHub.myPeerId && peer.id > this.zeroHub.myPeerId) {
-          if (this.zeroHub.config.dataChannelConfig?.onDataChannel) {
+        // if data channel config is provided, set up data channel handling
+        if (this.zeroHub.config.dataChannelConfig?.onDataChannel) {
+          if (isOfferer) {
             // create data channel
             const dataChannel = peer.rtcConn.createDataChannel(
               "data",
               this.zeroHub.config.dataChannelConfig.rtcDataChannelInit
             );
-            this.zeroHub.config.dataChannelConfig.onDataChannel?.(
+            this.zeroHub.config.dataChannelConfig.onDataChannel(
               peer,
               dataChannel,
               true
             );
-          }
-
-          // offer should send after create data channel
-          this.zeroHub
-            .sendOffer(peer.id, this.zeroHub.config.rtcOfferOptions)
-            .catch((err) => {
-              this.zeroHub?.logger.error(
-                "Failed to send offer to peer",
-                peer.id,
-                err
-              );
-            });
-        } else {
-          if (this.zeroHub.config.dataChannelConfig?.onDataChannel) {
+          } else {
             // handle incoming data channel
             peer.rtcConn.ondatachannel = (event) => {
-              this.zeroHub?.config.dataChannelConfig?.onDataChannel?.(
-                peer,
-                event.channel,
-                false
-              );
+              if (event.channel) {
+                this.zeroHub?.config.dataChannelConfig?.onDataChannel(
+                  peer,
+                  event.channel,
+                  false
+                );
+              }
             };
           }
         }
@@ -100,6 +93,19 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
           peer.rtcConn.ontrack = (event) => {
             this.zeroHub?.config.mediaChannelConfig?.onTrack?.(peer, event);
           };
+        }
+
+        // offer should send after create data channel and add track
+        if (isOfferer) {
+          this.zeroHub
+            .sendOffer(peer.id, this.zeroHub.config.rtcOfferOptions)
+            .catch((err) => {
+              this.zeroHub?.logger.error(
+                "failed to send offer to peer",
+                peer.id,
+                err
+              );
+            });
         }
         break;
       case PeerStatus.ZeroHubDisconnected:

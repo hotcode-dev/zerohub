@@ -83,6 +83,7 @@ func (h *handler) Serve() error {
 			err = h.Status(ctx)
 		case "/v1/admin/migrate":
 			err = h.Migrate(ctx)
+		// TODO: remove static hub
 		case "/v1/hubs/create":
 			err = h.CreateHubStatic(ctx, h.zeroHub)
 		case "/v1/hubs/get":
@@ -101,6 +102,7 @@ func (h *handler) Serve() error {
 			err = h.JoinOrCreateHubIP(ctx, h.zeroHubIP)
 		case "/v1/ip-hubs/join":
 			err = h.JoinHub(ctx, h.zeroHubIP)
+		// TODO: rename permanent-hubs to static-hubs
 		case "/v1/permanent-hubs/join":
 			err = h.JoinHub(ctx, h.zeroHubPermanent)
 		case "/v1/permanent-hubs/create":

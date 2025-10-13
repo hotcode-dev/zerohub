@@ -92,6 +92,11 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     this.hostIndex = 0;
     this.host = hosts[this.hostIndex];
     this.topology = topology;
+
+    if (this.topology) {
+      this.logger.log(`using ${this.topology.constructor.name} topology`);
+      this.topology.init(this);
+    }
   }
 
   /**
@@ -294,11 +299,6 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    */
   public connectToZeroHub(url: URL) {
     this.logger.log("connecting to ZeroHub:", url);
-
-    if (this.topology) {
-      this.logger.log(`using ${this.topology.constructor.name} topology`);
-      this.topology.init(this);
-    }
 
     this.ws = new WebSocket(url);
     this.ws.binaryType = "arraybuffer";

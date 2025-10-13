@@ -48,7 +48,11 @@ export interface DataChannelConfig<PeerMetadata = object> {
   onDataChannel: (
     peer: Peer<PeerMetadata>,
     dataChannel: RTCDataChannel,
-    isOwner: boolean
+    /**
+     * true if the local peer created the data channel,
+     * false if remote peer created it
+     */
+    isOwnerDataChannel: boolean
   ) => void;
 }
 

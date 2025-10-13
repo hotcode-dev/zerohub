@@ -1,6 +1,6 @@
 {
   "name": "@zero-hub/client",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "ZeroHub Client SDK",
   "author": "Jirawat Boonkumnerd <contact@ntsd.dev> (https://ntsd.dev)",
   "type": "module",
