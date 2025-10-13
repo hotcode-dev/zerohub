@@ -1,3 +1,4 @@
+import { Peer } from "../peer";
 import { ZeroHubClient } from "../zeroHub";
 
 /**
@@ -9,4 +10,5 @@ export interface Topology<PeerMetadata = object, HubMetadata = object> {
   zeroHub: ZeroHubClient<PeerMetadata, HubMetadata> | undefined;
 
   init(zeroHub: ZeroHubClient<PeerMetadata, HubMetadata>): void;
+  onPeerStatusChange(peer: Peer<PeerMetadata>): void;
 }

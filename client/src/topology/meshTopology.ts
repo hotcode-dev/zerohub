@@ -22,16 +22,6 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
 
   init(zeroHub: ZeroHubClient<PeerMetadata, HubMetadata>) {
     this.zeroHub = zeroHub;
-
-    // override onPeerStatusChange to handle data channel
-    const currentOnPeerStatusChange = this.zeroHub.onPeerStatusChange;
-    this.zeroHub.onPeerStatusChange = (peer: Peer<PeerMetadata>) => {
-      this.onPeerStatusChange(peer);
-
-      if (currentOnPeerStatusChange) {
-        currentOnPeerStatusChange(peer);
-      }
-    };
   }
 
   onPeerStatusChange(peer: Peer<PeerMetadata>) {

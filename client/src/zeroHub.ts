@@ -139,6 +139,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     }
 
     peer.status = status;
+    if (this.topology?.onPeerStatusChange) {
+      this.topology.onPeerStatusChange(peer);
+    }
     if (this.onPeerStatusChange) {
       this.onPeerStatusChange(peer);
     }
