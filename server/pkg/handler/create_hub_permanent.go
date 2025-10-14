@@ -7,6 +7,8 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// CreateHubPermanent creates a new permanent hub.
+// It requires admin authentication.
 func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
 	if h.isMigrating {
 		return h.ForwardMigrate(ctx)

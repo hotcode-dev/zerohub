@@ -8,6 +8,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// CheckAdminAuth checks if the request is authorized to perform admin actions.
 func (h *handler) CheckAdminAuth(ctx *fasthttp.RequestCtx) error {
 	authCode, err := base64.StdEncoding.DecodeString(string(ctx.Request.Header.Peek("Authorization")))
 	if err != nil {

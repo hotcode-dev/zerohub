@@ -4,6 +4,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// Status returns the status of the server.
 func (h *handler) Status(ctx *fasthttp.RequestCtx) error {
 	ctx.Response.Header.SetBytesV("Access-Control-Allow-Origin", ctx.Request.Header.Peek("Origin"))
 

@@ -11,6 +11,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// main is the entry point of the application.
+// It loads the configuration, initializes the logger, creates a new ZeroHub instance,
+// creates a new handler, and starts the server.
 func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {

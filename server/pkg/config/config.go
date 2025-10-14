@@ -9,10 +9,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// Environment represents the environment of the application.
 type Environment string
 
 const (
-	DevelopEnvironment    Environment = "dev"
+	// DevelopEnvironment is the development environment.
+	DevelopEnvironment Environment = "dev"
+	// ProductionEnvironment is the production environment.
 	ProductionEnvironment Environment = "prod"
 )
 

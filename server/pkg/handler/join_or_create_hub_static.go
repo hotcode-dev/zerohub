@@ -5,6 +5,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// JoinOrCreateHubStatic joins or creates a hub with a static ID.
 func (h *handler) JoinOrCreateHubStatic(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 	if h.isMigrating {
 		return h.ForwardMigrate(ctx)

@@ -144,5 +144,8 @@ export interface HubInfo<HubMetadata = object> {
    * The metadata associated with the hub.
    */
   metadata: HubMetadata;
+  /**
+   * The timestamp when the hub was created.
+   */
   createdAt: Date;
 }
