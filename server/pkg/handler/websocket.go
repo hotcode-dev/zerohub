@@ -18,6 +18,7 @@ var upgrader = websocket.FastHTTPUpgrader{
 	CheckOrigin:      func(ctx *fasthttp.RequestCtx) bool { return true },
 }
 
+// Upgrade upgrades the connection to a websocket connection.
 func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.Hub) error {
 	err := upgrader.Upgrade(ctx, func(ws *websocket.Conn) {
 		peer := peer.NewPeer(ws, string(ctx.QueryArgs().Peek("peerMetadata")))

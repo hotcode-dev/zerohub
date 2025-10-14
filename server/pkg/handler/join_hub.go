@@ -8,6 +8,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// JoinHub joins an existing hub with the given ID.
 func (h *handler) JoinHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 	hubId := string(ctx.QueryArgs().Peek("id"))
 

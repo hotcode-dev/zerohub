@@ -10,9 +10,70 @@ A WebRTC signaling server for trading session between peers design for minimal a
 - TypeScript/JavaScript client SDK
 - Peer Meta data for customize use cases
 
+## Getting Started
+
+### Server
+
+The server is written in Go. To run it, you'll need to have Go installed.
+
+1.  Navigate to the `server` directory:
+    ```bash
+    cd server
+    ```
+2.  Create a `.env` file from the example:
+    ```bash
+    cp .env.example .env
+    ```
+3.  Run the server:
+    ```bash
+    go run cmd/server.go
+    ```
+The server will start on port 8080 by default.
+
+### Client
+
+The client is a TypeScript/JavaScript SDK.
+
+1.  Install the client from npm:
+    ```bash
+    npm install @zerohub/client
+    ```
+2.  Use it in your project:
+    ```typescript
+    import { ZeroHubClient } from '@zerohub/client';
+
+    // Create a new ZeroHub client
+    const client = new ZeroHubClient(['localhost:8080'], { tls: false });
+
+    // Create a new hub
+    client.createHub('my-hub');
+    ```
+
 ## Structure
 
+The repository is structured as a monorepo with a `client` SDK and a `server`.
+
+-   `client/`: A TypeScript/JavaScript SDK for connecting to the ZeroHub server.
+-   `server/`: The Go-based signaling server.
+-   `proto/`: Protobuf definitions for client-server communication.
+
 ```mermaid
+graph TD
+    subgraph "ZeroHub Signaling"
+        Client1 -- WebSocket --> Server;
+        Client2 -- WebSocket --> Server;
+        ClientN -- WebSocket --> Server;
+    end
+
+    subgraph "Direct Peer Connections (WebRTC)"
+        Client1 <--> Client2;
+        Client1 <--> ClientN;
+        Client2 <--> ClientN;
+    end
+
+    Server -- Exchanges SDP/ICE --> Client1;
+    Server -- Exchanges SDP/ICE --> Client2;
+    Server -- Exchanges SDP/ICE --> ClientN;
 ```
 
 ## API Reference
@@ -58,7 +119,27 @@ After connecting to the Zerohub WebSocket server the client need to handle the w
 because ZeroHub do not support multi instance so it required the API proxy to change the path to the new server for the upcoming user while the old server still running until all the WebSocket connections are gone.
 
 ```mermaid
+sequenceDiagram
+    participant User
+    participant Proxy as API Proxy
+    participant OldServer as Old ZeroHub Instance
+    participant NewServer as New ZeroHub Instance
 
+    User->>Proxy: New WebSocket Request
+    Proxy->>OldServer: Route connection
+    activate OldServer
+
+    Note over Proxy, NewServer: Deploy new version
+    Note over Proxy, OldServer: Admin triggers migration<br>/admin/migrate?host=new-instance.com
+
+    User->>Proxy: New WebSocket Request
+    Proxy->>NewServer: Route new connection
+    activate NewServer
+
+    Note over OldServer: Existing connections remain until closed
+    OldServer-->>Proxy: Connections gracefully close
+    deactivate OldServer
+    Note over Proxy, NewServer: Old instance is shut down
 ```
 
 ### Network Topology
@@ -195,7 +276,7 @@ Hybrid approach: Combine elements of both methods. Start with a pre-selected or 
 
 Memory Storage
 
-```
+`
 goos: darwin
 goarch: arm64
 pkg: github.com/hotcode-dev/zerohub/pkg/hub
@@ -203,11 +284,11 @@ cpu: Apple M3
 BenchmarkHubAddPeer/benchmark_hub_add_peer-8         	   10000	   1616131 ns/op	 4043998 B/op	   25550 allocs/op
 PASS
 ok  	github.com/hotcode-dev/zerohub/pkg/hub	16.542s
-```
+`
 
 Gache Storage
 
-```
+`
 goos: darwin
 goarch: arm64
 pkg: github.com/hotcode-dev/zerohub/pkg/hub
@@ -215,4 +296,4 @@ cpu: Apple M3
 BenchmarkGacheStorageHubAddPeer/benchmark_hub_add_peer-8         	   10000	   1900886 ns/op	 4088601 B/op	   27604 allocs/op
 PASS
 ok  	github.com/hotcode-dev/zerohub/pkg/hub	19.244s
-```
+`

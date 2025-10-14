@@ -39,16 +39,25 @@ type Handler interface {
 	Serve() error
 }
 
+// handler implements the Handler interface.
 type handler struct {
-	address      string
+	// address is the address to listen on.
+	address string
+	// clientSecret is the client secret to use for authentication.
 	clientSecret string
 
+	// isMigrating is a flag that indicates whether the server is migrating.
 	isMigrating bool
-	backupHost  string
+	// backupHost is the host to redirect to when migrating.
+	backupHost string
 
-	zeroHub          zerohub.ZeroHub
-	zeroHubRandom    zerohub.ZeroHub
-	zeroHubIP        zerohub.ZeroHub
+	// zeroHub is the default ZeroHub instance.
+	zeroHub zerohub.ZeroHub
+	// zeroHubRandom is the ZeroHub instance for random hubs.
+	zeroHubRandom zerohub.ZeroHub
+	// zeroHubIP is the ZeroHub instance for IP hubs.
+	zeroHubIP zerohub.ZeroHub
+	// zeroHubPermanent is the ZeroHub instance for permanent hubs.
 	zeroHubPermanent zerohub.ZeroHub
 }
 

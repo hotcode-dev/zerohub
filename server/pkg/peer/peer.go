@@ -11,27 +11,37 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// Peer is an interface for a peer that is connected to a hub.
 type Peer interface {
+	// SendBinaryMessage sends a binary message to the peer.
 	SendBinaryMessage(data []byte)
+	// SendHubInfo sends a hub info message to the peer.
 	SendHubInfo(hubInfoPb *pb.HubInfoMessage)
+	// SendOffer sends an offer to the peer.
 	SendOffer(offerPeerId string, offerSdp string)
+	// SendAnswer sends an answer to the peer.
 	SendAnswer(answerPeerId string, answerSdp string)
-
+	// GetId returns the ID of the peer.
 	GetId() string
+	// SetId sets the ID of the peer.
 	SetId(id string)
+	// GetWSConn returns the websocket connection of the peer.
 	GetWSConn() *websocket.Conn
-
+	// ToProtobuf returns the protobuf representation of the peer.
 	ToProtobuf() *pb.Peer
 }
 
-// peer represents a node in the mesh network with connections to other peers.
+// peer implements the Peer interface.
 type peer struct {
-	Id       string    `json:"id"`
+	// Id is the unique identifier of the peer.
+	Id string `json:"id"`
+	// JoinedAt is the timestamp when the peer joined.
 	JoinedAt time.Time `json:"joinedAt"`
-	Metadata string    `json:"metadata"`
-
+	// Metadata is the metadata associated with the peer.
+	Metadata string `json:"metadata"`
+	// WSConn is the websocket connection of the peer.
 	WSConn *websocket.Conn `json:"-"`
-
+	// mu is the mutex for the peer.
 	mu sync.RWMutex `json:"-"`
 }
 

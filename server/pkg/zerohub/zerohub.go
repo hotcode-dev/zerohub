@@ -9,18 +9,25 @@ import (
 	"github.com/hotcode-dev/zerohub/pkg/storage"
 )
 
+// ZeroHub is an interface for the ZeroHub server.
 type ZeroHub interface {
+	// NewHub creates a new hub.
 	NewHub(hubId string, metadata string, isPermanent bool) (hub.Hub, error)
+	// GetHubById returns a hub by its ID.
 	GetHubById(id string) hub.Hub
+	// RemoveHubById removes a hub by its ID.
 	RemoveHubById(id string)
 }
 
+// zeroHub implements the ZeroHub interface.
 type zeroHub struct {
+	// cfg is the configuration for the ZeroHub server.
 	cfg *config.Config
-
+	// HubStorage is the storage for the hubs.
 	HubStorage storage.Storage[hub.Hub]
 }
 
+// NewZeroHub creates a new ZeroHub server.
 func NewZeroHub(cfg *config.Config) (ZeroHub, error) {
 	var hubStorage storage.Storage[hub.Hub]
 	switch cfg.App.HubStorage {

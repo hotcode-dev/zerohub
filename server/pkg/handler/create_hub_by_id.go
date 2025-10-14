@@ -8,6 +8,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// CreateHubByID creates a new hub with the given ID.
 func (h *handler) CreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string) error {
 	newHub, err := zh.NewHub(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), false)
 	if err != nil {

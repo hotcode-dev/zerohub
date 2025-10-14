@@ -15,30 +15,44 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// TODO: add Hub timeout to disconnect all the Websockets, then clear the hub memory. (12 Hours)
+// Hub is an interface for a hub that manages a group of peers.
 type Hub interface {
+	// GetId returns the ID of the hub.
 	GetId() string
+	// GetMetadata returns the metadata of the hub.
 	GetMetadata() string
+	// GetCreatedAt returns the creation time of the hub.
 	GetCreatedAt() time.Time
+	// RemovePeerById removes a peer from the hub by its ID.
+	// It returns true if the hub is empty after the peer is removed.
 	RemovePeerById(id string) (emptyPeer bool)
-
+	// HandleMessage handles a message from a peer.
 	HandleMessage(p peer.Peer)
+	// SendOfferToPeer sends an offer to a peer.
 	SendOfferToPeer(toPeerId string, offerPeerId string, offerSdp string)
+	// SendAnswerToPeer sends an answer to a peer.
 	SendAnswerToPeer(toPeerId string, answerPeerId string, answerSdp string)
-
+	// AddPeer adds a peer to the hub.
 	AddPeer(p peer.Peer)
 }
 
+// hub implements the Hub interface.
 type hub struct {
-	Id          string    `json:"id"`
-	CreatedAt   time.Time `json:"createdAt"`
-	Metadata    string    `json:"metadata"`
-	IsPermanent bool      `json:"isPermanent"`
-
-	CurrentPeerId atomic.Uint64              `json:"-"`
-	PeerStorage   storage.Storage[peer.Peer] `json:"-"`
+	// Id is the unique identifier of the hub.
+	Id string `json:"id"`
+	// CreatedAt is the timestamp when the hub was created.
+	CreatedAt time.Time `json:"createdAt"`
+	// Metadata is the metadata associated with the hub.
+	Metadata string `json:"metadata"`
+	// IsPermanent is a flag that indicates whether the hub is permanent.
+	IsPermanent bool `json:"isPermanent"`
+	// CurrentPeerId is the atomic counter for the peer ID.
+	CurrentPeerId atomic.Uint64 `json:"-"`
+	// PeerStorage is the storage for the peers.
+	PeerStorage storage.Storage[peer.Peer] `json:"-"`
 }
 
+// NewHub creates a new hub.
 func NewHub(hubId string, metadata string, peerStorage storage.Storage[peer.Peer], isPermanent bool) (Hub, error) {
 	return &hub{
 		Id:          hubId,
@@ -49,7 +63,7 @@ func NewHub(hubId string, metadata string, peerStorage storage.Storage[peer.Peer
 	}, nil
 }
 
-// AddPeer creates a new peer and connects it to all existing peers in the mesh network.
+// AddPeer adds a peer to the hub.
 func (h *hub) AddPeer(newPeer peer.Peer) {
 	newPeer.SetId(strconv.FormatUint(h.CurrentPeerId.Add(1), 10))
 

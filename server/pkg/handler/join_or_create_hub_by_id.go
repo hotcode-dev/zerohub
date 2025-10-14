@@ -8,6 +8,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// JoinOrCreateHubByID joins an existing hub with the given ID or creates a new one if it does not exist.
 func (h *handler) JoinOrCreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string) error {
 	newHub := zh.GetHubById(hubId)
 	if newHub == nil {

@@ -17,43 +17,85 @@ import { getWS } from "./utils";
  * @template HubMetadata - The type of metadata associated with the hub.
  */
 export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
-  // config ZeroHub client configuration
+  /**
+   * The configuration for the ZeroHub client.
+   * @public
+   */
   public config: Config<PeerMetadata>;
-  // hubMetadata my hub metadata will send to ZeroHub
+  /**
+   * The metadata for the hub.
+   * @public
+   */
   public hubMetadata: HubMetadata | undefined;
-  // peerMetadata my peer metadata will send to ZeroHub and another peer
+  /**
+   * The metadata for the peer.
+   * @public
+   */
   public peerMetadata: PeerMetadata | undefined;
-  // myPeerId my peer id
+  /**
+   * The ID of the current peer.
+   * @public
+   */
   public myPeerId?: string;
-  // hubInfo hub info of ZeroHub
+  /**
+   * Information about the hub.
+   * @public
+   */
   public hubInfo?: HubInfo<HubMetadata>;
-  // peers a map of peer
+  /**
+   * A map of peers connected to the hub.
+   * @public
+   */
   public peers: { [id: string]: Peer<PeerMetadata> };
-
-  // topology is the WebRTC topology for this client
-  // the default topology is a mesh topology
-  // the topology will be used to connect to other peers
+  /**
+   * The topology used for connecting to other peers.
+   * @public
+   */
   public topology: Topology<PeerMetadata, HubMetadata>;
-
-  // the hosts of ZeroHub without protocol. if the first host is not working, it will try to connect to the next host
+  /**
+   * The hosts of the ZeroHub server.
+   * @public
+   */
   public hosts: string[];
-  // the current ZeroHub host index
+  /**
+   * The index of the current host.
+   * @public
+   */
   public hostIndex: number;
-  // the current ZeroHub host without protocal
+  /**
+   * The current host.
+   * @public
+   */
   public host: string;
-  // ws websocket connection to ZeroHub
+  /**
+   * The WebSocket connection to the ZeroHub server.
+   * @public
+   */
   public ws?: WebSocket;
-
-  // onZeroHubError will be called when ZeroHub error
+  /**
+   * A callback function that is called when a ZeroHub error occurs.
+   * @public
+   */
   public onZeroHubError?: (error: Error) => void;
-  // onHubInfo will be called when hub info changes
+  /**
+   * A callback function that is called when the hub information changes.
+   * @public
+   */
   public onHubInfo?: (hubInfo: HubInfo<HubMetadata>) => void;
-  // onPeerStatusChange will be called when a peer status changes
+  /**
+   * A callback function that is called when a peer's status changes.
+   * @public
+   */
   public onPeerStatusChange?: (peer: Peer<PeerMetadata>) => void;
-  // onPeerError will be called when a peer error
+  /**
+   * A callback function that is called when a peer error occurs.
+   * @public
+   */
   public onPeerError?: (peer: Peer<PeerMetadata>, error: Error) => void;
-
-  // logger is used to log messages
+  /**
+   * The logger used for logging messages.
+   * @public
+   */
   public logger: ZeroHubLogger;
 
   /**

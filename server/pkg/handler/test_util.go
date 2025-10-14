@@ -11,7 +11,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// testData struct for handler test
+// testData is a struct for handler tests.
 type testData struct {
 	name        string
 	request     func() *http.Request
@@ -19,7 +19,7 @@ type testData struct {
 	wantStatus  int
 }
 
-// mockHandlerAndTest create mock handler and gin context
+// mockHandlerAndTest creates a mock handler and a fasthttp server for testing.
 func mockHandlerAndTest(test testData, mockCtrl *gomock.Controller) (*handler, *fasthttp.Server) {
 	// initial handler function and mock
 	h := &handler{

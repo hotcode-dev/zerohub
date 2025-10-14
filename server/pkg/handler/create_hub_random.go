@@ -6,6 +6,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// CreateHubRandom creates a new hub with a random ID.
 func (h *handler) CreateHubRandom(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 	if h.isMigrating {
 		return h.ForwardMigrate(ctx)
