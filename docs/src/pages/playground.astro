@@ -1,0 +1,28 @@
+---
+import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
+---
+
+<StarlightPage
+  frontmatter={{
+    title: "Playground",
+    description: "Try ZeroHub online via code playground.",
+    tableOfContents: false,
+    template: "splash",
+    next: false,
+  }}
+>
+  <div class="flex flex-row gap-4 items-center">
+    <label for="template-select" class="font-semibold">Template:</label>
+    <select id="template-select" class="border rounded mt-0 px-2 py-1">
+      <option value="chat" selected>Chat</option>
+      <option value="media">Media</option>
+    </select>
+  </div>
+  <div id="playground" data-height="70vh"></div>
+</StarlightPage>
+
+<script>
+  import { initializePlayground } from "../scripts/playground";
+
+  initializePlayground();
+</script>
