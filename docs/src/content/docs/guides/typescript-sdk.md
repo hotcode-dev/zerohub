@@ -16,19 +16,24 @@ npm install @zero-hub/client
 Import the SDK and initialize the client
 
 ```typescript
-import { MeshTopology, ZeroHubClient, LogLevel } from "@zero-hub/client";
+import { ZeroHubClient, LogLevel } from "@zero-hub/client";
 
 const zh = new ZeroHubClient(
   // ZeroHub hosts
   ["sg1.zerohub.dev"],
   // ZeroHub configs
-  { logLevel: LogLevel.Debug },
-  // define topology of multi peer
-  new MeshTopology(undefined, (peer, dataChannel, isOwner) => {
-    // dataChannel is the dataChannel message from peer
-    dataChannel.onmessage = (ev: MessageEvent) => {
-      // event message from peers
-    };
-  })
+  {
+    logLevel: LogLevel.Debug,
+    dataChannelConfig: {
+      // add callback to create datachannel before making connection
+      onDataChannel: (peer, dataChannel, isOwner) => {
+        // handle all data channel to receive the message from peers
+        dataChannel.onmessage = (ev: MessageEvent) => {
+          addChat(`Peer ${peer.id}: ${ev.data}`);
+        };
+        dataChannels.push(dataChannel);
+      },
+    },
+  }
 );
 ```

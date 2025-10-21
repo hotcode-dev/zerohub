@@ -2,12 +2,7 @@ import { PeerStatus } from "./types";
 
 /**
  * Represents a peer in a WebRTC connection.
- * @template PeerMetadata - The type of metadata associated with the peer.
- * @property {string} id - The unique identifier of the peer.
- * @property {PeerStatus} status - The current status of the peer.
- * @property {PeerMetadata} metadata - Metadata associated with the peer.
- * @property {Date} joinedAt - The timestamp when the peer joined.
- * @property {RTCPeerConnection} rtcConn - The WebRTC connection object for the peer.
+ * @typeParam PeerMetadata - The type of metadata associated with the peer.
  */
 export class Peer<PeerMetadata = object> {
   public id: string;
@@ -16,6 +11,14 @@ export class Peer<PeerMetadata = object> {
   public joinedAt: Date;
   public rtcConn: RTCPeerConnection;
 
+  /**
+   * Creates a new Peer instance.
+   * @param id - The unique identifier of the peer.
+   * @param status - The current status of the peer.
+   * @param metadata - Metadata associated with the peer.
+   * @param joinedAt - The timestamp when the peer joined.
+   * @param rtcConn - The WebRTC connection object for the peer.
+   */
   constructor(
     id: string,
     status: PeerStatus,

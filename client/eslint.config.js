@@ -2,6 +2,7 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import prettier from "eslint-config-prettier";
 import prettierPlugin from "eslint-plugin-prettier";
+import tsdoc from "eslint-plugin-tsdoc";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig(
@@ -72,10 +73,14 @@ export default defineConfig(
     },
     plugins: {
       prettier: prettierPlugin,
+      tsdoc: tsdoc,
     },
     rules: {
       // Prettier integration
       "prettier/prettier": "error",
+
+      // TSDoc linting
+      "tsdoc/syntax": "warn",
 
       // TypeScript specific rules
       "@typescript-eslint/no-unused-vars": [

@@ -14,22 +14,44 @@ hero:
       variant: minimal
 ---
 
-{/* 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Get Started
+## Quick Start
 
 <CardGrid stagger>
-    <Card title="Update content" icon="pencil">
-        Edit `src/content/docs/index.mdx` to see this page change.
+    <Card title="Get Started" icon="rocket">
+        Learn the basics of ZeroHub and start building P2P applications.
+        
+        [Read the guide →](/guides/get-started/)
     </Card>
-    <Card title="Add new content" icon="add-document">
-        Add Markdown or MDX files to `src/content/docs` to create new pages.
+    <Card title="TypeScript SDK" icon="seti:typescript">
+        Install and use the ZeroHub TypeScript/JavaScript client SDK.
+        
+        [View SDK guide →](/guides/typescript-sdk/)
     </Card>
-    <Card title="Configure your site" icon="setting">
-        Edit your `sidebar` and other config in `astro.config.mjs`.
+    <Card title="Hub Types" icon="puzzle">
+        Understand Fixed, Random, and IP hubs for different use cases.
+        
+        [Explore hub types →](/guides/hub-types/)
     </Card>
-    <Card title="Read the docs" icon="open-book">
-        Learn more in [the Starlight Docs](https://starlight.astro.build/).
+    <Card title="Try the Playground" icon="laptop" variant="tip">
+        Test ZeroHub features live in your browser with interactive examples.
+        
+        [Open playground →](/playground)
     </Card>
-</CardGrid> */}
+</CardGrid>
+
+## API Reference
+
+<CardGrid>
+    <Card title="SDK Reference" icon="open-book">
+        Complete API documentation for the client SDK, including configuration, topology, and events.
+        
+        [View SDK API →](/api-reference/sdk/)
+    </Card>
+    <Card title="Server Reference" icon="server">
+        Server endpoints, WebSocket protocol, and protobuf message documentation.
+        
+        [View Server API →](/api-reference/server/)
+    </Card>
+</CardGrid>

@@ -3,45 +3,45 @@ import { Peer } from "./peer";
 
 /**
  * The status of a peer connection.
- * - Pending: waiting for remote or local peer to create an offer.
- * - Offering: offering, waiting for remote peer to answer.
- * - AnswerPending: got an offer from remote peer, waiting for local peer to answer.
- * - Answering: answering, waiting for remote peer to accept.
- * - AcceptPending: got an answer from remote peer, waiting for local peer to accept.
- * - Connected: the remote peer is connected to local peer.
- * - WebRTCDisconnected: the remote peer WebRTC disconnected to local peer.
- * - ZeroHubDisconnected: the remote peer disconnected to ZeroHub.
  */
 export enum PeerStatus {
+  /** Pending: waiting for remote or local peer to create an offer. */
   Pending = "pending",
+  /** Offering: offering, waiting for remote peer to answer. */
   Offering = "offering",
+  /** AnswerPending: got an offer from remote peer, waiting for local peer to answer. */
   AnswerPending = "answer_pending",
+  /** Answering: answering, waiting for remote peer to accept. */
   Answering = "answering",
+  /** AcceptPending: got an answer from remote peer, waiting for local peer to accept. */
   AcceptPending = "accept_pending",
+  /** Connected: the remote peer is connected to local peer. */
   Connected = "connected",
+  /** WebRTCDisconnected: the remote peer WebRTC disconnected to local peer. */
   WebRTCDisconnected = "webrtc_disconnected",
+  /** ZeroHubDisconnected: the remote peer disconnected to ZeroHub.*/
   ZeroHubDisconnected = "zerohub_disconnected",
 }
 
 /**
  * Log level for the ZeroHub client.
- * - LogLevel.Debug will log all messages.
- * - LogLevel.Warning will log only warnings and errors.
- * - LogLevel.Error will log only errors.
- * - LogLevel.None will not log any messages.
  * Default is LogLevel.Warning.
  */
 export enum LogLevel {
+  /** LogLevel.Debug will log all messages. */
   Debug = "debug",
+  /** LogLevel.Warning will log only warnings and errors. */
   Warning = "warning",
+  /** LogLevel.Error will log only errors. */
   Error = "error",
+  /** LogLevel.None will not log any messages. */
   None = "none",
 }
 
 /**
  * Configuration for data channels.
  * If provided, it will create a data channel for each peer when they connect.
- * @template PeerMetadata - The type of metadata associated with the peer.
+ * @typeParam PeerMetadata - The type of metadata associated with the peer.
  */
 export interface DataChannelConfig<PeerMetadata = object> {
   rtcDataChannelInit?: RTCDataChannelInit;
@@ -59,7 +59,7 @@ export interface DataChannelConfig<PeerMetadata = object> {
 /**
  * Configuration for media channels.
  * If provided, it will create a media channel for each peer when they connect.
- * @template PeerMetadata - The type of metadata associated with the peer.
+ * @typeParam PeerMetadata - The type of metadata associated with the peer.
  */
 export interface MediaChannelConfig<PeerMetadata = object> {
   localStream?: MediaStream;
@@ -68,7 +68,7 @@ export interface MediaChannelConfig<PeerMetadata = object> {
 
 /**
  * Configuration for the ZeroHub client.
- * @template PeerMetadata - The type of metadata associated with the peer.
+ * @typeParam PeerMetadata - The type of metadata associated with the peer.
  */
 export interface Config<PeerMetadata = object> {
   /**
@@ -133,7 +133,7 @@ export interface Config<PeerMetadata = object> {
 
 /**
  * Information about a hub.
- * @template HubMetadata - The type of metadata associated with the hub.
+ * @typeParam HubMetadata - The type of metadata associated with the hub.
  */
 export interface HubInfo<HubMetadata = object> {
   /**

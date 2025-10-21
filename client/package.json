@@ -40,7 +40,8 @@
     "format": "prettier --write \"src/**/*.{ts,js,json,md}\" \"!src/proto/**\"",
     "format:check": "prettier --check \"src/**/*.{ts,js,json,md}\" \"!src/proto/**\"",
     "check": "npm run lint && npm run format:check && npm run tsc",
-    "fix": "npm run lint:fix && npm run format"
+    "fix": "npm run lint:fix && npm run format",
+    "tsdoc": "tsdoc --src=src/*"
   },
   "repository": {
     "type": "git",
@@ -66,14 +67,16 @@
     "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-tsdoc": "^0.4.0",
     "prettier": "^3.6.2",
-    "typescript-eslint": "^8.44.1",
     "rollup": "^4.9.1",
     "ts-proto": "^1.165.2",
+    "tsdoc-markdown": "^1.4.1",
     "tslib": "^2.6.2",
     "typedoc": "^0.28.0",
     "typedoc-plugin-markdown": "^4.9.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.44.1"
   },
   "dependencies": {
     "protobufjs": "^7.2.5"

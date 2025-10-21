@@ -13,8 +13,8 @@ import { getWS } from "./utils";
 
 /**
  * Represents a ZeroHub client that manages connections to a ZeroHub server and handles peer-to-peer WebRTC connections.
- * @template PeerMetadata - The type of metadata associated with the peer.
- * @template HubMetadata - The type of metadata associated with the hub.
+ * @typeParam PeerMetadata - The type of metadata associated with the peer.
+ * @typeParam HubMetadata - The type of metadata associated with the hub.
  */
 export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
@@ -101,11 +101,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Creates a new ZeroHub Client class
    *
-   * @param hosts ZeroHub hosts without protocol. if the first host is not working, it will try to connect to the next host. for example `['sg1.zerohub.dev', 'sg2.zerohub.dev']`
-   * @param config ZeroHub client configuration
-   * @param topology WebRTC topology for this client, default is mesh topology
-   *
-   * @returns ZeroHub Client class
+   * @param hosts - ZeroHub hosts without protocol. if the first host is not working, it will try to connect to the next host. for example `['sg1.zerohub.dev', 'sg2.zerohub.dev']`
+   * @param config - ZeroHub client configuration
+   * @param topology - WebRTC topology for this client, default is mesh topology
    */
   constructor(
     hosts: string[],
@@ -147,8 +145,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * If the current host is the last one in the list, it will reject with an error.
    * If there are more hosts available, it increments the host index and resolves with the next host.
    *
-   * @returns {Promise<string | void>} A promise that resolves with the next ZeroHub host or rejects with an error if no more hosts are available.
-   * @throws {Error} If all ZeroHub hosts are not working.
+   * @returns A promise that resolves with the next ZeroHub host or rejects with an error if no more hosts are available.
+   * @throws If all ZeroHub hosts are not working.
    */
   getZeroHubBackupHost(): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -168,8 +166,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Updates the status of a peer.
    *
-   * @param {string} peerId - The ID of the peer to update status for.
-   * @param {PeerStatus} status - The new status to set for the peer.
+   * @param peerId - The ID of the peer to update status for.
+   * @param status - The new status to set for the peer.
    */
   updatePeerStatus(peerId: string, status: PeerStatus) {
     const peer = this.peers[peerId];
@@ -194,8 +192,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * If a new host is provided, it updates the current URL's host and reconnects.
    * If no new host is provided, it fetches a backup host and reconnects to it.
    *
-   * @param {URL} currentURL - The current URL of the ZeroHub connection.
-   * @param {string} [newHost] - An optional new host to connect to.
+   * @param currentURL - The current URL of the ZeroHub connection.
+   * @param newHost - An optional new host to connect to.
    */
   public reconnect(currentURL: URL, newHost?: string) {
     if (newHost) {
@@ -230,7 +228,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Handles a message received from the ZeroHub server.
    *
-   * @param {ServerMessage} serverMessage - The message received from the server.
+   * @param serverMessage - The message received from the server.
    */
   handleZeroHubMessage(serverMessage: ServerMessage) {
     if (serverMessage.hubInfoMessage) {
@@ -340,7 +338,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Connects to the ZeroHub using the provided URL and sets up WebSocket event handlers for receiving messages, errors, and close events.
    *
-   * @param {URL} url - The URL of the ZeroHub to connect to
+   * @param url - The URL of the ZeroHub to connect to
    */
   public connectToZeroHub(url: URL) {
     this.logger.log("connecting to ZeroHub:", url);
@@ -400,7 +398,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Sends a message to ZeroHub.
    *
-   * @param {ClientMessage} msg - the message to be sent to ZeroHub
+   * @param msg - the message to be sent to ZeroHub
    */
   public sendZeroHubMessage(msg: ClientMessage) {
     if (!this.ws) {
@@ -416,8 +414,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Sends an offer to a WebSocket with the given peer ID and offer session.
    *
-   * @param {string} peerId - The ID of the peer
-   * @param {RTCSessionDescription} offerSession - The offer session description
+   * @param peerId - The ID of the peer
+   * @param offerSession - The offer session description
    */
   public sendOfferToWebsocket(
     peerId: string,
@@ -436,8 +434,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Send answer SDP to the peer
    *
-   * @param {string} peerId The peer to send the answer to
-   * @param {RTCSessionDescription} answerSession RTCSessionDescription generated by answerer
+   * @param peerId - The peer to send the answer to
+   * @param answerSession - RTCSessionDescription generated by answerer
    */
   public sendAnswerToWebsocket(
     peerId: string,
@@ -456,9 +454,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Send an offer to the specified peer using WebRTC.
    *
-   * @param {string} peerId - The ID of the peer to send the offer to
-   * @param {RTCOfferOptions} rtcOfferOptions - The options for the WebRTC offer (default: { offerToReceiveAudio: false, offerToReceiveVideo: false })
-   * @param {RTCConfiguration} [rtcConfig] - The configuration for the WebRTC connection
+   * @param peerId - The ID of the peer to send the offer to
+   * @param rtcOfferOptions - The options for the WebRTC offer (default: \{ offerToReceiveAudio: false, offerToReceiveVideo: false \})
+   * @param rtcConfig - The configuration for the WebRTC connection
    */
   public async sendOffer(
     peerId: string,
@@ -515,11 +513,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Send the answer to a peer.
    *
-   * @param {string} peerId - The ID of the peer
-   * @param {string} offerSdp - The offer SDP
-   * @param {RTCOfferOptions} rtcOfferOptions - Options for the RTC offer (default: { offerToReceiveAudio: false, offerToReceiveVideo: false })
-   * @param {RTCConfiguration} rtcConfig - Optional RTC configuration
-   * @return {void}
+   * @param peerId - The ID of the peer
+   * @param offerSdp - The offer SDP
+   * @param rtcOfferOptions - Options for the RTC offer (default: \{ offerToReceiveAudio: false, offerToReceiveVideo: false \})
+   * @param rtcConfig - Optional RTC configuration
    */
   public async sendAnswer(
     peerId: string,
@@ -583,8 +580,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Accepts an answer from a peer by setting the remote description.
    *
-   * @param {string} peerId - The ID of the peer sending the answer
-   * @param {string} answerSdp - The answer Session Description Protocol (SDP)
+   * @param peerId - The ID of the peer sending the answer
+   * @param answerSdp - The answer Session Description Protocol (SDP)
    */
   public async acceptAnswer(peerId: string, answerSdp: string) {
     const peer = this.peers[peerId];
@@ -603,9 +600,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    *  Creates a new hub on ZeroHub
    *
    *
-   * @param {string} hubId The id of the hub to create
-   * @param peerMetadata Peer metadata will share to each peer in the Hub
-   * @param hubMetaData Hub metadata will share to each peer in the Hub
+   * @param hubId - The id of the hub to create
+   * @param peerMetadata - Peer metadata will share to each peer in the Hub
+   * @param hubMetadata - Hub metadata will share to each peer in the Hub
    */
   public createHub(
     hubId: string,
@@ -630,8 +627,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Join an existing hub on ZeroHub
    *
-   * @param {string} hubId The id of the hub to join
-   * @param peerMetadata Peer metadata will share to each peer in the Hub
+   * @param hubId - The id of the hub to join
+   * @param peerMetadata - Peer metadata will share to each peer in the Hub
    */
   public joinHub(hubId: string, peerMetadata?: PeerMetadata) {
     this.peerMetadata = peerMetadata;
@@ -650,9 +647,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Join an existing hub or create if not on ZeroHub
    *
-   * @param hubId The id of the hub to join or create
-   * @param peerMetadata Peer metadata will share to each peer in the Hub
-   * @param hubMetaData (will only use if no hub exist) Hub metadata will share to each peer in the Hub
+   * @param hubId - The id of the hub to join or create
+   * @param peerMetadata - Peer metadata will share to each peer in the Hub
+   * @param hubMetadata - (will only use if no hub exist) Hub metadata will share to each peer in the Hub
    *
    */
   public joinOrCreateHub(
@@ -684,8 +681,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * Join an existing hub or create if the IP hub on ZeroHub
    * The IP Hub is a hub that will use the IP address as the hub id
    *
-   * @param peerMetadata Peer metadata will share to each peer in the Hub
-   * @param hubMetaData (will only use if no hub exist) Hub metadata will share to each peer in the Hub
+   * @param peerMetadata - Peer metadata will share to each peer in the Hub
+   * @param hubMetadata - (will only use if no hub exist) Hub metadata will share to each peer in the Hub
    *
    */
   public joinOrCreateIPHub(
@@ -714,8 +711,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Join an existing IP Hub on ZeroHub
    *
-   * @param {string} hubId The id of the IP Hub to join
-   * @param peerMetadata Peer metadata will share to each peer in the Hub
+   * @param hubId - The id of the IP Hub to join
+   * @param peerMetadata - Peer metadata will share to each peer in the Hub
    */
   public joinIPHub(hubId: string, peerMetadata?: PeerMetadata) {
     this.peerMetadata = peerMetadata;
@@ -735,8 +732,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * Creates a new Random Hub on ZeroHub
    * The Random Hub is a hub that will use a random id as the hub id
    *
-   * @param peerMetadata Peer metadata will share to each peer in the Hub
-   * @param hubMetaData Hub metadata will share to each peer in the Hub
+   * @param peerMetadata - Peer metadata will share to each peer in the Hub
+   * @param hubMetadata - Hub metadata will share to each peer in the Hub
    */
   public createRandomHub(
     peerMetadata?: PeerMetadata,
@@ -762,8 +759,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Join an existing Random Hub on ZeroHub
    *
-   * @param {string} hubId The id of the hub to join
-   * @param peerMetadata Peer metadata will share to each peer in the Hub
+   * @param hubId - The id of the hub to join
+   * @param peerMetadata - Peer metadata will share to each peer in the Hub
    */
   public joinRandomHub(hubId: string, peerMetadata?: PeerMetadata) {
     this.peerMetadata = peerMetadata;

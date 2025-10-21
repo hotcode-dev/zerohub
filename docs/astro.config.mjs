@@ -23,7 +23,10 @@ export default defineConfig({
               label: "TypeScript SDK",
               slug: "guides/typescript-sdk",
             },
-            { label: "Example Used", slug: "guides/example" },
+            {
+              label: "Hub Types",
+              slug: "guides/hub-types",
+            },
             {
               label: "Playground",
               badge: {
