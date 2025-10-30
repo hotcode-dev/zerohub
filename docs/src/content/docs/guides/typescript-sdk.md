@@ -24,14 +24,16 @@ const zh = new ZeroHubClient(
   // ZeroHub configs
   {
     logLevel: LogLevel.Debug,
+    // if data channel config is set, zerohub will automatically create the data channel to other peers
     dataChannelConfig: {
       // add callback to create datachannel before making connection
       onDataChannel: (peer, dataChannel, isOwner) => {
-        // handle all data channel to receive the message from peers
+        // handle all data channel to receive the message from the peer
         dataChannel.onmessage = (ev: MessageEvent) => {
-          addChat(`Peer ${peer.id}: ${ev.data}`);
+          console.log(`Pong from ${peer.id}: ${ev.data}`);
         };
-        dataChannels.push(dataChannel);
+        // send message to the peer though WebRTC data channel
+        dataChannel.send(`Ping to ${peer.id}`);
       },
     },
   }
