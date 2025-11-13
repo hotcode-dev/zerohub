@@ -161,15 +161,19 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
     // Set up data channel if configured
     if (this.zeroHub.config.dataChannelConfig?.onDataChannel) {
       if (isOfferer) {
-        const dataChannel = peer.rtcConn.createDataChannel(
-          "data",
-          this.zeroHub.config.dataChannelConfig.rtcDataChannelInit
-        );
-        this.zeroHub.config.dataChannelConfig.onDataChannel(
-          peer,
-          dataChannel,
-          true
-        );
+        const numberOfChannels =
+          this.zeroHub.config.dataChannelConfig.numberOfChannels || 1;
+        for (let i = 0; i < numberOfChannels; i++) {
+          const dataChannel = peer.rtcConn.createDataChannel(
+            `data-${i}`,
+            this.zeroHub.config.dataChannelConfig.rtcDataChannelInit
+          );
+          this.zeroHub.config.dataChannelConfig.onDataChannel(
+            peer,
+            dataChannel,
+            true
+          );
+        }
       } else {
         peer.rtcConn.ondatachannel = (event) => {
           if (event.channel) {

@@ -39,16 +39,20 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
         // if data channel config is provided, set up data channel handling
         if (this.zeroHub.config.dataChannelConfig?.onDataChannel) {
           if (isOfferer) {
-            // create data channel
-            const dataChannel = peer.rtcConn.createDataChannel(
-              "data",
-              this.zeroHub.config.dataChannelConfig.rtcDataChannelInit
-            );
-            this.zeroHub.config.dataChannelConfig.onDataChannel(
-              peer,
-              dataChannel,
-              true
-            );
+            // create data channels
+            const numberOfChannels =
+              this.zeroHub.config.dataChannelConfig.numberOfChannels || 1;
+            for (let i = 0; i < numberOfChannels; i++) {
+              const dataChannel = peer.rtcConn.createDataChannel(
+                `data-${i}`,
+                this.zeroHub.config.dataChannelConfig.rtcDataChannelInit
+              );
+              this.zeroHub.config.dataChannelConfig.onDataChannel(
+                peer,
+                dataChannel,
+                true
+              );
+            }
           } else {
             // handle incoming data channel
             peer.rtcConn.ondatachannel = (event) => {
