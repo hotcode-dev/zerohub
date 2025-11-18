@@ -13,7 +13,7 @@ import (
 	reflect "reflect"
 
 	websocket "github.com/fasthttp/websocket"
-	proto "github.com/hotcode-dev/zerohub/pkg/proto"
+	proto "github.com/hotcode-dev/zerohub/pkg/proto/zerohub/v1"
 	gomock "go.uber.org/mock/gomock"
 )
 

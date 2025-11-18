@@ -4,11 +4,12 @@ MAKEFLAGS += -j3
 .PHONY: default
 default: server-serve
 
-test-all: server-serve server-serve-2 e2e-test
+test-all: server-test server-serve server-serve-2 e2e-test
 
 proto-gen:
+	api-linter ./proto/zerohub/v1/*.proto
 	rm -rf ./client/src/proto && rm -rf ./pkg/proto
-	protoc --plugin=./client/node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./client/src --go_out=./server/pkg --go_opt=paths=source_relative ./proto/*.proto
+	protoc --plugin=./client/node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./client/src --go_out=./server/pkg --go_opt=paths=source_relative ./proto/zerohub/v1/*.proto
 
 server-serve:
 	cd server && APP_CLIENT_SECRET=client_secret go run ./cmd/server.go

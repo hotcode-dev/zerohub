@@ -8,7 +8,7 @@ export class Peer<PeerMetadata = object> {
   public id: string;
   public status: PeerStatus;
   public metadata: PeerMetadata;
-  public joinedAt: Date;
+  public joinTime: Date;
   public rtcConn: RTCPeerConnection;
 
   /**
@@ -16,20 +16,20 @@ export class Peer<PeerMetadata = object> {
    * @param id - The unique identifier of the peer.
    * @param status - The current status of the peer.
    * @param metadata - Metadata associated with the peer.
-   * @param joinedAt - The timestamp when the peer joined.
+   * @param joinTime - The timestamp when the peer joined.
    * @param rtcConn - The WebRTC connection object for the peer.
    */
   constructor(
     id: string,
     status: PeerStatus,
     metadata: PeerMetadata,
-    joinedAt: Date,
+    joinTime: Date,
     rtcConn: RTCPeerConnection
   ) {
     this.id = id;
     this.status = status;
     this.metadata = metadata;
-    this.joinedAt = joinedAt;
+    this.joinTime = joinTime;
     this.rtcConn = rtcConn;
   }
 }

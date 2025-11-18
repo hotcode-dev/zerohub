@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package proto.zerohub.v1;
+
+option go_package = "github.com/hotcode-dev/zerohub/pkg/proto";
+option java_package = "com.proto.zerohub.v1";
+option java_outer_classname = "ClientMessageProto";
+option java_multiple_files = true;
+
+// SendOfferMessage is sent offer SDP from offering peer to answer peer
+message SendOfferMessage {
+  // ID of the answer peer
+  string answer_peer_id = 1;
+  // SDP offer from the offering peer
+  string offer_sdp = 2;
+}
+
+// Send answer message is sent answer SDP from answer peer to offering peer
+message SendAnswerMessage {
+  // ID of the offering peer
+  string offer_peer_id = 1;
+  // SDP answer from the answering peer
+  string answer_sdp = 2;
+}
+
+// Send ICE candidate message is not using yet
+message SendIceCandidateMessage {
+  // ID of the peer
+  string peer_id = 1;
+  // ICE candidate information
+  string candidate = 2;
+}
+
+// Update peer metadata message is for update peer metadata message
+message UpdatePeerMetadataMessage {
+  // ID of the peer
+  string peer_id = 1;
+  // New metadata for the peer
+  string metadata = 2;
+}
+
+// ClientMessage is the message sent from client
+message ClientMessage {
+  oneof message {
+    // Send offer message
+    SendOfferMessage send_offer_message = 1;
+    // Send answer message
+    SendAnswerMessage send_answer_message = 2;
+    // Send ICE candidate message
+    SendIceCandidateMessage send_ice_candidate_message = 3;
+    // Update peer metadata message
+    UpdatePeerMetadataMessage update_peer_metadata_message = 4;
+  }
+}

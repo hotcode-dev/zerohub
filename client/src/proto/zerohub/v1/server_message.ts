@@ -1,64 +1,99 @@
 /* eslint-disable */
 import * as _m0 from "protobufjs/minimal";
+import { Timestamp } from "../../../google/protobuf/timestamp";
 
-export const protobufPackage = "";
+export const protobufPackage = "proto.zerohub.v1";
 
 /** Peer includes peer infomation and peer metadata */
 export interface Peer {
+  /** Unique identifier for the peer */
   id: string;
+  /** Metadata associated with the peer */
   metadata: string;
-  joinedAt: number;
+  /** Time when the peer joined */
+  joinTime: Date | undefined;
 }
 
 /** HubInfoMessage includes hub infomation */
 export interface HubInfoMessage {
+  /** Unique identifier for the hub */
   id: string;
-  createdAt: number;
+  /** Time when the hub was created */
+  createTime:
+    | Date
+    | undefined;
+  /** Peer ID of the client */
   myPeerId: string;
+  /** Metadata associated with the hub */
   hubMetadata: string;
+  /** List of peers in the hub */
   peers: Peer[];
 }
 
 /** PeerJoinedMessage will send if a peer has joined */
 export interface PeerJoinedMessage {
+  /** Peer that has joined */
   peer: Peer | undefined;
 }
 
 /** PeerDisconnectedMessage will send if a peer has left */
 export interface PeerDisconnectedMessage {
+  /** ID of the peer that has disconnected */
   peerId: string;
 }
 
 /** OfferMessage is sent offer SDP from offering peer to answer peer */
 export interface OfferMessage {
+  /** ID of the offering peer */
   offerPeerId: string;
+  /** SDP offer from the offering peer */
   offerSdp: string;
 }
 
 /** AnswerMessage is sent answer SDP from answer peer to offering peer */
 export interface AnswerMessage {
+  /** ID of the answering peer */
   answerPeerId: string;
+  /** SDP answer from the answering peer */
   answerSdp: string;
 }
 
 /** IceCandidateMessage is not using yet */
 export interface IceCandidateMessage {
+  /** ID of the peer */
   peerId: string;
+  /** ICE candidate information */
   candidate: string;
 }
 
 /** ServerMessage is the message sent from server */
 export interface ServerMessage {
-  hubInfoMessage?: HubInfoMessage | undefined;
-  peerJoinedMessage?: PeerJoinedMessage | undefined;
-  peerDisconnectedMessage?: PeerDisconnectedMessage | undefined;
-  offerMessage?: OfferMessage | undefined;
-  answerMessage?: AnswerMessage | undefined;
+  /** Hub information message */
+  hubInfoMessage?:
+    | HubInfoMessage
+    | undefined;
+  /** Peer joined message */
+  peerJoinedMessage?:
+    | PeerJoinedMessage
+    | undefined;
+  /** Peer disconnected message */
+  peerDisconnectedMessage?:
+    | PeerDisconnectedMessage
+    | undefined;
+  /** Offer message */
+  offerMessage?:
+    | OfferMessage
+    | undefined;
+  /** Answer message */
+  answerMessage?:
+    | AnswerMessage
+    | undefined;
+  /** ICE candidate message */
   iceCandidateMessage?: IceCandidateMessage | undefined;
 }
 
 function createBasePeer(): Peer {
-  return { id: "", metadata: "", joinedAt: 0 };
+  return { id: "", metadata: "", joinTime: undefined };
 }
 
 export const Peer = {
@@ -69,8 +104,8 @@ export const Peer = {
     if (message.metadata !== "") {
       writer.uint32(18).string(message.metadata);
     }
-    if (message.joinedAt !== 0) {
-      writer.uint32(24).uint32(message.joinedAt);
+    if (message.joinTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.joinTime), writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -97,11 +132,11 @@ export const Peer = {
           message.metadata = reader.string();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag !== 26) {
             break;
           }
 
-          message.joinedAt = reader.uint32();
+          message.joinTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -116,7 +151,7 @@ export const Peer = {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       metadata: isSet(object.metadata) ? globalThis.String(object.metadata) : "",
-      joinedAt: isSet(object.joinedAt) ? globalThis.Number(object.joinedAt) : 0,
+      joinTime: isSet(object.joinTime) ? fromJsonTimestamp(object.joinTime) : undefined,
     };
   },
 
@@ -128,8 +163,8 @@ export const Peer = {
     if (message.metadata !== "") {
       obj.metadata = message.metadata;
     }
-    if (message.joinedAt !== 0) {
-      obj.joinedAt = Math.round(message.joinedAt);
+    if (message.joinTime !== undefined) {
+      obj.joinTime = message.joinTime.toISOString();
     }
     return obj;
   },
@@ -141,13 +176,13 @@ export const Peer = {
     const message = createBasePeer();
     message.id = object.id ?? "";
     message.metadata = object.metadata ?? "";
-    message.joinedAt = object.joinedAt ?? 0;
+    message.joinTime = object.joinTime ?? undefined;
     return message;
   },
 };
 
 function createBaseHubInfoMessage(): HubInfoMessage {
-  return { id: "", createdAt: 0, myPeerId: "", hubMetadata: "", peers: [] };
+  return { id: "", createTime: undefined, myPeerId: "", hubMetadata: "", peers: [] };
 }
 
 export const HubInfoMessage = {
@@ -155,8 +190,8 @@ export const HubInfoMessage = {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
-    if (message.createdAt !== 0) {
-      writer.uint32(16).uint32(message.createdAt);
+    if (message.createTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(18).fork()).ldelim();
     }
     if (message.myPeerId !== "") {
       writer.uint32(26).string(message.myPeerId);
@@ -185,11 +220,11 @@ export const HubInfoMessage = {
           message.id = reader.string();
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag !== 18) {
             break;
           }
 
-          message.createdAt = reader.uint32();
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 3:
           if (tag !== 26) {
@@ -224,7 +259,7 @@ export const HubInfoMessage = {
   fromJSON(object: any): HubInfoMessage {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      createdAt: isSet(object.createdAt) ? globalThis.Number(object.createdAt) : 0,
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       myPeerId: isSet(object.myPeerId) ? globalThis.String(object.myPeerId) : "",
       hubMetadata: isSet(object.hubMetadata) ? globalThis.String(object.hubMetadata) : "",
       peers: globalThis.Array.isArray(object?.peers) ? object.peers.map((e: any) => Peer.fromJSON(e)) : [],
@@ -236,8 +271,8 @@ export const HubInfoMessage = {
     if (message.id !== "") {
       obj.id = message.id;
     }
-    if (message.createdAt !== 0) {
-      obj.createdAt = Math.round(message.createdAt);
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
     }
     if (message.myPeerId !== "") {
       obj.myPeerId = message.myPeerId;
@@ -257,7 +292,7 @@ export const HubInfoMessage = {
   fromPartial<I extends Exact<DeepPartial<HubInfoMessage>, I>>(object: I): HubInfoMessage {
     const message = createBaseHubInfoMessage();
     message.id = object.id ?? "";
-    message.createdAt = object.createdAt ?? 0;
+    message.createTime = object.createTime ?? undefined;
     message.myPeerId = object.myPeerId ?? "";
     message.hubMetadata = object.hubMetadata ?? "";
     message.peers = object.peers?.map((e) => Peer.fromPartial(e)) || [];
@@ -772,6 +807,28 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = date.getTime() / 1_000;
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof globalThis.Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new globalThis.Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

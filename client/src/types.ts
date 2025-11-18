@@ -243,5 +243,5 @@ export interface HubInfo<HubMetadata = object> {
   /**
    * The timestamp when the hub was created.
    */
-  createdAt: Date;
+  createTime: Date;
 }

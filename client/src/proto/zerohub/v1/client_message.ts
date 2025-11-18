@@ -1,37 +1,55 @@
 /* eslint-disable */
 import * as _m0 from "protobufjs/minimal";
 
-export const protobufPackage = "";
+export const protobufPackage = "proto.zerohub.v1";
 
 /** SendOfferMessage is sent offer SDP from offering peer to answer peer */
 export interface SendOfferMessage {
+  /** ID of the answer peer */
   answerPeerId: string;
+  /** SDP offer from the offering peer */
   offerSdp: string;
 }
 
 /** Send answer message is sent answer SDP from answer peer to offering peer */
 export interface SendAnswerMessage {
+  /** ID of the offering peer */
   offerPeerId: string;
+  /** SDP answer from the answering peer */
   answerSdp: string;
 }
 
 /** Send ICE candidate message is not using yet */
 export interface SendIceCandidateMessage {
+  /** ID of the peer */
   peerId: string;
+  /** ICE candidate information */
   candidate: string;
 }
 
 /** Update peer metadata message is for update peer metadata message */
 export interface UpdatePeerMetadataMessage {
+  /** ID of the peer */
   peerId: string;
+  /** New metadata for the peer */
   metadata: string;
 }
 
 /** ClientMessage is the message sent from client */
 export interface ClientMessage {
-  sendOfferMessage?: SendOfferMessage | undefined;
-  sendAnswerMessage?: SendAnswerMessage | undefined;
-  sendIceCandidateMessage?: SendIceCandidateMessage | undefined;
+  /** Send offer message */
+  sendOfferMessage?:
+    | SendOfferMessage
+    | undefined;
+  /** Send answer message */
+  sendAnswerMessage?:
+    | SendAnswerMessage
+    | undefined;
+  /** Send ICE candidate message */
+  sendIceCandidateMessage?:
+    | SendIceCandidateMessage
+    | undefined;
+  /** Update peer metadata message */
   updatePeerMetadataMessage?: UpdatePeerMetadataMessage | undefined;
 }
 
