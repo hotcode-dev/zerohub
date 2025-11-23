@@ -23,6 +23,44 @@ type HarnessInstance = {
 };
 
 const instances = new Map<string, HarnessInstance>();
+const dataChannelStates = new Map<string, Map<string, string>>();
+
+function setDataChannelStatus(
+  componentId: string,
+  label: string,
+  status: string
+) {
+  let componentStates = dataChannelStates.get(componentId);
+  if (!componentStates) {
+    componentStates = new Map();
+    dataChannelStates.set(componentId, componentStates);
+  }
+
+  componentStates.set(label, status);
+}
+
+function watchDataChannel(
+  componentId: string,
+  container: HTMLElement,
+  dataChannel: RTCDataChannel
+) {
+  const statusAttr = `data-${dataChannel.label}-status`;
+
+  const updateStatus = () => {
+    const state = dataChannel.readyState;
+    container.setAttribute(statusAttr, state);
+    setDataChannelStatus(componentId, dataChannel.label, state);
+  };
+
+  updateStatus();
+
+  dataChannel.addEventListener("open", updateStatus);
+  dataChannel.addEventListener("close", updateStatus);
+}
+
+function getDataChannelStatus(componentId: string, label: string) {
+  return dataChannelStates.get(componentId)?.get(label) ?? null;
+}
 
 function ensureRoot(): HTMLElement {
   const existing = document.getElementById("zero-hub-test-root");
@@ -87,12 +125,7 @@ function createHub(options: CreateHubOptions) {
         numberOfChannels: 1,
         rtcDataChannelInit: { ordered: true },
         onDataChannel: (_peer, dataChannel) => {
-          dataChannel.onopen = () => {
-            container.dataset[`${dataChannel.label}-status`] = "open";
-          };
-          dataChannel.onclose = () => {
-            container.dataset[`${dataChannel.label}-status`] = "closed";
-          };
+          watchDataChannel(componentId, container, dataChannel);
         },
       },
     }
@@ -104,25 +137,6 @@ function createHub(options: CreateHubOptions) {
 
   zeroHub.onPeerStatusChange = (peer) => {
     peerStatusDiv.textContent = peer.status;
-
-    if (peer.status === PeerStatus.Connected) {
-      return;
-    }
-
-    if (peer.status === PeerStatus.Pending && zeroHub.myPeerId) {
-      const peerIdNumeric = Number.parseInt(peer.id, 10);
-      const myPeerIdNumeric = Number.parseInt(zeroHub.myPeerId, 10);
-
-      if (
-        Number.isFinite(peerIdNumeric) &&
-        Number.isFinite(myPeerIdNumeric) &&
-        peerIdNumeric > myPeerIdNumeric
-      ) {
-        zeroHub.sendOffer(peer.id).catch(() => {
-          // Ignore errors during handshakes; the test will surface failures via status.
-        });
-      }
-    }
   };
 
   zeroHub.createRandomHub({ name: "test" });
@@ -160,12 +174,7 @@ function joinHub(options: JoinHubOptions) {
         numberOfChannels: 1,
         rtcDataChannelInit: { ordered: true },
         onDataChannel: (_peer, dataChannel) => {
-          dataChannel.onopen = () => {
-            container.dataset[`${dataChannel.label}-status`] = "open";
-          };
-          dataChannel.onclose = () => {
-            container.dataset[`${dataChannel.label}-status`] = "closed";
-          };
+          watchDataChannel(componentId, container, dataChannel);
         },
       },
     }
@@ -187,6 +196,7 @@ function joinHub(options: JoinHubOptions) {
 const ZeroHubHarness = {
   createHub,
   joinHub,
+  getDataChannelStatus,
 };
 
 declare global {

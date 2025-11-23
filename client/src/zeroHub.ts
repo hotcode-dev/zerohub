@@ -117,13 +117,21 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       throw new Error("The hosts must be at least one");
     }
 
-    // Set default config
-    this.config = Object.assign(DEFAULT_CONFIG, config);
-    this.config.rtcConfig = Object.assign(DEFAULT_RTC_CONFIG, config.rtcConfig);
-    this.config.rtcOfferOptions = Object.assign(
-      DEFAULT_RTC_OFFER_OPTIONS,
-      config.rtcOfferOptions
-    );
+    const mergedRtcConfig = {
+      ...DEFAULT_RTC_CONFIG,
+      ...config.rtcConfig,
+    } satisfies RTCConfiguration;
+    const mergedRtcOfferOptions = {
+      ...DEFAULT_RTC_OFFER_OPTIONS,
+      ...config.rtcOfferOptions,
+    } satisfies RTCOfferOptions;
+
+    this.config = {
+      ...(DEFAULT_CONFIG as Config<PeerMetadata>),
+      ...config,
+      rtcConfig: mergedRtcConfig,
+      rtcOfferOptions: mergedRtcOfferOptions,
+    } satisfies Config<PeerMetadata>;
 
     this.logger = new ZeroHubLogger(this.config.logger, this.config.logLevel);
 

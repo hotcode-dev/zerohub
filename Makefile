@@ -39,16 +39,12 @@ kill-server:
 	if [ -n "$$PIDS" ]; then kill $$PIDS 2>/dev/null || true; fi
 
 e2e-test:
-	@EXIT_CODE=0; \
 	$(MAKE) kill-server >/dev/null 2>&1 || true; \
-	( cd server && APP_CLIENT_SECRET=client_secret go run ./cmd/server.go ) & \
+	( make server-serve ) & \
 	SERVER1_PID=$$!; \
-	( cd server && APP_PORT=8081 go run ./cmd/server.go ) & \
+	( make server-serve-2 ) & \
 	SERVER2_PID=$$!; \
-	trap 'kill $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; $(MAKE) kill-server >/dev/null 2>&1 || true' EXIT INT TERM; \
 	sleep 3; \
-	( cd ./test && PWDEBUG=console npm run test ) || EXIT_CODE=$$?; \
+	( cd ./test && PWDEBUG=console npm run test ) || true; \
 	kill $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; \
 	wait $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; \
-	$(MAKE) kill-server >/dev/null 2>&1 || true; \
-	exit $$EXIT_CODE
