@@ -4,7 +4,7 @@ MAKEFLAGS += -j3
 .PHONY: default
 default: server-serve
 
-test-all: server-test server-serve server-serve-2 e2e-test
+test-all: server-test e2e-test
 
 proto-gen:
 	api-linter ./proto/zerohub/v1/*.proto
@@ -33,8 +33,22 @@ client-build:
 	cd ./client && npm run build
 
 kill-server:
-	-pkill -f "APP_CLIENT_SECRET=client_secret go run ./cmd/server.go"
-	-pkill -f "APP_PORT=8081 go run ./cmd/server.go"
+	@PIDS=$$(lsof -ti:8080 -sTCP:LISTEN 2>/dev/null); \
+	if [ -n "$$PIDS" ]; then kill $$PIDS 2>/dev/null || true; fi
+	@PIDS=$$(lsof -ti:8081 -sTCP:LISTEN 2>/dev/null); \
+	if [ -n "$$PIDS" ]; then kill $$PIDS 2>/dev/null || true; fi
 
 e2e-test:
-	cd ./test && PWDEBUG=console npm run test
+	@EXIT_CODE=0; \
+	$(MAKE) kill-server >/dev/null 2>&1 || true; \
+	( cd server && APP_CLIENT_SECRET=client_secret go run ./cmd/server.go ) & \
+	SERVER1_PID=$$!; \
+	( cd server && APP_PORT=8081 go run ./cmd/server.go ) & \
+	SERVER2_PID=$$!; \
+	trap 'kill $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; $(MAKE) kill-server >/dev/null 2>&1 || true' EXIT INT TERM; \
+	sleep 3; \
+	( cd ./test && PWDEBUG=console npm run test ) || EXIT_CODE=$$?; \
+	kill $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; \
+	wait $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; \
+	$(MAKE) kill-server >/dev/null 2>&1 || true; \
+	exit $$EXIT_CODE

@@ -1,11 +1,15 @@
-import { test, expect } from "@playwright/experimental-ct-svelte";
-import CreateHub from "./components/CreateHub.svelte";
-import JoinHub from "./components/JoinHub.svelte";
+import { test, expect } from "@playwright/test";
 import { v4 as uuidv4 } from "uuid";
+import {
+  getCreateHubTestId,
+  getCreatePeerStatusTestId,
+  getJoinHubTestId,
+  getJoinPeerStatusTestId,
+  prepareHarnessPage,
+} from "./utils/harness";
 
-test.use({ viewport: { width: 500, height: 500 } });
-
-test("migrate", async ({ mount }) => {
+test("migrate", async ({ page }) => {
+  await prepareHarnessPage(page);
   let hubId: string = "";
   let hubIdNew: string = "";
   const componentId = uuidv4();
@@ -15,17 +19,18 @@ test("migrate", async ({ mount }) => {
   const migrateURL = "http://localhost:8080/v1/admin/migrate";
   const clientSecret = "client_secret";
 
-  const createHub = await mount(CreateHub, {
-    props: {
-      testName: "migrate, create hub",
-      zeroHubHosts: [zeroHubHost],
-      componentId: componentId,
+  await page.evaluate(
+    ({ componentId: id, zeroHubHost: host }) => {
+      window.ZeroHubHarness.createHub({
+        testName: "migrate, create hub",
+        zeroHubHosts: [host],
+        componentId: id,
+      });
     },
-  });
+    { componentId, zeroHubHost }
+  );
   await test.step("create hub success", async () => {
-    const hubIdLoc = createHub
-      .getByTestId(`create-hub-id-${componentId}`)
-      .first();
+    const hubIdLoc = page.getByTestId(getCreateHubTestId(componentId)).first();
     await expect(hubIdLoc).toHaveText(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
     );
@@ -43,43 +48,45 @@ test("migrate", async ({ mount }) => {
   });
 
   // test join the first hub after migrate
-  const joinHub = await mount(JoinHub, {
-    props: {
-      testName: "migrate, join hub",
-      hubId: hubId,
-      zeroHubHosts: [zeroHubHost],
-      componentId: componentId,
+  await page.evaluate(
+    ({ componentId: id, zeroHubHost: host, hubId: joinHubId }) => {
+      window.ZeroHubHarness.joinHub({
+        testName: "migrate, join hub",
+        hubId: joinHubId,
+        zeroHubHosts: [host],
+        componentId: id,
+      });
     },
-  });
+    { componentId, zeroHubHost, hubId }
+  );
 
   await test.step("join hub success", async () => {
-    console.log(`Join hub with id: ${hubId} on componentId: ${componentId}`);
-    const joinHubIdLoc = joinHub
-      .getByTestId(`join-hub-id-${componentId}`)
+    const joinHubIdLoc = page
+      .getByTestId(getJoinHubTestId(componentId))
       .first();
-    console.log(`Join hub id element: ${joinHubIdLoc}`);
-    console.log(`Join hub id text: ${await joinHubIdLoc.textContent()}`);
-
     await expect(joinHubIdLoc).toHaveText(hubId);
   });
   await test.step("peer status connected", async () => {
     await expect(
-      createHub.getByTestId(`create-peer-status-${componentId}`).first()
+      page.getByTestId(getCreatePeerStatusTestId(componentId)).first()
     ).toHaveText("connected");
     await expect(
-      joinHub.getByTestId(`join-peer-status-${componentId}`).first()
+      page.getByTestId(getJoinPeerStatusTestId(componentId)).first()
     ).toHaveText("connected");
   });
 
-  const createHub2 = await mount(CreateHub, {
-    props: {
-      zeroHubHosts: [zeroHubHostNew],
-      componentId: componentIdNew,
+  await page.evaluate(
+    ({ componentId: id, zeroHubHostNew: host }) => {
+      window.ZeroHubHarness.createHub({
+        zeroHubHosts: [host],
+        componentId: id,
+      });
     },
-  });
+    { componentId: componentIdNew, zeroHubHostNew }
+  );
   await test.step("create hub success", async () => {
-    const hubIdLoc = createHub2
-      .getByTestId(`create-hub-id-${componentIdNew}`)
+    const hubIdLoc = page
+      .getByTestId(getCreateHubTestId(componentIdNew))
       .first();
     await expect(hubIdLoc).toHaveText(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
@@ -87,25 +94,28 @@ test("migrate", async ({ mount }) => {
     hubIdNew = (await hubIdLoc.textContent()) || "";
   });
 
-  const joinHub2 = await mount(JoinHub, {
-    props: {
-      hubId: hubIdNew,
-      zeroHubHosts: [zeroHubHostNew],
-      componentId: componentIdNew,
+  await page.evaluate(
+    ({ componentId: id, zeroHubHostNew: host, hubIdNew: joinHubId }) => {
+      window.ZeroHubHarness.joinHub({
+        hubId: joinHubId,
+        zeroHubHosts: [host],
+        componentId: id,
+      });
     },
-  });
+    { componentId: componentIdNew, zeroHubHostNew, hubIdNew }
+  );
   await test.step("join hub success", async () => {
     await expect(
-      joinHub2.getByTestId(`join-hub-id-${componentIdNew}`).first()
+      page.getByTestId(getJoinHubTestId(componentIdNew)).first()
     ).toHaveText(hubIdNew);
   });
 
   await test.step("peer status connected", async () => {
     await expect(
-      createHub2.getByTestId(`create-peer-status-${componentIdNew}`).first()
+      page.getByTestId(getCreatePeerStatusTestId(componentIdNew)).first()
     ).toHaveText("connected");
     await expect(
-      joinHub2.getByTestId(`join-peer-status-${componentIdNew}`).first()
+      page.getByTestId(getJoinPeerStatusTestId(componentIdNew)).first()
     ).toHaveText("connected");
   });
 });

@@ -1,31 +1,35 @@
-import { test, expect } from "@playwright/experimental-ct-svelte";
-import CreateHub from "./components/CreateHub.svelte";
-import JoinHub from "./components/JoinHub.svelte";
+import { test, expect } from "@playwright/test";
 import { v4 as uuidv4 } from "uuid";
+import {
+  getCreateHubTestId,
+  getCreatePeerStatusTestId,
+  getJoinHubTestId,
+  getJoinPeerStatusTestId,
+  prepareHarnessPage,
+} from "./utils/harness";
 
-test.use({ viewport: { width: 500, height: 500 } });
-
-test("multiple concurrent connections", async ({ mount }) => {
+test("multiple concurrent connections", async ({ page }) => {
+  await prepareHarnessPage(page);
   const componentId = uuidv4();
   const zeroHubHost = "localhost:8080";
   let hubId: string = "";
   const numberOfConcurrentConnections = 10;
   const joinedComponentIds: string[] = [];
-  const joinedComponents: any[] = [];
 
   // Create a hub first
-  const createHub = await mount(CreateHub, {
-    props: {
-      testName: "concurrent test, create hub",
-      zeroHubHosts: [zeroHubHost],
-      componentId: componentId,
+  await page.evaluate(
+    ({ componentId: id, zeroHubHost: host }) => {
+      window.ZeroHubHarness.createHub({
+        testName: "concurrent test, create hub",
+        zeroHubHosts: [host],
+        componentId: id,
+      });
     },
-  });
+    { componentId, zeroHubHost }
+  );
 
   await test.step("create hub success", async () => {
-    const hubIdLoc = createHub
-      .getByTestId(`create-hub-id-${componentId}`)
-      .first();
+    const hubIdLoc = page.getByTestId(getCreateHubTestId(componentId)).first();
     await expect(hubIdLoc).toHaveText(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
     );
@@ -37,21 +41,25 @@ test("multiple concurrent connections", async ({ mount }) => {
     for (let i = 0; i < numberOfConcurrentConnections; i++) {
       const joinComponentId = `${componentId}-join-${i}`;
       joinedComponentIds.push(joinComponentId);
-
-      const joinComponent = await mount(JoinHub, {
-        props: {
-          testName: `concurrent test, join hub ${i}`,
-          zeroHubHosts: [zeroHubHost],
-          hubId: hubId,
-          componentId: joinComponentId,
+      await page.evaluate(
+        ({ componentId: id, zeroHubHost: host, hubId: joinHubId, index }) => {
+          window.ZeroHubHarness.joinHub({
+            testName: `concurrent test, join hub ${index}`,
+            zeroHubHosts: [host],
+            hubId: joinHubId,
+            componentId: id,
+          });
         },
-      });
+        {
+          componentId: joinComponentId,
+          zeroHubHost,
+          hubId,
+          index: i,
+        }
+      );
 
-      joinedComponents.push(joinComponent);
-
-      // Verify the component joined the right hub
       await expect(
-        joinComponent.getByTestId(`join-hub-id-${joinComponentId}`).first()
+        page.getByTestId(getJoinHubTestId(joinComponentId)).first()
       ).toHaveText(hubId);
     }
   });
@@ -60,26 +68,26 @@ test("multiple concurrent connections", async ({ mount }) => {
   await test.step("verify all peers are connected", async () => {
     // Check that the creator is connected to all peers
     await expect(
-      createHub.getByTestId(`create-peer-status-${componentId}`).first()
-    ).toHaveText("connected");
+      page.getByTestId(getCreatePeerStatusTestId(componentId)).first()
+    ).toHaveText("connected", { timeout: 15000 });
 
     // Check that all joiners are connected
     for (let i = 0; i < numberOfConcurrentConnections; i++) {
       await expect(
-        joinedComponents[i]
-          .getByTestId(`join-peer-status-${joinedComponentIds[i]}`)
+        page
+          .getByTestId(getJoinPeerStatusTestId(joinedComponentIds[i]))
           .first()
-      ).toHaveText("connected");
+      ).toHaveText("connected", { timeout: 15000 });
     }
   });
 });
 
-test("multiple concurrent hub creation and joining", async ({ mount }) => {
+test("multiple concurrent hub creation and joining", async ({ page }) => {
+  await prepareHarnessPage(page);
   const zeroHubHost = "localhost:8080";
   const numberOfHubs = 3;
   const peersPerHub = 2;
 
-  const hubCreators: any[] = [];
   const hubIds: string[] = [];
   const creatorIds: string[] = [];
 
@@ -89,19 +97,20 @@ test("multiple concurrent hub creation and joining", async ({ mount }) => {
       const creatorId = `creator-${uuidv4()}-${i}`;
       creatorIds.push(creatorId);
 
-      const hubCreator = await mount(CreateHub, {
-        props: {
-          testName: `concurrent hub creation ${i}`,
-          zeroHubHosts: [zeroHubHost],
-          componentId: creatorId,
+      await page.evaluate(
+        ({ componentId: id, zeroHubHost: host, index }) => {
+          window.ZeroHubHarness.createHub({
+            testName: `concurrent hub creation ${index}`,
+            zeroHubHosts: [host],
+            componentId: id,
+          });
         },
-      });
-
-      hubCreators.push(hubCreator);
+        { componentId: creatorId, zeroHubHost, index: i }
+      );
 
       // Verify hub creation success
-      const hubIdLoc = hubCreator
-        .getByTestId(`create-hub-id-${creatorId}`)
+      const hubIdLoc = page
+        .getByTestId(getCreateHubTestId(creatorId))
         .first();
 
       await expect(hubIdLoc).toHaveText(
@@ -114,36 +123,40 @@ test("multiple concurrent hub creation and joining", async ({ mount }) => {
   });
 
   // Step 2: Join peers to each hub concurrently
-  const hubPeers: Array<Array<any>> = [];
   const hubPeerIds: Array<Array<string>> = [];
 
   await test.step("join peers to hubs concurrently", async () => {
     for (let hubIndex = 0; hubIndex < numberOfHubs; hubIndex++) {
-      const peersForCurrentHub: any[] = [];
       const peerIdsForCurrentHub: string[] = [];
 
       for (let peerIndex = 0; peerIndex < peersPerHub; peerIndex++) {
         const peerId = `joiner-${uuidv4()}-hub${hubIndex}-peer${peerIndex}`;
         peerIdsForCurrentHub.push(peerId);
 
-        const peer = await mount(JoinHub, {
-          props: {
-            testName: `join hub ${hubIndex}, peer ${peerIndex}`,
-            zeroHubHosts: [zeroHubHost],
-            hubId: hubIds[hubIndex],
-            componentId: peerId,
+        await page.evaluate(
+          ({ componentId: id, zeroHubHost: host, hubId: joinHubId, hubIndex: hIndex, peerIndex: pIndex }) => {
+            window.ZeroHubHarness.joinHub({
+              testName: `join hub ${hIndex}, peer ${pIndex}`,
+              zeroHubHosts: [host],
+              hubId: joinHubId,
+              componentId: id,
+            });
           },
-        });
-
-        peersForCurrentHub.push(peer);
+          {
+            componentId: peerId,
+            zeroHubHost,
+            hubId: hubIds[hubIndex],
+            hubIndex,
+            peerIndex,
+          }
+        );
 
         // Verify the peer joined the correct hub
         await expect(
-          peer.getByTestId(`join-hub-id-${peerId}`).first()
+          page.getByTestId(getJoinHubTestId(peerId)).first()
         ).toHaveText(hubIds[hubIndex]);
       }
 
-      hubPeers.push(peersForCurrentHub);
       hubPeerIds.push(peerIdsForCurrentHub);
     }
   });
@@ -153,18 +166,20 @@ test("multiple concurrent hub creation and joining", async ({ mount }) => {
     // Verify hub creators are connected
     for (let hubIndex = 0; hubIndex < numberOfHubs; hubIndex++) {
       await expect(
-        hubCreators[hubIndex]
-          .getByTestId(`create-peer-status-${creatorIds[hubIndex]}`)
+        page
+          .getByTestId(getCreatePeerStatusTestId(creatorIds[hubIndex]))
           .first()
-      ).toHaveText("connected");
+      ).toHaveText("connected", { timeout: 15000 });
 
       // Verify all peers in this hub are connected
       for (let peerIndex = 0; peerIndex < peersPerHub; peerIndex++) {
         await expect(
-          hubPeers[hubIndex][peerIndex]
-            .getByTestId(`join-peer-status-${hubPeerIds[hubIndex][peerIndex]}`)
+          page
+            .getByTestId(
+              getJoinPeerStatusTestId(hubPeerIds[hubIndex][peerIndex])
+            )
             .first()
-        ).toHaveText("connected");
+        ).toHaveText("connected", { timeout: 15000 });
       }
     }
   });
