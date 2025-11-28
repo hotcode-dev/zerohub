@@ -72,7 +72,7 @@ test("data channels open for creator and joiner", async ({ page }) => {
       async () =>
         page.evaluate(
           ({ componentId }) =>
-            window.ZeroHubHarness.getDataChannelStatus(componentId, "data-0"),
+            window.ZeroHubHarness.getDataChannelStatus(componentId, "0"),
           { componentId: creatorId }
         ),
       waitForOpen
@@ -83,7 +83,7 @@ test("data channels open for creator and joiner", async ({ page }) => {
       async () =>
         page.evaluate(
           ({ componentId }) =>
-            window.ZeroHubHarness.getDataChannelStatus(componentId, "data-0"),
+            window.ZeroHubHarness.getDataChannelStatus(componentId, "0"),
           { componentId: joinerId }
         ),
       waitForOpen
@@ -91,12 +91,12 @@ test("data channels open for creator and joiner", async ({ page }) => {
     .toBe("open");
 
   await expect(creatorContainer).toHaveAttribute(
-    "data-data-0-status",
+    "data-0-status",
     "open",
     waitForOpen
   );
   await expect(joinerContainer).toHaveAttribute(
-    "data-data-0-status",
+    "data-0-status",
     "open",
     waitForOpen
   );

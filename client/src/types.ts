@@ -61,16 +61,16 @@ export enum LogLevel {
  * ### Multiple Channels
  * ```typescript
  * dataChannelConfig: {
- *   numberOfChannels: 3, // Creates 3 channels per peer: "data-0", "data-1", "data-2"
+ *   numberOfChannels: 3, // Creates 3 channels per peer: "0", "1", "2"
  *   onDataChannel: (peer, dataChannel, isOwner) => {
  *     // Handle each channel based on its label
- *     if (dataChannel.label === "data-0") {
+ *     if (dataChannel.label === "0") {
  *       // High priority/ordered channel for critical data
  *       dataChannel.onmessage = (event) => handleCriticalData(event.data);
- *     } else if (dataChannel.label === "data-1") {
+ *     } else if (dataChannel.label === "1") {
  *       // Unordered channel for real-time updates
  *       dataChannel.onmessage = (event) => handleRealtimeUpdates(event.data);
- *     } else if (dataChannel.label === "data-2") {
+ *     } else if (dataChannel.label === "2") {
  *       // Separate channel for file transfers
  *       dataChannel.onmessage = (event) => handleFileTransfer(event.data);
  *     }
@@ -80,7 +80,7 @@ export enum LogLevel {
  * ```
  *
  * ### Channel Naming Convention
- * Channels are automatically named as `"data-{index}"` where index starts from 0.
+ * Channels are automatically named as `"{index}"` where index starts from 0.
  * You can identify channels using the `dataChannel.label` property.
  *
  * ### Use Cases
@@ -94,8 +94,8 @@ export enum LogLevel {
 export interface DataChannelConfig<PeerMetadata = object> {
   /**
    * The number of data channels to create per peer connection.
-   * Each channel will be named "data-0", "data-1", etc.
-   * Default is 1 (creates a single channel named "data-0").
+   * Each channel will be named "0", "1", etc.
+   * Default is 1 (creates a single channel named "0").
    *
    * @remarks
    * - All channels use the same `rtcDataChannelInit` configuration
@@ -105,7 +105,7 @@ export interface DataChannelConfig<PeerMetadata = object> {
    *
    * @example
    * ```typescript
-   * numberOfChannels: 3 // Creates "data-0", "data-1", "data-2"
+   * numberOfChannels: 3 // Creates "0", "1", "2"
    * ```
    */
   numberOfChannels?: number;

@@ -135,15 +135,15 @@ Use multiple channels per peer for separation of concerns:
 
 ```typescript
 dataChannelConfig: {
-  numberOfChannels: 3,  // Creates "data-0", "data-1", "data-2"
+  numberOfChannels: 3,  // Creates "0", "1", "2"
   onDataChannel: (peer, dc, isOwner) => {
-    if (dc.label === 'data-0') {
+    if (dc.label === '0') {
       // Ordered/reliable for critical messages
       dc.onmessage = handleControl;
-    } else if (dc.label === 'data-1') {
+    } else if (dc.label === '1') {
       // Unordered for real-time position updates
       dc.onmessage = handleRealtime;
-    } else if (dc.label === 'data-2') {
+    } else if (dc.label === '2') {
       // File transfer chunks
       dc.onmessage = handleFileChunk;
     }
