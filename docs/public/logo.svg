@@ -22,7 +22,7 @@
       </feMerge>
     </filter>
   </defs>
-  <!-- <rect width="140" height="140" rx="24" fill="url(#bgGradient)" /> -->
+  <rect width="140" height="140" rx="24" fill="url(#bgGradient)" />
   <path d="M70 25l40 70H28Z" fill="none" stroke="url(#triangleGradient)" filter="url(#glow)"
     stroke-width="10" stroke-linejoin="round" />
   <circle cx="70" cy="20" r="9" fill="#E9D5FF" filter="url(#glow)" />

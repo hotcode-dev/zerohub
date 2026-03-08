@@ -44,7 +44,7 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
               this.zeroHub.config.dataChannelConfig.numberOfChannels || 1;
             for (let i = 0; i < numberOfChannels; i++) {
               const dataChannel = peer.rtcConn.createDataChannel(
-                `data-${i}`,
+                i.toString(),
                 this.zeroHub.config.dataChannelConfig.rtcDataChannelInit
               );
               this.zeroHub.config.dataChannelConfig.onDataChannel(

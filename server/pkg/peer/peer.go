@@ -6,9 +6,10 @@ import (
 	"time"
 
 	"github.com/fasthttp/websocket"
-	pb "github.com/hotcode-dev/zerohub/pkg/proto"
+	pb "github.com/hotcode-dev/zerohub/pkg/proto/zerohub/v1"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Peer is an interface for a peer that is connected to a hub.
@@ -136,6 +137,6 @@ func (p *peer) ToProtobuf() *pb.Peer {
 	return &pb.Peer{
 		Id:       p.Id,
 		Metadata: p.Metadata,
-		JoinedAt: uint32(p.JoinedAt.Unix()),
+		JoinTime: timestamppb.New(p.JoinedAt),
 	}
 }

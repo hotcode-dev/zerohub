@@ -1,5 +1,4 @@
-# ================= builder =================
-FROM golang:1.23-alpine as builder
+FROM golang:1.25.4-alpine as builder
 
 WORKDIR /app
 
@@ -14,8 +13,7 @@ COPY ./pkg/ ./pkg/
 # build the app
 RUN go build -o ./bin/server.bin ./cmd/server.go
 
-# ================= runner =================
-FROM golang:1.23-alpine as runner
+FROM golang:1.25.4-alpine as runner
 
 WORKDIR /app
 

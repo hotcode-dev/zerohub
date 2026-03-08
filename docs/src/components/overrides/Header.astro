@@ -17,6 +17,15 @@ const shouldRenderSearch =
 
 <div class="header sl-flex">
   <div class="title-wrapper sl-flex">
+    <img
+      src="/favicon.svg"
+      width="auto"
+      height="40"
+      alt="ZeroHub icon"
+      class="title-icon"
+      loading="lazy"
+      decoding="async"
+    />
     <SiteTitle />
   </div>
   <div class="sl-flex print:hidden">
@@ -58,6 +67,10 @@ const shouldRenderSearch =
     min-width: 0;
   }
 
+  .title-icon {
+    margin-right: 0.5rem;
+  }
+
   .right-group,
   .social-icons {
     gap: 1rem;
@@ -87,7 +100,8 @@ const shouldRenderSearch =
               var(--__toc-width, var(--sl-sidebar-width)) -
               (2 * var(--__toc-width, var(--sl-nav-pad-x))) -
               var(--sl-content-inline-start, 0rem) - var(--sl-content-width)
-          ) / 2
+          ) /
+          2
       );
       display: grid;
       grid-template-columns:

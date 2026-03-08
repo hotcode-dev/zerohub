@@ -90,9 +90,9 @@ const dataClient = new ZeroHubClient<PeerMetadata, HubMetadata>(hosts, {
     numberOfChannels: 3,
     rtcDataChannelInit: { ordered: true },
     onDataChannel: (peer, channel, isOwner) => {
-      if (channel.label === "data-0") channel.onmessage = handleControl;
-      if (channel.label === "data-1") channel.onmessage = handleRealtime;
-      if (channel.label === "data-2") channel.onmessage = handleFileChunk;
+      if (channel.label === "0") channel.onmessage = handleControl;
+      if (channel.label === "1") channel.onmessage = handleRealtime;
+      if (channel.label === "2") channel.onmessage = handleFileChunk;
       if (isOwner) console.info("Created channel", channel.label);
     },
   },

@@ -4,11 +4,12 @@ MAKEFLAGS += -j3
 .PHONY: default
 default: server-serve
 
-test-all: server-serve server-serve-2 e2e-test
+test-all: server-test e2e-test
 
 proto-gen:
+	api-linter ./proto/zerohub/v1/*.proto
 	rm -rf ./client/src/proto && rm -rf ./pkg/proto
-	protoc --plugin=./client/node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./client/src --go_out=./server/pkg --go_opt=paths=source_relative ./proto/*.proto
+	protoc --plugin=./client/node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./client/src --go_out=./server/pkg --go_opt=paths=source_relative ./proto/zerohub/v1/*.proto
 
 server-serve:
 	cd server && APP_CLIENT_SECRET=client_secret go run ./cmd/server.go
@@ -32,8 +33,21 @@ client-build:
 	cd ./client && npm run build
 
 kill-server:
-	-pkill -f "APP_CLIENT_SECRET=client_secret go run ./cmd/server.go"
-	-pkill -f "APP_PORT=8081 go run ./cmd/server.go"
+	@PIDS=$$(lsof -ti:8080 -sTCP:LISTEN 2>/dev/null); \
+	if [ -n "$$PIDS" ]; then kill $$PIDS 2>/dev/null || true; fi
+	@PIDS=$$(lsof -ti:8081 -sTCP:LISTEN 2>/dev/null); \
+	if [ -n "$$PIDS" ]; then kill $$PIDS 2>/dev/null || true; fi
 
 e2e-test:
-	cd ./test && PWDEBUG=console npm run test
+	$(MAKE) kill-server >/dev/null 2>&1 || true; \
+	( make server-serve ) & \
+	SERVER1_PID=$$!; \
+	( make server-serve-2 ) & \
+	SERVER2_PID=$$!; \
+	sleep 3; \
+	( cd ./test && PWDEBUG=console npm run test ) || true; \
+	kill $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; \
+	wait $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; \
+
+link-agent:
+	ln AGENTS.md .github/copilot-instructions.md

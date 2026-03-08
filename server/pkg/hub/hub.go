@@ -9,10 +9,11 @@ import (
 
 	websocket "github.com/fasthttp/websocket"
 	"github.com/hotcode-dev/zerohub/pkg/peer"
-	pb "github.com/hotcode-dev/zerohub/pkg/proto"
+	pb "github.com/hotcode-dev/zerohub/pkg/proto/zerohub/v1"
 	"github.com/hotcode-dev/zerohub/pkg/storage"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Hub is an interface for a hub that manages a group of peers.
@@ -88,7 +89,7 @@ func (h *hub) AddPeer(newPeer peer.Peer) {
 	newPeer.SendHubInfo(&pb.HubInfoMessage{
 		Id:          h.GetId(),
 		MyPeerId:    newPeer.GetId(),
-		CreatedAt:   uint32(h.GetCreatedAt().Unix()),
+		CreateTime:  timestamppb.New(h.GetCreatedAt()),
 		Peers:       peersProtobuf,
 		HubMetadata: h.GetMetadata(),
 	})

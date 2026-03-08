@@ -42,5 +42,5 @@ The server will forward this to the target peer as a `ServerMessage.offerMessage
 ## Further reading
 
 - See `proto/client_message.proto` and `proto/server_message.proto` in the repository
-- SDK: [SDK Reference](/docs/api-reference/sdk)
-- Guides: [Hub types](/docs/guides/hub-types)
+- SDK: [SDK Reference](/api-reference/sdk)
+- Guides: [Hub types](/guides/hub-types)

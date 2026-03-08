@@ -1,54 +1,62 @@
-import { test, expect } from "@playwright/experimental-ct-svelte";
-import CreateHub from "./components/CreateHub.svelte";
-import JoinHub from "./components/JoinHub.svelte";
+import { test, expect } from "@playwright/test";
 import { v4 as uuidv4 } from "uuid";
+import {
+  getCreateHubTestId,
+  getCreatePeerStatusTestId,
+  getJoinHubTestId,
+  getJoinPeerStatusTestId,
+  prepareHarnessPage,
+} from "./utils/harness";
 
-test.use({ viewport: { width: 500, height: 500 } });
-
-test("multi hosts", async ({ mount }) => {
+test("multi hosts", async ({ page }) => {
+  await prepareHarnessPage(page);
   let hubId: string = "";
   const componentId = uuidv4();
   const zeroHubBadHost = "this_is_bad_host:8080";
   const zeroHubGoodHost = "localhost:8080";
 
-  const createHub = await mount(CreateHub, {
-    props: {
-      testName: "multi hosts, create hub",
-      zeroHubHosts: [zeroHubBadHost, zeroHubGoodHost],
-      componentId: componentId,
+  await page.evaluate(
+    ({ componentId: id, zeroHubBadHost: badHost, zeroHubGoodHost: goodHost }) => {
+      window.ZeroHubHarness.createHub({
+        testName: "multi hosts, create hub",
+        zeroHubHosts: [badHost, goodHost],
+        componentId: id,
+      });
     },
-  });
+    { componentId, zeroHubBadHost, zeroHubGoodHost }
+  );
 
   await test.step("create hub success", async () => {
-    const hubIdLoc = createHub
-      .getByTestId(`create-hub-id-${componentId}`)
-      .first();
+    const hubIdLoc = page.getByTestId(getCreateHubTestId(componentId)).first();
     await expect(hubIdLoc).toHaveText(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
     );
     hubId = (await hubIdLoc.textContent()) || "";
   });
 
-  const joinHub = await mount(JoinHub, {
-    props: {
-      testName: "multi hosts, join hub",
-      hubId: hubId,
-      zeroHubHosts: [zeroHubBadHost, zeroHubGoodHost],
-      componentId: componentId,
+  await page.evaluate(
+    ({ componentId: id, zeroHubBadHost: badHost, zeroHubGoodHost: goodHost, hubId: joinHubId }) => {
+      window.ZeroHubHarness.joinHub({
+        testName: "multi hosts, join hub",
+        hubId: joinHubId,
+        zeroHubHosts: [badHost, goodHost],
+        componentId: id,
+      });
     },
-  });
+    { componentId, zeroHubBadHost, zeroHubGoodHost, hubId }
+  );
   await test.step("join hub success", async () => {
     await expect(
-      joinHub.getByTestId(`join-hub-id-${componentId}`).first()
+      page.getByTestId(getJoinHubTestId(componentId)).first()
     ).toHaveText(hubId);
   });
 
   await test.step("peer status connected", async () => {
     await expect(
-      createHub.getByTestId(`create-peer-status-${componentId}`).first()
+      page.getByTestId(getCreatePeerStatusTestId(componentId)).first()
     ).toContainText("connected");
     await expect(
-      joinHub.getByTestId(`join-peer-status-${componentId}`).first()
+      page.getByTestId(getJoinPeerStatusTestId(componentId)).first()
     ).toContainText("connected");
   });
 });

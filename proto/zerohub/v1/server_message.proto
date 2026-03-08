@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package proto.zerohub.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/hotcode-dev/zerohub/pkg/proto";
+option java_package = "com.proto.zerohub.v1";
+option java_outer_classname = "ServerMessageProto";
+option java_multiple_files = true;
+
+// Peer includes peer infomation and peer metadata
+message Peer {
+  // Unique identifier for the peer
+  string id = 1;
+  // Metadata associated with the peer
+  string metadata = 2;
+  // Time when the peer joined
+  google.protobuf.Timestamp join_time = 3;
+}
+
+// HubInfoMessage includes hub infomation
+message HubInfoMessage {
+  // Unique identifier for the hub
+  string id = 1;
+  // Time when the hub was created
+  google.protobuf.Timestamp create_time = 2;
+  // Peer ID of the client
+  string my_peer_id = 3;
+  // Metadata associated with the hub
+  string hub_metadata = 4;
+  // List of peers in the hub
+  repeated Peer peers = 5;
+}
+
+// PeerJoinedMessage will send if a peer has joined
+message PeerJoinedMessage {
+  // Peer that has joined
+  Peer peer = 1;
+}
+
+// PeerDisconnectedMessage will send if a peer has left
+message PeerDisconnectedMessage {
+  // ID of the peer that has disconnected
+  string peer_id = 1;
+}
+
+// OfferMessage is sent offer SDP from offering peer to answer peer
+message OfferMessage {
+  // ID of the offering peer
+  string offer_peer_id = 1;
+  // SDP offer from the offering peer
+  string offer_sdp = 2;
+}
+
+// AnswerMessage is sent answer SDP from answer peer to offering peer
+message AnswerMessage {
+  // ID of the answering peer
+  string answer_peer_id = 1;
+  // SDP answer from the answering peer
+  string answer_sdp = 2;
+}
+
+// IceCandidateMessage is not using yet
+message IceCandidateMessage {
+  // ID of the peer
+  string peer_id = 1;
+  // ICE candidate information
+  string candidate = 2;
+}
+
+// ServerMessage is the message sent from server
+message ServerMessage {
+  oneof message {
+    // Hub information message
+    HubInfoMessage hub_info_message = 1;
+    // Peer joined message
+    PeerJoinedMessage peer_joined_message = 2;
+    // Peer disconnected message
+    PeerDisconnectedMessage peer_disconnected_message = 3;
+    // Offer message
+    OfferMessage offer_message = 4;
+    // Answer message
+    AnswerMessage answer_message = 5;
+    // ICE candidate message
+    IceCandidateMessage ice_candidate_message = 6;
+  }
+}

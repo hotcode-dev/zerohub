@@ -63,7 +63,7 @@ client.createHub('demo-hub');
 dataChannelConfig: {
   numberOfChannels: 3,
   onDataChannel: (peer, dc) => {
-    if (dc.label === 'data-2') dc.onmessage = (e) => handleFileChunk(e.data);
+    if (dc.label === '2') dc.onmessage = (e) => handleFileChunk(e.data);
   }
 }
 ```
