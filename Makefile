@@ -48,3 +48,6 @@ e2e-test:
 	( cd ./test && PWDEBUG=console npm run test ) || true; \
 	kill $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; \
 	wait $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; \
+
+link-agent:
+	ln AGENTS.md .github/copilot-instructions.md

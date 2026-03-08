@@ -1,0 +1,509 @@
+asyncapi: 3.1.0
+id: urn:zerohub:server:v1
+info:
+  title: ZeroHub Server Signaling API
+  version: 1.0.0
+  description: |
+    AsyncAPI specification for ZeroHub v1 signaling over WebSocket.
+
+    Notes:
+    - All signaling messages are sent as binary protobuf payloads.
+    - Protobuf sources:
+      - proto/zerohub/v1/client_message.proto
+      - proto/zerohub/v1/server_message.proto
+    - Channel address determines hub behavior (create/join/join-or-create).
+
+defaultContentType: application/protobuf
+
+servers:
+  local:
+    host: localhost:{port}
+    pathname: /
+    protocol: ws
+    description: Local development server
+    variables:
+      port:
+        default: '8080'
+  production:
+    host: '{host}'
+    pathname: /
+    protocol: wss
+    description: Production server
+    variables:
+      host:
+        default: api.example.com
+
+channels:
+  hubsCreate:
+    address: /v1/hubs/create
+    description: |
+      Create a static hub and connect to it.
+      Query params:
+      - id (required): hub id
+      - peerMetadata (optional): stringified peer metadata
+      - hubMetadata (optional): stringified hub metadata
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
+  hubsJoin:
+    address: /v1/hubs/join
+    description: |
+      Join an existing static hub.
+      Query params:
+      - id (required): hub id
+      - peerMetadata (optional): stringified peer metadata
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
+  hubsJoinOrCreate:
+    address: /v1/hubs/join-or-create
+    description: |
+      Join a static hub or create it if it does not exist.
+      Query params:
+      - id (required): hub id
+      - peerMetadata (optional): stringified peer metadata
+      - hubMetadata (optional): stringified hub metadata (used only on create)
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
+  randomHubsCreate:
+    address: /v1/random-hubs/create
+    description: |
+      Create a hub with a random id and connect.
+      Query params:
+      - peerMetadata (optional): stringified peer metadata
+      - hubMetadata (optional): stringified hub metadata
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
+  randomHubsJoin:
+    address: /v1/random-hubs/join
+    description: |
+      Join an existing random hub.
+      Query params:
+      - id (required): hub id
+      - peerMetadata (optional): stringified peer metadata
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
+  ipHubsJoinOrCreate:
+    address: /v1/ip-hubs/join-or-create
+    description: |
+      Join or create a hub keyed by a hash of the remote IP.
+      Query params:
+      - peerMetadata (optional): stringified peer metadata
+      - hubMetadata (optional): stringified hub metadata (used only on create)
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
+  ipHubsJoin:
+    address: /v1/ip-hubs/join
+    description: |
+      Join an existing IP-based hub by id.
+      Query params:
+      - id (required): hub id
+      - peerMetadata (optional): stringified peer metadata
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
+  permanentHubsJoin:
+    address: /v1/permanent-hubs/join
+    description: |
+      Join an existing permanent hub.
+      Query params:
+      - id (required): hub id
+      - peerMetadata (optional): stringified peer metadata
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
+operations:
+  clientSendOnHubsCreate:
+    action: send
+    channel:
+      $ref: '#/channels/hubsCreate'
+    messages:
+      - $ref: '#/channels/hubsCreate/messages/clientMessage'
+
+  clientReceiveOnHubsCreate:
+    action: receive
+    channel:
+      $ref: '#/channels/hubsCreate'
+    messages:
+      - $ref: '#/channels/hubsCreate/messages/serverMessage'
+
+  clientSendOnHubsJoin:
+    action: send
+    channel:
+      $ref: '#/channels/hubsJoin'
+    messages:
+      - $ref: '#/channels/hubsJoin/messages/clientMessage'
+
+  clientReceiveOnHubsJoin:
+    action: receive
+    channel:
+      $ref: '#/channels/hubsJoin'
+    messages:
+      - $ref: '#/channels/hubsJoin/messages/serverMessage'
+
+  clientSendOnHubsJoinOrCreate:
+    action: send
+    channel:
+      $ref: '#/channels/hubsJoinOrCreate'
+    messages:
+      - $ref: '#/channels/hubsJoinOrCreate/messages/clientMessage'
+
+  clientReceiveOnHubsJoinOrCreate:
+    action: receive
+    channel:
+      $ref: '#/channels/hubsJoinOrCreate'
+    messages:
+      - $ref: '#/channels/hubsJoinOrCreate/messages/serverMessage'
+
+  clientSendOnRandomHubsCreate:
+    action: send
+    channel:
+      $ref: '#/channels/randomHubsCreate'
+    messages:
+      - $ref: '#/channels/randomHubsCreate/messages/clientMessage'
+
+  clientReceiveOnRandomHubsCreate:
+    action: receive
+    channel:
+      $ref: '#/channels/randomHubsCreate'
+    messages:
+      - $ref: '#/channels/randomHubsCreate/messages/serverMessage'
+
+  clientSendOnRandomHubsJoin:
+    action: send
+    channel:
+      $ref: '#/channels/randomHubsJoin'
+    messages:
+      - $ref: '#/channels/randomHubsJoin/messages/clientMessage'
+
+  clientReceiveOnRandomHubsJoin:
+    action: receive
+    channel:
+      $ref: '#/channels/randomHubsJoin'
+    messages:
+      - $ref: '#/channels/randomHubsJoin/messages/serverMessage'
+
+  clientSendOnIpHubsJoinOrCreate:
+    action: send
+    channel:
+      $ref: '#/channels/ipHubsJoinOrCreate'
+    messages:
+      - $ref: '#/channels/ipHubsJoinOrCreate/messages/clientMessage'
+
+  clientReceiveOnIpHubsJoinOrCreate:
+    action: receive
+    channel:
+      $ref: '#/channels/ipHubsJoinOrCreate'
+    messages:
+      - $ref: '#/channels/ipHubsJoinOrCreate/messages/serverMessage'
+
+  clientSendOnIpHubsJoin:
+    action: send
+    channel:
+      $ref: '#/channels/ipHubsJoin'
+    messages:
+      - $ref: '#/channels/ipHubsJoin/messages/clientMessage'
+
+  clientReceiveOnIpHubsJoin:
+    action: receive
+    channel:
+      $ref: '#/channels/ipHubsJoin'
+    messages:
+      - $ref: '#/channels/ipHubsJoin/messages/serverMessage'
+
+  clientSendOnPermanentHubsJoin:
+    action: send
+    channel:
+      $ref: '#/channels/permanentHubsJoin'
+    messages:
+      - $ref: '#/channels/permanentHubsJoin/messages/clientMessage'
+
+  clientReceiveOnPermanentHubsJoin:
+    action: receive
+    channel:
+      $ref: '#/channels/permanentHubsJoin'
+    messages:
+      - $ref: '#/channels/permanentHubsJoin/messages/serverMessage'
+
+components:
+  messages:
+    ClientMessage:
+      name: ClientMessage
+      title: Client signaling message
+      summary: Protobuf oneof wrapper for client-to-server signaling messages
+      contentType: application/protobuf
+      payload:
+        oneOf:
+          - $ref: '#/components/schemas/ClientSendOfferVariant'
+          - $ref: '#/components/schemas/ClientSendAnswerVariant'
+          - $ref: '#/components/schemas/ClientSendIceCandidateVariant'
+          - $ref: '#/components/schemas/ClientUpdatePeerMetadataVariant'
+      x-protobuf-message: proto.zerohub.v1.ClientMessage
+
+    ServerMessage:
+      name: ServerMessage
+      title: Server signaling message
+      summary: Protobuf oneof wrapper for server-to-client signaling messages
+      contentType: application/protobuf
+      payload:
+        oneOf:
+          - $ref: '#/components/schemas/ServerHubInfoVariant'
+          - $ref: '#/components/schemas/ServerPeerJoinedVariant'
+          - $ref: '#/components/schemas/ServerPeerDisconnectedVariant'
+          - $ref: '#/components/schemas/ServerOfferVariant'
+          - $ref: '#/components/schemas/ServerAnswerVariant'
+          - $ref: '#/components/schemas/ServerIceCandidateVariant'
+      x-protobuf-message: proto.zerohub.v1.ServerMessage
+
+  schemas:
+    ClientSendOfferVariant:
+      type: object
+      required: [send_offer_message]
+      properties:
+        send_offer_message:
+          $ref: '#/components/schemas/SendOfferMessage'
+      additionalProperties: false
+
+    ClientSendAnswerVariant:
+      type: object
+      required: [send_answer_message]
+      properties:
+        send_answer_message:
+          $ref: '#/components/schemas/SendAnswerMessage'
+      additionalProperties: false
+
+    ClientSendIceCandidateVariant:
+      type: object
+      required: [send_ice_candidate_message]
+      properties:
+        send_ice_candidate_message:
+          $ref: '#/components/schemas/SendIceCandidateMessage'
+      additionalProperties: false
+
+    ClientUpdatePeerMetadataVariant:
+      type: object
+      required: [update_peer_metadata_message]
+      properties:
+        update_peer_metadata_message:
+          $ref: '#/components/schemas/UpdatePeerMetadataMessage'
+      additionalProperties: false
+
+    SendOfferMessage:
+      type: object
+      required: [answer_peer_id, offer_sdp]
+      properties:
+        answer_peer_id:
+          type: string
+        offer_sdp:
+          type: string
+      additionalProperties: false
+
+    SendAnswerMessage:
+      type: object
+      required: [offer_peer_id, answer_sdp]
+      properties:
+        offer_peer_id:
+          type: string
+        answer_sdp:
+          type: string
+      additionalProperties: false
+
+    SendIceCandidateMessage:
+      type: object
+      required: [peer_id, candidate]
+      properties:
+        peer_id:
+          type: string
+        candidate:
+          type: string
+      additionalProperties: false
+
+    UpdatePeerMetadataMessage:
+      type: object
+      required: [peer_id, metadata]
+      properties:
+        peer_id:
+          type: string
+        metadata:
+          type: string
+      additionalProperties: false
+
+    ServerHubInfoVariant:
+      type: object
+      required: [hub_info_message]
+      properties:
+        hub_info_message:
+          $ref: '#/components/schemas/HubInfoMessage'
+      additionalProperties: false
+
+    ServerPeerJoinedVariant:
+      type: object
+      required: [peer_joined_message]
+      properties:
+        peer_joined_message:
+          $ref: '#/components/schemas/PeerJoinedMessage'
+      additionalProperties: false
+
+    ServerPeerDisconnectedVariant:
+      type: object
+      required: [peer_disconnected_message]
+      properties:
+        peer_disconnected_message:
+          $ref: '#/components/schemas/PeerDisconnectedMessage'
+      additionalProperties: false
+
+    ServerOfferVariant:
+      type: object
+      required: [offer_message]
+      properties:
+        offer_message:
+          $ref: '#/components/schemas/OfferMessage'
+      additionalProperties: false
+
+    ServerAnswerVariant:
+      type: object
+      required: [answer_message]
+      properties:
+        answer_message:
+          $ref: '#/components/schemas/AnswerMessage'
+      additionalProperties: false
+
+    ServerIceCandidateVariant:
+      type: object
+      required: [ice_candidate_message]
+      properties:
+        ice_candidate_message:
+          $ref: '#/components/schemas/IceCandidateMessage'
+      additionalProperties: false
+
+    Peer:
+      type: object
+      required: [id, metadata, join_time]
+      properties:
+        id:
+          type: string
+        metadata:
+          type: string
+        join_time:
+          type: string
+          format: date-time
+          description: RFC3339 representation of protobuf Timestamp
+      additionalProperties: false
+
+    HubInfoMessage:
+      type: object
+      required: [id, create_time, my_peer_id, hub_metadata, peers]
+      properties:
+        id:
+          type: string
+        create_time:
+          type: string
+          format: date-time
+          description: RFC3339 representation of protobuf Timestamp
+        my_peer_id:
+          type: string
+        hub_metadata:
+          type: string
+        peers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Peer'
+      additionalProperties: false
+
+    PeerJoinedMessage:
+      type: object
+      required: [peer]
+      properties:
+        peer:
+          $ref: '#/components/schemas/Peer'
+      additionalProperties: false
+
+    PeerDisconnectedMessage:
+      type: object
+      required: [peer_id]
+      properties:
+        peer_id:
+          type: string
+      additionalProperties: false
+
+    OfferMessage:
+      type: object
+      required: [offer_peer_id, offer_sdp]
+      properties:
+        offer_peer_id:
+          type: string
+        offer_sdp:
+          type: string
+      additionalProperties: false
+
+    AnswerMessage:
+      type: object
+      required: [answer_peer_id, answer_sdp]
+      properties:
+        answer_peer_id:
+          type: string
+        answer_sdp:
+          type: string
+      additionalProperties: false
+
+    IceCandidateMessage:
+      type: object
+      required: [peer_id, candidate]
+      properties:
+        peer_id:
+          type: string
+        candidate:
+          type: string
+      additionalProperties: false

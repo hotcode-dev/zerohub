@@ -96,5 +96,5 @@ await client.joinRandomHub({ displayName: "alice" }, { topic: "chat" });
 
 ## Further reading
 
-- See the guide: [TypeScript SDK](/docs/guides/typescript-sdk)
+- See the guide: [TypeScript SDK](/guides/typescript-sdk)
 - Protocol messages are defined in the `proto/` folder of the repository

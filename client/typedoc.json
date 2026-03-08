@@ -1,11 +1,12 @@
 {
     "$schema": "https://typedoc.org/schema.json",
+    "plugin": ["typedoc-plugin-markdown"],
     "entryPoints": [
         "./src"
     ],
     "out": "./docs",
     "titleLink": "",
     "navigationLinks": {
-        "Github": "https://github.com/ntsd/overwolf-nanostores"
+        "Github": "https://github.com/hotcode-dev/zerohub"
     }
 }
