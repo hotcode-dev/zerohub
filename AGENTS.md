@@ -9,8 +9,6 @@ ZeroHub is a WebRTC signaling server with TypeScript/JavaScript SDK. It enables 
 - **proto/** - Protobuf definitions for client-server communication
 - **test/** - E2E tests using Playwright with Svelte components
 - **docs/** - Astro-based documentation site
-- **zerohub-share/** - Reference implementation (file sharing app)
-- **zerohub-examples/** - Example implementations (JavaScript, Svelte)
 
 ## Architecture
 
@@ -27,7 +25,7 @@ ZeroHub is a WebRTC signaling server with TypeScript/JavaScript SDK. It enables 
 - **Peer Metadata**: Custom JSON metadata attached to each peer (e.g., `{ name: string }`)
 - **Hub Metadata**: Custom JSON metadata attached to each hub
 - **Peer Status Lifecycle**: `Pending → Offering → Answering → Connected`
-- **Topology Pattern**: Pluggable topology system (currently `MeshTopology` only)
+- **Topology Pattern**: Pluggable topology system (e.g., `MeshTopology`, `SfuTopology`)
 - **Offer Collision Avoidance**: Higher peer ID creates offer to lower peer ID
 
 ### Data Transfer Types
@@ -161,14 +159,6 @@ dataChannelConfig: {
   }
 }
 ```
-
-### Reference Implementation Pattern (zerohub-share)
-
-Study `zerohub-share/src/components/SharePage.svelte`:
-- Protobuf messages for file metadata and chunks (`Message.encode/decode`)
-- Encryption with `crypto.ts` (AES-GCM with password or shared key)
-- Progress tracking via `ReceiveEvent` messages
-- Avatar generation per peer using `@dicebear/core`
 
 ### Topology Implementation
 
