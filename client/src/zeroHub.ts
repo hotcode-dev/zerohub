@@ -12,9 +12,51 @@ import { PeerStatus, type Config, type HubInfo } from "./types";
 import { getWS } from "./utils";
 
 /**
- * Represents a ZeroHub client that manages connections to a ZeroHub server and handles peer-to-peer WebRTC connections.
- * @typeParam PeerMetadata - The type of metadata associated with the peer.
- * @typeParam HubMetadata - The type of metadata associated with the hub.
+ * ZeroHubClient manages the full lifecycle of connecting to a ZeroHub
+ * signaling server and establishing peer-to-peer WebRTC connections.
+ *
+ * ## Connection Lifecycle
+ *
+ * 1. **Constructor** — `new ZeroHubClient(hosts, config, topology)` initializes the client with server addresses, configuration (including TLS, logging, and WebRTC settings), and a topology strategy (default: MeshTopology). No network connection is made yet.
+ *
+ * 2. **Connect** — Call `client.connect()` (or the convenience methods `createHub()`, `joinHub()`, `joinOrCreate()`) to establish a WebSocket connection. The client automatically handles reconnection with failover across multiple hosts.
+ *
+ * 3. **Hub Establishment** — The server responds with a `HubInfoMessage` containing the hub's metadata, the client's own peer ID, and the list of existing peers. New peers are created in the `peers` map with `PeerStatus.Pending`.
+ *
+ * 4. **Peer Negotiation** — When a new peer joins or during initial setup, the client initiates WebRTC offer/answer exchange over the WebSocket link. The client sends SDP (Session Description Protocol) offers to peers, receives answers, and manages ICE candidate exchange. Status progresses: `Pending → Offering/Answering → Connected`.
+ *
+ * 5. **Connected Mesh** — Once connected, peers establish direct WebRTC data channels (or media streams) for peer-to-peer communication. The server is no longer in the data path — it only handled signaling.
+ *
+ * 6. **Message Handling** — All server messages are protobuf-encoded WebSocket frames decoded via `ServerMessage.decode()`. The client dispatches them to `handleZeroHubMessage()` which routes to appropriate handlers (offer, answer, ICE candidates, peer join/disconnect).
+ *
+ * 7. **Reconnection** — On WebSocket errors or closures, the client retries with backup hosts. Connection states persist across reconnection attempts.
+ *
+ * 8. **Disconnect** — Call `client.disconnect()` to close the WebSocket and tear down all peer connections. Peers transition to `PeerStatus.Disconnected`.
+ *
+ * @typeParam PeerMetadata - The type of metadata associated with the peer. Defaults to `object`.
+ * @typeParam HubMetadata - The type of metadata associated with the hub. Defaults to `object`.
+ *
+ * @example
+ * ```typescript
+ * import { ZeroHubClient, PeerStatus, LogLevel } from '@zero-hub/client';
+ *
+ * const client = new ZeroHubClient(['localhost:8080'], {
+ *   tls: false,
+ *   logLevel: LogLevel.Debug,
+ * });
+ *
+ * client.onHubInfo = (hubInfo) => {
+ *   console.log('Connected to hub:', hubInfo.id);
+ * };
+ *
+ * client.onPeerStatusChange = (peer) => {
+ *   if (peer.status === PeerStatus.Connected) {
+ *     console.log('Peer connected:', peer.id);
+ *   }
+ * };
+ *
+ * await client.createHub('my-room', { name: 'Alice' });
+ * ```
  */
 export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**

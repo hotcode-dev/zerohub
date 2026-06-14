@@ -1,3 +1,13 @@
+// Package zerohub provides the core hub management layer for the ZeroHub
+// signaling server. It creates, stores, and retrieves hub instances, each
+// backed by a pluggable storage implementation (in-memory or Gache).
+//
+// Hub Lifecycle
+// 1. A new hub is created via [NewZeroHub] which selects the appropriate
+//    storage backend.
+// 2. Hubs are looked up by ID and removed when all peers leave.
+// 3. Each hub owns its own peer storage, allowing independent peer lifecycle
+//    management.
 package zerohub
 
 import (
@@ -11,7 +21,8 @@ import (
 
 // ZeroHub is an interface for the ZeroHub server.
 type ZeroHub interface {
-	// NewHub creates a new hub.
+	// NewHub creates a new hub with the given ID and metadata.
+	// If isPermanent is true, the hub never expires.
 	NewHub(hubId string, metadata string, isPermanent bool) (hub.Hub, error)
 	// GetHubById returns a hub by its ID.
 	GetHubById(id string) hub.Hub

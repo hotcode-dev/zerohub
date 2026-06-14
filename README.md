@@ -272,6 +272,30 @@ Manual selection: Analyze offline data like individual peer resource limitations
 
 Hybrid approach: Combine elements of both methods. Start with a pre-selected or manually chosen hub, but have a secondary selection process based on real-time performance metrics in case the chosen hub experiences issues.
 
+## Protocol & Versioning
+
+- **Protocol version:** v1
+- **Signaling transport:** WebSocket (RFC 6455) with `application/protobuf` content type
+- **Payload format:** Protobuf (`proto/zerohub/v1/*.proto`)
+- **Breaking changes:** Proto breaking changes require a client SDK version bump. See `client/src/proto/` for generated TypeScript types.
+
+### AsyncAPI Specification
+
+The full AsyncAPI specification for the signaling API lives in `server/api.yml`. It documents:
+
+- All WebSocket endpoints and their query parameters
+- Client-to-server and server-to-client message schemas
+- Protobuf oneof message variants mapped to AsyncAPI `oneOf`
+- Server bindings and transport details
+
+Generate the protocol buffers:
+
+```bash
+make proto-gen
+```
+
+Regenerate after modifying any `proto/*.proto` file.
+
 ## Benchmark
 
 Memory Storage
