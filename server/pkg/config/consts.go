@@ -3,8 +3,8 @@ package config
 import "time"
 
 const (
-	HTTPMaxRequestBodySize = 1024            // 1kb
+	HTTPMaxRequestBodySize = 4096            // 4kb
 	WSHandshakeTimeout     = 5 * time.Second // 5s
-	WSReadBufferSize       = 1024            // 1kb
-	WSWriteBufferSize      = 1024            // 1kb
+	WSReadBufferSize       = 4096            // 4kb
+	WSWriteBufferSize      = 4096            // 4kb
 )
