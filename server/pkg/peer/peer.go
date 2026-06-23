@@ -15,19 +15,21 @@ import (
 // Peer is an interface for a peer that is connected to a hub.
 type Peer interface {
 	// SendBinaryMessage sends a binary message to the peer.
-	SendBinaryMessage(data []byte)
+	SendBinaryMessage(data []byte) error
 	// SendHubInfo sends a hub info message to the peer.
-	SendHubInfo(hubInfoPb *pb.HubInfoMessage)
+	SendHubInfo(hubInfoPb *pb.HubInfoMessage) error
 	// SendOffer sends an offer to the peer.
-	SendOffer(offerPeerId string, offerSdp string)
+	SendOffer(offerPeerId string, offerSdp string) error
 	// SendAnswer sends an answer to the peer.
-	SendAnswer(answerPeerId string, answerSdp string)
+	SendAnswer(answerPeerId string, answerSdp string) error
 	// GetId returns the ID of the peer.
 	GetId() string
 	// SetId sets the ID of the peer.
 	SetId(id string)
 	// GetWSConn returns the websocket connection of the peer.
 	GetWSConn() *websocket.Conn
+	// Close closes the peer's websocket connection.
+	Close()
 	// ToProtobuf returns the protobuf representation of the peer.
 	ToProtobuf() *pb.Peer
 }
@@ -43,7 +45,7 @@ type peer struct {
 	// WSConn is the websocket connection of the peer.
 	WSConn *websocket.Conn `json:"-"`
 	// mu is the mutex for the peer.
-	mu sync.RWMutex `json:"-"`
+	mu sync.Mutex `json:"-"`
 }
 
 // NewPeer creates a new empty Peer with no connections. Peer without adding to hub will not have an Id.
@@ -68,21 +70,22 @@ func (p *peer) SetId(id string) {
 }
 
 // SendBinaryMessage sends a binary message to the peer.
-func (p *peer) SendBinaryMessage(data []byte) {
+func (p *peer) SendBinaryMessage(data []byte) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	if p.WSConn == nil {
-		log.Error().Err(fmt.Errorf("ws conn is nil"))
-		return
+		return fmt.Errorf("ws conn is nil")
 	}
 
-	// TODO: fix panic: concurrent write to websocket connection
-	p.mu.Lock()
 	if err := p.WSConn.WriteMessage(websocket.BinaryMessage, data); err != nil {
 		log.Error().Err(fmt.Errorf("error to send binary message: %v", err))
+		return err
 	}
-	p.mu.Unlock()
+	return nil
 }
 
-func (p *peer) SendHubInfo(hubInfoPb *pb.HubInfoMessage) {
+func (p *peer) SendHubInfo(hubInfoPb *pb.HubInfoMessage) error {
 	msg := &pb.ServerMessage{
 		Message: &pb.ServerMessage_HubInfoMessage{
 			HubInfoMessage: hubInfoPb,
@@ -91,13 +94,16 @@ func (p *peer) SendHubInfo(hubInfoPb *pb.HubInfoMessage) {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		log.Error().Err(fmt.Errorf("error to marshal hub info message: %v", err))
-		return
+		return err
 	}
 
-	p.SendBinaryMessage(data)
+	if err := p.SendBinaryMessage(data); err != nil {
+		return fmt.Errorf("error sending hub info: %w", err)
+	}
+	return nil
 }
 
-func (p *peer) SendOffer(offerPeerId string, offerSdp string) {
+func (p *peer) SendOffer(offerPeerId string, offerSdp string) error {
 	msg := &pb.ServerMessage{
 		Message: &pb.ServerMessage_OfferMessage{
 			OfferMessage: &pb.OfferMessage{
@@ -109,13 +115,16 @@ func (p *peer) SendOffer(offerPeerId string, offerSdp string) {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		log.Error().Err(fmt.Errorf("error to marshal request answer message: %v", err))
-		return
+		return err
 	}
 
-	p.SendBinaryMessage(data)
+	if err := p.SendBinaryMessage(data); err != nil {
+		return fmt.Errorf("error sending offer: %w", err)
+	}
+	return nil
 }
 
-func (p *peer) SendAnswer(answerPeerId string, answerSdp string) {
+func (p *peer) SendAnswer(answerPeerId string, answerSdp string) error {
 	msg := &pb.ServerMessage{
 		Message: &pb.ServerMessage_AnswerMessage{
 			AnswerMessage: &pb.AnswerMessage{
@@ -127,10 +136,20 @@ func (p *peer) SendAnswer(answerPeerId string, answerSdp string) {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		log.Error().Err(fmt.Errorf("error to marshal answer message: %v", err))
-		return
+		return err
 	}
 
-	p.SendBinaryMessage(data)
+	if err := p.SendBinaryMessage(data); err != nil {
+		return fmt.Errorf("error sending answer: %w", err)
+	}
+	return nil
+}
+
+// Close closes the peer's websocket connection by setting it to nil under the lock.
+func (p *peer) Close() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.WSConn = nil
 }
 
 func (p *peer) ToProtobuf() *pb.Peer {

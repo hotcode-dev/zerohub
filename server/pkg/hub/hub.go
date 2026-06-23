@@ -86,13 +86,15 @@ func (h *hub) AddPeer(newPeer peer.Peer) {
 	}
 
 	// send hub info to the new peer
-	newPeer.SendHubInfo(&pb.HubInfoMessage{
+	if err := newPeer.SendHubInfo(&pb.HubInfoMessage{
 		Id:          h.GetId(),
 		MyPeerId:    newPeer.GetId(),
 		CreateTime:  timestamppb.New(h.GetCreatedAt()),
 		Peers:       peersProtobuf,
 		HubMetadata: h.GetMetadata(),
-	})
+	}); err != nil {
+		log.Error().Err(err)
+	}
 }
 
 // RemovePeerById removes a peer from the mesh network and disconnects it from all other peers.
@@ -134,20 +136,22 @@ func (h *hub) GetCreatedAt() time.Time {
 // (h *hub) SendOfferToPeer send offer sdp to other peer.
 func (h *hub) SendOfferToPeer(toPeerId string, offerPeerId string, offerSdp string) {
 	if peer, err := h.PeerStorage.Get(toPeerId); peer != nil && peer.GetWSConn() != nil && err == nil {
-		peer.SendOffer(offerPeerId, offerSdp)
+		if err := peer.SendOffer(offerPeerId, offerSdp); err != nil {
+			log.Error().Err(err).Str("peer_id", toPeerId).Msg("error sending offer")
+		}
 	} else {
 		log.Error().Msg("error to send request answer: peer not found")
-		return
 	}
 }
 
 // (h *hub) SendAnswerToPeer send answer sdp to other peer.
 func (h *hub) SendAnswerToPeer(toPeerId string, answerPeerId string, answerSdp string) {
 	if peer, err := h.PeerStorage.Get(toPeerId); peer != nil && peer.GetWSConn() != nil && err == nil {
-		peer.SendAnswer(answerPeerId, answerSdp)
+		if err := peer.SendAnswer(answerPeerId, answerSdp); err != nil {
+			log.Error().Err(err).Str("peer_id", toPeerId).Msg("error sending answer")
+		}
 	} else {
 		log.Error().Msg("error to send answer to peer: peer not found")
-		return
 	}
 }
 

@@ -70,9 +70,11 @@ func (mr *MockPeerMockRecorder) GetWSConn() *gomock.Call {
 }
 
 // SendAnswer mocks base method.
-func (m *MockPeer) SendAnswer(answerPeerId, answerSdp string) {
+func (m *MockPeer) SendAnswer(answerPeerId, answerSdp string) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SendAnswer", answerPeerId, answerSdp)
+	ret := m.ctrl.Call(m, "SendAnswer", answerPeerId, answerSdp)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // SendAnswer indicates an expected call of SendAnswer.
@@ -82,9 +84,11 @@ func (mr *MockPeerMockRecorder) SendAnswer(answerPeerId, answerSdp any) *gomock.
 }
 
 // SendBinaryMessage mocks base method.
-func (m *MockPeer) SendBinaryMessage(data []byte) {
+func (m *MockPeer) SendBinaryMessage(data []byte) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SendBinaryMessage", data)
+	ret := m.ctrl.Call(m, "SendBinaryMessage", data)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // SendBinaryMessage indicates an expected call of SendBinaryMessage.
@@ -94,9 +98,11 @@ func (mr *MockPeerMockRecorder) SendBinaryMessage(data any) *gomock.Call {
 }
 
 // SendHubInfo mocks base method.
-func (m *MockPeer) SendHubInfo(hubInfoPb *proto.HubInfoMessage) {
+func (m *MockPeer) SendHubInfo(hubInfoPb *proto.HubInfoMessage) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SendHubInfo", hubInfoPb)
+	ret := m.ctrl.Call(m, "SendHubInfo", hubInfoPb)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // SendHubInfo indicates an expected call of SendHubInfo.
@@ -106,15 +112,29 @@ func (mr *MockPeerMockRecorder) SendHubInfo(hubInfoPb any) *gomock.Call {
 }
 
 // SendOffer mocks base method.
-func (m *MockPeer) SendOffer(offerPeerId, offerSdp string) {
+func (m *MockPeer) SendOffer(offerPeerId, offerSdp string) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SendOffer", offerPeerId, offerSdp)
+	ret := m.ctrl.Call(m, "SendOffer", offerPeerId, offerSdp)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // SendOffer indicates an expected call of SendOffer.
 func (mr *MockPeerMockRecorder) SendOffer(offerPeerId, offerSdp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendOffer", reflect.TypeOf((*MockPeer)(nil).SendOffer), offerPeerId, offerSdp)
+}
+
+// Close mocks base method.
+func (m *MockPeer) Close() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Close")
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockPeerMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockPeer)(nil).Close))
 }
 
 // SetId mocks base method.
