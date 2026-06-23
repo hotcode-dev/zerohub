@@ -7,11 +7,11 @@
 // The server supports four hub "modes", each backed by a separate
 // ZeroHub instance:
 //
-//	- Static (/v1/hubs/*): Hub ID is supplied by the client (query parameter `id`).
-//	- Random (/v1/random-hubs/*): Server generates a unique ID when creating.
-//	- IP (/v1/ip-hubs/*): Hub ID is derived from the client's remote IP address.
-//	- Permanent (/v1/permanent-hubs/*): Hub never expires; used for always-on
-//	  collaboration rooms.
+//   - Static (/v1/hubs/*): Hub ID is supplied by the client (query parameter `id`).
+//   - Random (/v1/random-hubs/*): Server generates a unique ID when creating.
+//   - IP (/v1/ip-hubs/*): Hub ID is derived from the client's remote IP address.
+//   - Permanent (/v1/permanent-hubs/*): Hub never expires; used for always-on
+//     collaboration rooms.
 //
 // Routing Summary
 //
@@ -39,6 +39,7 @@ package handler
 
 import (
 	"fmt"
+	"sync/atomic"
 
 	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/hub"
@@ -103,9 +104,11 @@ type handler struct {
 	clientSecret string
 
 	// isMigrating is a flag that indicates whether the server is migrating.
-	isMigrating bool
+	// Protected by atomic operations for concurrent goroutine safety.
+	isMigrating atomic.Bool
 	// backupHost is the host to redirect to when migrating.
-	backupHost string
+	// Uses atomic.Value to ensure visibility across goroutines.
+	backupHost atomic.Value // stores string
 
 	// zeroHub is the default ZeroHub instance.
 	zeroHub zerohub.ZeroHub
@@ -119,20 +122,21 @@ type handler struct {
 
 // NewHandler create a new handler
 func NewHandler(cfg *config.Config, zeroHub zerohub.ZeroHub, zeroHubRandom zerohub.ZeroHub, zeroHubIP zerohub.ZeroHub, zerohubPermanent zerohub.ZeroHub) (Handler, error) {
-	return &handler{
+	h := &handler{
 		address:          fmt.Sprintf("%s:%s", cfg.App.Host, cfg.App.Port),
 		clientSecret:     cfg.App.ClientSecret,
 		isMigrating:      false,
-		backupHost:       "",
 		zeroHub:          zeroHub,
 		zeroHubRandom:    zeroHubRandom,
 		zeroHubIP:        zeroHubIP,
 		zeroHubPermanent: zerohubPermanent,
-	}, nil
+	}
+	// Initialize backupHost with empty string atomically
+	h.backupHost.Store("")
+	return h, nil
 }
 
 func (h *handler) Serve() error {
-	// TODO: replace limiter with non library rate limiter
 	rate, err := limiter.NewRateFromFormatted("60-M") // 60 requests per minute.
 	if err != nil {
 		return fmt.Errorf("error to create rate: %w", err)
@@ -148,7 +152,6 @@ func (h *handler) Serve() error {
 			err = h.Status(ctx)
 		case "/v1/admin/migrate":
 			err = h.Migrate(ctx)
-		// TODO: remove static hub
 		case "/v1/hubs/create":
 			err = h.CreateHubStatic(ctx, h.zeroHub)
 		case "/v1/hubs/get":
@@ -167,7 +170,6 @@ func (h *handler) Serve() error {
 			err = h.JoinOrCreateHubIP(ctx, h.zeroHubIP)
 		case "/v1/ip-hubs/join":
 			err = h.JoinHub(ctx, h.zeroHubIP)
-		// TODO: rename permanent-hubs to static-hubs
 		case "/v1/permanent-hubs/join":
 			err = h.JoinHub(ctx, h.zeroHubPermanent)
 		case "/v1/permanent-hubs/create":

@@ -12,7 +12,6 @@ package peer
 import (
 	reflect "reflect"
 
-	websocket "github.com/fasthttp/websocket"
 	proto "github.com/hotcode-dev/zerohub/pkg/proto/zerohub/v1"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -56,10 +55,10 @@ func (mr *MockPeerMockRecorder) GetId() *gomock.Call {
 }
 
 // GetWSConn mocks base method.
-func (m *MockPeer) GetWSConn() *websocket.Conn {
+func (m *MockPeer) GetWSConn() WSConn {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetWSConn")
-	ret0, _ := ret[0].(*websocket.Conn)
+	ret0, _ := ret[0].(WSConn)
 	return ret0
 }
 
@@ -141,4 +140,16 @@ func (m *MockPeer) ToProtobuf() *proto.Peer {
 func (mr *MockPeerMockRecorder) ToProtobuf() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ToProtobuf", reflect.TypeOf((*MockPeer)(nil).ToProtobuf))
+}
+
+// Close mocks base method.
+func (m *MockPeer) Close() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Close")
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockPeerMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockPeer)(nil).Close))
 }

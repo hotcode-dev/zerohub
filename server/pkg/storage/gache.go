@@ -47,8 +47,12 @@ func (s *GacheStorage[T]) Update(id string, data T) {
 }
 
 // Delete deletes an item from the storage by its ID.
-func (s *GacheStorage[T]) Delete(id string) {
-	s.GC.Get(id)
+func (s *GacheStorage[T]) Delete(id string) error {
+	_, ok := s.GC.Delete(id)
+	if !ok {
+		return fmt.Errorf("not found")
+	}
+	return nil
 }
 
 // IsEmpty returns true if the storage is empty.

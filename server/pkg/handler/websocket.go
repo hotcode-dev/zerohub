@@ -8,6 +8,7 @@ import (
 	"github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/peer"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
+	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
 )
 
@@ -28,7 +29,9 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 			// https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close
 			ws.Close()
 			if hub.RemovePeerById(peer.GetId()) {
-				zh.RemoveHubById(hub.GetId())
+				if err := zh.RemoveHubById(hub.GetId()); err != nil {
+					log.Error().Err(err).Str("hubId", hub.GetId()).Msg("failed to remove hub on peer close")
+				}
 			}
 
 			return nil
@@ -38,7 +41,9 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 
 		ws.Close()
 		if hub.RemovePeerById(peer.GetId()) {
-			zh.RemoveHubById(hub.GetId())
+			if err := zh.RemoveHubById(hub.GetId()); err != nil {
+				log.Error().Err(err).Str("hubId", hub.GetId()).Msg("failed to remove hub on peer cleanup")
+			}
 		}
 	})
 

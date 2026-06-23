@@ -13,7 +13,7 @@ type Storage[T any] interface {
 	// Update updates an item in the storage.
 	Update(id string, data T)
 	// Delete deletes an item from the storage by its ID.
-	Delete(id string)
+	Delete(id string) error
 	// IsEmpty returns true if the storage is empty.
 	IsEmpty() bool
 }

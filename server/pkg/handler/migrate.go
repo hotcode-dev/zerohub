@@ -30,8 +30,10 @@ func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
 		return fmt.Errorf("new release host not found")
 	}
 
-	h.isMigrating = true
-	h.backupHost = backupHost
+	// Atomically set migration flag
+	h.isMigrating.Store(true)
+	// Atomically store the backup host
+	h.backupHost.Store(backupHost)
 
 	log.Info().Msg("migrate mode enabled backup host: " + backupHost)
 
@@ -41,12 +43,13 @@ func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
 }
 
 func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
-	backupHost := h.backupHost
+	// Atomically load the backup host value and type-assert to string
+	backupHost := h.backupHost.Load().(string)
 
 	// The 301 status is not working on multi library following the rfc6455
 	// But the Native browser Websocket not support the redirection
 	// If the connection error, client need to call `/status` to get the redirectURL
-	// https://www.rfc-editor.org/rfc/rfc6455#section-4.1
+	// https://www.rfc-editor.org/rfc6455#section-4.1
 
 	// We decide to upgrade the connection to send a close message
 	// to the client, so that the client can handle the redirection

@@ -381,6 +381,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     } else if (serverMessage.peerDisconnectedMessage) {
       const peerId = serverMessage.peerDisconnectedMessage.peerId;
 
+      delete this.peers[peerId];
       this.updatePeerStatus(peerId, PeerStatus.ZeroHubDisconnected);
     }
   }

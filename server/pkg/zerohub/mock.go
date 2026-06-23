@@ -82,9 +82,11 @@ func (mr *MockZeroHubMockRecorder) NewHub(hubId, metadata, isPermanent any) *gom
 }
 
 // RemoveHubById mocks base method.
-func (m *MockZeroHub) RemoveHubById(id string) {
+func (m *MockZeroHub) RemoveHubById(id string) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RemoveHubById", id)
+	ret := m.ctrl.Call(m, "RemoveHubById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // RemoveHubById indicates an expected call of RemoveHubById.

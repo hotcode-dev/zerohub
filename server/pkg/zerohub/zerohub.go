@@ -27,7 +27,7 @@ type ZeroHub interface {
 	// GetHubById returns a hub by its ID.
 	GetHubById(id string) hub.Hub
 	// RemoveHubById removes a hub by its ID.
-	RemoveHubById(id string)
+	RemoveHubById(id string) error
 }
 
 // zeroHub implements the ZeroHub interface.
@@ -85,6 +85,9 @@ func (z *zeroHub) GetHubById(id string) hub.Hub {
 	return hub
 }
 
-func (z *zeroHub) RemoveHubById(id string) {
-	z.HubStorage.Delete(id)
+func (z *zeroHub) RemoveHubById(id string) error {
+	if err := z.HubStorage.Delete(id); err != nil {
+		return fmt.Errorf("remove hub by id: %w", err)
+	}
+	return nil
 }

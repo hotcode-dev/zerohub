@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"fmt"
 	"iter"
 	"sync"
 )
@@ -63,11 +64,15 @@ func (s *memoryStorage[T]) Update(id string, data T) {
 }
 
 // Delete deletes an item from the storage by its ID.
-func (s *memoryStorage[T]) Delete(id string) {
+func (s *memoryStorage[T]) Delete(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if _, ok := s.data[id]; !ok {
+		return fmt.Errorf("not found")
+	}
 	delete(s.data, id)
+	return nil
 }
 
 // IsEmpty returns true if the storage is empty.
