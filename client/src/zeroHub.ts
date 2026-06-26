@@ -359,6 +359,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         return;
       }
 
+      // Close existing peer connection if replacing during reconnection
+      const existingPeer = this.peers[peer.id];
+      if (existingPeer && existingPeer.rtcConn) {
+        existingPeer.rtcConn.close();
+      }
+
       const newPeer = new Peer<PeerMetadata>(
         peer.id,
         PeerStatus.Pending,
@@ -381,8 +387,34 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     } else if (serverMessage.peerDisconnectedMessage) {
       const peerId = serverMessage.peerDisconnectedMessage.peerId;
 
-      this.updatePeerStatus(peerId, PeerStatus.ZeroHubDisconnected);
+      this.disconnectPeer(peerId);
     }
+  }
+
+  /**
+   * Disconnects a peer by closing the RTCPeerConnection and cleaning up resources.
+   *
+   * @param peerId - The ID of the peer to disconnect
+   */
+  private disconnectPeer(peerId: string) {
+    const peer = this.peers[peerId];
+    if (!peer) {
+      this.logger.warn(`disconnect peer: peer id ${peerId} not found`);
+      return;
+    }
+
+    const rtcConn = peer.rtcConn;
+
+    // Update status before removing (updatePeerStatus looks up this.peers)
+    this.updatePeerStatus(peerId, PeerStatus.ZeroHubDisconnected);
+
+    // Close the RTCPeerConnection (closes data channels and streams too)
+    rtcConn.close();
+
+    // Clear the reference from peers map
+    delete this.peers[peerId];
+
+    this.logger.log(`peer ${peerId} disconnected`);
   }
 
   /**
