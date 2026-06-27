@@ -374,6 +374,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
           this.updatePeerStatus(peer.id, PeerStatus.WebRTCDisconnected);
         }
       };
+      newPeer.rtcConn.oniceconnectionstatechange = (ev) => {
+        this.logger.log("oniceconnectionstatechange", ev);
+        if (newPeer.rtcConn.iceConnectionState === "failed") {
+          newPeer.rtcConn.restartIce();
+        }
+      };
 
       this.peers[peer.id] = newPeer;
 
