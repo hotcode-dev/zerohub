@@ -110,6 +110,16 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    */
   public host: string;
   /**
+   * Tracks whether the client has been manually disconnected via `disconnect()`.
+   * When true, the client will not attempt to reconnect to ZeroHub.
+   */
+  private isDisconnected = false;
+  /**
+   * Pending ICE candidate timeout handles, keyed by peer ID.
+   * These are cleared on disconnect so no offer/answer can be sent to a closed socket.
+   */
+  private iceTimeouts: { [peerId: string]: ReturnType<typeof setTimeout> } = {};
+  /**
    * The WebSocket connection to the ZeroHub server.
    * @public
    */
@@ -246,6 +256,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * @param newHost - An optional new host to connect to.
    */
   public reconnect(currentURL: URL, newHost?: string) {
+    if (this.isDisconnected) {
+      this.logger.log("ZeroHub is disconnected, skipping reconnect");
+      return;
+    }
     if (newHost) {
       this.logger.warn(
         `ZeroHub \`${this.host}\` is redirecting to \`${newHost}\`, reconnecting...`
@@ -446,11 +460,53 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
+   * Disconnects from ZeroHub and tears down all peer connections.
+   *
+   * Closes the WebSocket to the signaling server, closes every
+   * `RTCPeerConnection` in `this.peers`, clears pending ICE candidate timeout
+   * timers, and transitions each peer to `PeerStatus.Disconnected`.
+   * After calling `disconnect()`, the client will not attempt to reconnect
+   * to ZeroHub.
+   */
+  public disconnect() {
+    this.isDisconnected = true;
+
+    // clear pending ICE candidate timeouts so they cannot send to a closed socket
+    Object.values(this.iceTimeouts).forEach((timeout) => {
+      clearTimeout(timeout);
+    });
+    this.iceTimeouts = {};
+
+    // close the WebSocket without triggering the auto-reconnect onclose handler
+    if (this.ws) {
+      const ws = this.ws;
+      ws.onclose = null;
+      ws.onerror = null;
+      ws.onmessage = null;
+      ws.onopen = null;
+      ws.close(1000);
+      delete this.ws;
+    }
+
+    // transition peers to disconnected and close their WebRTC connections
+    for (const peerId of Object.keys(this.peers)) {
+      this.updatePeerStatus(peerId, PeerStatus.Disconnected);
+      this.peers[peerId].rtcConn.close();
+    }
+    this.peers = {};
+  }
+
+  /**
    * Sends a message to ZeroHub.
    *
    * @param msg - the message to be sent to ZeroHub
    */
   public sendZeroHubMessage(msg: ClientMessage) {
+    if (this.isDisconnected) {
+      throw Error(
+        "ZeroHub is disconnected, call `disconnect` to tear down the client"
+      );
+    }
     if (!this.ws) {
       throw Error(
         "ZeroHub not connected, please connect to ZeroHub by `createHub` or `joinHub`"
@@ -549,7 +605,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     await peer.rtcConn.setLocalDescription(offer);
 
     // stop waiting for ice candidates if longer than timeout
-    setTimeout(() => {
+    this.iceTimeouts[peerId] = setTimeout(() => {
+      delete this.iceTimeouts[peerId];
       this.logger.warn("timeout waiting ICE candidates");
       if (!peer.rtcConn.localDescription || isSent) {
         return;
@@ -616,7 +673,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     await peer.rtcConn.setLocalDescription(offer);
 
     // stop waiting for ice candidates if longer than timeout
-    setTimeout(() => {
+    this.iceTimeouts[peerId] = setTimeout(() => {
+      delete this.iceTimeouts[peerId];
       this.logger.warn("timeout waiting ICE candidates");
       if (!peer.rtcConn.localDescription || isSent) {
         return;

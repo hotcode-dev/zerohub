@@ -29,3 +29,7 @@ export function getJoinHubTestId(componentId: string) {
 export function getJoinPeerStatusTestId(componentId: string) {
   return `join-peer-status-${componentId}`;
 }
+
+export function getDisconnectStatusTestId(componentId: string) {
+  return `disconnect-status-${componentId}`;
+}

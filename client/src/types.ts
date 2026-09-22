@@ -21,6 +21,8 @@ export enum PeerStatus {
   WebRTCDisconnected = "webrtc_disconnected",
   /** ZeroHubDisconnected: the remote peer disconnected to ZeroHub.*/
   ZeroHubDisconnected = "zerohub_disconnected",
+  /** Disconnected: the local client disconnected and tore down this peer connection. */
+  Disconnected = "disconnected",
 }
 
 /**
