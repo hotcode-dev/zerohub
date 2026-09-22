@@ -80,7 +80,9 @@ func (h *hub) AddPeer(newPeer peer.Peer) {
 	}
 	for peer := range h.PeerStorage.GetAll() {
 		if peer.GetId() != newPeer.GetId() {
-			peer.SendBinaryMessage(joinedSignalProto)
+			if err := peer.SendBinaryMessage(joinedSignalProto); err != nil {
+				log.Error().Err(err).Str("peer_id", peer.GetId()).Msg("error sending joined signal")
+			}
 		}
 		peersProtobuf = append(peersProtobuf, peer.ToProtobuf())
 	}
@@ -107,9 +109,13 @@ func (h *hub) RemovePeerById(id string) (removeThisHub bool) {
 	h.PeerStorage.Delete(id)
 
 	// broadcast peer disconnected
-	for peer := range h.PeerStorage.GetAll() {
-		if peer.GetId() != id {
-			peer.SendBinaryMessage(dcSignalProto)
+	if err == nil {
+		for peer := range h.PeerStorage.GetAll() {
+			if peer.GetId() != id {
+				if sendErr := peer.SendBinaryMessage(dcSignalProto); sendErr != nil {
+					log.Error().Err(sendErr).Str("peer_id", peer.GetId()).Msg("error sending disconnected signal")
+				}
+			}
 		}
 	}
 
