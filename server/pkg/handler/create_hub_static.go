@@ -10,7 +10,7 @@ import (
 
 // CreateHubStatic creates a new hub with a static ID.
 func (h *handler) CreateHubStatic(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
-	if h.isMigrating {
+	if h.isMigrating.Load() {
 		return h.ForwardMigrate(ctx)
 	}
 
