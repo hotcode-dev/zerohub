@@ -16,6 +16,7 @@ type BaseOptions = {
 
 type CreateHubOptions = BaseOptions;
 type JoinHubOptions = BaseOptions & { hubId: string };
+type DisconnectOptions = Pick<BaseOptions, "componentId">;
 
 type HarnessInstance = {
   container: HTMLElement;
@@ -193,9 +194,45 @@ function joinHub(options: JoinHubOptions) {
   registerInstance(componentId, zeroHub, container);
 }
 
+function disconnect(options: DisconnectOptions) {
+  const { componentId } = options;
+  const instance = instances.get(componentId);
+  if (!instance) {
+    throw new Error(`no instance found for componentId: ${componentId}`);
+  }
+
+  const { client } = instance;
+  // Capture peer objects by reference before disconnect() empties the map.
+  // The captured statuses are stable because disconnect() closes the
+  // WebSocket and nulls its onmessage handler BEFORE clearing the peers map,
+  // so no later server broadcast (e.g. peerDisconnected) can arrive and
+  // overwrite the captured status at all.
+  const peers = Object.values(client.peers);
+  const peerConnections = peers.map((peer) => peer.rtcConn);
+
+  client.disconnect();
+
+  // Read the peer statuses synchronously at the moment of teardown.
+  const statuses = peers.map((peer) => peer.status).join("|");
+
+  const wsClosed = client.ws === undefined;
+  const peersClosed = peerConnections.every(
+    (rtcConn) => rtcConn.connectionState === "closed"
+  );
+
+  const statusDiv = createDataDiv(`disconnect-status-${componentId}`);
+  statusDiv.textContent = `status:${statuses},ws:${
+    wsClosed ? "closed" : "open"
+  },peers:${peersClosed ? "closed" : "open"},count:${
+    peerConnections.length
+  }`;
+  instance.container.appendChild(statusDiv);
+}
+
 const ZeroHubHarness = {
   createHub,
   joinHub,
+  disconnect,
   getDataChannelStatus,
 };
 
