@@ -58,14 +58,20 @@ func NewPeer(ws *websocket.Conn, metadata string) Peer {
 }
 
 func (p *peer) GetId() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	return p.Id
 }
 
 func (p *peer) GetWSConn() *websocket.Conn {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	return p.WSConn
 }
 
 func (p *peer) SetId(id string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	p.Id = id
 }
 
@@ -145,16 +151,29 @@ func (p *peer) SendAnswer(answerPeerId string, answerSdp string) error {
 	return nil
 }
 
-// Close closes the peer's websocket connection by setting it to nil under the lock.
+// Close closes the peer's websocket connection and nils the pointer under the lock.
+// It is idempotent: calling Close on an already closed peer is a no-op.
 func (p *peer) Close() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
+	if p.WSConn == nil {
+		return
+	}
+
+	if err := p.WSConn.Close(); err != nil {
+		log.Error().Err(fmt.Errorf("error closing peer websocket connection: %v", err))
+	}
 	p.WSConn = nil
 }
 
 func (p *peer) ToProtobuf() *pb.Peer {
+	p.mu.Lock()
+	id := p.Id
+	p.mu.Unlock()
+
 	return &pb.Peer{
-		Id:       p.Id,
+		Id:       id,
 		Metadata: p.Metadata,
 		JoinTime: timestamppb.New(p.JoinedAt),
 	}

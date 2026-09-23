@@ -26,7 +26,7 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 
 		ws.SetCloseHandler(func(code int, text string) error {
 			// https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close
-			ws.Close()
+			peer.Close()
 			if hub.RemovePeerById(peer.GetId()) {
 				zh.RemoveHubById(hub.GetId())
 			}
@@ -36,7 +36,11 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 
 		hub.HandleMessage(peer)
 
-		ws.Close()
+		// Close may already have run in the close handler; GetWSConn is
+		// nil after Close, so this only fires if the loop exited first.
+		if peer.GetWSConn() != nil {
+			peer.Close()
+		}
 		if hub.RemovePeerById(peer.GetId()) {
 			zh.RemoveHubById(hub.GetId())
 		}
