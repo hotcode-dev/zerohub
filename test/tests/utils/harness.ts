@@ -33,3 +33,7 @@ export function getJoinPeerStatusTestId(componentId: string) {
 export function getDisconnectStatusTestId(componentId: string) {
   return `disconnect-status-${componentId}`;
 }
+
+export function getReuseHubTestId(componentId: string) {
+  return `reuse-hub-id-${componentId}`;
+}

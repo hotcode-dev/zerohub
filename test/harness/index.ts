@@ -203,9 +203,10 @@ function disconnect(options: DisconnectOptions) {
 
   const { client } = instance;
   // Capture peer objects by reference before disconnect() empties the map.
-  // disconnect() synchronously sets each peer's status to Disconnected and
-  // clears the map, so any later server peerDisconnected broadcast cannot
-  // find the (now-removed) peer and won't overwrite the captured status.
+  // The captured statuses are stable because disconnect() closes the
+  // WebSocket and nulls its onmessage handler BEFORE clearing the peers map,
+  // so no later server broadcast (e.g. peerDisconnected) can arrive and
+  // overwrite the captured status at all.
   const peers = Object.values(client.peers);
   const peerConnections = peers.map((peer) => peer.rtcConn);
 

@@ -111,7 +111,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   public host: string;
   /**
    * Tracks whether the client has been manually disconnected via `disconnect()`.
-   * When true, the client will not attempt to reconnect to ZeroHub.
+   * When true, the client will not attempt to auto-reconnect and
+   * `sendZeroHubMessage` fails fast. `connectToZeroHub` resets this to
+   * `false`, so a new `createHub()`/`joinHub()` after `disconnect()` starts
+   * a clean, reusable connection.
    */
   private isDisconnected = false;
   /**
@@ -405,6 +408,14 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * @param url - The URL of the ZeroHub to connect to
    */
   public connectToZeroHub(url: URL) {
+    // Starting a fresh connection resets the manual-disconnect flag and drops
+    // any stale ICE timeout handles, so a client that previously called
+    // disconnect() can be reused: a new createHub()/joinHub() (or any other
+    // connection entry point) begins a clean, live connection instead of a
+    // dead socket that still throws from sendZeroHubMessage().
+    this.isDisconnected = false;
+    this.iceTimeouts = {};
+
     this.logger.log("connecting to ZeroHub:", url);
 
     this.ws = new WebSocket(url);
@@ -465,8 +476,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * Closes the WebSocket to the signaling server, closes every
    * `RTCPeerConnection` in `this.peers`, clears pending ICE candidate timeout
    * timers, and transitions each peer to `PeerStatus.Disconnected`.
-   * After calling `disconnect()`, the client will not attempt to reconnect
-   * to ZeroHub.
+   * After calling `disconnect()`, the client will not attempt to
+   * auto-reconnect to ZeroHub. The client can be reused by calling
+   * `createHub()`/`joinHub()` (or any other connection entry point) again,
+   * which establishes a fresh, live connection.
    */
   public disconnect() {
     this.isDisconnected = true;
@@ -504,7 +517,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   public sendZeroHubMessage(msg: ClientMessage) {
     if (this.isDisconnected) {
       throw Error(
-        "ZeroHub is disconnected, please create a new client to reconnect"
+        "ZeroHub is disconnected, please connect again via `createHub` or `joinHub`"
       );
     }
     if (!this.ws) {
