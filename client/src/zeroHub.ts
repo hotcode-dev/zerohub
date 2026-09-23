@@ -504,7 +504,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   public sendZeroHubMessage(msg: ClientMessage) {
     if (this.isDisconnected) {
       throw Error(
-        "ZeroHub is disconnected, call `disconnect` to tear down the client"
+        "ZeroHub is disconnected, please create a new client to reconnect"
       );
     }
     if (!this.ws) {
