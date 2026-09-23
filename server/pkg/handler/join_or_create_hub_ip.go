@@ -10,7 +10,7 @@ import (
 
 // JoinOrCreateHubIP joins or creates a hub using the client's IP address as the hub ID.
 func (h *handler) JoinOrCreateHubIP(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
-	if h.isMigrating {
+	if h.isMigrating.Load() {
 		return h.ForwardMigrate(ctx)
 	}
 

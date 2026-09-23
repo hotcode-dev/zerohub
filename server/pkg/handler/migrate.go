@@ -30,8 +30,13 @@ func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
 		return fmt.Errorf("new release host not found")
 	}
 
-	h.isMigrating = true
+	// Set backupHost before flipping isMigrating so that a reader who
+	// observes isMigrating == true is guaranteed (via the atomic store
+	// release semantics + RLock) to see the non-empty backupHost.
+	h.migrateMu.Lock()
 	h.backupHost = backupHost
+	h.migrateMu.Unlock()
+	h.isMigrating.Store(true)
 
 	log.Info().Msg("migrate mode enabled backup host: " + backupHost)
 
@@ -41,7 +46,7 @@ func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
 }
 
 func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
-	backupHost := h.backupHost
+	backupHost := h.getBackupHost()
 
 	// The 301 status is not working on multi library following the rfc6455
 	// But the Native browser Websocket not support the redirection
@@ -71,4 +76,12 @@ func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
 	}
 
 	return nil
+}
+
+// getBackupHost returns the current backup host under a read lock so it is
+// safe to read concurrently with Migrate.
+func (h *handler) getBackupHost() string {
+	h.migrateMu.RLock()
+	defer h.migrateMu.RUnlock()
+	return h.backupHost
 }

@@ -7,7 +7,7 @@ import (
 
 // JoinOrCreateHubStatic joins or creates a hub with a static ID.
 func (h *handler) JoinOrCreateHubStatic(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
-	if h.isMigrating {
+	if h.isMigrating.Load() {
 		return h.ForwardMigrate(ctx)
 	}
 

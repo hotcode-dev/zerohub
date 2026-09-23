@@ -39,6 +39,8 @@ package handler
 
 import (
 	"fmt"
+	"sync"
+	"sync/atomic"
 
 	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/hub"
@@ -102,9 +104,15 @@ type handler struct {
 	// clientSecret is the client secret to use for authentication.
 	clientSecret string
 
+	// migrateMu guards the migration state below. The two fields must be
+	// consistent as a unit: isMigrating must imply backupHost != "".
+	migrateMu sync.RWMutex
 	// isMigrating is a flag that indicates whether the server is migrating.
-	isMigrating bool
+	// Read without migrateMu; the atomic access is required because many
+	// fasthttp worker goroutines read it concurrently with the Migrate writer.
+	isMigrating atomic.Bool
 	// backupHost is the host to redirect to when migrating.
+	// Access under migrateMu (read/write lock) alongside isMigrating.
 	backupHost string
 
 	// zeroHub is the default ZeroHub instance.
@@ -122,8 +130,6 @@ func NewHandler(cfg *config.Config, zeroHub zerohub.ZeroHub, zeroHubRandom zeroh
 	return &handler{
 		address:          fmt.Sprintf("%s:%s", cfg.App.Host, cfg.App.Port),
 		clientSecret:     cfg.App.ClientSecret,
-		isMigrating:      false,
-		backupHost:       "",
 		zeroHub:          zeroHub,
 		zeroHubRandom:    zeroHubRandom,
 		zeroHubIP:        zeroHubIP,
