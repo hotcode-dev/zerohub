@@ -15,7 +15,7 @@ func (h *handler) JoinHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 	hub := zh.GetHubById(hubId)
 	if hub == nil {
 		// If the hub does not exist, we will try to send to the backup host
-		if h.isMigrating {
+		if h.isMigrating.Load() {
 			return h.ForwardMigrate(ctx)
 		}
 
