@@ -32,4 +32,12 @@ export class Peer<PeerMetadata = object> {
     this.joinTime = joinTime;
     this.rtcConn = rtcConn;
   }
+
+  /**
+   * Closes the underlying WebRTC connection and releases its resources.
+   * Safe to call multiple times; subsequent calls are no-ops.
+   */
+  close() {
+    this.rtcConn.close();
+  }
 }
