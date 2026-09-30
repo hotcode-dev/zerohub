@@ -3,11 +3,11 @@
 // backed by a pluggable storage implementation (in-memory or Gache).
 //
 // Hub Lifecycle
-// 1. A new hub is created via [NewZeroHub] which selects the appropriate
-//    storage backend.
-// 2. Hubs are looked up by ID and removed when all peers leave.
-// 3. Each hub owns its own peer storage, allowing independent peer lifecycle
-//    management.
+//  1. A new hub is created via [NewZeroHub] which selects the appropriate
+//     storage backend.
+//  2. Hubs are looked up by ID and removed when all peers leave.
+//  3. Each hub owns its own peer storage, allowing independent peer lifecycle
+//     management.
 package zerohub
 
 import (

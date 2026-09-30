@@ -7,11 +7,11 @@
 // The server supports four hub "modes", each backed by a separate
 // ZeroHub instance:
 //
-//	- Static (/v1/hubs/*): Hub ID is supplied by the client (query parameter `id`).
-//	- Random (/v1/random-hubs/*): Server generates a unique ID when creating.
-//	- IP (/v1/ip-hubs/*): Hub ID is derived from the client's remote IP address.
-//	- Permanent (/v1/permanent-hubs/*): Hub never expires; used for always-on
-//	  collaboration rooms.
+//   - Static (/v1/hubs/*): Hub ID is supplied by the client (query parameter `id`).
+//   - Random (/v1/random-hubs/*): Server generates a unique ID when creating.
+//   - IP (/v1/ip-hubs/*): Hub ID is derived from the client's remote IP address.
+//   - Permanent (/v1/permanent-hubs/*): Hub never expires; used for always-on
+//     collaboration rooms.
 //
 // Routing Summary
 //
