@@ -273,6 +273,15 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     }
     this.getZeroHubBackupHost()
       .then((newHost) => {
+        // Re-check the flag inside the async callback: a user calling
+        // disconnect() while this fetch is in flight would otherwise be
+        // silently resurrected (connectToZeroHub resets isDisconnected).
+        if (this.isDisconnected) {
+          this.logger.log(
+            "ZeroHub was disconnected during reconnect, aborting"
+          );
+          return;
+        }
         if (this.host === newHost) {
           this.logger.error("zero hub reconnecting failed: not retying");
           return;
@@ -526,7 +535,13 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     // transition peers to disconnected and close their WebRTC connections
     for (const peerId of Object.keys(this.peers)) {
       this.updatePeerStatus(peerId, PeerStatus.Disconnected);
-      this.peers[peerId].rtcConn.close();
+      const peer = this.peers[peerId];
+      // Mirror the peerDisconnectedMessage teardown: null the WebRTC
+      // handlers around close() so a stale oniceconnectionstatechange
+      // cannot call restartIce() on a closing connection (InvalidStateError).
+      peer.close();
+      peer.rtcConn.onconnectionstatechange = null;
+      peer.rtcConn.oniceconnectionstatechange = null;
     }
     this.peers = {};
   }
@@ -640,6 +655,11 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     await peer.rtcConn.setLocalDescription(offer);
 
     // stop waiting for ice candidates if longer than timeout
+    // clear any prior pending handle so disconnect() cannot miss it
+    const priorOfferTimeout = this.iceTimeouts[peerId];
+    if (priorOfferTimeout) {
+      clearTimeout(priorOfferTimeout);
+    }
     this.iceTimeouts[peerId] = setTimeout(() => {
       delete this.iceTimeouts[peerId];
       this.logger.warn("timeout waiting ICE candidates");
@@ -708,6 +728,11 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     await peer.rtcConn.setLocalDescription(offer);
 
     // stop waiting for ice candidates if longer than timeout
+    // clear any prior pending handle so disconnect() cannot miss it
+    const priorAnswerTimeout = this.iceTimeouts[peerId];
+    if (priorAnswerTimeout) {
+      clearTimeout(priorAnswerTimeout);
+    }
     this.iceTimeouts[peerId] = setTimeout(() => {
       delete this.iceTimeouts[peerId];
       this.logger.warn("timeout waiting ICE candidates");

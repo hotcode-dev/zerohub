@@ -17,6 +17,7 @@ type BaseOptions = {
 type CreateHubOptions = BaseOptions;
 type JoinHubOptions = BaseOptions & { hubId: string };
 type DisconnectOptions = Pick<BaseOptions, "componentId">;
+type ReuseCreateHubOptions = Pick<BaseOptions, "componentId">;
 
 type HarnessInstance = {
   container: HTMLElement;
@@ -297,10 +298,30 @@ function disconnect(options: DisconnectOptions) {
   instance.container.appendChild(statusDiv);
 }
 
+function reuseCreateHub(options: ReuseCreateHubOptions) {
+  const { componentId } = options;
+  const instance = instances.get(componentId);
+  if (!instance) {
+    throw new Error(`no instance found for componentId: ${componentId}`);
+  }
+
+  const reuseDiv = createDataDiv(`reuse-hub-id-${componentId}`);
+  instance.container.appendChild(reuseDiv);
+
+  // Point the hub-info handler at the reuse div so the new hub id proves
+  // the re-created connection is live and delivering server messages.
+  instance.client.onHubInfo = (hubInfo) => {
+    reuseDiv.textContent = hubInfo.id;
+  };
+
+  instance.client.createRandomHub({ name: "test" });
+}
+
 const ZeroHubHarness = {
   createHub,
   joinHub,
   disconnect,
+  reuseCreateHub,
   getDataChannelStatus,
   getPeersInfo,
   getPeerStatusLog,
