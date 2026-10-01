@@ -3,12 +3,14 @@ package handler
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/valyala/fasthttp"
 )
 
@@ -50,8 +52,13 @@ func startTestServer(t *testing.T, h *handler) string {
 			ctx.Error("unsupported path", fasthttp.StatusNotFound)
 			return
 		}
-		// Same error handling as Serve in handler.go: 503 with the message.
+		// Same error handling as Serve in handler.go: 401 auth failures
+		// keep the body CheckAdminAuth already wrote; anything else gets a
+		// 503 with the message.
 		if err != nil {
+			if errors.Is(err, errAdminUnauthorized) {
+				return
+			}
 			ctx.Error(err.Error(), fasthttp.StatusServiceUnavailable)
 		}
 	}
@@ -169,26 +176,59 @@ func TestMigrateFlow(t *testing.T) {
 	checkStatusBody(t, body, "migrating", testBackupHost)
 }
 
-// TestMigrateUnauthorized pins the pre-existing auth behavior on a fresh
-// handler: CheckAdminAuth writes the 401 JSON body but returns a nil error
-// (h.Response never returns an error), so Migrate proceeds to set migration
-// state and overwrite the status with 200. This is a pre-existing quirk, not
-// part of the concurrency fix — it is pinned here so a future auth change is
-// deliberate. It uses its own handler because the no-auth call still flips
-// migration state on this one.
+// TestMigrateUnauthorized verifies the security fix: an unauthenticated
+// migrate request must be rejected with 401 and must NOT mutate any
+// migration state (isMigrating stays false, backupHost stays empty).
+// (A previous version of this test pinned the buggy behavior — CheckAdminAuth
+// returned nil on failure so the request succeeded and flipped migration
+// state — which was a security hole.)
 func TestMigrateUnauthorized(t *testing.T) {
 	h := newTestHandler()
 	addr := startTestServer(t, h)
 	client := newTestClient(addr)
 
 	status, body, err := doRequest(t, client, "/v1/admin/migrate?host="+testBackupHost, nil)
-	if err != nil || status != fasthttp.StatusOK ||
+	if err != nil || status != fasthttp.StatusUnauthorized ||
 		!strings.Contains(string(body), "invalid authorization code") {
-		t.Fatalf("migrate without auth = (%d, %q, %v), want 200 'invalid authorization code'", status, body, err)
+		t.Fatalf("migrate without auth = (%d, %q, %v), want 401 'invalid authorization code'", status, body, err)
 	}
-	if !h.isMigrating.Load() || h.getBackupHost() != testBackupHost {
-		t.Fatalf("migration state = (migrating:%v, backupHost:%q), want (true, %q)",
-			h.isMigrating.Load(), h.getBackupHost(), testBackupHost)
+	if h.isMigrating.Load() {
+		t.Fatal("isMigrating is true after an unauthenticated migrate request; want false")
+	}
+	if got := h.getBackupHost(); got != "" {
+		t.Fatalf("backupHost = %q after an unauthenticated migrate request, want empty", got)
+	}
+}
+
+// TestMigrateEmptyAuthorizationHeader verifies that a request carrying an
+// empty Authorization header (which decodes to an empty string with no base64
+// error) is still rejected with 401 and mutates no state.
+func TestMigrateEmptyAuthorizationHeader(t *testing.T) {
+	h := newTestHandler()
+	addr := startTestServer(t, h)
+	client := newTestClient(addr)
+
+	status, body, err := doRequest(t, client, "/v1/admin/migrate?host="+testBackupHost,
+		map[string]string{"Authorization": ""})
+	if err != nil || status != fasthttp.StatusUnauthorized ||
+		!strings.Contains(string(body), "invalid authorization code") {
+		t.Fatalf("migrate with empty Authorization = (%d, %q, %v), want 401 'invalid authorization code'", status, body, err)
+	}
+	if h.isMigrating.Load() {
+		t.Fatal("isMigrating is true after a request with an empty Authorization header; want false")
+	}
+	if got := h.getBackupHost(); got != "" {
+		t.Fatalf("backupHost = %q after a request with an empty Authorization header, want empty", got)
+	}
+}
+
+// TestNewHandlerRejectsEmptySecret verifies the fail-closed startup check:
+// an empty APP_CLIENT_SECRET must fail handler construction instead of
+// silently opening the admin endpoints to every request.
+func TestNewHandlerRejectsEmptySecret(t *testing.T) {
+	cfg := &config.Config{App: config.AppConfig{ClientSecret: ""}}
+	if _, err := NewHandler(cfg, nil, nil, nil, nil); err == nil {
+		t.Fatal("NewHandler with empty client secret: got nil error, want error")
 	}
 }
 

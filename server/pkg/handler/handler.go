@@ -38,6 +38,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -127,6 +128,9 @@ type handler struct {
 
 // NewHandler create a new handler
 func NewHandler(cfg *config.Config, zeroHub zerohub.ZeroHub, zeroHubRandom zerohub.ZeroHub, zeroHubIP zerohub.ZeroHub, zerohubPermanent zerohub.ZeroHub) (Handler, error) {
+	if cfg.App.ClientSecret == "" {
+		return nil, fmt.Errorf("APP_CLIENT_SECRET must not be empty: an empty secret would leave admin endpoints open to unauthenticated requests")
+	}
 	return &handler{
 		address:          fmt.Sprintf("%s:%s", cfg.App.Host, cfg.App.Port),
 		clientSecret:     cfg.App.ClientSecret,
@@ -183,6 +187,11 @@ func (h *handler) Serve() error {
 			return
 		}
 		if err != nil {
+			// CheckAdminAuth already wrote the 401 response; do not
+			// overwrite it with a generic 503.
+			if errors.Is(err, errAdminUnauthorized) {
+				return
+			}
 			log.Error().Err(err)
 			ctx.Error(err.Error(), fasthttp.StatusServiceUnavailable)
 		}
