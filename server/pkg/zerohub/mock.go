@@ -40,18 +40,6 @@ func (m *MockZeroHub) EXPECT() *MockZeroHubMockRecorder {
 	return m.recorder
 }
 
-// AddHub mocks base method.
-func (m *MockZeroHub) AddHub(hub hub.Hub) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AddHub", hub)
-}
-
-// AddHub indicates an expected call of AddHub.
-func (mr *MockZeroHubMockRecorder) AddHub(hub any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddHub", reflect.TypeOf((*MockZeroHub)(nil).AddHub), hub)
-}
-
 // GetHubById mocks base method.
 func (m *MockZeroHub) GetHubById(id string) hub.Hub {
 	m.ctrl.T.Helper()
@@ -64,6 +52,21 @@ func (m *MockZeroHub) GetHubById(id string) hub.Hub {
 func (mr *MockZeroHubMockRecorder) GetHubById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHubById", reflect.TypeOf((*MockZeroHub)(nil).GetHubById), id)
+}
+
+// GetOrCreateHub mocks base method.
+func (m *MockZeroHub) GetOrCreateHub(hubId, metadata string, isPermanent bool) (hub.Hub, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrCreateHub", hubId, metadata, isPermanent)
+	ret0, _ := ret[0].(hub.Hub)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrCreateHub indicates an expected call of GetOrCreateHub.
+func (mr *MockZeroHubMockRecorder) GetOrCreateHub(hubId, metadata, isPermanent any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrCreateHub", reflect.TypeOf((*MockZeroHub)(nil).GetOrCreateHub), hubId, metadata, isPermanent)
 }
 
 // NewHub mocks base method.

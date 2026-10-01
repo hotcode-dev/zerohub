@@ -12,6 +12,7 @@ package zerohub
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/hub"
@@ -26,6 +27,11 @@ type ZeroHub interface {
 	NewHub(hubId string, metadata string, isPermanent bool) (hub.Hub, error)
 	// GetHubById returns a hub by its ID.
 	GetHubById(id string) hub.Hub
+	// GetOrCreateHub atomically returns the existing hub with the given ID,
+	// or creates and stores a new hub if none exists. The check and the store
+	// happen under a single lock, so concurrent calls with the same ID always
+	// return the same hub instance. isPermanent controls hub expiry.
+	GetOrCreateHub(hubId string, metadata string, isPermanent bool) (hub.Hub, error)
 	// RemoveHubById removes a hub by its ID.
 	RemoveHubById(id string)
 }
@@ -36,6 +42,11 @@ type zeroHub struct {
 	cfg *config.Config
 	// HubStorage is the storage for the hubs.
 	HubStorage storage.Storage[hub.Hub]
+	// mu serializes the read-then-write in GetOrCreateHub. The storage's own
+	// Add is locked, but the compound check+add must be atomic, otherwise two
+	// concurrent join-or-create calls for the same ID would each read a miss
+	// and each store a hub, orphaning the first one.
+	mu sync.Mutex
 }
 
 // NewZeroHub creates a new ZeroHub server.
@@ -57,6 +68,42 @@ func NewZeroHub(cfg *config.Config) (ZeroHub, error) {
 }
 
 func (z *zeroHub) NewHub(hubId string, metadata string, isPermanent bool) (hub.Hub, error) {
+	newHub, err := z.buildHub(hubId, metadata, isPermanent)
+	if err != nil {
+		return nil, err
+	}
+
+	z.HubStorage.Add(hubId, newHub)
+
+	return newHub, nil
+}
+
+// GetOrCreateHub atomically returns the existing hub with the given ID, or
+// creates and stores a new one if none exists. The read and the write happen
+// under z.mu, so concurrent calls for the same ID collapse to a single hub
+// instead of orphaning one.
+func (z *zeroHub) GetOrCreateHub(hubId string, metadata string, isPermanent bool) (hub.Hub, error) {
+	z.mu.Lock()
+	defer z.mu.Unlock()
+
+	if existing := z.GetHubById(hubId); existing != nil {
+		return existing, nil
+	}
+
+	newHub, err := z.buildHub(hubId, metadata, isPermanent)
+	if err != nil {
+		return nil, err
+	}
+
+	z.HubStorage.Add(hubId, newHub)
+
+	return newHub, nil
+}
+
+// buildHub constructs a hub (with its own peer storage) without storing it.
+// It must be called while the caller owns the responsibility of storing the
+// result, so it does not touch HubStorage.
+func (z *zeroHub) buildHub(hubId string, metadata string, isPermanent bool) (hub.Hub, error) {
 	var peerStorage storage.Storage[peer.Peer]
 	switch z.cfg.App.PeerStorage {
 	case "memory":
@@ -71,8 +118,6 @@ func (z *zeroHub) NewHub(hubId string, metadata string, isPermanent bool) (hub.H
 	if err != nil {
 		return nil, fmt.Errorf("new hub error: %w", err)
 	}
-
-	z.HubStorage.Add(hubId, newHub)
 
 	return newHub, nil
 }
