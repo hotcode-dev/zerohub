@@ -1,6 +1,6 @@
 import {
   LogLevel,
-  PeerStatus,
+  Peer,
   ZeroHubClient,
 } from "../../client/src/index";
 
@@ -24,6 +24,29 @@ type HarnessInstance = {
 
 const instances = new Map<string, HarnessInstance>();
 const dataChannelStates = new Map<string, Map<string, string>>();
+
+type PeerStatusLogEntry = {
+  peerId: string;
+  status: string;
+  /**
+   * Live reference to the Peer object at the time of the status change. Kept
+   * so tests can inspect `peer.rtcConn.connectionState` *after* the peer has
+   * been removed from the client's `peers` map (verifies the
+   * RTCPeerConnection was closed on disconnect).
+   */
+  peer: Peer<PeerMetadata>;
+};
+
+const peerStatusLog = new Map<string, PeerStatusLogEntry[]>();
+
+function logPeerStatus(componentId: string, peer: Peer<PeerMetadata>) {
+  let log = peerStatusLog.get(componentId);
+  if (!log) {
+    log = [];
+    peerStatusLog.set(componentId, log);
+  }
+  log.push({ peerId: peer.id, status: peer.status, peer });
+}
 
 function setDataChannelStatus(
   componentId: string,
@@ -60,6 +83,49 @@ function watchDataChannel(
 
 function getDataChannelStatus(componentId: string, label: string) {
   return dataChannelStates.get(componentId)?.get(label) ?? null;
+}
+
+/**
+ * Returns a snapshot of the client's `peers` map: the list of peer IDs and
+ * each peer's RTCPeerConnection `connectionState`.
+ */
+function getPeersInfo(componentId: string) {
+  const instance = instances.get(componentId);
+  if (!instance) {
+    return { peerIds: [] as string[], rtcStates: {} as Record<string, string> };
+  }
+  const peerIds = Object.keys(instance.client.peers);
+  const rtcStates: Record<string, string> = {};
+  for (const id of peerIds) {
+    rtcStates[id] = instance.client.peers[id].rtcConn.connectionState;
+  }
+  return { peerIds, rtcStates };
+}
+
+/**
+ * Returns the recorded `onPeerStatusChange` events for a component as a
+ * serializable snapshot. Each entry's `rtcConnConnectionState` is read live
+ * from the (possibly already-removed) Peer's RTCPeerConnection at call time,
+ * so a test can verify the connection was closed after the peer was torn down.
+ */
+function getPeerStatusLog(componentId: string) {
+  return (peerStatusLog.get(componentId) ?? []).map((entry) => ({
+    peerId: entry.peerId,
+    status: entry.status,
+    rtcConnConnectionState: entry.peer.rtcConn.connectionState,
+  }));
+}
+
+/**
+ * Closes the client's WebSocket connection to simulate a peer leaving the hub.
+ * The server will broadcast a `PeerDisconnectedMessage` to the remaining peers.
+ */
+function closeWs(componentId: string) {
+  const instance = instances.get(componentId);
+  if (!instance) {
+    throw new Error(`Unknown component: ${componentId}`);
+  }
+  instance.client.ws?.close();
 }
 
 function ensureRoot(): HTMLElement {
@@ -137,6 +203,7 @@ function createHub(options: CreateHubOptions) {
 
   zeroHub.onPeerStatusChange = (peer) => {
     peerStatusDiv.textContent = peer.status;
+    logPeerStatus(componentId, peer);
   };
 
   zeroHub.createRandomHub({ name: "test" });
@@ -186,6 +253,7 @@ function joinHub(options: JoinHubOptions) {
 
   zeroHub.onPeerStatusChange = (peer) => {
     peerStatusDiv.textContent = peer.status;
+    logPeerStatus(componentId, peer);
   };
 
   zeroHub.joinRandomHub(hubId, { name: "test" });
@@ -197,6 +265,9 @@ const ZeroHubHarness = {
   createHub,
   joinHub,
   getDataChannelStatus,
+  getPeersInfo,
+  getPeerStatusLog,
+  closeWs,
 };
 
 declare global {
