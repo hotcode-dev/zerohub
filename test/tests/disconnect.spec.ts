@@ -3,8 +3,10 @@ import { v4 as uuidv4 } from "uuid";
 import {
   getCreateHubTestId,
   getCreatePeerStatusTestId,
+  getDisconnectStatusTestId,
   getJoinHubTestId,
   getJoinPeerStatusTestId,
+  getReuseHubTestId,
   prepareHarnessPage,
 } from "./utils/harness";
 
@@ -35,6 +37,90 @@ async function getPeerStatusLog(
     { id: componentId }
   );
 }
+
+test("disconnect tears down websocket and peer connections", async ({
+  page,
+}) => {
+  await prepareHarnessPage(page);
+  const componentId = uuidv4();
+  const zeroHubHost = "localhost:8080";
+  let hubId: string = "";
+
+  await page.evaluate(
+    ({ componentId: id, zeroHubHost: host }) => {
+      window.ZeroHubHarness.createHub({
+        testName: "disconnect, create hub",
+        zeroHubHosts: [host],
+        componentId: id,
+      });
+    },
+    { componentId, zeroHubHost }
+  );
+
+  await test.step("create hub success", async () => {
+    const hubIdLoc = page.getByTestId(getCreateHubTestId(componentId)).first();
+    await expect(hubIdLoc).toHaveText(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+    );
+    hubId = (await hubIdLoc.textContent()) || "";
+  });
+
+  await page.evaluate(
+    ({ componentId: id, zeroHubHost: host, hubId: joinHubId }) => {
+      window.ZeroHubHarness.joinHub({
+        testName: "disconnect, join hub",
+        zeroHubHosts: [host],
+        hubId: joinHubId,
+        componentId: id,
+      });
+    },
+    { componentId, zeroHubHost, hubId }
+  );
+
+  await test.step("peer status connected before disconnect", async () => {
+    await expect(
+      page.getByTestId(getCreatePeerStatusTestId(componentId)).first()
+    ).toHaveText("connected");
+  });
+
+  await page.evaluate(
+    ({ componentId: id }) => {
+      window.ZeroHubHarness.disconnect({
+        componentId: id,
+      });
+    },
+    { componentId }
+  );
+
+  await test.step("websocket and peer connection are closed", async () => {
+    await expect(
+      page.getByTestId(getDisconnectStatusTestId(componentId)).first()
+    ).toHaveText("status:disconnected,ws:closed,peers:closed,count:1");
+  });
+
+  // keep the joined client alive so the hub does not fully drain during the test
+  await expect(
+    page.getByTestId(getJoinHubTestId(componentId)).first()
+  ).toHaveText(hubId);
+
+  await test.step("client is reusable after disconnect", async () => {
+    await page.evaluate(
+      ({ componentId: id }) => {
+        window.ZeroHubHarness.reuseCreateHub({ componentId: id });
+      },
+      { componentId }
+    );
+
+    // A fresh createRandomHub() on the same (previously disconnected)
+    // client must open a live connection: the server responds with a new
+    // HubInfoMessage and the client is NOT stuck with a dead socket
+    // (which would leave the new hub id unset).
+    const reuseLoc = page.getByTestId(getReuseHubTestId(componentId)).first();
+    await expect(reuseLoc).toHaveText(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+    );
+  });
+});
 
 test("peer disconnect tears down RTCPeerConnection and removes peer from map", async ({
   page,

@@ -139,6 +139,10 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
           // In a production scenario, you might want to elect a new SFU here
         }
         break;
+
+      case PeerStatus.Disconnected:
+        // local client has torn down all peer connections; nothing to do
+        break;
     }
   }
 
