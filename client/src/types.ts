@@ -17,11 +17,27 @@ export enum PeerStatus {
   AcceptPending = "accept_pending",
   /** Connected: the remote peer is connected to local peer. */
   Connected = "connected",
-  /** WebRTCDisconnected: the remote peer WebRTC disconnected to local peer. */
+  /**
+   * WebRTCDisconnected: the remote peer's WebRTC (P2P) connection to the local
+   * peer dropped (`RTCPeerConnection` reports `disconnected`), while the local
+   * client is still connected to ZeroHub and the peer remains in the hub (it
+   * can reconnect, e.g. via ICE recovery). Set locally by the
+   * `onconnectionstatechange` handler.
+   */
   WebRTCDisconnected = "webrtc_disconnected",
-  /** ZeroHubDisconnected: the remote peer disconnected to ZeroHub.*/
+  /**
+   * ZeroHubDisconnected: the remote peer disconnected from ZeroHub itself —
+   * the server broadcast a `PeerDisconnectedMessage`, so the peer has left the
+   * hub. The local client is still connected to ZeroHub; the peer is torn down
+   * locally and removed from the peers map.
+   */
   ZeroHubDisconnected = "zerohub_disconnected",
-  /** Disconnected: the local client disconnected and tore down this peer connection. */
+  /**
+   * Disconnected: the local client called `disconnect()` and tore down this
+   * peer connection (and all others): the ZeroHub WebSocket is closed, so the
+   * local client is no longer connected to ZeroHub at all. No peer can be
+   * restored until the client reconnects (e.g. `createHub()`/`joinHub()`).
+   */
   Disconnected = "disconnected",
 }
 
