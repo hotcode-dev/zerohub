@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:4f34d3e72a55802d94cfe61dc3fd6ef44c886f56ffbe4a230e188387fa74092a",
+  "claims": [
+    {
+      "id": "claim_f8eee7b4d94d405e8ae1cd7638c1d8cf",
+      "statement": "ZeroHubClient.reconnect re-checks the isDisconnected flag inside the async getZeroHubBackupHost().then callback (not just at entry) so a disconnect() called while the backup-host fetch is in flight does not resurrect the connection; it also aborts if the backup host equals the current host.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/zeroHub.ts#L261-L302",
+          "version": "repo-lines-v1:sha256:e0f583401bf0020288d75bb0908c3fd9c045c6b79920d05741592b7d8c95f1a8:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliY2FlYTFkOGVkZTZhYTJkMmY4MmUyY2IwNDE4Y2UzNjVlMjE1Y2NhMDMxNDExNjg2ZjJhNzZjOGFlOTBkZDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3YWZjMGU3YmY2YTM4NzVkMTk0OTk1Zjg3M2MxYWEyZGFmNmRjNTNhZDdjN2Y1MTZiMmE4ODEwMmRhYjJjYWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRiNTZlNWQ1ZGUxMmMwZjMxODMxZWRkODVmODkzMjViM2M0YWFmN2UxZjBmNDM5MzgzY2M0ODdmZGY3ZWE3MGMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4b0dc7e91368409180c96e9a923cf9e7",
+      "statement": "ZeroHubClient.disconnect() sets isDisconnected, clears pending ICE timeouts, detaches all WebSocket handlers (so onclose does not auto-reconnect) and closes the socket with code 1000, then transitions every peer to Disconnected, closes each RTCPeerConnection, and empties the peers map; the client is reusable afterwards.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/zeroHub.ts#L515-L547",
+          "version": "repo-lines-v1:sha256:72e868357b0f22f9e2ca68cb89aa7119c432746e8c0240e9d2ae5c8878e5bfdb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkMTExYmQzNTM1ZThmZThmMDg4YjcxZTQ3YjYwNmEyMWE4YmZlZDdiNmJiYThmNWU1MTk0N2ZmMzc1Njc0MDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNhMzk5OTQxNzMxOTQyN2IyOGU1MWI5YTMxOWFkOWRmOTYxNWY1MjhjZWJlYTA1OGIxM2E2NjQ1NjFmMGE3MTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ2MGQzZDg5Y2ZiN2UxYjU5M2FhNjdhMTEwZDlkODZkYzdkMWFjYWIxZDM0NjRjNTU4YTI2NDE3MDdiNTk0MmIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_82a5551e89604d8aaaa4f2c8a8c72c42",
+      "statement": "The WebSocket onclose handler interprets close codes: 1000 does nothing, 1001 (going away) reconnects to the host named in the close reason (the migration redirect), and 1006/1011 reconnect, while other codes fire onZeroHubError.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/zeroHub.ts#L469-L500",
+          "version": "repo-lines-v1:sha256:cd5d82aa7499e609c1e00e9e4b912fbc672263974b32c44c1394f13388e8500a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiZjQ1OThmMmM3ZjNjOWRkZTljYzA3NDFjMDU2YmFiMmRhZmVkZmUyYzUzYTNmYzlhMWJmODhkNjQwMDRmZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkOWUxMjU0NjQyNTU3NmQzZGVhZThjOWI5ZGJmMTI4ZDVkNmRkYWY1ZDdmZTg1NzkzNDkyN2RlZmZhM2I5ZGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyNjY3ZjJhNWEyYmYzNjUyODIzZjc3MDRmYzJiYzFjNzdiMjNlYjIyZGFiOGJlM2Y0YzMzNWU5NDlhODY4NjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI4ZTc1ZjJjNDVkYzYwNDRhNjRiOWY3Y2Y1ODNhZjJkZDNhZjQzODNhOWQxOTZkNDM3M2UwMmRjYWI2ODVkMTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_94fcb528042c4c2e97fadddc7328073e",
+      "statement": "connectToZeroHub resets the manual-disconnect flag and clears stale ICE timeout handles, so a client that previously called disconnect() starts a clean reusable connection on any new entrypoint.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/zeroHub.ts#L441-L448",
+          "version": "repo-lines-v1:sha256:42b1a27675c0d03812bf8552e1ddf4f62d9807d27d0042a3e6efa6e7ef869496:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTEyMjE3OWE5NTNiZWRkZDY0YTNhYWRjOWE0N2Y4NmQ0NDJhMzQ0N2E0MjhmZjQ1MGE2NTFmOTQwNTA0NjkyZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmEzZWMzNTk2NzZkMDNkNmNlMmE3N2YzMDE2NmQyMTFkNDk1MzEyNzU0NjVkMmE0Y2M1NzYyN2M3NDk1ZWUxOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmY3MjU3NWJmMzllOGQ3YjY2MmM4ZjcxNDIyZjNkMzYwNGE1NmFkNTZhYTE0MTgxM2FjMzkwNmVlZGViOGZiOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjM1MGY1OGM2Zjk5Y2Q4NGVmMWM4NzY0ZTU3NGEyMzg3OWIwMGRhZjg3N2NjMGJiMDczYzM3OGMyYWY3MzAyNyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_bd4128b0cd9d456c8ec9c4355a36c977",
+      "statement": "SFUTopology routes all P2P traffic through a single SFU peer (the lowest peer ID by default, or an explicitly set one); the SFU offers to every client and non-SFU peers connect only to the SFU, trading a single point of failure for better large-group scalability.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/topology/sfuTopology.ts#L58-L76",
+          "version": "repo-lines-v1:sha256:0eb19b283a5d25d6ff4a15a0b24ee43cb6dbffdf0005861c7e7e2133e5082307:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxMzI3ZGRiM2EyMjM4ZjZiZDllNTY4ZDA2MzVhNGI3MGQ2OTdjNDY2ZGRmNWY1OTIxNjdkOWQ5MDMwODVlOWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFkZmYwZWY1YWYyMjZjYjUxZGQzMDExMGNlMTU2NzY1YmZiMjUwZjllMzk2M2UyMTlhMzdmYzAyY2JiMWI3NGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ4ZDBiOTU5MmMxNWZhZGFhZDE4YmEwNzA5MmIwZGE0MTk4NjIxYWI0NDM0NmQ5ZjM0ZTY5MGQ4MDlmNDFkNmUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_18ac9d0d7b6f47be9b05f9c35190c4d2",
+      "statement": "In MeshTopology, when a dataChannelConfig is set the offerer creates numberOfChannels data channels labeled '0','1',... while the answerer wires ondatachannel, and media localStream tracks are added to each peer connection.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/topology/meshTopology.ts#L40-L67",
+          "version": "repo-lines-v1:sha256:6cf072ac38f437aeed60a803a24d4f82d94deea7df6bc36a2dc74cc80113f808:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3ZWMzNWU1ZTg2NGE5YjU5YjNlNGViYzc4ZmNhZDhjOGIwY2U1ZWY4NGYzMDEyMDdkZjg4ZmZlNjJhYTBlOTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4MDA1ZDU3MTA2YTM2MmViMDAwZGFmM2RhNDY3NGM4MmI1MThmZjVhMmUyZjY3ZWU4ZTc1N2EzMzNjMmFmNjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0NzgxNTdkNWQzYTJiMjc3Y2U1YzVjYTQ4NTI1Nzc5MDA1MTJjM2ZhYWFiOTNlODdmYzc0MmVlMDkzZmU2NzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE3NzhjMzY5ODg0ZTg3NTlmNjNkMWM2ZDg0NjY2ZDRiYzE3YjQyZDE5MDYzN2U5M2ZlMjA0ZjgzMTFmN2M5YzgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e11cb136fda1448e855a0daaddcc3104",
+      "statement": "The default client configuration sets tls:true, logLevel:Warning, waitIceCandidatesTimeout:2000, autoAnswer:true, autoAcceptAnswer:true, and rtcConfig to Google STUN servers with bundlePolicy 'balanced', all overridable via the Config interface.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/const.ts#L32-L41",
+          "version": "repo-lines-v1:sha256:280e3c166b9bb0de1460b22956b727000ef383f1a4bf8e566549900c7384173e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyNzg3ZGJiMjQzMGU3ZTg4OGZkNWZiMjgzODdkMDMxMzVkYTc2ODMzNmY5OTc5YTQ1MDQ0ZTg4ZTZhN2VhOGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhMWQxYTYzMzkwMjI5Yzc5ODM0N2U4M2EwNDA1NDQxYzk0MDAwMzUyODRhZDE2OGMxYmY2Y2RmMWQ3MGEzNzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFjN2NlNjA4MjhkZmY3NjhjYTIwMGQ1YjMyNTk5OGJlMGJjZTU1MjkxYjFkMWViOWE4MDk5ZmY5NTM0MWUwMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_336105228c7a4f48870a324b7f5b4f73",
+      "statement": "sendZeroHubMessage throws an error if called while isDisconnected is true or when no WebSocket exists, requiring the client to reconnect via createHub/joinHub before sending.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/zeroHub.ts#L554-L568",
+          "version": "repo-lines-v1:sha256:542c2df038f17eb0b461cc21f013d34915e39d5853f7f55eee7ec0cd5e0df7ea:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOGRkNjVlM2Y3NWZlYWQ2NWU0YjExMDQzOTM3N2FhYjFhMDJjOWM2Yzg0ZmVlYjI1YjE2OWQxMWExMjJiNjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyYjkzNDdkNjFiMDEzYTkyNDc3MTNmNWZkYWQ4MDJiMmZkYzU3ZDY5ZTM3NDNiNzc4MjIyMTZjOGVmZWMzMzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNmYTdmZTY1ZjUyYjE3NDU5MjM4MGE2MGNhODM3MDRkOTNiOTM0NGFkNjQzNDcwNDk4MzQ4OThkMjRiMmU0NDAifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.6.0",
+    "at": "2026-10-03T07:04:30.122Z"
+  }
+}

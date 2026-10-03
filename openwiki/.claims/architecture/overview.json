@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:c0b58cb2c48c849d6d66be47b7b4ce6cb79d5a7d5fbce70d6cd96f20fab51af4",
+  "claims": [
+    {
+      "id": "claim_937b0d08bd3849b4b3ddd56a5664ca43",
+      "statement": "The Go server entrypoint constructs four independent ZeroHub instances (static, random, IP, permanent hub types) and passes them to the handler, so each hub type is backed by its own hub registry.",
+      "evidence": [
+        {
+          "resource": "repo://server/cmd/server.go#L26-L47",
+          "version": "repo-lines-v1:sha256:395159379a6886a4fb9fda4dcdaed39fe2c5c1c13a9ea51ae275bf160d5c29fd:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2NWE4ZmY3OGM2MDZhYzYxNDIyMjlhNjJhOGUzMGU3ZTIwYTU5ZTQ3NmY4YjcxNWRhMDhjMWQ0YTJhMjAwMTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxODcxM2Y1NjFiODU2MTkxMzMwYzY4Njk3Njg2N2M1MzA2ZThiNzQzMjZjN2EyNzg5MTE1MDQ4Zjg5YTAyZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFiMDA4NDMzZjJmMDY4YmIyYTM3NDhkZTYzMTU4MmNmNzQzOTM4MDJiOTVjOTI0NjFkZTEyYWQ3ZjU2Y2IwMWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b20d8c39a0f0467787157f1961d0fafd",
+      "statement": "In the default MeshTopology, the peer with the higher numeric peer ID creates the WebRTC offer to the lower ID to avoid offer collisions.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/topology/meshTopology.ts#L32-L33",
+          "version": "repo-lines-v1:sha256:a24d22ac9e5940d694960b2e9489afbd67f21e5eb36c77979d29026b550c6576:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTA0NmQ4ODJhMGQwNmY3OGE1N2RhMjg3ZmVkYjc0N2YyOGU5Yjg4ZTgyYTNhMzE5NTNmODEzODkwZGYxN2ZmOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODY2OTExZWZiZDM0MzgxMWEyYjYyMjVlNDJjMjk2MDY5MWFhNGQ5MzVlYWJkYjdjZGE5NjY3NjRlYzE2YmZiMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGQzODI0YTA4N2MzYjA2YmUyOWJkMjg1NWM3YTc3ZjQyMmIwYzZlOTdmZmVkYmVjNjFiOTA0NWU3ZTgzMDRhNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzdmNGUwZDRkMzExNTIwY2RmMGUyYWFmMjMxYTVhOWFjMWZlNGM0ZTM2ZTAwNDZhYzZkZjAzMWEzYWI5OTkwOCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ad2d5b16d6b245e3a8a62a28587ca8d6",
+      "statement": "SDP offers and answers are exchanged as protobuf ClientMessage/ServerMessage frames over the signaling WebSocket, and ICE candidates are flushed to the wire after a waitIceCandidatesTimeout (default 2000 ms) instead of being held indefinitely.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/zeroHub.ts#L484-L488",
+          "version": "repo-lines-v1:sha256:44627c3563dd5ac7adbfd3688e544ad203c1cc805af843e8b93f56c13d27d888:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWNjMjM5NzgxOWQyYzBkZmM2ODAwY2UzNzJjOTUwZGJhY2Y2ZGM2NzRiMjJjYzMyM2IwYTkyYWI0NmQ5NGVhZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDFlNThhOGFlNjE0OGJkN2JjOWY0Mjk1ZDg2NmFiODMyMzhjN2JhNTkyY2E0MDFjYTkxZWRhM2NkYTg3MmY4ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTZjM2E1ZDU0MDlmNTgxZmE1ZDZlMDY3YmU0OTM2NjViNzgyNWU0NzFkOWIzZjdhMjhmNzkxNTU5YmU5YzY1ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzA1MzAwOTg4YjM4Y2IxZmZlYzkzNWQ5NTJjNjVlN2Q5MWQ4YWQ5ZjMxNjQwYWU0ZGE5NmQxYzc2OGI5Y2RmZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_4bc725d0e12f4379ac5b0f092ffd5b66",
+      "statement": "When a peer joins a hub, the hub assigns it a monotonically increasing numeric ID via an atomic counter, broadcasts a PeerJoinedMessage to existing peers, and sends the new peer a HubInfoMessage containing its own peer ID, hub metadata, and the existing peer roster.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/hub/hub.go#L68-L100",
+          "version": "repo-lines-v1:sha256:70a0f5a53cf2787a677b79b042633229ebe20dc6bf7e5d150ef234db464a20ff:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiMTQ5NDZhZDNiODJmNmJlMjE1NTg0MDRhNWY3MTQ2YTM4YTE3ZDRmNzUwZWQzZGZmNzI4Nzk3YTY4YWRhODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUxMzk4ZThlYWFlYTg3NzAyMTI4NjU5MTc0MTdkY2NkYWUyNTI3N2FjMWY1NGYzZmEwZjYwMWM2NWI0MjUwYTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3YTFiNDIzMzA0ZmJlNGZjODVhODc4MjMzMzIwNzI4ZjZhMTEyMzNkNDkyM2U3MTYyZmIyYjA0MjJkZjMzNzIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f7fafa749519416eb6ce4c151c5edb57",
+      "statement": "Both hubs and the peers within them are stored behind a generic storage.Storage[T] interface with in-memory and Gache backends, selected by the APP_HUB_STORAGE and APP_PEER_STORAGE config values.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/storage/storage.go#L6-L17",
+          "version": "repo-lines-v1:sha256:c1f45b2a2269edf722506b81102a997a8fb8c1829d02304ebdd2cc9065bba3f8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkN2NhZTM5ODA3YmM3YmQ2NWU3ODc4ZmVmMGU4MDdjN2QwZjk5ZjdhYzM4ZTcxNDI0ZTM0ODU3Njc3YjNhYzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2ZDM5OGNlMzBkZWFiMGMzMTc4MzAyNTU2MmI4NWUzNzNmN2NlYmZmZWUxNzg5YmY1NzNmMDBiMDI2MzA4ZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI1ZmNkOTk3MjU2NDFjODgwNWJhZTUyMWNhYTA1NTZiYzhjYjlkOGI4YjA5NTJkNmI1MGVhNWZhNWFjZGQ5ZTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5NDgzZTZhZWIzMDJlNTUxZWZiZTYxYjIyOTZiYThiM2E4NTg0ZTEwNDZlYWI5ZDMwZjZmOTRiY2I2NGU0N2EifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_81cb264281c3495a995af79297c2c7d4",
+      "statement": "The client exposes a pluggable Topology interface (init + onPeerStatusChange) that decides per-peer how to set up data channels, media tracks, and who sends the offer; MeshTopology and SFUTopology are the two built-in implementations.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/topology/topology.ts#L9-L13",
+          "version": "repo-lines-v1:sha256:4cfe272a14f0184927ff4ac966fb2b08cbe0e92e308f19b0ff73d19f447fdac8:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWU2YjhjY2ZhMTE1ODY5ZWI3NGIxZmIwNzEyZGQzOGExMDNlZjI1OGYwZGViY2M3NzFjYWU4YjQ4MzFlMmIyZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDhiYjNhOGQxOWQxM2U4YTM0ODdhMzcxMTFkZjhiODEwMWMwZWM3MmRhYmYyNDVhYjg4Zjg5NzE1MjIwYmY2ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGQxZDA1NzY4YzgwZjQwNjY3ZTc3MjEwMGJjMTlmZGM5MmMzNjlkNDhhMTY4ZWI5MjM5NDViOGRmNDRiMmJkZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_567a5fb105f347489dbcd72941130b69",
+      "statement": "After a peer is established, the server is not in the media/data path: it relays only signaling (hub/peer events and SDP), while data channels and media streams flow directly between peers over WebRTC.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/hub/hub.go#L164-L192",
+          "version": "repo-lines-v1:sha256:b6b4b0b26f2d9e19c953994fe3d4a209142ee3394f6ab6ff2f6d188e312c8afc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMGY5NDgxZGIwZTBlYmFkYzY5MDg3ZWQ3NjA4MTQ2N2I1ZGEyZjY0NDU5ZTc5NjFhMDIzYjQ5NTdkMmZhNDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYyOTY0MDc5YzNjNWM4MTUyMGVmMzNhMmI5ZDJlMTVhMWI4NGQ3MjgwZGI4NTkwZGNkNjU3NDdlM2UwMTJhNDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRjZTc4ZmRiNWUwODRkNmY5MWQ3YjFjNWE5ZTRiYjBlZTcxZTkzOTM1NDFmZTBhMDM5MWZmODY3ZTEzNzEyOWYifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.6.0",
+    "at": "2026-10-03T07:04:30.122Z"
+  }
+}

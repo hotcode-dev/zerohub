@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:106c107dc68f5d4e5b69f5f2d67d1eee6d44b9f1b5fa012e355b892cba81e497",
+  "claims": [
+    {
+      "id": "claim_29b96b61359846dd9149060c8b57d3a3",
+      "statement": "ZeroHub is a WebRTC signaling server with a TypeScript/JavaScript SDK; the monorepo contains client/ (the @zero-hub/client SDK), server/ (the Go signaling server), proto/ (protobuf definitions), test/ (E2E tests), and docs/ (Astro docs site).",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md",
+          "version": "repo-file-v1:sha256:3a5d338c9fe7c643d8b4ac966cacae92f1450c196628e112ec4d811ce71ecc1b"
+        }
+      ]
+    },
+    {
+      "id": "claim_819db68304f043128f8fb1d793ec51b4",
+      "statement": "The client SDK's public surface is re-exported from client/src/index.ts: Peer, ZeroHubClient, the config consts/types, and the topology module.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/index.ts",
+          "version": "repo-file-v1:sha256:77165a24ca4d3c9085e7d968f2f17ef096235f11831c6b203a2ae8506b756538"
+        }
+      ]
+    },
+    {
+      "id": "claim_fb004955a1b2494c8c72577f4cc50f20",
+      "statement": "Instantiating a ZeroHubClient makes no network connection; a connection is only opened when a hub entrypoint such as createHub or joinHub is called.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/zeroHub.ts#L163-L203",
+          "version": "repo-lines-v1:sha256:3bdfdae235cd09d10c28dad36beaee613850626f954884b0d9533e691f491f1a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhNWRmODI2OGE5ZjcwMDM4OTQ1MTc5NTQ0N2RlYjUyZTRkMjBiNzUxMjMyNjJhYTcyNTA2MGRkZWZiMTk2ZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNiNzIzN2E5YTI5ZTZjMGFkMjdjZmJjNGM2MmZmOGI2YjFhY2Q2NDVmNjFjZDcwMzk3M2UzY2U2YzQ2YmIzMjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk1ZDEwMGEzMjEyZmIyMTVmMTFiNjM1Zjc0MTQ0OThlZGZmZDMwYzQxMWJhYzM4NGI5ODdkMTJlZWRjMzIxODQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_13760dc3a8fe48cd832d3e44a8bb54a2",
+      "statement": "The Go signaling server listens on 0.0.0.0:8080 by default and requires APP_CLIENT_SECRET to be set, refusing to start otherwise.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/handler/handler.go#L137-L149",
+          "version": "repo-lines-v1:sha256:fdafa857d3ddb0708244f56f919a64a2932f8676afee0cbbd0b7e218a85339a1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmZGFjN2ZkNzU4MGI5NGViMWNmNmFiZmRjZjJlNjg0MWJjNmQ4Yjg0OGU0MzhjZDE1NDdlMjAxMjc5MjI3MDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljOWJiNmZmNmJjMGE2MDlkMmUzYzFmMDg2ZDMxYmFlZTNjYjAwNGVlZGZkNjA3NmFmOGI2MzY5NzBhY2Q2ZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmN2FmODVhOTk1ZWY1YmY3ZWQ5MmIxMGJjOWM4Y2I3ZWJkYjBkZjQ4NzEzYzM0NDg5MjI5ZTBiNjc4OTliMTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1Yjg1YjU4YTRkMjFjZmEyNTcwYWNiODk5NWU5ZDhjNzcyNzlkZTFjMjI2NDI1YzkzYjY0ZTk4Njc4NzBkZDQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3b5cf199dd3a4770bdf30af1406d7859",
+      "statement": "The root Makefile provides make proto-gen to regenerate the shared client/server protobuf definitions, make test-all to run the full server + E2E test cycle, and make server-test / server-serve for server workflows.",
+      "evidence": [
+        {
+          "resource": "repo://Makefile",
+          "version": "repo-file-v1:sha256:88e925b14c788e4c2ea098abc8791c1ad186880027ba73f56c3c7d6ff0fcb8ab"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.6.0",
+    "at": "2026-10-03T07:04:30.122Z"
+  }
+}
