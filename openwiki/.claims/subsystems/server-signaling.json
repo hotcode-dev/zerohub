@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:6f5278ba9f0f80c42f1dbf14ceef7643759cc5c01aa84d02e122c8837dbc1e78",
+  "claims": [
+    {
+      "id": "claim_1d82fd64055a4062925029c4ae4e6575",
+      "statement": "The server entrypoint loads config, initializes the logger, then constructs four independent ZeroHub instances (static, random, IP, permanent) and passes them to the handler, so each hub type has an isolated hub registry.",
+      "evidence": [
+        {
+          "resource": "repo://server/cmd/server.go#L26-L50",
+          "version": "repo-lines-v1:sha256:a31a144a8b76f8df74c7d883b47a817266b8f9ac2321c0d6cf16ef0016c7175c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxODcxM2Y1NjFiODU2MTkxMzMwYzY4Njk3Njg2N2M1MzA2ZThiNzQzMjZjN2EyNzg5MTE1MDQ4Zjg5YTAyZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkZWEwZTRhYmQ0YzlkN2FkMjBiZDBmMjk5NDE1Njc4ZjYzMTZmNzg1NzRlYjBhMWQ0YzA0MjQ2MDZhZWI2ZDUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_11d056afeae2482eb5555e3341dce77f",
+      "statement": "Server configuration is loaded from .env via godotenv and unmarshaled with go-env; key vars are APP_HOST (default 0.0.0.0), APP_PORT (default 8080), APP_CLIENT_SECRET (required), APP_HUB_STORAGE/APP_PEER_STORAGE (default memory), and APP_TRUST_PROXY (default false).",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/config/config.go#L28-L40",
+          "version": "repo-lines-v1:sha256:db0b35d3b8b6e8ea8de056a900a7ad1369655fbb55ac3e3d0d66f213f4e689df:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmYWJkYTI2NGU5MDhhNDg0NmRmZDlhNDliNGE5ZDA5ZDgzYzY0ODI1ZmZhODY3YzllOTE5MTY5Zjk3NGY0NzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkYTg1ODBiYzc5NjY2NWQxOWU2MjFjOTVkOWZhMDA3YzcwNmZlNTc0ZDM1NGFiMDg0ZWQzZjg0OGJmMDYzNDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMjhlMTE0YTBiZjg5YjE4ZmUyODM2Zjc5MzI0ODJmMDJjODc1MTQ5MGVkZDczMmI3ODAzNzdiYzk4NmQ5NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEwNjhjOTE3Y2UxMDdlZjIzMzNlNmI4YmJkODAwZTA2ZTFhNjE4YzZjYTZkY2I1OGRlYWZiODA4ZTMyMGY0YjEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a640bf52ab174bd5b1f73e249412edf5",
+      "statement": "handler.NewHandler refuses to start when APP_CLIENT_SECRET is empty, because the admin endpoint would otherwise be open to unauthenticated requests.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/handler/handler.go#L137-L149",
+          "version": "repo-lines-v1:sha256:fdafa857d3ddb0708244f56f919a64a2932f8676afee0cbbd0b7e218a85339a1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmZGFjN2ZkNzU4MGI5NGViMWNmNmFiZmRjZjJlNjg0MWJjNmQ4Yjg0OGU0MzhjZDE1NDdlMjAxMjc5MjI3MDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljOWJiNmZmNmJjMGE2MDlkMmUzYzFmMDg2ZDMxYmFlZTNjYjAwNGVlZGZkNjA3NmFmOGI2MzY5NzBhY2Q2ZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmN2FmODVhOTk1ZWY1YmY3ZWQ5MmIxMGJjOWM4Y2I3ZWJkYjBkZjQ4NzEzYzM0NDg5MjI5ZTBiNjc4OTliMTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1Yjg1YjU4YTRkMjFjZmEyNTcwYWNiODk5NWU5ZDhjNzcyNzlkZTFjMjI2NDI1YzkzYjY0ZTk4Njc4NzBkZDQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c946b125db0f4af0b34cfffeef5d5f23",
+      "statement": "ZeroHub.GetOrCreateHub performs the read-then-write under a sync.Mutex so concurrent join-or-create calls for the same hub ID collapse to a single hub instead of orphaning one.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/zerohub/zerohub.go#L85-L101",
+          "version": "repo-lines-v1:sha256:0c9d9b4222480ef205e5c3031845360f2b03b5b88e6b0c7133d0dee40eeaa22f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZjODAxNjY4Nzg4OWM0YjY2OWIxNWEwZTc1YTM2OGE4MWNmZGM2M2U1YmE4NDE1NDQ5YWU1MmRjYTI4NjZmNzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQyNDBkNDRlMzA3Yjg4ZGJkMjk2OWQ2NjRmNTAwZWU5MGZhMGQwODkwMTExYzBlYWRiODdmYWYzYWYyMzlmNTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJjZjM0NWZmZjk4YmYwMzRiYWE5MDk0YzgyNjEyOTBkNTU4ZjhmYWUwZGUwOTYwMTlhNWYxMzA0ZjBmMGMzZGMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_973b6aefbd374b2793b3dbf5ba1a17ff",
+      "statement": "hub.AddPeer assigns a peer a monotonic numeric ID from an atomic counter, stores it in PeerStorage, broadcasts a PeerJoinedMessage to the other peers, and sends the new peer a HubInfoMessage.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/hub/hub.go#L68-L100",
+          "version": "repo-lines-v1:sha256:70a0f5a53cf2787a677b79b042633229ebe20dc6bf7e5d150ef234db464a20ff:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiMTQ5NDZhZDNiODJmNmJlMjE1NTg0MDRhNWY3MTQ2YTM4YTE3ZDRmNzUwZWQzZGZmNzI4Nzk3YTY4YWRhODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUxMzk4ZThlYWFlYTg3NzAyMTI4NjU5MTc0MTdkY2NkYWUyNTI3N2FjMWY1NGYzZmEwZjYwMWM2NWI0MjUwYTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3YTFiNDIzMzA0ZmJlNGZjODVhODc4MjMzMzIwNzI4ZjZhMTEyMzNkNDkyM2U3MTYyZmIyYjA0MjJkZjMzNzIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_87b7649845d342a2a742287bdf02fff4",
+      "statement": "On WebSocket close, the close handler closes the peer and calls RemovePeerById; if the hub becomes empty and is not permanent, the hub is removed from its ZeroHub instance.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/handler/websocket.go#L22-L47",
+          "version": "repo-lines-v1:sha256:fe70b0c9c5d9ec3ea82eec016d380cc7fb090088086ca8170f7d7a8016c9b9bb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4YjM4M2I3YjdkMGJiMWY5NzdiMDU5Y2JkMDIyNWFmMjBiMjliZmU1NTRmZmMzMmNhYTgzNDkyMTRhNGY0MTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3YTliNWU5MDE5YzhkYjg3ODNlYzljM2ZlYmIwYTJjOTg2MmY2MWEwNWMzMDhmZTg5NWU0YTliZWQwM2VkYjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMyMzI4MjYxZjJmZTZlYjZjODEyYzkxMzQ0YjJkODM4NjNkYjk5M2JkZjBjYWNjOGI2ZWM1MDllYjljZjg0MTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEyYWQ3YTJiZmExYmM4ZGRmZWE1ZTQ1YjU0ZWFlNGI3NWExNzcyYjgyZDUxZGQ3NjBkM2VlM2ZjMDMwNTZmNGYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4df69d732b3049588880a9ea4bfaf548",
+      "statement": "The server applies a 60 requests/minute ulule/limiter v3 fasthttp middleware keyed by the socket peer address by default, or by the outermost X-Forwarded-For IP only when APP_TRUST_PROXY is set (which must only be enabled behind a proxy that strips/replaces that header).",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/handler/handler.go#L162-L200",
+          "version": "repo-lines-v1:sha256:2d0485b3b24bb86cf9cde3094f354c1093bc6d80dd8507c0c2e3340aadf63f4e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MzE3ZTZiOTJjZTFlNzQ2YWI3M2U2YTFjODc3MGJlNzRhYjE5NmZkOGU2OTgwNDBhM2VkZWRiODhhNGRkMjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ3MWI5NjhiNmY4MzE5N2EyMDk4Nzc5MGM3MzU0ZmZlZjZhNDgwMDk0ZjljYjE3ZTQwODA2ZTc3MzIxMDdmNTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE4ODIyY2MwM2QwNDMwYjM0MTExNzFmMjI1ODZmYjMwODk2Mjg5OTUyOTNhNzEyNTMyYzZiN2FlZjBlYjdiYTkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_91ae4835b8e64652b68f503c4c27458e",
+      "statement": "Zero-downtime migration: an authenticated /v1/admin/migrate?host=<new> call sets backupHost under a read-write mutex and then atomically flips isMigrating; while migrating, create/join-or-create requests are rejected via ForwardMigrate, which upgrades the connection and sends a going-away close (code 1001) whose reason is the backup host so clients reconnect to the new host.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/handler/migrate.go#L23-L46",
+          "version": "repo-lines-v1:sha256:b1e763e5fdd5374e60f0310812b76ce49aab9a71e96dc14e0f423191cf6f925c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4YmFmMmYwYzMzNjMxYTg3MThiZmQ5OTdhOGRkZmJjOTgyYzM2ZTQxOThmOTgwMWIwZTkzZTQyZTZjMWJiMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI5MmQ2ZjFlMTUyNmMyNmY0NTRmMWE4YWVkM2FlYjU4ODZhMGU4YTJkZjYxYjZjZTRmNDdkNzg5M2MyZmI1OGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI2NWQ2Yzc1NDdmOGJjZDg1NDEwMDZhZDYzMGI4YmE0NGMzNmZiNDAwNmJhOTMyMTM1ZWYxNDNiYzhjMGMwMTAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_379d28f9a4504ca69894f2b9f180016c",
+      "statement": "Storage backends are selected by config: MemoryStorage is a mutex-guarded map, and GacheStorage wraps a ntsd/gache/v2 Gache instance with the expired hook disabled.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/storage/gache.go#L17-L23",
+          "version": "repo-lines-v1:sha256:196b781204652cb5e3fcaae9a4023d6b72196752ed60a024b31b703e4eee49f4:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2RhMjU1NmJmNjViOWUwZGRmMDI4ZmZjMjNkMjYwYjcxMjQwYTI5MzRkODRjYmI3YTQyYWI4MThiODQ5NzVmNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTAwNzZmZDkyOThjODgxMzQzZTY3OGE0ZDRmYzk0NjdjMDk1NDM1Nzc5NmY0YmY5MWFlOGY2YzI5NWFjZmZkMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzRmZGMxYzk1NjdjNGRiMjljODA4MTJhNDAwMGM1OTYyYTJhNTc1YTY0ZmJmZGEwOWU4YmI1OGM3NjkyMDFkNCJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.6.0",
+    "at": "2026-10-03T07:04:30.122Z"
+  }
+}

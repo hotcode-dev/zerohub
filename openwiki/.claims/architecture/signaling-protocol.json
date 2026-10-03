@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:6477e917ebd16ebc29316d54dc650816d62f55b2eb5937d0443858b05e0416d9",
+  "claims": [
+    {
+      "id": "claim_d5e17f0a4db84690bce7a57930a4a2e7",
+      "statement": "ClientMessage is a protobuf oneof envelope with four variants: send_offer_message (answer_peer_id, offer_sdp), send_answer_message (offer_peer_id, answer_sdp), send_ice_candidate_message (unused), and update_peer_metadata_message (unused in the server handler).",
+      "evidence": [
+        {
+          "resource": "repo://proto/zerohub/v1/client_message.proto#L43-L53",
+          "version": "repo-lines-v1:sha256:74a6fcd311d8574eb94320c2068756f51f2bd55da77f1ee131545a9f5cb550fe:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwMGE2ZjA4Mzk3YWVlZGE2MzJkODZiM2Q5ODI4OTJhODI0Yjk0ZmYxY2JjNWY1MTliNDlhOGRhN2I0NDc4OWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMyMzMzNDE2NTg0NjBkODYyMzQ3ZGI2YTdkNTA5NGJkZDFmYjU3ZWUxMjFiZGY4ZjEyM2Q3YTc4M2UzMTNlZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_64deb4b4043c498d9ceed2e2532e332f",
+      "statement": "ServerMessage is a protobuf oneof envelope with six variants: hub_info_message, peer_joined_message, peer_disconnected_message, offer_message, answer_message, and ice_candidate_message (not used yet).",
+      "evidence": [
+        {
+          "resource": "repo://proto/zerohub/v1/server_message.proto#L73-L87",
+          "version": "repo-lines-v1:sha256:087fc6034926678e02da5757c97e77ce62672d778f16a90c9b2ca5461422def9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3MzY1MDk5MDljYzlkZmFiNTgzZmNiOWIwZjRjZDdiOGMxZTQ5ZWY1OTJlOWVmNTc0MTcyNTM3YTg1YzExOWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0Y2MzNTlhMTU2ZGRjNTZkZDBjNTdhYjNmMGE4Zjc5NjhmYzAzYzI0ZGYzZjY4ODFhMjdlODY5MmI5OGNiMjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cd9255bb1caf4d07ac07cf885713f8d2",
+      "statement": "The server hub routes a client SendOfferMessage to the named answer peer and a SendAnswerMessage to the named offer peer; the server relays SDP verbatim without inspecting its content.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/hub/hub.go#L184-L191",
+          "version": "repo-lines-v1:sha256:020affac4224e63f4dcf132b934c0fa2ba1021bedfcfababc3728dd2e59b49d0:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDEwZGM0OWUxNWJiYzJiNWQxOTc1NDMxYmRlNTNjOTUyZjVkNmRhZTY1MjdlNTVmZTk1ZWYwNzgxNzEyMDdjMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjRlZmM0OTQxOGQyNmRjZjEyOWIyMmE2YWEyMTEwOGNlZWMzNzY3N2EzMmQwOGU5ZDVmZWUzNWRkYTY2YmI5ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTRiZmQ1MzlmMTVjZGVmNzdlNzE1YzAwOWE4NDMxNzZjNjdhODNlMzIyZjQ0NGM1YjIyZWFhY2JmNjM4Y2RhOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWJkN2RiMDVkMzMxMWRhMDZkZWQ4Y2U1NTQ0NTA5NzMwNTNiZmNjNjRlZGFjODBkNDIyZmJmNTZhMGQ2YWMxZSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_fc485b5fc851457b9c9fc2f63bbdf7e9",
+      "statement": "ICE candidates are not individually signaled; instead onicecandidate flushes the SDP to the server when candidate gathering finishes, and a per-peer waitIceCandidatesTimeout timer (default 2000 ms) flushes the SDP as a fallback so negotiation is not blocked indefinitely.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/zeroHub.ts#L645-L672",
+          "version": "repo-lines-v1:sha256:ced7da277dc4431887ff2954cc0a2a1138325311e4a950f078c2f5a01ebbc765:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEwZGU4YWE2ZTlkMTY3YWNlMzZiMjUwZDEzNmY1MjFiMjA5MGRiMzdkNDMyMzBlZThhZGFmMTdiMmM1YjkyNzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJlNzY0Mzk4NDA4MmNiNTE2NzFiNjVhZWQ3M2NkYTU5MDU3ODAyNmUzNjM3NDk5MWI5NDgyMjVjZjA4M2JiMjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNmZmMxMDA0OTliYzdkNTM0YjY4ZjhiYjEzNGMzZjVhMGNiMDkwNmZmNzBlMWVlODY0YjY2YTAyZjg3N2QwNWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhOTI5M2ZkODA1NGI2ZTQ3MjQ4MzczZjM5ZjRkZDc3ODAwMTA1ZWI3NTgzNDg2ODcyNTQyODVjZDEyODJiNzgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_fa365a6d78bb422f877ccfacdecfc391",
+      "statement": "When the server broadcasts a PeerDisconnectedMessage, the client fires the ZeroHubDisconnected status change, closes the peer's RTCPeerConnection, nulls its connection/ICE handlers, and removes the peer from the peers map.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/zeroHub.ts#L426-L432",
+          "version": "repo-lines-v1:sha256:505e599d4af32879f61a4261c431435b19c644b8f5fb7769a31a8cbaf3ebce44:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWI2MmY2MGQ4NTkwYTU3OWNmNDZmOGQ2NzM3OGM0YzU3MmI5NjJjZWNjZGI5MGM3YTVmN2I0MmI5NjA3ODJhNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzY5YTI4OTIyMjg4YjgzNDMxMDZlYTgzMmZhNGNjMmNhODcxMDMzMGI1OTM2NDI0OGNhOGE1ZDMwMzRkOWNkOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTdkODYzMmU1NGU5Mjk4YWJiOTU4NzI3ZTJkNTE0MDhhYmFmMTM2NjAzNTM3OTEwMTQwYWJmNjViMzBhYjYxMyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_af1687183859403b8088b23626e9132e",
+      "statement": "hub.HandleMessage's read loop terminates on read errors, non-binary frames, or protobuf unmarshal failures, and exits with the peer torn down.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/hub/hub.go#L167-L182",
+          "version": "repo-lines-v1:sha256:896ccfc84ae76dfe3667242a85e191998cf20cabb93b3b73e93951c73c5a29d5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwZDliMjlhZGNlMTk5N2M1YWQ1OGEzYzI4MTQ3MTc1ZmFiMDg0YTlkMWJmMWZlZDcwNTdjMzY0NjViN2NmNGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0ZWZjNDk0MThkMjZkY2YxMjliMjJhNmFhMjExMDhjZWVjMzc2NzdhMzJkMDhlOWQ1ZmVlMzVkZGE2NmJiOWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjExMmQwOWE1MDQ3ZmRlYmM0NDJmMDg4YWZhYmZkNTJjYmVmM2YxMmQ1ZTY4Njg5YjU2ZGEzOTg1NDc3ZTA4ODciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIxZTYwNTY3NGI0OTZhNDE1NGRhNDU4OThiYzk3MGIwMmUxMjI2OTc5OGI3MjcxOTZjMmFhOWQwYzY1MzczNDgifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.6.0",
+    "at": "2026-10-03T07:04:30.122Z"
+  }
+}
