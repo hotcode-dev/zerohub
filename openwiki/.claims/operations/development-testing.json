@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:2a436f36a857c38d352d3564ad76340fb9bdced5fe60cf02681520a653364b13",
+  "claims": [
+    {
+      "id": "claim_9b265d25c6ea46ffb5cbb15403e8cd85",
+      "statement": "The root Makefile orchestrates the monorepo: server-serve/server-serve-2 run the Go server on 8080/8081, e2e-test kills ports and spawns two servers before running the test suite, test-all runs server-test + e2e-test in parallel, and proto-gen runs api-linter then regenerates both TypeScript and Go protobuf.",
+      "evidence": [
+        {
+          "resource": "repo://Makefile",
+          "version": "repo-file-v1:sha256:88e925b14c788e4c2ea098abc8791c1ad186880027ba73f56c3c7d6ff0fcb8ab"
+        }
+      ]
+    },
+    {
+      "id": "claim_d9c1ee8559294b719213c5451dfe2a33",
+      "statement": "The Zero Factory precommit gate runs three deterministic phases: format (gofmt -s -w on server, npm run fix on client), build (go build ./... && go vet ./... then npm run tsc), and test (go test -count=1 ./... on server); the Playwright E2E suite is skipped because it is infra-dependent.",
+      "evidence": [
+        {
+          "resource": "repo://.zerofactory/precommit.sh",
+          "version": "repo-file-v1:sha256:f4210703a74a4956cceca464c3acd31deb6d2011c7f8ffa803b68b27acea6130"
+        }
+      ]
+    },
+    {
+      "id": "claim_2c2b053579db481d9a8df809eea0b057",
+      "statement": "The E2E test/ suite is driven via `cd test && npm test`, whose pretest step runs build:harness to produce test/dist/harness.js via esbuild; invoking npx playwright test directly makes every spec fail with ENOENT on dist/harness.js.",
+      "evidence": [
+        {
+          "resource": "repo://test/package.json",
+          "version": "repo-file-v1:sha256:aa5ef4ffd27ea9bf35fc78935586f0d9b6ad69ce097366af6459238e1a9e1b30"
+        }
+      ]
+    },
+    {
+      "id": "claim_a58eb140059949838704f3282a0ef24b",
+      "statement": "The Playwright config runs serially (fullyParallel: false) with a 10s timeout on Google Chrome only, and under CI=1 sets workers to 1 and retries to 2.",
+      "evidence": [
+        {
+          "resource": "repo://test/playwright.config.ts",
+          "version": "repo-file-v1:sha256:a0e5f4efc37af724af8cac7f4d0361ca73b7db18f0ea5844ce679e874d5d6758"
+        }
+      ]
+    },
+    {
+      "id": "claim_19c3b6b7d25e40c3a73e4aba0cab3d39",
+      "statement": "The precommit script is self-sufficient: if client/node_modules is absent it installs on demand via npm ci (fallback npm install), and it uses plain go test rather than go test -race because the race detector is unusable on the ARM host.",
+      "evidence": [
+        {
+          "resource": "repo://.zerofactory/precommit.sh",
+          "version": "repo-file-v1:sha256:f4210703a74a4956cceca464c3acd31deb6d2011c7f8ffa803b68b27acea6130"
+        }
+      ]
+    },
+    {
+      "id": "claim_1f713f7134ef4c8da189ffcd8455562c",
+      "statement": "Protobuf changes are made only in proto/zerohub/v1/*.proto and regenerated with make proto-gen, which wipes the generated client/src/proto and server/pkg/proto dirs and invokes protoc with protoc-gen-ts_proto and protoc-gen-go in a single pass.",
+      "evidence": [
+        {
+          "resource": "repo://Makefile",
+          "version": "repo-file-v1:sha256:88e925b14c788e4c2ea098abc8791c1ad186880027ba73f56c3c7d6ff0fcb8ab"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.6.0",
+    "at": "2026-10-03T07:04:30.122Z"
+  }
+}
