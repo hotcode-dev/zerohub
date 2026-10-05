@@ -64,7 +64,7 @@ async function prepareUnitHarnessPage(page: Page) {
 function unitHarnessPath(): string {
   return path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
-    "../dist/unit-harness.js"
+    "../dist/unit-harness.js",
   );
 }
 
@@ -76,42 +76,39 @@ function unitHarnessPath(): string {
  */
 function driver(page: Page) {
   return {
-    createClient: () =>
-      page.evaluate(() => ZeroHubUnitHarness.createClient()),
+    createClient: () => page.evaluate(() => ZeroHubUnitHarness.createClient()),
     sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
       page.evaluate(
         ([id, myPeerId, peerIds]) =>
           ZeroHubUnitHarness.sendHubInfo(id, myPeerId, peerIds),
-        [id, myPeerId, peerIds] as const
+        [id, myPeerId, peerIds] as const,
       ),
     sendPeerJoined: (id: number, peerId: string) =>
       page.evaluate(
         ([id, peerId]) => ZeroHubUnitHarness.sendPeerJoined(id, peerId),
-        [id, peerId] as const
+        [id, peerId] as const,
       ),
     setConnectionState: (id: number, peerId: string, state: string) =>
       page.evaluate(
         ([id, peerId, state]) =>
           ZeroHubUnitHarness.setConnectionState(id, peerId, state),
-        [id, peerId, state] as const
+        [id, peerId, state] as const,
       ),
     setIceState: (id: number, peerId: string, state: string) =>
       page.evaluate(
-        ([id, peerId, state]) => ZeroHubUnitHarness.setIceState(id, peerId, state),
-        [id, peerId, state] as const
+        ([id, peerId, state]) =>
+          ZeroHubUnitHarness.setIceState(id, peerId, state),
+        [id, peerId, state] as const,
       ),
     getPeer: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.getPeer(id, peerId),
-        [id, peerId] as const
-      ),
+      page.evaluate(([id, peerId]) => ZeroHubUnitHarness.getPeer(id, peerId), [
+        id,
+        peerId,
+      ] as const),
     connectionsCreated: (id: number) =>
       page.evaluate((id) => ZeroHubUnitHarness.connectionsCreated(id), id),
     referencedConnectionIds: (id: number) =>
-      page.evaluate(
-        (id) => ZeroHubUnitHarness.referencedConnectionIds(id),
-        id
-      ),
+      page.evaluate((id) => ZeroHubUnitHarness.referencedConnectionIds(id), id),
   };
 }
 
@@ -133,7 +130,7 @@ test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
     await h.sendPeerJoined(id, "3");
     const joined = (await h.getPeer(id, "3")) as PeerSnapshot;
 
-    test.step("mid-session joiner has both state handlers wired", () => {
+    await test.step("mid-session joiner has both state handlers wired", () => {
       expect(joined.status).toBe("pending");
       expect(joined.rtcConnId).toBeGreaterThan(0);
       expect(joined.hasConnStateHandler).toBe(true);
@@ -142,7 +139,7 @@ test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
       expect(joined.restartIceCount).toBe(0);
     });
 
-    test.step("simulating iceConnectionState === 'failed' triggers restartIce()", async () => {
+    await test.step("simulating iceConnectionState === 'failed' triggers restartIce()", async () => {
       const after = (await h.setIceState(id, "3", "failed")) as PeerSnapshot;
       expect(after.restartIceCount).toBe(1);
       // Non-failed ICE states must not restart.
@@ -150,8 +147,12 @@ test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
       expect(idle.restartIceCount).toBe(1);
     });
 
-    test.step("simulating connectionState 'connected' transitions the peer", async () => {
-      const after = (await h.setConnectionState(id, "3", "connected")) as PeerSnapshot;
+    await test.step("simulating connectionState 'connected' transitions the peer", async () => {
+      const after = (await h.setConnectionState(
+        id,
+        "3",
+        "connected",
+      )) as PeerSnapshot;
       expect(after.status).toBe("connected");
     });
   });
@@ -172,7 +173,7 @@ test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
     // Pending — this makes the bug (status reset) observable.
     await h.setConnectionState(id, "2", "connected");
     expect(((await h.getPeer(id, "2")) as PeerSnapshot).status).toBe(
-      "connected"
+      "connected",
     );
 
     const connsBefore = await h.connectionsCreated(id);
@@ -181,7 +182,7 @@ test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
     // Re-broadcast / re-delivery of the join signal for the SAME peer.
     await h.sendPeerJoined(id, "2");
 
-    test.step("the existing RTCPeerConnection is reused (not replaced/leaked)", async () => {
+    await test.step("the existing RTCPeerConnection is reused (not replaced/leaked)", async () => {
       const after = (await h.getPeer(id, "2")) as PeerSnapshot;
       // Same live connection object — not a brand-new one.
       expect(after.rtcConnId).toBe(beforeConnId);
@@ -191,14 +192,14 @@ test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
       expect(await h.referencedConnectionIds(id)).toEqual(refsBefore);
     });
 
-    test.step("the established peer is NOT reset back to Pending", async () => {
+    await test.step("the established peer is NOT reset back to Pending", async () => {
       // The fix prevents overwriting: status stays "connected".
       expect(((await h.getPeer(id, "2")) as PeerSnapshot).status).toBe(
-        "connected"
+        "connected",
       );
     });
 
-    test.step("a genuinely new peer still gets a fresh connection", async () => {
+    await test.step("a genuinely new peer still gets a fresh connection", async () => {
       await h.sendPeerJoined(id, "9");
       const fresh = (await h.getPeer(id, "9")) as PeerSnapshot;
       expect(fresh.status).toBe("pending");
@@ -224,12 +225,12 @@ test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
     await h.sendPeerJoined(bId, "2");
     const viaJoined = (await h.getPeer(bId, "2")) as PeerSnapshot;
 
-    test.step("both paths start the peer as Pending", () => {
+    await test.step("both paths start the peer as Pending", () => {
       expect(viaHub.status).toBe("pending");
       expect(viaJoined.status).toBe("pending");
     });
 
-    test.step("both paths wire both connection-state handlers", () => {
+    await test.step("both paths wire both connection-state handlers", () => {
       const wiring = (s: PeerSnapshot) => ({
         hasConnStateHandler: s.hasConnStateHandler,
         hasIceHandler: s.hasIceHandler,
@@ -242,7 +243,7 @@ test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
       expect(wiring(viaJoined)).toEqual(wiring(viaHub));
     });
 
-    test.step("both paths trigger restartIce() identically on ICE failure", async () => {
+    await test.step("both paths trigger restartIce() identically on ICE failure", async () => {
       const a = (await h.setIceState(aId, "2", "failed")) as PeerSnapshot;
       const b = (await h.setIceState(bId, "2", "failed")) as PeerSnapshot;
       expect(a.restartIceCount).toBe(1);

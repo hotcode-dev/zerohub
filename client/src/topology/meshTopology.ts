@@ -104,6 +104,9 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
         break;
       case PeerStatus.ZeroHubDisconnected:
         break;
+      case PeerStatus.Disconnected:
+        // local client has torn down all peer connections; nothing to do
+        break;
     }
   }
 }

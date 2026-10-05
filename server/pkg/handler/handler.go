@@ -7,11 +7,11 @@
 // The server supports four hub "modes", each backed by a separate
 // ZeroHub instance:
 //
-//	- Static (/v1/hubs/*): Hub ID is supplied by the client (query parameter `id`).
-//	- Random (/v1/random-hubs/*): Server generates a unique ID when creating.
-//	- IP (/v1/ip-hubs/*): Hub ID is derived from the client's remote IP address.
-//	- Permanent (/v1/permanent-hubs/*): Hub never expires; used for always-on
-//	  collaboration rooms.
+//   - Static (/v1/hubs/*): Hub ID is supplied by the client (query parameter `id`).
+//   - Random (/v1/random-hubs/*): Server generates a unique ID when creating.
+//   - IP (/v1/ip-hubs/*): Hub ID is derived from the client's remote IP address.
+//   - Permanent (/v1/permanent-hubs/*): Hub never expires; used for always-on
+//     collaboration rooms.
 //
 // Routing Summary
 //
@@ -38,7 +38,10 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
+	"net"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -103,6 +106,11 @@ type handler struct {
 	address string
 	// clientSecret is the client secret to use for authentication.
 	clientSecret string
+	// trustProxy gates whether the rate limiter may derive its per-client
+	// key from the X-Forwarded-For header. It must only be true behind a
+	// reverse proxy that sanitizes that header; otherwise the socket peer
+	// address is used, which is unspoofable.
+	trustProxy bool
 
 	// migrateMu guards the migration state below. The two fields must be
 	// consistent as a unit: isMigrating must imply backupHost != "".
@@ -127,9 +135,13 @@ type handler struct {
 
 // NewHandler create a new handler
 func NewHandler(cfg *config.Config, zeroHub zerohub.ZeroHub, zeroHubRandom zerohub.ZeroHub, zeroHubIP zerohub.ZeroHub, zerohubPermanent zerohub.ZeroHub) (Handler, error) {
+	if cfg.App.ClientSecret == "" {
+		return nil, fmt.Errorf("APP_CLIENT_SECRET must not be empty: an empty secret would leave admin endpoints open to unauthenticated requests")
+	}
 	return &handler{
 		address:          fmt.Sprintf("%s:%s", cfg.App.Host, cfg.App.Port),
 		clientSecret:     cfg.App.ClientSecret,
+		trustProxy:       cfg.App.TrustProxy,
 		zeroHub:          zeroHub,
 		zeroHubRandom:    zeroHubRandom,
 		zeroHubIP:        zeroHubIP,
@@ -137,13 +149,78 @@ func NewHandler(cfg *config.Config, zeroHub zerohub.ZeroHub, zeroHubRandom zeroh
 	}, nil
 }
 
-func (h *handler) Serve() error {
-	// TODO: replace limiter with non library rate limiter
-	rate, err := limiter.NewRateFromFormatted("60-M") // 60 requests per minute.
+// newRateLimitMiddleware builds the rate-limit middleware for Serve.
+//
+// By default the limiter is keyed by the TCP socket peer address, which a
+// client cannot spoof. When trustProxy is set (the server sits behind a
+// reverse proxy that strips or replaces the X-Forwarded-For and X-Real-IP
+// headers), the limiter additionally trusts those headers via
+// limiter.WithTrustForwardHeader. Never enable trustProxy in front of an
+// untrusted hop: any client could then forge a fresh "IP" per request and
+// defeat the per-client DoS throttle.
+// TODO: replace limiter with non library rate limiter
+func newRateLimitMiddleware(trustProxy bool) (*limiterFasthttp.Middleware, error) {
+	// 60 requests per minute.
+	rate, err := limiter.NewRateFromFormatted("60-M")
 	if err != nil {
-		return fmt.Errorf("error to create rate: %w", err)
+		return nil, fmt.Errorf("error to create rate: %w", err)
 	}
-	rateLimitMiddleware := limiterFasthttp.NewMiddleware(limiter.New(limiterMemory.NewStore(), rate, limiter.WithTrustForwardHeader(true)))
+	options := []limiter.Option{}
+	if trustProxy {
+		options = append(options, limiter.WithTrustForwardHeader(true))
+	}
+	limiterInstance := limiter.New(limiterMemory.NewStore(), rate, options...)
+	// Key by the socket peer by default; behind a trusted proxy the
+	// sanitized X-Forwarded-For header identifies the real client instead.
+	keyGetter := remoteAddrKey
+	if trustProxy {
+		keyGetter = forwardedIPKey
+	}
+	return limiterFasthttp.NewMiddleware(limiterInstance, limiterFasthttp.WithKeyGetter(keyGetter)), nil
+}
+
+// remoteAddrKey returns the unspoofable TCP socket peer address.
+func remoteAddrKey(ctx *fasthttp.RequestCtx) string {
+	return ctx.RemoteAddr().String()
+}
+
+// forwardedIPKey returns the client IP recorded by a trusted reverse proxy
+// in X-Forwarded-For, falling back to the socket peer address when the header
+// is absent or unparseable.
+//
+// SECURITY: only safe behind a proxy that strips or replaces X-Forwarded-For.
+// The key here must agree with the limiter's own IP parsing
+// (limiter.WithTrustForwardHeader) so the per-client budget is applied per
+// real client, never per socket.
+func forwardedIPKey(ctx *fasthttp.RequestCtx) string {
+	if ip := ipFromForwardedHeader(ctx); ip != "" {
+		return ip
+	}
+	return remoteAddrKey(ctx)
+}
+
+// ipFromForwardedHeader returns the first (outermost) IP in the
+// X-Forwarded-For header, or "" when the header is absent or unparseable.
+func ipFromForwardedHeader(ctx *fasthttp.RequestCtx) string {
+	xff := string(ctx.Request.Header.Peek("X-Forwarded-For"))
+	if xff == "" {
+		return ""
+	}
+	// Take the first (outermost) entry; a well-behaved proxy puts the real
+	// client address there and appends hop addresses after it.
+	first := strings.SplitN(xff, ",", 2)[0]
+	ip := net.ParseIP(strings.TrimSpace(first))
+	if ip == nil {
+		return ""
+	}
+	return ip.String()
+}
+
+func (h *handler) Serve() error {
+	rateLimitMiddleware, err := newRateLimitMiddleware(h.trustProxy)
+	if err != nil {
+		return err
+	}
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
 		log.Debug().Msgf("%s %s", ctx.Method(), ctx.RequestURI())
@@ -183,6 +260,11 @@ func (h *handler) Serve() error {
 			return
 		}
 		if err != nil {
+			// CheckAdminAuth already wrote the 401 response; do not
+			// overwrite it with a generic 503.
+			if errors.Is(err, errAdminUnauthorized) {
+				return
+			}
 			log.Error().Err(err)
 			ctx.Error(err.Error(), fasthttp.StatusServiceUnavailable)
 		}
