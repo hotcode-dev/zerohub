@@ -119,6 +119,24 @@ function getPeerStatusLog(componentId: string) {
 }
 
 /**
+ * Returns a snapshot of the client's ZeroHub host state: the current host,
+ * its index in the `hosts` list, and whether the WebSocket is open. Used to
+ * verify failover advanced exactly one host on a single connection failure.
+ */
+function getClientInfo(componentId: string) {
+  const instance = instances.get(componentId);
+  if (!instance) {
+    return null;
+  }
+  const { client } = instance;
+  return {
+    host: client.host,
+    hostIndex: client.hostIndex,
+    wsOpen: client.ws?.readyState === WebSocket.OPEN,
+  };
+}
+
+/**
  * Closes the client's WebSocket connection to simulate a peer leaving the hub.
  * The server will broadcast a `PeerDisconnectedMessage` to the remaining peers.
  */
@@ -325,6 +343,7 @@ const ZeroHubHarness = {
   getDataChannelStatus,
   getPeersInfo,
   getPeerStatusLog,
+  getClientInfo,
   closeWs,
 };
 

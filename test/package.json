@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build:harness": "node ./scripts/build-harness.mjs",
-    "pretest": "npm run build:harness",
+    "pretest": "npm run build:harness && node ./scripts/build-unit-harness.mjs",
     "test": "playwright test"
   },
   "license": "MIT",
