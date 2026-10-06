@@ -302,49 +302,6 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
-   * Creates a peer in the `peers` map with a new `RTCPeerConnection` and the
-   * standard WebRTC event handlers (connection state tracking and
-   * ICE-failure recovery via `restartIce()`), then fires the initial pending
-   * status change.
-   *
-   * Shared by both peer-creation paths (initial peers from `HubInfoMessage`
-   * and mid-session joiners from `PeerJoinedMessage`) so every peer gets
-   * identical ICE-failure recovery behavior.
-   *
-   * @param peerId - The ID of the peer to create.
-   * @param metadata - The peer's metadata.
-   * @param joinTime - The timestamp when the peer joined the hub.
-   */
-  private createPeer(peerId: string, metadata: PeerMetadata, joinTime: Date) {
-    const newPeer = new Peer<PeerMetadata>(
-      peerId,
-      PeerStatus.Pending,
-      metadata,
-      joinTime,
-      new RTCPeerConnection(this.config.rtcConfig)
-    );
-    newPeer.rtcConn.onconnectionstatechange = (ev) => {
-      this.logger.log("onconnectionstatechange", ev);
-      if (newPeer.rtcConn.connectionState === "connected") {
-        this.updatePeerStatus(peerId, PeerStatus.Connected);
-      } else if (newPeer.rtcConn.connectionState === "disconnected") {
-        this.updatePeerStatus(peerId, PeerStatus.WebRTCDisconnected);
-      }
-    };
-    newPeer.rtcConn.oniceconnectionstatechange = (ev) => {
-      // https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation#explicit_restartice_method_added
-      this.logger.log("oniceconnectionstatechange", ev);
-      if (newPeer.rtcConn.iceConnectionState === "failed") {
-        newPeer.rtcConn.restartIce();
-      }
-    };
-
-    this.peers[peerId] = newPeer;
-
-    this.updatePeerStatus(peerId, PeerStatus.Pending);
-  }
-
-  /**
    * Handles a message received from the ZeroHub server.
    *
    * @param serverMessage - The message received from the server.
@@ -368,11 +325,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       // new peer if not exists
       for (const peer of hubInfoMsg.peers) {
         if (peer.id !== this.myPeerId && !(peer.id in this.peers)) {
-          this.createPeer(
-            peer.id,
-            (peer.metadata ? JSON.parse(peer.metadata) : {}) as PeerMetadata,
-            peer.joinTime || new Date()
-          );
+          this.addPeer(peer.id, peer.metadata, peer.joinTime);
         }
       }
     } else if (serverMessage.offerMessage) {
@@ -407,11 +360,13 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         return;
       }
 
-      this.createPeer(
-        peer.id,
-        (peer.metadata ? JSON.parse(peer.metadata) : {}) as PeerMetadata,
-        peer.joinTime || new Date()
-      );
+      // The early-return guard above already skips peers we already have
+      // (re-broadcast join signals, peers established via the initial hubInfo
+      // path); the self-check mirrors the hubInfoMessage branch so we never
+      // register ourselves.
+      if (peer.id !== this.myPeerId) {
+        this.addPeer(peer.id, peer.metadata, peer.joinTime);
+      }
     } else if (serverMessage.peerDisconnectedMessage) {
       const peerId = serverMessage.peerDisconnectedMessage.peerId;
       const peer = this.peers[peerId];
@@ -431,6 +386,60 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         delete this.peers[peerId];
       }
     }
+  }
+
+  /**
+   * Builds and registers a new peer with a fresh `RTCPeerConnection` and wires
+   * both connection-state handlers, then marks the peer as `PeerStatus.Pending`.
+   *
+   * Both the initial-join (`hubInfoMessage`) and mid-session-join
+   * (`peerJoinedMessage`) paths funnel through this helper so the wiring can
+   * never diverge again:
+   *
+   * 1. `onconnectionstatechange` transitions the peer to `Connected` or
+   *    `WebRTCDisconnected` as the underlying WebRTC connection state changes.
+   * 2. `oniceconnectionstatechange` calls `restartIce()` when ICE reaches the
+   *    `failed` state, recovering from NAT rebinding and candidate expiry.
+   *
+   * The caller is responsible for dedup guards (i.e. only invoking this when
+   * the peer does not already exist) so an established peer is never
+   * overwritten and its live `RTCPeerConnection` is not leaked.
+   *
+   * @param peerId - The unique identifier of the peer.
+   * @param metadata - The raw JSON-encoded peer metadata from the server.
+   * @param joinTime - The timestamp when the peer joined.
+   */
+  private addPeer(
+    peerId: string,
+    metadata: string,
+    joinTime: Date | undefined
+  ): void {
+    const newPeer = new Peer<PeerMetadata>(
+      peerId,
+      PeerStatus.Pending,
+      (metadata ? JSON.parse(metadata) : {}) as PeerMetadata,
+      joinTime || new Date(),
+      new RTCPeerConnection(this.config.rtcConfig)
+    );
+    newPeer.rtcConn.onconnectionstatechange = (ev) => {
+      this.logger.log("onconnectionstatechange", ev);
+      if (newPeer.rtcConn.connectionState === "connected") {
+        this.updatePeerStatus(peerId, PeerStatus.Connected);
+      } else if (newPeer.rtcConn.connectionState === "disconnected") {
+        this.updatePeerStatus(peerId, PeerStatus.WebRTCDisconnected);
+      }
+    };
+    newPeer.rtcConn.oniceconnectionstatechange = (ev) => {
+      // https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation#explicit_restartice_method_added
+      this.logger.log("onconnectionstatechange", ev);
+      if (newPeer.rtcConn.iceConnectionState === "failed") {
+        newPeer.rtcConn.restartIce();
+      }
+    };
+
+    this.peers[peerId] = newPeer;
+
+    this.updatePeerStatus(peerId, PeerStatus.Pending);
   }
 
   /**
