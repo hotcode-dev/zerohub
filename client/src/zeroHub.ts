@@ -466,6 +466,11 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       this.handleZeroHubMessage(serverMessage);
     };
     // TODO: wait for error, close, or open to response promise result
+    // Per RFC 6455, a network failure fires `error` and then `close` with
+    // code 1006. Reconnection is handled solely in `onclose`: calling
+    // `reconnect` here too would advance `hostIndex` twice for a single
+    // failure (skipping two hosts) and orphan the first reconnection's
+    // WebSocket while the client has already moved on.
     this.ws.onerror = (event) => {
       this.logger.error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`);
       if (this.onZeroHubError) {
@@ -473,7 +478,6 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
           Error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`)
         );
       }
-      this.reconnect(url);
     };
     this.ws.onclose = (event) => {
       // See https://www.rfc-editor.org/rfc/rfc6455#section-7.4.1
