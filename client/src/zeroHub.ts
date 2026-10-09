@@ -298,6 +298,11 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       })
       .catch((err) => {
         this.logger.error(`zero hub reconnecting failed: ${err}`);
+        if (this.onZeroHubError) {
+          this.onZeroHubError(
+            err instanceof Error ? err : new Error(String(err))
+          );
+        }
       });
   }
 
