@@ -16,6 +16,7 @@
  * network, no server, no real WebRTC stack.
  */
 import { ZeroHubClient, LogLevel, Topology } from "../../client/src/index";
+import { getWS } from "../../client/src/utils";
 
 let instanceSeq = 0;
 const createdInstances: MockRTCPeerConnection[] = [];
@@ -176,6 +177,11 @@ function snapshotPeer(client: ZeroHubClient, peerId: string): PeerSnapshot {
 }
 
 const ZeroHubUnitHarness = {
+  /** Pure helper under test: return the WS URL for a host + tls flag. */
+  wsUrl(host: string, tls: boolean): string {
+    return getWS(host, tls);
+  },
+
   /** Create a client with a no-op topology; returns an opaque numeric id. */
   createClient(): number {
     const id = ++nextClientId;
