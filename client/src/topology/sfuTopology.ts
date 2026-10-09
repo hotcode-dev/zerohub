@@ -2,6 +2,7 @@ import { Peer } from "../peer";
 import { PeerStatus } from "../types";
 import { ZeroHubClient } from "../zeroHub";
 import { Topology } from ".";
+import { setupDataChannel, setupMediaChannel } from "./peerSetup";
 
 /**
  * SFUTopology implements a Selective Forwarding Unit topology.
@@ -177,76 +178,26 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
 
     this.zeroHub.logger.log(`SFU: Setting up connection to client ${peer.id}`);
 
-    // SFU creates the offer (acts as offerer)
-    const isOfferer = true;
-
-    // Set up data channel if configured
-    if (this.zeroHub.config.dataChannelConfig?.onDataChannel) {
-      if (isOfferer) {
-        const numberOfChannels =
-          this.zeroHub.config.dataChannelConfig.numberOfChannels || 1;
-        for (let i = 0; i < numberOfChannels; i++) {
-          const dataChannel = peer.rtcConn.createDataChannel(
-            i.toString(),
-            this.zeroHub.config.dataChannelConfig.rtcDataChannelInit
-          );
-          this.zeroHub.config.dataChannelConfig.onDataChannel(
-            peer,
-            dataChannel,
-            true
-          );
-        }
-      } else {
-        peer.rtcConn.ondatachannel = (event) => {
-          if (event.channel) {
-            this.zeroHub?.config.dataChannelConfig?.onDataChannel(
-              peer,
-              event.channel,
-              false
-            );
-          }
-        };
-      }
-    }
+    // SFU creates the offer, so it is always the offerer
+    setupDataChannel(this.zeroHub.config, peer, true);
 
     // Set up media channels if configured
-    if (this.zeroHub.config.mediaChannelConfig) {
-      // SFU can optionally send its own stream
-      if (this.zeroHub.config.mediaChannelConfig.localStream) {
-        this.zeroHub.config.mediaChannelConfig.localStream
-          .getTracks()
-          .forEach((track) => {
-            if (this.zeroHub?.config.mediaChannelConfig?.localStream) {
-              peer.rtcConn.addTrack(
-                track,
-                this.zeroHub.config.mediaChannelConfig.localStream
-              );
-            }
-          });
-      }
-
-      // Receive streams from the client
-      peer.rtcConn.ontrack = (event) => {
-        this.zeroHub?.logger.log(`SFU: Received track from client ${peer.id}`);
-        this.zeroHub?.config.mediaChannelConfig?.onTrack?.(peer, event);
-
-        // In a full SFU implementation, you would forward this track to other peers here
-        // For now, we just notify via the callback
-      };
-    }
+    setupMediaChannel(this.zeroHub.config, peer, undefined, (logger, peer) => {
+      // In a full SFU implementation, you would forward this track to other peers here
+      // For now, we just notify via the callback
+      logger.log(`SFU: Received track from client ${peer.id}`);
+    });
 
     // Send the offer
-    if (isOfferer) {
-      this.zeroHub
-        .sendOffer(peer.id, this.zeroHub.config.rtcOfferOptions)
-        .catch((err) => {
-          this.zeroHub?.logger.error(
-            "SFU: Failed to send offer to client",
-            peer.id,
-            err
-          );
-        });
-    }
+    this.zeroHub
+      .sendOffer(peer.id, this.zeroHub.config.rtcOfferOptions)
+      .catch((err) => {
+        this.zeroHub?.logger.error(
+          "SFU: Failed to send offer to client",
+          peer.id,
+          err
+        );
+      });
   }
 
   /**
@@ -263,45 +214,19 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
     this.zeroHub.logger.log("Client: Connecting to SFU");
 
     // Client is the answerer (SFU creates the offer)
-
-    // Set up data channel if configured
-    if (this.zeroHub.config.dataChannelConfig?.onDataChannel) {
-      // Wait for the data channel from the SFU
-      peer.rtcConn.ondatachannel = (event) => {
-        if (event.channel) {
-          this.zeroHub?.logger.log("Client: Received data channel from SFU");
-          this.zeroHub?.config.dataChannelConfig?.onDataChannel(
-            peer,
-            event.channel,
-            false
-          );
-        }
-      };
-    }
+    setupDataChannel(this.zeroHub.config, peer, false);
 
     // Set up media channels if configured
-    if (this.zeroHub.config.mediaChannelConfig) {
-      // Send local stream to the SFU
-      if (this.zeroHub.config.mediaChannelConfig.localStream) {
-        this.zeroHub.config.mediaChannelConfig.localStream
-          .getTracks()
-          .forEach((track) => {
-            if (this.zeroHub?.config.mediaChannelConfig?.localStream) {
-              this.zeroHub.logger.log("Client: Sending track to SFU");
-              peer.rtcConn.addTrack(
-                track,
-                this.zeroHub.config.mediaChannelConfig.localStream
-              );
-            }
-          });
+    setupMediaChannel(
+      this.zeroHub.config,
+      peer,
+      (logger, peer) => {
+        logger.log(`Client: Sending track to SFU for peer ${peer.id}`);
+      },
+      (logger, peer) => {
+        logger.log(`Client: Received track from SFU for peer ${peer.id}`);
       }
-
-      // Receive forwarded streams from the SFU
-      peer.rtcConn.ontrack = (event) => {
-        this.zeroHub?.logger.log("Client: Received track from SFU");
-        this.zeroHub?.config.mediaChannelConfig?.onTrack?.(peer, event);
-      };
-    }
+    );
 
     // Client waits for offer from SFU (doesn't initiate)
     // The offer will come through the signaling and trigger autoAnswer
