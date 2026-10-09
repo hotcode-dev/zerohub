@@ -148,6 +148,55 @@ function closeWs(componentId: string) {
   instance.client.ws?.close();
 }
 
+/**
+ * Simulates an abnormal connection drop (RFC 6455 code 1006) by invoking the
+ * WebSocket's `onclose` handler directly with a 1006 event. A 1006 cannot be
+ * produced by the local endpoint's own `ws.close()` (that reports 1000/1001),
+ * but the handler's behavior — `reconnect()` — is the same either way.
+ */
+function triggerAbnormalClose(componentId: string) {
+  const instance = instances.get(componentId);
+  if (!instance) {
+    throw new Error(`Unknown component: ${componentId}`);
+  }
+  const ws = instance.client.ws;
+  if (!ws || typeof ws.onclose !== "function") {
+    throw new Error(`no open WebSocket for component: ${componentId}`);
+  }
+  (
+    ws.onclose as (event: { code: number; reason: string }) => void
+  )({ code: 1006, reason: "" });
+}
+
+/**
+ * `onZeroHubError` messages captured per component by `captureZeroHubErrors`.
+ */
+const zeroHubErrorLog = new Map<string, string[]>();
+
+/**
+ * Replaces the client's `onZeroHubError` with a spy that records every error
+ * message (readable via `getZeroHubErrorMessages`). Lets a test assert the
+ * terminal "all hosts exhausted" reconnect failure reaches the callback.
+ */
+function captureZeroHubErrors(componentId: string) {
+  const instance = instances.get(componentId);
+  if (!instance) {
+    throw new Error(`Unknown component: ${componentId}`);
+  }
+  const messages: string[] = [];
+  zeroHubErrorLog.set(componentId, messages);
+  const previous = instance.client.onZeroHubError;
+  instance.client.onZeroHubError = (error: Error) => {
+    messages.push(error.message);
+    previous?.(error);
+  };
+}
+
+/** Returns the `onZeroHubError` messages captured for a component. */
+function getZeroHubErrorMessages(componentId: string) {
+  return zeroHubErrorLog.get(componentId) ?? [];
+}
+
 function ensureRoot(): HTMLElement {
   const existing = document.getElementById("zero-hub-test-root");
   if (existing) {
@@ -345,6 +394,9 @@ const ZeroHubHarness = {
   getPeerStatusLog,
   getClientInfo,
   closeWs,
+  triggerAbnormalClose,
+  captureZeroHubErrors,
+  getZeroHubErrorMessages,
 };
 
 declare global {

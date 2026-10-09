@@ -291,6 +291,30 @@ const ZeroHubUnitHarness = {
       .filter((conn): conn is MockRTCPeerConnection => conn !== undefined)
       .map((conn) => conn.__instanceId);
   },
+
+  /**
+   * Triggers a terminal reconnect failure: the client's single host is
+   * already the last one, so `reconnect()` exhausts the host list and its
+   * rejection must surface through `onZeroHubError`. Returns the captured
+   * error messages after the promise rejection has settled.
+   */
+  async triggerAllHostsExhausted(id: number): Promise<string[]> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const log: string[] = [];
+    entry.client.onZeroHubError = (error) => {
+      log.push(error.message);
+    };
+    entry.client.reconnect(new URL("ws://localhost:1"));
+    // The `getZeroHubBackupHost()` rejection flows through the
+    // `.then().catch()` chain in microtasks; flush them before reading.
+    for (let i = 0; i < 5; i += 1) {
+      await Promise.resolve();
+    }
+    return log;
+  },
 };
 
 declare global {

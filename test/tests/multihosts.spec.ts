@@ -24,7 +24,11 @@ async function getClientInfo(
   );
 }
 
-test("multi hosts", async ({ page }) => {
+test("multi hosts", async ({ page }, testInfo) => {
+  // Each client's first host (`this_is_bad_host`) fails with a DNS
+  // resolution error that takes several seconds, and three clients are
+  // created in sequence — the default 10s timeout is not enough.
+  testInfo.setTimeout(60 * 1000);
   await prepareHarnessPage(page);
   let hubId: string = "";
   const componentId = uuidv4();
@@ -127,4 +131,75 @@ test("multi hosts", async ({ page }) => {
       page.getByTestId(getJoinPeerStatusTestId(componentId)).first()
     ).toContainText("connected");
   });
+
+  await test.step(
+    "terminal all-hosts-exhausted failure surfaces via onZeroHubError",
+    async () => {
+      // A fresh client whose FIRST host is unreachable: the initial
+      // connection fails and failover advances to the good last host, where
+      // hub creation succeeds. `reconnect()` now has no backup host left, so
+      // `getZeroHubBackupHost()` rejects and that terminal, unrecoverable
+      // failure must reach the public `onZeroHubError` callback
+      // (previously it was only logged and silently swallowed).
+      const terminalComponentId = uuidv4();
+      await page.evaluate(
+        ({ componentId: id, badHost, goodHost }) => {
+          window.ZeroHubHarness.createHub({
+            testName: "multi hosts, all hosts exhausted",
+            zeroHubHosts: [badHost, goodHost],
+            componentId: id,
+          });
+        },
+        {
+          componentId: terminalComponentId,
+          badHost: zeroHubBadHost,
+          goodHost: zeroHubGoodHost,
+        }
+      );
+
+      await test.step("initial connection succeeds after one host skip", async () => {
+        const hubIdLoc = page
+          .getByTestId(getCreateHubTestId(terminalComponentId))
+          .first();
+        // The first host (`this_is_bad_host`) is unreachable, so the initial
+        // connection must fail (network error -> code 1006) before failover
+        // advances to the good host. DNS resolution failure can take several
+        // seconds, so give this assertion a generous expect-timeout.
+        await expect(hubIdLoc, { timeout: 30_000 }).toHaveText(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+        );
+        const info = await getClientInfo(page, terminalComponentId);
+        expect(info.hostIndex).toBe(1);
+      });
+
+      // Spy on `onZeroHubError` while the connection is still healthy, so
+      // the only error that matters for the assertion is the terminal one.
+      await page.evaluate(({ componentId: id }) => {
+        window.ZeroHubHarness.captureZeroHubErrors(id);
+      }, { componentId: terminalComponentId });
+
+      // Simulate an abnormal connection drop (code 1006), which triggers
+      // `reconnect()`: the client is already on its last host, so the
+      // terminal rejection must surface through `onZeroHubError`.
+      await page.evaluate(({ componentId: id }) => {
+        window.ZeroHubHarness.triggerAbnormalClose(id);
+      }, { componentId: terminalComponentId });
+
+      await expect
+        .poll(
+          async () => {
+            const messages = await page.evaluate(
+              ({ componentId: id }) =>
+                window.ZeroHubHarness.getZeroHubErrorMessages(id),
+              { componentId: terminalComponentId }
+            );
+            return messages.length > 0 ? messages[messages.length - 1] : null;
+          },
+          { timeout: 10_000 }
+        )
+        .toBe(
+          "all ZeroHub hosts are not working, please check the ZeroHub hosts"
+        );
+    }
+  );
 });
