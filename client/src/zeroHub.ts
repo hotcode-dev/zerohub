@@ -643,10 +643,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       );
     }
 
-    rtcOfferOptions = Object.assign(
-      this.config.rtcOfferOptions,
-      rtcOfferOptions
-    );
+    rtcOfferOptions = {
+      ...this.config.rtcOfferOptions,
+      ...rtcOfferOptions,
+    };
     const peer = this.peers[peerId];
     if (!peer) {
       this.logger.error(`send offer error: peer id ${peerId} not found`);
@@ -710,10 +710,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       );
     }
 
-    rtcOfferOptions = Object.assign(
-      this.config.rtcOfferOptions,
-      rtcOfferOptions
-    );
+    rtcOfferOptions = {
+      ...this.config.rtcOfferOptions,
+      ...rtcOfferOptions,
+    };
 
     const peer = this.peers[peerId];
     if (!peer) {

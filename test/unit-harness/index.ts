@@ -93,8 +93,19 @@ class MockRTCPeerConnection {
     return { label };
   }
 
-  createOffer(): Promise<{ type: string; sdp: string }> {
+  /** Options last passed to `createOffer` (inspectable by specs). */
+  public __lastCreateOfferOptions: RTCOfferOptions | null = null;
+  /** Options last passed to `createAnswer` (inspectable by specs). */
+  public __lastCreateAnswerOptions: RTCOfferOptions | null = null;
+
+  createOffer(options?: RTCOfferOptions): Promise<{ type: string; sdp: string }> {
+    this.__lastCreateOfferOptions = options ?? null;
     return Promise.resolve({ type: "offer", sdp: "" });
+  }
+
+  createAnswer(options?: RTCOfferOptions): Promise<{ type: string; sdp: string }> {
+    this.__lastCreateAnswerOptions = options ?? null;
+    return Promise.resolve({ type: "answer", sdp: "" });
   }
 
   setLocalDescription(): Promise<void> {
@@ -278,6 +289,60 @@ const ZeroHubUnitHarness = {
       throw new Error(`no client ${id}`);
     }
     return createdInstances.length - entry.createdAtConnSeq;
+  },
+
+  /**
+   * Installs a minimal WebSocket stub on `client.ws` so `sendOffer` /
+   * `sendAnswer` pass their "connected" guard without a real socket.
+   */
+  stubSocket(id: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.client.ws = { close() {}, send() {} } as unknown as WebSocket;
+  },
+
+  /**
+   * Drives `client.sendOffer(peerId, options)` end-to-end (mock
+   * RTCPeerConnection) and returns the shared config options plus the options
+   * the mock connection actually received, so specs can assert the merge
+   * neither mutated the shared config nor lost a key the config set.
+   */
+  async invokeSendOffer(
+    id: number,
+    peerId: string,
+    options?: { offerToReceiveAudio?: boolean; offerToReceiveVideo?: boolean }
+  ): Promise<{ configOptions: string; sentOptions: string }> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    await entry.client.sendOffer(peerId, options ?? {});
+    const conn = asMock(entry.client.peers[peerId]?.rtcConn);
+    return {
+      configOptions: JSON.stringify(entry.client.config.rtcOfferOptions),
+      sentOptions: JSON.stringify(conn?.__lastCreateOfferOptions ?? null),
+    };
+  },
+
+  /** `invokeSendOffer` twin for `client.sendAnswer`. */
+  async invokeSendAnswer(
+    id: number,
+    peerId: string,
+    offerSdp: string,
+    options?: { offerToReceiveAudio?: boolean; offerToReceiveVideo?: boolean }
+  ): Promise<{ configOptions: string; sentOptions: string }> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    await entry.client.sendAnswer(peerId, offerSdp, options ?? {});
+    const conn = asMock(entry.client.peers[peerId]?.rtcConn);
+    return {
+      configOptions: JSON.stringify(entry.client.config.rtcOfferOptions),
+      sentOptions: JSON.stringify(conn?.__lastCreateAnswerOptions ?? null),
+    };
   },
 
   /** Instance ids of the connections currently referenced by this client. */
