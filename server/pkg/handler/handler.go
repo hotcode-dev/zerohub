@@ -111,6 +111,9 @@ type handler struct {
 	// reverse proxy that sanitizes that header; otherwise the socket peer
 	// address is used, which is unspoofable.
 	trustProxy bool
+	// domain is the configured APP_DOMAIN; it gates which request Origins
+	// may receive Access-Control-Allow-Origin on /v1/status (see Status).
+	domain string
 
 	// migrateMu guards the migration state below. The two fields must be
 	// consistent as a unit: isMigrating must imply backupHost != "".
@@ -142,6 +145,7 @@ func NewHandler(cfg *config.Config, zeroHub zerohub.ZeroHub, zeroHubRandom zeroh
 		address:          fmt.Sprintf("%s:%s", cfg.App.Host, cfg.App.Port),
 		clientSecret:     cfg.App.ClientSecret,
 		trustProxy:       cfg.App.TrustProxy,
+		domain:           cfg.App.Domain,
 		zeroHub:          zeroHub,
 		zeroHubRandom:    zeroHubRandom,
 		zeroHubIP:        zeroHubIP,
