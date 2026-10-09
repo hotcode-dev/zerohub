@@ -1,4 +1,4 @@
-import { Logger } from "../logger";
+import { ZeroHubLogger } from "../logger";
 import { Peer } from "../peer";
 import { Config } from "../types";
 
@@ -16,11 +16,14 @@ import { Config } from "../types";
  * @param zeroHubConfig - The ZeroHub client configuration.
  * @param peer - The peer whose RTCPeerConnection is set up.
  * @param isOfferer - True if this peer creates the offer (and the channels).
+ * @param logOnDataChannel - Optional answerer-only callback invoked when an
+ *   incoming data channel is received, used by topologies that log it.
  */
 export function setupDataChannel<T>(
   zeroHubConfig: Config<T>,
   peer: Peer<T>,
-  isOfferer: boolean
+  isOfferer: boolean,
+  logOnDataChannel?: () => void
 ): void {
   if (!zeroHubConfig.dataChannelConfig?.onDataChannel) {
     return;
@@ -43,6 +46,7 @@ export function setupDataChannel<T>(
     // handle incoming data channel
     peer.rtcConn.ondatachannel = (event) => {
       if (event.channel) {
+        logOnDataChannel?.();
         onDataChannel(peer, event.channel, false);
       }
     };
@@ -58,6 +62,9 @@ export function setupDataChannel<T>(
  *
  * @param zeroHubConfig - The ZeroHub client configuration.
  * @param peer - The peer whose RTCPeerConnection is set up.
+ * @param logger - The log-level-gated logger to log through. Call sites must
+ *   pass the gated `ZeroHubClient.logger` (a `ZeroHubLogger`), not the raw
+ *   user `config.logger`, so log-level gating is preserved.
  * @param logOnAddTrack - Optional callback invoked before each local
  *   `addTrack` call, used by topologies that log outgoing tracks.
  * @param logOnTrack - Optional callback invoked before every `onTrack`
@@ -66,8 +73,9 @@ export function setupDataChannel<T>(
 export function setupMediaChannel<T>(
   zeroHubConfig: Config<T>,
   peer: Peer<T>,
-  logOnAddTrack?: (logger: Logger, peer: Peer<T>) => void,
-  logOnTrack?: (logger: Logger, peer: Peer<T>) => void
+  logger: ZeroHubLogger,
+  logOnAddTrack?: (logger: ZeroHubLogger, peer: Peer<T>) => void,
+  logOnTrack?: (logger: ZeroHubLogger, peer: Peer<T>) => void
 ): void {
   const mediaChannelConfig = zeroHubConfig.mediaChannelConfig;
   if (!mediaChannelConfig) {
@@ -78,14 +86,14 @@ export function setupMediaChannel<T>(
   const localStream = mediaChannelConfig.localStream;
   if (localStream) {
     localStream.getTracks().forEach((track) => {
-      logOnAddTrack?.(zeroHubConfig.logger, peer);
+      logOnAddTrack?.(logger, peer);
       peer.rtcConn.addTrack(track, localStream);
     });
   }
 
   // handle incoming media stream
   peer.rtcConn.ontrack = (event) => {
-    logOnTrack?.(zeroHubConfig.logger, peer);
+    logOnTrack?.(logger, peer);
     mediaChannelConfig.onTrack(peer, event);
   };
 }

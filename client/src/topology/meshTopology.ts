@@ -41,7 +41,7 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
         setupDataChannel(this.zeroHub.config, peer, isOfferer);
 
         // if media channel config is provided, set up media stream handling
-        setupMediaChannel(this.zeroHub.config, peer);
+        setupMediaChannel(this.zeroHub.config, peer, this.zeroHub.logger);
 
         // offer should send after create data channel and add track
         if (isOfferer) {

@@ -182,11 +182,17 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
     setupDataChannel(this.zeroHub.config, peer, true);
 
     // Set up media channels if configured
-    setupMediaChannel(this.zeroHub.config, peer, undefined, (logger, peer) => {
-      // In a full SFU implementation, you would forward this track to other peers here
-      // For now, we just notify via the callback
-      logger.log(`SFU: Received track from client ${peer.id}`);
-    });
+    setupMediaChannel(
+      this.zeroHub.config,
+      peer,
+      this.zeroHub.logger,
+      undefined,
+      (logger, peer) => {
+        // In a full SFU implementation, you would forward this track to other peers here
+        // For now, we just notify via the callback
+        logger.log(`SFU: Received track from client ${peer.id}`);
+      }
+    );
 
     // Send the offer
     this.zeroHub
@@ -214,12 +220,15 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
     this.zeroHub.logger.log("Client: Connecting to SFU");
 
     // Client is the answerer (SFU creates the offer)
-    setupDataChannel(this.zeroHub.config, peer, false);
+    setupDataChannel(this.zeroHub.config, peer, false, () => {
+      this.zeroHub?.logger.log("Client: Received data channel from SFU");
+    });
 
     // Set up media channels if configured
     setupMediaChannel(
       this.zeroHub.config,
       peer,
+      this.zeroHub.logger,
       (logger, peer) => {
         logger.log(`Client: Sending track to SFU for peer ${peer.id}`);
       },
