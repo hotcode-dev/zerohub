@@ -15,7 +15,14 @@
  * Only the pure message-handling / peer-wiring logic is exercised here — no
  * network, no server, no real WebRTC stack.
  */
-import { ZeroHubClient, LogLevel, Topology } from "../../client/src/index";
+import {
+  ZeroHubClient,
+  LogLevel,
+  Topology,
+  SFUTopology,
+  Peer,
+  PeerStatus,
+} from "../../client/src/index";
 import { getWS } from "../../client/src/utils";
 
 let instanceSeq = 0;
@@ -203,6 +210,43 @@ const ZeroHubUnitHarness = {
     );
     clients.set(id, { client, createdAtConnSeq: createdInstances.length });
     return id;
+  },
+
+  /**
+   * Exercises `SFUTopology`'s SFU election directly: builds a client whose
+   * topology is a default `SFUTopology`, points `myPeerId` / `peers` at the
+   * given IDs, then returns what the topology's `getSFUPeerId()` /
+   * `isSFU()` (private, reached via a type cast — erased at bundle time)
+   * elect. This avoids needing a real WebSocket / WebRTC connection.
+   */
+  sfuElection(myPeerId: string, peerIds: string[]): {
+    sfuPeerId: string | undefined;
+    iAmSFU: boolean;
+  } {
+    const client = new ZeroHubClient(
+      ["localhost:1"],
+      { logLevel: LogLevel.None },
+      new SFUTopology()
+    );
+    client.myPeerId = myPeerId;
+    const peers: typeof client.peers = {};
+    for (const pid of peerIds) {
+      if (pid !== myPeerId) {
+        peers[pid] = new Peer(
+          pid,
+          PeerStatus.Pending,
+          {},
+          new Date(),
+          new MockRTCPeerConnection() as unknown as RTCPeerConnection
+        );
+      }
+    }
+    client.peers = peers;
+    const sfu = client.topology as unknown as SFUTopology;
+    return {
+      sfuPeerId: (sfu as unknown as { getSFUPeerId(): string | undefined }).getSFUPeerId(),
+      iAmSFU: (sfu as unknown as { isSFU(): boolean }).isSFU(),
+    };
   },
 
   /** Feed a `hubInfoMessage` (initial-join path) with the given peer ids. */
