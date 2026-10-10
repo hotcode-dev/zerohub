@@ -307,6 +307,20 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
+   * Parses JSON metadata received from the server, returning `fallback`
+   * (with a warning logged) when the value is missing or malformed. The
+   * server stores and broadcasts metadata from unvalidated query params,
+   * so a bad value must never take down the message dispatcher.
+   */
+  private safeParseJson<T>(raw: string | undefined, fallback: T): T {
+    const value = safeParseJson(raw, fallback);
+    if (value === fallback) {
+      this.logger.warn("invalid JSON metadata from server, using fallback");
+    }
+    return value;
+  }
+
+  /**
    * Handles a message received from the ZeroHub server.
    *
    * @param serverMessage - The message received from the server.
@@ -318,19 +332,47 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       this.myPeerId = hubInfoMsg.myPeerId;
       this.hubInfo = {
         id: hubInfoMsg.id,
-        metadata: (hubInfoMsg.hubMetadata
-          ? JSON.parse(hubInfoMsg.hubMetadata)
-          : {}) as HubMetadata,
+        metadata: this.safeParseJson(hubInfoMsg.hubMetadata, {}) as HubMetadata,
         createTime: hubInfoMsg.createTime || new Date(),
       };
       if (this.onHubInfo) {
         this.onHubInfo(this.hubInfo);
       }
 
-      // new peer if not exists
+      // Reconcile the peer roster against the authoritative roster carried in
+      // the hubInfo. The server sends the full current roster on every
+      // (re)join, so it is the source of truth for who is in the hub right
+      // now: add any peers we don't have yet, and prune any we still hold
+      // that are no longer listed (and are not ourselves).
+      const roster = new Set(hubInfoMsg.peers.map((peer) => peer.id));
+
+      // Add any roster peer we don't have yet.
       for (const peer of hubInfoMsg.peers) {
         if (peer.id !== this.myPeerId && !(peer.id in this.peers)) {
           this.addPeer(peer.id, peer.metadata, peer.joinTime);
+        }
+      }
+
+      // Prune any peer we still hold that is absent from the roster. This is
+      // the auto-reconnect path: `connectToZeroHub` does not reset
+      // `this.peers`, and a peer that left the hub while the WebSocket was
+      // down is never told about via `peerDisconnectedMessage` (the server
+      // only broadcasts it while we are connected). Without this pass such a
+      // peer lingers as a stale `Peer` holding a live, unclosed
+      // `RTCPeerConnection` — a resource leak and a source of duplicate/stale
+      // WebRTC state for the same logical peer that grows with each transient
+      // reconnect over a long-lived session. No transient-state guard is
+      // needed: every peer in `this.peers` was learned from the server (the
+      // hubInfo roster or a `peerJoinedMessage`, which the server only
+      // broadcasts after registering the peer), so a peer missing from this
+      // roster cannot be one that is merely registering.
+      for (const peerId of Object.keys(this.peers)) {
+        if (peerId !== this.myPeerId && !roster.has(peerId)) {
+          this.logger.warn(
+            `pruning stale peer ${peerId} not in the hub roster`
+          );
+          this.updatePeerStatus(peerId, PeerStatus.ZeroHubDisconnected);
+          this.removePeer(peerId);
         }
       }
     } else if (serverMessage.offerMessage) {
@@ -374,23 +416,44 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       }
     } else if (serverMessage.peerDisconnectedMessage) {
       const peerId = serverMessage.peerDisconnectedMessage.peerId;
-      const peer = this.peers[peerId];
 
       // Fire the status change first so topology and user callbacks observe
-      // the peer while it is still registered, then tear it down: close the
-      // underlying WebRTC connection (releasing its ICE agents, sockets, and
-      // timers) and remove the peer from the map so long-lived sessions don't
-      // accumulate stale peers. A future client.disconnect() (tracked in
-      // zf-551649a1) must close remaining peers' rtcConns the same way.
+      // the peer while it is still registered, then tear it down via the
+      // shared removePeer path. (updatePeerStatus also logs when the peer is
+      // unknown, which is the expected signal for a duplicate/delayed
+      // disconnect broadcast.)
       this.updatePeerStatus(peerId, PeerStatus.ZeroHubDisconnected);
 
-      if (peer) {
-        peer.close();
-        peer.rtcConn.onconnectionstatechange = null;
-        peer.rtcConn.oniceconnectionstatechange = null;
-        delete this.peers[peerId];
-      }
+      this.removePeer(peerId);
     }
+  }
+
+  /**
+   * Tears down a peer that is no longer in the hub: closes the underlying
+   * WebRTC connection (releasing its ICE agents, sockets, and timers), nulls
+   * the state handlers so a stale `oniceconnectionstatechange` cannot call
+   * `restartIce()` on a closing connection (InvalidStateError), and removes
+   * the peer from the map. Safe to call for a peer already gone from the
+   * map: it is a no-op.
+   *
+   * Shared by the `peerDisconnectedMessage` broadcast path, the
+   * `hubInfoMessage` roster-reconciliation path (pruning peers absent from
+   * the authoritative roster after a reconnect), and `disconnect()`, so the
+   * teardown semantics can never diverge again. The caller is responsible
+   * for emitting the appropriate status first (`updatePeerStatus`), since
+   * the status differs per path.
+   *
+   * @param peerId - The ID of the peer to tear down.
+   */
+  private removePeer(peerId: string): void {
+    const peer = this.peers[peerId];
+    if (!peer) {
+      return;
+    }
+    peer.close();
+    peer.rtcConn.onconnectionstatechange = null;
+    peer.rtcConn.oniceconnectionstatechange = null;
+    delete this.peers[peerId];
   }
 
   /**
@@ -422,7 +485,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     const newPeer = new Peer<PeerMetadata>(
       peerId,
       PeerStatus.Pending,
-      (metadata ? JSON.parse(metadata) : {}) as PeerMetadata,
+      this.safeParseJson(metadata, {}) as PeerMetadata,
       joinTime || new Date(),
       new RTCPeerConnection(this.config.rtcConfig)
     );
@@ -551,17 +614,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     }
 
     // transition peers to disconnected and close their WebRTC connections
+    // (removePeer also removes them from the map, so the map is empty when
+    // the loop finishes)
     for (const peerId of Object.keys(this.peers)) {
       this.updatePeerStatus(peerId, PeerStatus.Disconnected);
-      const peer = this.peers[peerId];
-      // Mirror the peerDisconnectedMessage teardown: null the WebRTC
-      // handlers around close() so a stale oniceconnectionstatechange
-      // cannot call restartIce() on a closing connection (InvalidStateError).
-      peer.close();
-      peer.rtcConn.onconnectionstatechange = null;
-      peer.rtcConn.oniceconnectionstatechange = null;
+      this.removePeer(peerId);
     }
-    this.peers = {};
   }
 
   /**
@@ -925,5 +983,20 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     }
 
     this.connectToZeroHub(url);
+  }
+}
+
+/**
+ * Safely parses a JSON string. Returns `fallback` when `raw` is empty or
+ * when parsing fails, instead of throwing.
+ */
+function safeParseJson<T>(raw: string | undefined, fallback: T): T {
+  if (!raw) {
+    return fallback;
+  }
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
   }
 }

@@ -157,6 +157,8 @@ interface PeerSnapshot {
 interface ClientState {
   client: ZeroHubClient;
   createdAtConnSeq: number;
+  /** Status transitions captured by `recordStatusChanges`. */
+  statusLog?: Array<{ peerId: string; status: string }>;
 }
 
 const clients = new Map<number, ClientState>();
@@ -283,6 +285,154 @@ const ZeroHubUnitHarness = {
     } as never);
   },
 
+  /**
+   * Feed a `hubInfoMessage` with custom raw metadata strings, capturing
+   * whether the dispatcher threw. Regression surface for the P0 crash where a
+   * malformed `hubMetadata` (or peer metadata) `JSON.parse`-threw inside
+   * `handleZeroHubMessage` and wedged the socket's message loop.
+   */
+  feedHubInfoWithMetadata(
+    id: number,
+    myPeerId: string,
+    peerIds: string[],
+    hubMetadata: string,
+    peerMetadata: string
+  ): {
+    threw: boolean;
+    errorMessage: string;
+    parsedHubMetadata: string;
+    parsedPeerMetadata: string;
+  } {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    let threw = false;
+    let errorMessage = "";
+    try {
+      entry.client.handleZeroHubMessage({
+        hubInfoMessage: {
+          id: "hub-1",
+          createTime: new Date(),
+          myPeerId,
+          hubMetadata,
+          peers: peerIds.map((pid) => ({
+            id: pid,
+            metadata: peerMetadata,
+            joinTime: undefined,
+          })),
+        },
+      } as never);
+    } catch (err) {
+      threw = true;
+      errorMessage = err instanceof Error ? err.message : String(err);
+    }
+    const firstPeer = peerIds[0];
+    return {
+      threw,
+      errorMessage,
+      parsedHubMetadata: JSON.stringify(
+        entry.client.hubInfo?.metadata ?? null
+      ),
+      parsedPeerMetadata: firstPeer
+        ? JSON.stringify(entry.client.peers[firstPeer]?.metadata ?? null)
+        : "null",
+    };
+  },
+
+  /**
+   * Feed a `peerJoinedMessage` with a custom raw peer-metadata string,
+   * capturing whether the dispatcher threw.
+   */
+  feedPeerJoinedWithMetadata(
+    id: number,
+    peerId: string,
+    peerMetadata: string
+  ): {
+    threw: boolean;
+    errorMessage: string;
+    parsedPeerMetadata: string | null;
+    peerStatus: string | null;
+  } {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    let threw = false;
+    let errorMessage = "";
+    try {
+      entry.client.handleZeroHubMessage({
+        peerJoinedMessage: {
+          peer: { id: peerId, metadata: peerMetadata, joinTime: undefined },
+        },
+      } as never);
+    } catch (err) {
+      threw = true;
+      errorMessage = err instanceof Error ? err.message : String(err);
+    }
+    const peer = entry.client.peers[peerId];
+    return {
+      threw,
+      errorMessage,
+      parsedPeerMetadata: peer ? JSON.stringify(peer.metadata) : null,
+      peerStatus: peer ? peer.status : null,
+    };
+  },
+
+  /**
+   * Poison-then-recover drill: feed a malformed `hubInfoMessage` (the
+   * dispatcher-crash vector), then a valid `peerJoinedMessage`, and report
+   * whether the dispatcher survived AND still processed the follow-up. This is
+   * the end-to-end proof that a bad payload no longer wedges the socket.
+   */
+  survivesPoisonedHubInfo(
+    id: number,
+    myPeerId: string,
+    followUpPeerId: string
+  ): {
+    firstThrew: boolean;
+    followUpThrew: boolean;
+    peerRegistered: boolean;
+  } {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    let firstThrew = false;
+    try {
+      entry.client.handleZeroHubMessage({
+        hubInfoMessage: {
+          id: "hub-1",
+          createTime: new Date(),
+          myPeerId,
+          hubMetadata: "not-json",
+          peers: [],
+        },
+      } as never);
+    } catch {
+      firstThrew = true;
+    }
+    let followUpThrew = false;
+    try {
+      entry.client.handleZeroHubMessage({
+        peerJoinedMessage: {
+          peer: {
+            id: followUpPeerId,
+            metadata: "",
+            joinTime: undefined,
+          },
+        },
+      } as never);
+    } catch {
+      followUpThrew = true;
+    }
+    return {
+      firstThrew,
+      followUpThrew,
+      peerRegistered: followUpPeerId in entry.client.peers,
+    };
+  },
+
   /** Simulate a connection-state change on a peer's live connection. */
   setConnectionState(id: number, peerId: string, state: string): PeerSnapshot {
     const entry = clients.get(id);
@@ -324,6 +474,78 @@ const ZeroHubUnitHarness = {
       throw new Error(`no client ${id}`);
     }
     return snapshotPeer(entry.client, peerId);
+  },
+
+  /** The IDs of the peers currently in the client's `peers` map. */
+  peerIds(id: number): string[] {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return Object.keys(entry.client.peers);
+  },
+
+  /**
+   * Snapshot a mock connection by its instance id (from `PeerSnapshot.rtcConnId`),
+   * still valid after the owning peer has been removed from the map — lets
+   * specs assert a pruned peer's `RTCPeerConnection` was closed and its
+   * handlers nulled.
+   */
+  getConnection(id: number, connId: number): {
+    closed: boolean;
+    hasConnStateHandler: boolean;
+    hasIceHandler: boolean;
+  } {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const conn = createdInstances.find((c) => c.__instanceId === connId);
+    if (!conn) {
+      return { closed: false, hasConnStateHandler: false, hasIceHandler: false };
+    }
+    return {
+      closed: conn.__closed,
+      hasConnStateHandler: typeof conn.onconnectionstatechange === "function",
+      hasIceHandler: typeof conn.oniceconnectionstatechange === "function",
+    };
+  },
+
+  /**
+   * Starts recording `onPeerStatusChange` callbacks on the client so specs
+   * can assert which status transitions the reconcile pass emitted.
+   */
+  recordStatusChanges(id: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.statusLog = [];
+    entry.client.onPeerStatusChange = (peer) => {
+      entry.statusLog?.push({ peerId: peer.id, status: peer.status });
+    };
+  },
+
+  /** Returns and clears the status transitions recorded by `recordStatusChanges`. */
+  drainStatusChanges(
+    id: number
+  ): Array<{ peerId: string; status: string }> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const log = entry.statusLog ?? [];
+    entry.statusLog = [];
+    return log;
+  },
+
+  /** The client's current `myPeerId` (or null if unset). */
+  getMyPeerId(id: number): string | null {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return entry.client.myPeerId ?? null;
   },
 
   /** Number of mock RTCPeerConnection instances created for this client. */

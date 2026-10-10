@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"crypto/subtle"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -24,7 +25,11 @@ func (h *handler) CheckAdminAuth(ctx *fasthttp.RequestCtx) error {
 		_ = h.Response(ctx, fasthttp.StatusUnauthorized, map[string]string{"error": "invalid authorization code"})
 		return errAdminUnauthorized
 	}
-	if string(authCode) != h.clientSecret {
+	// ConstantTimeCompare avoids the timing side-channel of a plain string
+	// comparison: it always runs in time proportional to the longer input
+	// instead of bailing out on the first mismatched byte. A length mismatch
+	// returns 0, which is the desired rejection here.
+	if subtle.ConstantTimeCompare(authCode, []byte(h.clientSecret)) != 1 {
 		log.Error().Err(fmt.Errorf("invalid authorization code")).Send()
 		_ = h.Response(ctx, fasthttp.StatusUnauthorized, map[string]string{"error": "invalid authorization code"})
 		return errAdminUnauthorized

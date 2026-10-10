@@ -20,6 +20,12 @@ var upgrader = websocket.FastHTTPUpgrader{
 
 // Upgrade upgrades the connection to a websocket connection.
 func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.Hub) error {
+	// Reject a malformed `peerMetadata` before the handshake: once upgraded,
+	// the connection is a websocket and no HTTP status can be sent.
+	if !validJSONQueryParam(ctx, "peerMetadata") {
+		return h.rejectInvalidJSONParam(ctx, "peerMetadata")
+	}
+
 	err := upgrader.Upgrade(ctx, func(ws *websocket.Conn) {
 		peer := peer.NewPeer(ws, string(ctx.QueryArgs().Peek("peerMetadata")))
 		hub.AddPeer(peer)

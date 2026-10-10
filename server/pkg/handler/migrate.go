@@ -2,6 +2,9 @@ package handler
 
 import (
 	"fmt"
+	"net/url"
+	"strconv"
+	"strings"
 
 	"github.com/fasthttp/websocket"
 	"github.com/rs/zerolog/log"
@@ -28,6 +31,14 @@ func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
 	backupHost := string(ctx.QueryArgs().Peek("host"))
 	if backupHost == "" {
 		return fmt.Errorf("new release host not found")
+	}
+	if err := validateBackupHost(backupHost); err != nil {
+		// Invalid redirect target: refuse without touching any state, so a
+		// typo or an attacker holding APP_CLIENT_SECRET cannot send every
+		// client reconnecting to a garbage or malicious host.
+		log.Error().Err(err).Send()
+		_ = h.Response(ctx, fasthttp.StatusBadRequest, map[string]string{"error": err.Error()})
+		return nil
 	}
 
 	// Set backupHost before flipping isMigrating so that a reader who
@@ -84,4 +95,47 @@ func (h *handler) getBackupHost() string {
 	h.migrateMu.RLock()
 	defer h.migrateMu.RUnlock()
 	return h.backupHost
+}
+
+// validateBackupHost enforces that the migrate host is a bare host or
+// host:port — no scheme, no "//", no path/query/fragment, no userinfo, no
+// whitespace or control characters, and a port in 0..65535. The client
+// embeds the stored value verbatim as ws(s)://<host> on reconnect, so a full
+// URL, "evil.com//8080", or any other malformed target would break the
+// connection or redirect clients to an arbitrary host.
+func validateBackupHost(host string) error {
+	u, err := url.Parse("http://" + host)
+	if err != nil {
+		return fmt.Errorf("invalid host %q: %w", host, err)
+	}
+	// Any component besides the host (scheme, "//" path, query, fragment,
+	// userinfo such as "user@host") makes this not a bare host.
+	if u.Opaque != "" || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		return fmt.Errorf("invalid host %q: must be a bare host or host:port", host)
+	}
+	// u.Hostname()/u.Port() only split on the colon after a valid host or
+	// bracketed IPv6 literal; a bare "::1" or "::1:8080" parses its first
+	// group as the port and fails here.
+	hostname, port := u.Hostname(), u.Port()
+	if port != "" {
+		p, err := strconv.Atoi(port)
+		if err != nil || p > 65535 {
+			return fmt.Errorf("invalid host %q: port out of range", host)
+		}
+	}
+	// Canonical form: host for a plain name, [ipv6] for a literal, plus
+	// :port when present. Rejecting any host that doesn't round-trip keeps
+	// the stored value exactly what the client can use in ws(s)://<host>.
+	// (url.Parse already rejects whitespace and control characters.)
+	canonical := hostname
+	if strings.Contains(hostname, ":") {
+		canonical = "[" + hostname + "]"
+	}
+	if port != "" {
+		canonical += ":" + port
+	}
+	if u.Host != canonical {
+		return fmt.Errorf("invalid host %q: must be a bare host or host:port", host)
+	}
+	return nil
 }

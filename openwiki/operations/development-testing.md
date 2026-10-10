@@ -3,9 +3,6 @@ type: operations
 title: Development & Testing
 description: Build, test, and protobuf-generation workflows for the ZeroHub monorepo — Makefile targets, server unit tests, the dual-server Playwright E2E harness, and repository conventions and known pitfalls.
 tags: [testing, e2e, playwright, build, protobuf, conventions, makefile]
-verified:
-  - by: openwiki/0.6.0
-    at: 2026-10-03T07:04:30.122Z
 sources:
   - id: openwiki-source-9ab161c6e9774cf771b19ced
     resource: repo://.zerofactory/precommit.sh
@@ -15,7 +12,10 @@ sources:
     resource: repo://test/package.json
   - id: openwiki-source-bb910847e63080c9ced0e830
     resource: repo://test/playwright.config.ts
-generated: { by: "hermes", at: "2026-10-03T07:04:30.122Z" }
+generated: { by: "hermes", at: "2026-10-10T01:28:37.861Z" }
+verified:
+  - by: openwiki/0.6.0
+    at: 2026-10-10T01:28:37.861Z
 ---
 
 # Development & Testing
@@ -91,16 +91,22 @@ that instantiate the real `ZeroHubClient` (imported via relative path
   state, keyed by `componentId`. Tests drive it via `page.evaluate`.
 - **Specs** (`test/tests/`): `connnect.spec.ts` (create/join + peer status),
   `data-channel.spec.ts`, `concurrent.spec.ts`, `disconnect.spec.ts`,
-  `migrate.spec.ts`, `multihosts.spec.ts`.
+  `migrate.spec.ts`, `multihosts.spec.ts`, plus five `unit-*.spec.ts` specs
+  (e.g. `unit-sfu-election.spec.ts`, `unit-reconnect-error.spec.ts`) that
+  exercise client internals in a Playwright page through the unit harness
+  (`test/unit-harness/index.ts`) with a mocked `RTCPeerConnection` — no live
+  server or real WebRTC stack required.
 - **Dual servers**: `make e2e-test` spins up two signaling servers on 8080 and
   8081 (for multi-host/failover tests), sleeps 3s, then runs the suite.
 
 ### Running the E2E suite correctly
 
 - **Always run via `cd test && npm test`**, not `npx playwright test`
-  directly. `npm test` triggers `pretest` → `build:harness`, which builds
-  `test/dist/harness.js` via esbuild. Invoking Playwright directly makes every
-  spec fail with ENOENT on `dist/harness.js`.
+  directly. `npm test` triggers `pretest`, which runs `build:harness`
+  (`test/dist/harness.js` for the E2E Svelte harness) **and**
+  `build-unit-harness` (`test/dist/unit-harness.js` for the unit specs), both
+  via esbuild. Invoking Playwright directly makes the specs fail with ENOENT
+  on their missing harness bundles.
 - The Playwright config runs **serially** (`fullyParallel: false`) with a 10s
   per-test timeout, Chrome-only. Under `CI=1` it sets `workers: 1` and
   `retries: 2`.

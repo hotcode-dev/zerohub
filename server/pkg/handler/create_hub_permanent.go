@@ -11,6 +11,9 @@ import (
 
 // CreateHubPermanent creates a new permanent hub.
 // It requires admin authentication.
+// The create goes through the atomic CreateHubIfAbsent primitive, so
+// concurrent requests for the same ID never orphan a hub: exactly one wins
+// and the rest get 409.
 func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
 	if h.isMigrating.Load() {
 		return h.ForwardMigrate(ctx)
@@ -21,6 +24,10 @@ func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
 	}
 
 	hubId := string(ctx.QueryArgs().Peek("id"))
+	if !validJSONQueryParam(ctx, "hubMetadata") {
+		return h.rejectInvalidJSONParam(ctx, "hubMetadata")
+	}
+
 	newHub, err := h.zeroHubPermanent.CreateHubIfAbsent(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), true)
 	if err != nil {
 		if errors.Is(err, zerohub.ErrHubAlreadyExists) {

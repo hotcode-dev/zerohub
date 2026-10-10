@@ -200,6 +200,99 @@ func TestMigrateUnauthorized(t *testing.T) {
 	}
 }
 
+// TestMigrateInvalidHost verifies that a malformed `host` param is rejected
+// with 400 and mutates no migration state: the value is stored verbatim and
+// reflected to /v1/status and the 1001 close reason, so an unvalidated
+// target (scheme, "//", whitespace, control chars, out-of-range port, ...)
+// would redirect every client to a garbage or malicious host.
+func TestMigrateInvalidHost(t *testing.T) {
+	h := newTestHandler()
+	addr := startTestServer(t, h)
+	client := newTestClient(addr)
+	withAuth := map[string]string{"Authorization": adminAuthHeader()}
+
+	// Fragment values are omitted: SetRequestURI strips the fragment
+	// client-side, so "evil.com#frag" never reaches the server as such.
+	invalid := []string{
+		"http://evil.com",       // scheme prefix
+		"HTTP://EVIL.COM",       // scheme prefix, uppercase
+		"//evil.com",            // leading //
+		"new.example.com//8080", // embedded //
+		"new%20example.com",     // percent-encoded whitespace
+		"admin@evil.com",        // userinfo
+		"evil.com/hub",          // path
+		"evil.com?x=1",          // query
+		"evil.com:",             // trailing colon
+		"evil.com:99999",        // port out of range
+		"::1",                   // bare IPv6 literal
+		"new%01example.com",     // percent-encoded control character
+	}
+	// Note: raw control characters and whitespace in the value are refused
+	// by URL parsing at request-construction time (the fasthttp client
+	// cannot even build the request line), so they never reach Migrate;
+	// the percent-encoded forms above cover them.
+	// Each rejection must leave state untouched — check it before the next
+	// request, because a later valid migration would flip it.
+	for _, host := range invalid {
+		status, body, err := doRequest(t, client, "/v1/admin/migrate?host="+host, withAuth)
+		if err != nil {
+			t.Errorf("migrate host=%q: transport error %v", host, err)
+			continue
+		}
+		if status != fasthttp.StatusBadRequest {
+			t.Errorf("migrate host=%q = %d (%q), want 400", host, status, body)
+		}
+		if h.isMigrating.Load() {
+			t.Errorf("isMigrating is true after rejected host=%q; want false", host)
+		}
+		if got := h.getBackupHost(); got != "" {
+			t.Errorf("backupHost = %q after rejected host=%q; want empty", got, host)
+		}
+	}
+
+	// A valid host is still accepted after the rejections.
+	status, body, err := doRequest(t, client, "/v1/admin/migrate?host="+testBackupHost, withAuth)
+	if err != nil || status != fasthttp.StatusOK {
+		t.Fatalf("migrate valid host after rejections = (%d, %q, %v), want 200", status, body, err)
+	}
+}
+
+// TestMigrateValidHostVariants verifies that valid bare hosts (with and
+// without a port, including a bracketed IPv6 literal) are accepted, stored,
+// and reflected in /v1/status.
+func TestMigrateValidHostVariants(t *testing.T) {
+	valid := []string{"localhost", "localhost:8080", "new.example.com:8443", "10.0.0.1", "[::1]:8080"}
+	withAuth := map[string]string{"Authorization": adminAuthHeader()}
+
+	for i, host := range valid {
+		h := newTestHandler()
+		addr := startTestServer(t, h)
+		client := newTestClient(addr)
+
+		// Status before migration.
+		status, body, err := doRequest(t, client, "/v1/status", nil)
+		if err != nil || status != fasthttp.StatusOK {
+			t.Fatalf("[%d] status before migrate = (%d, %q, %v), want 200 ok", i, status, body, err)
+		}
+
+		status, body, err = doRequest(t, client, "/v1/admin/migrate?host="+host, withAuth)
+		if err != nil || status != fasthttp.StatusOK {
+			t.Fatalf("[%d] migrate host=%q = (%d, %q, %v), want 200", i, host, status, body, err)
+		}
+		if !h.isMigrating.Load() || h.getBackupHost() != host {
+			t.Fatalf("[%d] migration state = (migrating:%v, backupHost:%q), want (true, %q)",
+				i, h.isMigrating.Load(), h.getBackupHost(), host)
+		}
+
+		// The normalized value is reflected in /v1/status.
+		status, body, err = doRequest(t, client, "/v1/status", nil)
+		if err != nil || status != fasthttp.StatusMovedPermanently {
+			t.Fatalf("[%d] status after migrate = (%d, %q, %v), want 301", i, status, body, err)
+		}
+		checkStatusBody(t, body, "migrating", host)
+	}
+}
+
 // TestMigrateEmptyAuthorizationHeader verifies that a request carrying an
 // empty Authorization header (which decodes to an empty string with no base64
 // error) is still rejected with 401 and mutates no state.
