@@ -97,7 +97,8 @@ func TestCreateHubByIDRejectsMalformedHubMetadata(t *testing.T) {
 func TestCreateHubPermanentRejectsMalformedHubMetadata(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	permanentMock := zerohub.NewMockZeroHub(ctrl)
-	permanentMock.EXPECT().GetHubById("perm-hub").Return(nil)
+	// No expectations: the 400 for malformed metadata must be written
+	// before any hub-state access (CreateHubIfAbsent).
 	h := &handler{clientSecret: testClientSecret, zeroHubPermanent: permanentMock}
 
 	ctx := newRequestCtx("http://127.0.0.1/v1/permanent-hubs/create?id=perm-hub&hubMetadata=not-json")

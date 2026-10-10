@@ -11,6 +11,7 @@
 package zerohub
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -20,11 +21,18 @@ import (
 	"github.com/hotcode-dev/zerohub/pkg/storage"
 )
 
+// ErrHubAlreadyExists is returned by CreateHubIfAbsent when a hub with the
+// given ID already exists. Handlers map it to HTTP 409 Conflict.
+var ErrHubAlreadyExists = errors.New("hub already exists")
+
 // ZeroHub is an interface for the ZeroHub server.
 type ZeroHub interface {
-	// NewHub creates a new hub with the given ID and metadata.
-	// If isPermanent is true, the hub never expires.
-	NewHub(hubId string, metadata string, isPermanent bool) (hub.Hub, error)
+	// CreateHubIfAbsent atomically creates a new hub with the given ID and
+	// metadata, or returns ErrHubAlreadyExists if a hub with that ID already
+	// exists. The check and the store happen under a single lock, so
+	// concurrent calls with the same ID create exactly one hub. If
+	// isPermanent is true, the hub never expires.
+	CreateHubIfAbsent(hubId string, metadata string, isPermanent bool) (hub.Hub, error)
 	// GetHubById returns a hub by its ID.
 	GetHubById(id string) hub.Hub
 	// GetOrCreateHub atomically returns the existing hub with the given ID,
@@ -42,10 +50,11 @@ type zeroHub struct {
 	cfg *config.Config
 	// HubStorage is the storage for the hubs.
 	HubStorage storage.Storage[hub.Hub]
-	// mu serializes the read-then-write in GetOrCreateHub. The storage's own
-	// Add is locked, but the compound check+add must be atomic, otherwise two
-	// concurrent join-or-create calls for the same ID would each read a miss
-	// and each store a hub, orphaning the first one.
+	// mu serializes the read-then-write in CreateHubIfAbsent and
+	// GetOrCreateHub. The storage's own Add is locked, but the compound
+	// check+add must be atomic, otherwise two concurrent create or
+	// join-or-create calls for the same ID would each read a miss and each
+	// store a hub, orphaning the first one.
 	mu sync.Mutex
 }
 
@@ -67,7 +76,18 @@ func NewZeroHub(cfg *config.Config) (ZeroHub, error) {
 	}, nil
 }
 
-func (z *zeroHub) NewHub(hubId string, metadata string, isPermanent bool) (hub.Hub, error) {
+// CreateHubIfAbsent atomically creates and stores a new hub with the given ID,
+// or returns ErrHubAlreadyExists if a hub with that ID already exists. The
+// read and the write happen under z.mu, so concurrent calls for the same ID
+// create exactly one hub instead of orphaning one.
+func (z *zeroHub) CreateHubIfAbsent(hubId string, metadata string, isPermanent bool) (hub.Hub, error) {
+	z.mu.Lock()
+	defer z.mu.Unlock()
+
+	if existing := z.GetHubById(hubId); existing != nil {
+		return nil, ErrHubAlreadyExists
+	}
+
 	newHub, err := z.buildHub(hubId, metadata, isPermanent)
 	if err != nil {
 		return nil, err

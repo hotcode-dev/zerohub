@@ -1,6 +1,7 @@
 package zerohub
 
 import (
+	"errors"
 	"sync"
 	"testing"
 
@@ -28,7 +29,7 @@ func BenchmarkGacheStorageHubAddPeer(b *testing.B) {
 	b.Run("benchmark_zerohub_add_hub", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			uid := uuid.NewString()
-			if _, err := zh.NewHub(uid, "metadata", true); err != nil {
+			if _, err := zh.CreateHubIfAbsent(uid, "metadata", true); err != nil {
 				b.Error(err)
 			}
 			if hub := zh.GetHubById(uid); hub == nil {
@@ -57,7 +58,7 @@ func BenchmarkMemoryStorageHubAddPeer(b *testing.B) {
 
 		for i := 0; i < b.N; i++ {
 			uid := uuid.NewString()
-			if _, err := zh.NewHub(uid, "metadata", true); err != nil {
+			if _, err := zh.CreateHubIfAbsent(uid, "metadata", true); err != nil {
 				b.Error(err)
 			}
 			if hub := zh.GetHubById(uid); hub == nil {
@@ -79,6 +80,150 @@ func newTestZeroHub(t *testing.T, peerStorage string) *zeroHub {
 			},
 		},
 		HubStorage: storage.NewMemoryStorage[hub.Hub](),
+	}
+}
+
+// TestCreateHubIfAbsentConcurrent proves the invariant that N concurrent
+// CreateHubIfAbsent calls for the same ID create exactly ONE hub instance:
+// exactly one caller succeeds and every other caller surfaces
+// ErrHubAlreadyExists. This is the regression test for the static-hub
+// create race: before the atomic primitive, two goroutines interleaving at
+// the "is the hub present?" check would each create a hub and the second Add
+// would silently overwrite (orphan) the first, splitting the room.
+func TestCreateHubIfAbsentConcurrent(t *testing.T) {
+	const id = "shared-hub"
+	const workers = 200
+
+	zh := newTestZeroHub(t, "memory")
+
+	var wg sync.WaitGroup
+	successes := make([]hub.Hub, workers)
+	existsErrs := make([]int, workers)
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			h, err := zh.CreateHubIfAbsent(id, "metadata", false)
+			if err != nil {
+				if errors.Is(err, ErrHubAlreadyExists) {
+					existsErrs[idx]++
+					return
+				}
+				t.Errorf("CreateHubIfAbsent[%d] returned unexpected error: %v", idx, err)
+				return
+			}
+			successes[idx] = h
+		}(i)
+	}
+	wg.Wait()
+
+	var winner hub.Hub
+	successCount := 0
+	for i := 0; i < workers; i++ {
+		if successes[i] != nil {
+			if winner == nil {
+				winner = successes[i]
+			} else if successes[i] != winner {
+				t.Fatalf("distinct hub instances created: %p vs %p", winner, successes[i])
+			}
+			successCount++
+		}
+	}
+
+	if successCount != 1 {
+		t.Fatalf("expected exactly 1 success, got %d", successCount)
+	}
+	for i := 0; i < workers; i++ {
+		if successes[i] == nil && existsErrs[i] == 0 {
+			t.Fatalf("goroutine %d neither succeeded nor got ErrHubAlreadyExists", i)
+		}
+	}
+
+	// The stored hub must be the single winner.
+	if got := zh.GetHubById(id); got != winner {
+		t.Fatalf("GetHubById returned %p, want %p", got, winner)
+	}
+}
+
+// TestCreateHubIfAbsentConcurrentGache runs the same invariant against the
+// gache backend so the fix is not memory-storage-specific.
+func TestCreateHubIfAbsentConcurrentGache(t *testing.T) {
+	const id = "shared-hub"
+	const workers = 200
+
+	zh := &zeroHub{
+		cfg: &config.Config{
+			App: config.AppConfig{
+				PeerStorage: "gache",
+			},
+		},
+		HubStorage: storage.NewGacheStorage[hub.Hub](),
+	}
+
+	var wg sync.WaitGroup
+	successes := make([]hub.Hub, workers)
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			h, err := zh.CreateHubIfAbsent(id, "metadata", false)
+			if err != nil {
+				if !errors.Is(err, ErrHubAlreadyExists) {
+					t.Errorf("CreateHubIfAbsent[%d] returned unexpected error: %v", idx, err)
+				}
+				return
+			}
+			successes[idx] = h
+		}(i)
+	}
+	wg.Wait()
+
+	var winner hub.Hub
+	successCount := 0
+	for i := 0; i < workers; i++ {
+		if successes[i] != nil {
+			if winner == nil {
+				winner = successes[i]
+			} else if successes[i] != winner {
+				t.Fatalf("distinct hub instances created: %p vs %p", winner, successes[i])
+			}
+			successCount++
+		}
+	}
+	if successCount != 1 {
+		t.Fatalf("expected exactly 1 success, got %d", successCount)
+	}
+	if got := zh.GetHubById(id); got != winner {
+		t.Fatalf("GetHubById returned %p, want %p", got, winner)
+	}
+}
+
+// TestCreateHubIfAbsentReturnsExisting proves a pre-existing hub is
+// rejected (not recreated) on a second call, and that distinct IDs stay
+// independent.
+func TestCreateHubIfAbsentReturnsExisting(t *testing.T) {
+	zh := newTestZeroHub(t, "memory")
+
+	first, err := zh.CreateHubIfAbsent("a", "meta-a", false)
+	if err != nil {
+		t.Fatalf("first CreateHubIfAbsent: %v", err)
+	}
+	second, err := zh.CreateHubIfAbsent("a", "meta-a", false)
+	if !errors.Is(err, ErrHubAlreadyExists) {
+		t.Fatalf("second CreateHubIfAbsent: got %v, want ErrHubAlreadyExists", err)
+	}
+	if second != nil {
+		t.Fatalf("second CreateHubIfAbsent returned hub %p, want nil", second)
+	}
+
+	other, err := zh.CreateHubIfAbsent("b", "meta-b", false)
+	if err != nil {
+		t.Fatalf("CreateHubIfAbsent(b): %v", err)
+	}
+	if first == other {
+		t.Fatal("expected distinct hubs for distinct IDs")
 	}
 }
 
