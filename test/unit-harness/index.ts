@@ -159,6 +159,8 @@ interface ClientState {
   createdAtConnSeq: number;
   /** Status transitions captured by `recordStatusChanges`. */
   statusLog?: Array<{ peerId: string; status: string }>;
+  /** `logger.warn` messages captured when built via `createClientWithLogger`. */
+  warns?: string[];
 }
 
 const clients = new Map<number, ClientState>();
@@ -212,6 +214,77 @@ const ZeroHubUnitHarness = {
     );
     clients.set(id, { client, createdAtConnSeq: createdInstances.length });
     return id;
+  },
+
+  /**
+   * Create a client whose `logger.warn` calls are captured in an in-harness
+   * buffer (retrievable via `getWarnings` / `clearWarnings`), so specs can
+   * assert exactly which inputs produced the "invalid JSON metadata" warning.
+   */
+  createClientWithLogger(): number {
+    const id = ++nextClientId;
+    const warns: string[] = [];
+    const client = new ZeroHubClient(
+      ["localhost:1"],
+      {
+        logLevel: LogLevel.Warning,
+        logger: {
+          log(): void {},
+          warn: (message?: unknown) => {
+            warns.push(String(message));
+          },
+          error(): void {},
+        },
+      },
+      new NoopTopology()
+    );
+    clients.set(id, {
+      client,
+      createdAtConnSeq: createdInstances.length,
+      warns,
+    });
+    return id;
+  },
+
+  /** The `logger.warn` messages captured for the client (since creation). */
+  getWarnings(id: number): string[] {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return entry.warns ?? [];
+  },
+
+  /**
+   * Invoke the client's private `safeParseJson` directly (type cast; private
+   * is erased at runtime) with an arbitrary raw string + fallback, so specs
+   * can pin the warning contract for edge inputs (e.g. a parsed value equal
+   * to a scalar fallback). Returns the JSON-encoded result.
+   */
+  invokeSafeParse(
+    id: number,
+    raw: string | undefined,
+    fallback: string
+  ): string {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const client = entry.client as unknown as {
+      safeParseJson: (raw: string | undefined, fallback: string) => unknown;
+    };
+    return JSON.stringify(client.safeParseJson(raw, fallback));
+  },
+
+  /** Drop the captured `logger.warn` messages for the client. */
+  clearWarnings(id: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    if (entry.warns) {
+      entry.warns.length = 0;
+    }
   },
 
   /**
