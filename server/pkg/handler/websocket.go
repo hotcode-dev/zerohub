@@ -41,6 +41,8 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 		if peer.GetWSConn() != nil {
 			peer.Close()
 		}
+		// Safe when the close handler already removed the peer:
+		// RemovePeerById is idempotent and returns false for a missing peer.
 		if hub.RemovePeerById(peer.GetId()) {
 			zh.RemoveHubById(hub.GetId())
 		}
