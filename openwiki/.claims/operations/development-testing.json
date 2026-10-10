@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2a436f36a857c38d352d3564ad76340fb9bdced5fe60cf02681520a653364b13",
+  "pageVersion": "sha256:341d1bcc6dee792d90cbda7f61ca0bccdf356d27f6d3b903dc6300c093d9c7e1",
   "claims": [
     {
       "id": "claim_9b265d25c6ea46ffb5cbb15403e8cd85",
@@ -24,11 +24,11 @@
     },
     {
       "id": "claim_2c2b053579db481d9a8df809eea0b057",
-      "statement": "The E2E test/ suite is driven via `cd test && npm test`, whose pretest step runs build:harness to produce test/dist/harness.js via esbuild; invoking npx playwright test directly makes every spec fail with ENOENT on dist/harness.js.",
+      "statement": "The E2E test/ suite is driven via `cd test && npm test`, whose pretest step runs build:harness and build-unit-harness to produce test/dist/harness.js and test/dist/unit-harness.js via esbuild; invoking npx playwright test directly makes the specs fail with ENOENT on their missing harness bundles.",
       "evidence": [
         {
           "resource": "repo://test/package.json",
-          "version": "repo-file-v1:sha256:aa5ef4ffd27ea9bf35fc78935586f0d9b6ad69ce097366af6459238e1a9e1b30"
+          "version": "repo-file-v1:sha256:b0267776b479247664710982a114cd0550f260cbf429c8ffb2b6bf72e20e3ec4"
         }
       ]
     },
@@ -65,6 +65,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-03T07:04:30.122Z"
+    "at": "2026-10-10T01:28:37.861Z"
   }
 }

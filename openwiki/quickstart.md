@@ -3,9 +3,6 @@ type: quickstart
 title: ZeroHub Quickstart
 description: What ZeroHub is, the monorepo layout, and how to run the signaling server and instantiate the TypeScript/JavaScript client to establish a peer-to-peer WebRTC connection.
 tags: [quickstart, getting-started, monorepo, server, client]
-verified:
-  - by: openwiki/0.6.0
-    at: 2026-10-03T07:04:30.122Z
 sources:
   - id: openwiki-source-8037e2358a2c4f9b2c722a11
     resource: repo://AGENTS.md
@@ -18,6 +15,9 @@ sources:
   - id: openwiki-source-e27a23c64f72b7d3d77630c6
     resource: repo://server/pkg/handler/handler.go
 generated: { by: "hermes", at: "2026-10-03T07:04:30.122Z" }
+verified:
+  - by: openwiki/0.6.0
+    at: 2026-10-10T01:28:37.861Z
 ---
 
 # ZeroHub Quickstart

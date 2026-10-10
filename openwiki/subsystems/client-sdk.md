@@ -3,19 +3,21 @@ type: subsystem
 title: TypeScript Client SDK
 description: The @zero-hub/client SDK — ZeroHubClient connection lifecycle, reconnection with host failover, disconnect/reuse semantics, the pluggable topology system, data/media channel configuration, and SDP send/receive.
 tags: [typescript, client, sdk, webrtc, topology, reconnection, data-channel]
-verified:
-  - by: openwiki/0.6.0
-    at: 2026-10-03T07:04:30.122Z
 sources:
   - id: openwiki-source-df0d81c76704b851d02513e1
     resource: repo://client/src/const.ts
   - id: openwiki-source-22df8f9ebcff0eeb4e4ed38f
     resource: repo://client/src/topology/meshTopology.ts
+  - id: openwiki-source-8e8ffb33fc4935471d3aa9c5
+    resource: repo://client/src/topology/peerSetup.ts
   - id: openwiki-source-bd409d9bd601f67e5d47a03d
     resource: repo://client/src/topology/sfuTopology.ts
   - id: openwiki-source-718b618612c033c4f36b3a45
     resource: repo://client/src/zeroHub.ts
-generated: { by: "hermes", at: "2026-10-03T07:04:30.122Z" }
+generated: { by: "hermes", at: "2026-10-10T01:28:37.861Z" }
+verified:
+  - by: openwiki/0.6.0
+    at: 2026-10-10T01:28:37.861Z
 ---
 
 # TypeScript Client SDK
@@ -47,8 +49,12 @@ config and offer options (over `DEFAULT_RTC_CONFIG` /
 `DEFAULT_RTC_OFFER_OPTIONS`), and calls `topology.init(this)`. No network
 connection is made until an entrypoint is called.
 
-**Connection entrypoints** each build a `URL` with the appropriate path and
-query params, then call `connectToZeroHub(url)`:
+All connection entrypoints funnel into the private
+`openHubConnection(path, hubId?, peerMetadata?, hubMetadata?)` helper, which
+stores any supplied metadata on the client, builds a `URL` from
+`getWS(host, tls)` (client/src/utils.ts — `wss://` when `tls`, else `ws://`)
+with `id`, `hubMetadata`, `peerMetadata` as query params, and calls
+`connectToZeroHub(url)`:
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -70,7 +76,10 @@ query params, then call `connectToZeroHub(url)`:
 - Opens `new WebSocket(url)` with `binaryType = "arraybuffer"`.
 - `onmessage` — decodes the frame with `ServerMessage.decode(...)` and routes
   it through `handleZeroHubMessage`.
-- `onerror` — logs, fires `onZeroHubError`, and calls `reconnect(url)`.
+- `onerror` — logs and fires `onZeroHubError`, but does **not** reconnect:
+  per RFC 6455 a network failure fires `error` and then `close` with code
+  1006, and reconnecting in both would advance `hostIndex` twice for a single
+  failure (skipping two hosts). All reconnection happens in `onclose`.
 - `onclose` — interprets the close code: `1000` (normal) does nothing;
   `1001` (going away) reconnects to the host named in the close *reason*
   (the migration redirect); `1006`/`1011` (abnormal/internal error) reconnect;
@@ -102,6 +111,10 @@ query params, then call `connectToZeroHub(url)`:
   the async `.then` callback**, not just at entry — a user calling
   `disconnect()` while the backup-host fetch is in flight must not resurrect
   the connection. It also bails if the backup host equals the current host.
+- When every host is exhausted, the rejection reaches the `.catch`, which
+  surfaces the terminal failure (`all ZeroHub hosts are not working, please
+  check the ZeroHub hosts`) through `onZeroHubError` — there is no further
+  automatic retry.
 
 ## Disconnect & reuse
 
@@ -125,7 +138,10 @@ throws if called while disconnected or when no socket exists.
 - `sendOffer(peerId, ...)` — runs `createOffer`/`setLocalDescription`, wires
   `onicecandidate`, and flushes the SDP to the server either on candidate
   completion or after `waitIceCandidatesTimeout`. Transitions the peer to
-  `Offering`.
+  `Offering`. Offer options are **spread into a fresh local object**
+  (`{ ...config.rtcOfferOptions, ...rtcOfferOptions }`) rather than
+  `Object.assign`-ed onto the shared config, so per-call options can never
+  leak into the stored `config.rtcOfferOptions`.
 - `sendAnswer(peerId, offerSdp, ...)` — sets the remote offer description,
   creates the answer, and flushes it back. Transitions to `Answering`.
 - `acceptAnswer(peerId, answerSdp)` — sets the remote answer description.
@@ -142,16 +158,23 @@ and `onPeerStatusChange(peer)`. The `ZeroHubClient` calls
 `topology.onPeerStatusChange` on every status update (before user callbacks).
 Two built-ins:
 
-- **`MeshTopology`** (default) — full mesh. On `Pending`, it creates
-  `numberOfChannels` data channels (labeled `"0"`, `"1"`, ...) if a
-  `dataChannelConfig` is set (the offerer creates them; the answerer wires
-  `ondatachannel`), adds media tracks if a `localStream` is configured, and
-  sends the offer **only if it is the offerer** (`parseInt(peer.id) >
-  parseInt(myPeerId)`).
-- **`SFUTopology`** — routes all P2P traffic through a single SFU peer (lowest
-  ID by default, or an explicitly set one). The SFU offers to every client;
-  non-SFU peers only connect to the SFU, so bandwidth scales better for
-  larger groups at the cost of a single point of failure.
+- **`MeshTopology`** (default) — full mesh. On `Pending`, it sets up data
+  channels and media via the shared helpers, then sends the offer **only if
+  it is the offerer** (`parseInt(peer.id) > parseInt(myPeerId)`).
+- **`SFUTopology`** — routes all P2P traffic through a single SFU peer (the
+  numerically lowest peer ID by default, or an explicitly set one — peer IDs
+  are sequential decimal strings, so election sorts `parseInt(id, 10)` rather
+  than lexicographically, or "10" would beat "2"). The SFU offers to every
+  client; non-SFU peers only connect to the SFU, so bandwidth scales better
+  for larger groups at the cost of a single point of failure.
+
+Both topologies delegate the per-peer WebRTC wiring to the shared helpers in
+`client/src/topology/peerSetup.ts` — `setupDataChannel` (offerer creates
+`numberOfChannels` channels labeled `"0"`, `"1"`, ...; answerer wires
+`ondatachannel`) and `setupMediaChannel` (adds `localStream` tracks, wires
+`ontrack`) — with optional log callbacks so each topology keeps its own
+logging. The media helper requires call sites to pass the level-gated
+`ZeroHubClient.logger`, not the raw user `config.logger`.
 
 Both topologies treat `ZeroHubDisconnected` and `Disconnected` as no-ops.
 
