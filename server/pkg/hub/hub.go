@@ -100,7 +100,14 @@ func (h *hub) AddPeer(newPeer peer.Peer) {
 }
 
 // RemovePeerById removes a peer from the mesh network and disconnects it from all other peers.
+// It is idempotent: if the peer is not in the hub, nothing is broadcast and false is returned,
+// so a duplicate removal (e.g. close handler plus post-HandleMessage fallback) cannot double-send
+// the disconnect signal or double-trigger hub removal.
 func (h *hub) RemovePeerById(id string) (removeThisHub bool) {
+	if _, err := h.PeerStorage.Get(id); err != nil {
+		return false
+	}
+
 	dcSignalProto, err := CreateDisconnectSignalProtobuf(id)
 	if err != nil {
 		log.Error().Msg(err.Error())

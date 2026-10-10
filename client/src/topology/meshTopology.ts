@@ -2,6 +2,7 @@ import { Peer } from "../peer";
 import { PeerStatus } from "../types";
 import { ZeroHubClient } from "../zeroHub";
 import { Topology } from ".";
+import { setupDataChannel, setupMediaChannel } from "./peerSetup";
 
 /**
  * MeshTopology implements a full mesh WebRTC topology.
@@ -37,57 +38,10 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
         break;
       case PeerStatus.Pending:
         // if data channel config is provided, set up data channel handling
-        if (this.zeroHub.config.dataChannelConfig?.onDataChannel) {
-          if (isOfferer) {
-            // create data channels
-            const numberOfChannels =
-              this.zeroHub.config.dataChannelConfig.numberOfChannels || 1;
-            for (let i = 0; i < numberOfChannels; i++) {
-              const dataChannel = peer.rtcConn.createDataChannel(
-                i.toString(),
-                this.zeroHub.config.dataChannelConfig.rtcDataChannelInit
-              );
-              this.zeroHub.config.dataChannelConfig.onDataChannel(
-                peer,
-                dataChannel,
-                true
-              );
-            }
-          } else {
-            // handle incoming data channel
-            peer.rtcConn.ondatachannel = (event) => {
-              if (event.channel) {
-                this.zeroHub?.config.dataChannelConfig?.onDataChannel(
-                  peer,
-                  event.channel,
-                  false
-                );
-              }
-            };
-          }
-        }
+        setupDataChannel(this.zeroHub.config, peer, isOfferer);
 
         // if media channel config is provided, set up media stream handling
-        if (this.zeroHub.config.mediaChannelConfig) {
-          // if local stream is available, add tracks to peer connection
-          if (this.zeroHub.config.mediaChannelConfig.localStream) {
-            this.zeroHub.config.mediaChannelConfig.localStream
-              .getTracks()
-              .forEach((track) => {
-                if (this.zeroHub?.config.mediaChannelConfig?.localStream) {
-                  peer.rtcConn.addTrack(
-                    track,
-                    this.zeroHub.config.mediaChannelConfig.localStream
-                  );
-                }
-              });
-          }
-
-          // handle incoming media stream
-          peer.rtcConn.ontrack = (event) => {
-            this.zeroHub?.config.mediaChannelConfig?.onTrack?.(peer, event);
-          };
-        }
+        setupMediaChannel(this.zeroHub.config, peer, this.zeroHub.logger);
 
         // offer should send after create data channel and add track
         if (isOfferer) {

@@ -795,19 +795,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     peerMetadata?: PeerMetadata,
     hubMetadata?: HubMetadata
   ) {
-    const url = new URL("/v1/hubs/create", getWS(this.host, this.config.tls));
-    url.searchParams.set("id", hubId);
-
-    if (hubMetadata) {
-      this.hubMetadata = hubMetadata;
-      url.searchParams.set("hubMetadata", JSON.stringify(hubMetadata));
-    }
-    if (peerMetadata) {
-      this.peerMetadata = peerMetadata;
-      url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
-    }
-
-    this.connectToZeroHub(url);
+    this.openHubConnection("/v1/hubs/create", hubId, peerMetadata, hubMetadata);
   }
 
   /**
@@ -817,17 +805,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * @param peerMetadata - Peer metadata will share to each peer in the Hub
    */
   public joinHub(hubId: string, peerMetadata?: PeerMetadata) {
-    this.peerMetadata = peerMetadata;
-
-    const url = new URL("/v1/hubs/join", getWS(this.host, this.config.tls));
-    url.searchParams.set("id", hubId);
-
-    if (peerMetadata) {
-      this.peerMetadata = peerMetadata;
-      url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
-    }
-
-    this.connectToZeroHub(url);
+    this.openHubConnection("/v1/hubs/join", hubId, peerMetadata);
   }
 
   /**
@@ -843,24 +821,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     peerMetadata?: PeerMetadata,
     hubMetadata?: HubMetadata
   ) {
-    this.peerMetadata = peerMetadata;
-
-    const url = new URL(
+    this.openHubConnection(
       "/v1/hubs/join-or-create",
-      getWS(this.host, this.config.tls)
+      hubId,
+      peerMetadata,
+      hubMetadata
     );
-    url.searchParams.set("id", hubId);
-
-    if (hubMetadata) {
-      this.hubMetadata = hubMetadata;
-      url.searchParams.set("hubMetadata", JSON.stringify(hubMetadata));
-    }
-    if (peerMetadata) {
-      this.peerMetadata = peerMetadata;
-      url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
-    }
-
-    this.connectToZeroHub(url);
   }
 
   /**
@@ -875,23 +841,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     peerMetadata?: PeerMetadata,
     hubMetadata?: HubMetadata
   ) {
-    this.peerMetadata = peerMetadata;
-
-    const url = new URL(
+    this.openHubConnection(
       "/v1/ip-hubs/join-or-create",
-      getWS(this.host, this.config.tls)
+      undefined,
+      peerMetadata,
+      hubMetadata
     );
-
-    if (hubMetadata) {
-      this.hubMetadata = hubMetadata;
-      url.searchParams.set("hubMetadata", JSON.stringify(hubMetadata));
-    }
-    if (peerMetadata) {
-      this.peerMetadata = peerMetadata;
-      url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
-    }
-
-    this.connectToZeroHub(url);
   }
 
   /**
@@ -901,17 +856,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * @param peerMetadata - Peer metadata will share to each peer in the Hub
    */
   public joinIPHub(hubId: string, peerMetadata?: PeerMetadata) {
-    this.peerMetadata = peerMetadata;
-
-    const url = new URL("/v1/ip-hubs/join", getWS(this.host, this.config.tls));
-    url.searchParams.set("id", hubId);
-
-    if (peerMetadata) {
-      this.peerMetadata = peerMetadata;
-      url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
-    }
-
-    this.connectToZeroHub(url);
+    this.openHubConnection("/v1/ip-hubs/join", hubId, peerMetadata);
   }
 
   /**
@@ -925,21 +870,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     peerMetadata?: PeerMetadata,
     hubMetadata?: HubMetadata
   ) {
-    const url = new URL(
+    this.openHubConnection(
       "/v1/random-hubs/create",
-      getWS(this.host, this.config.tls)
+      undefined,
+      peerMetadata,
+      hubMetadata
     );
-
-    if (hubMetadata) {
-      this.hubMetadata = hubMetadata;
-      url.searchParams.set("hubMetadata", JSON.stringify(hubMetadata));
-    }
-    if (peerMetadata) {
-      this.peerMetadata = peerMetadata;
-      url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
-    }
-
-    this.connectToZeroHub(url);
   }
 
   /**
@@ -949,16 +885,42 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * @param peerMetadata - Peer metadata will share to each peer in the Hub
    */
   public joinRandomHub(hubId: string, peerMetadata?: PeerMetadata) {
-    this.peerMetadata = peerMetadata;
+    this.openHubConnection("/v1/random-hubs/join", hubId, peerMetadata);
+  }
 
-    const url = new URL(
-      "/v1/random-hubs/join",
-      getWS(this.host, this.config.tls)
-    );
-    url.searchParams.set("id", hubId);
-
+  /**
+   * Opens a WebSocket connection to a ZeroHub hub endpoint.
+   *
+   * Shared by all public hub entry points: assigns metadata, builds the
+   * connection URL (with id/hubMetadata/peerMetadata query params as
+   * applicable), and connects.
+   *
+   * @param path - The endpoint path (e.g. "/v1/hubs/create")
+   * @param hubId - Optional hub id to send as the "id" query param
+   * @param peerMetadata - Optional peer metadata
+   * @param hubMetadata - Optional hub metadata
+   */
+  private openHubConnection(
+    path: string,
+    hubId?: string,
+    peerMetadata?: PeerMetadata,
+    hubMetadata?: HubMetadata
+  ) {
     if (peerMetadata) {
       this.peerMetadata = peerMetadata;
+    }
+    if (hubMetadata) {
+      this.hubMetadata = hubMetadata;
+    }
+
+    const url = new URL(path, getWS(this.host, this.config.tls));
+    if (hubId !== undefined) {
+      url.searchParams.set("id", hubId);
+    }
+    if (hubMetadata) {
+      url.searchParams.set("hubMetadata", JSON.stringify(hubMetadata));
+    }
+    if (peerMetadata) {
       url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
     }
 
