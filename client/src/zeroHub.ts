@@ -313,11 +313,14 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * so a bad value must never take down the message dispatcher.
    */
   private safeParseJson<T>(raw: string | undefined, fallback: T): T {
-    const value = safeParseJson(raw, fallback);
-    if (value === fallback) {
+    const result = safeParseJson(raw, fallback);
+    // Warn only when parsing genuinely failed (empty/malformed input),
+    // never on a successful parse — a valid value can legitimately equal
+    // the fallback, so reference equality can't tell the two apart.
+    if (!result.ok) {
       this.logger.warn("invalid JSON metadata from server, using fallback");
     }
-    return value;
+    return result.value;
   }
 
   /**
@@ -988,15 +991,20 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
 
 /**
  * Safely parses a JSON string. Returns `fallback` when `raw` is empty or
- * when parsing fails, instead of throwing.
+ * when parsing fails, instead of throwing. The result is discriminated so
+ * callers can tell a successful parse apart from a fallback, even when the
+ * parsed value happens to equal the fallback.
  */
-function safeParseJson<T>(raw: string | undefined, fallback: T): T {
+function safeParseJson<T>(
+  raw: string | undefined,
+  fallback: T
+): { ok: boolean; value: T } {
   if (!raw) {
-    return fallback;
+    return { ok: false, value: fallback };
   }
   try {
-    return JSON.parse(raw) as T;
+    return { ok: true, value: JSON.parse(raw) as T };
   } catch {
-    return fallback;
+    return { ok: false, value: fallback };
   }
 }
