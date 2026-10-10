@@ -157,6 +157,8 @@ interface PeerSnapshot {
 interface ClientState {
   client: ZeroHubClient;
   createdAtConnSeq: number;
+  /** Status transitions captured by `recordStatusChanges`. */
+  statusLog?: Array<{ peerId: string; status: string }>;
 }
 
 const clients = new Map<number, ClientState>();
@@ -324,6 +326,78 @@ const ZeroHubUnitHarness = {
       throw new Error(`no client ${id}`);
     }
     return snapshotPeer(entry.client, peerId);
+  },
+
+  /** The IDs of the peers currently in the client's `peers` map. */
+  peerIds(id: number): string[] {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return Object.keys(entry.client.peers);
+  },
+
+  /**
+   * Snapshot a mock connection by its instance id (from `PeerSnapshot.rtcConnId`),
+   * still valid after the owning peer has been removed from the map — lets
+   * specs assert a pruned peer's `RTCPeerConnection` was closed and its
+   * handlers nulled.
+   */
+  getConnection(id: number, connId: number): {
+    closed: boolean;
+    hasConnStateHandler: boolean;
+    hasIceHandler: boolean;
+  } {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const conn = createdInstances.find((c) => c.__instanceId === connId);
+    if (!conn) {
+      return { closed: false, hasConnStateHandler: false, hasIceHandler: false };
+    }
+    return {
+      closed: conn.__closed,
+      hasConnStateHandler: typeof conn.onconnectionstatechange === "function",
+      hasIceHandler: typeof conn.oniceconnectionstatechange === "function",
+    };
+  },
+
+  /**
+   * Starts recording `onPeerStatusChange` callbacks on the client so specs
+   * can assert which status transitions the reconcile pass emitted.
+   */
+  recordStatusChanges(id: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.statusLog = [];
+    entry.client.onPeerStatusChange = (peer) => {
+      entry.statusLog?.push({ peerId: peer.id, status: peer.status });
+    };
+  },
+
+  /** Returns and clears the status transitions recorded by `recordStatusChanges`. */
+  drainStatusChanges(
+    id: number
+  ): Array<{ peerId: string; status: string }> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const log = entry.statusLog ?? [];
+    entry.statusLog = [];
+    return log;
+  },
+
+  /** The client's current `myPeerId` (or null if unset). */
+  getMyPeerId(id: number): string | null {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return entry.client.myPeerId ?? null;
   },
 
   /** Number of mock RTCPeerConnection instances created for this client. */
