@@ -27,8 +27,15 @@ func (h *handler) JoinHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 		return h.Response(ctx, fasthttp.StatusNotFound, map[string]string{"error": "hub not found"})
 	}
 
-	if err := h.Upgrade(ctx, zh, hub); err != nil {
-		log.Error().Err(fmt.Errorf("websocket upgrade error: %w", err)).Send()
+	if err, responseWritten := h.Upgrade(ctx, zh, hub); err != nil || responseWritten {
+		if err != nil {
+			log.Error().Err(fmt.Errorf("websocket upgrade error: %w", err)).Send()
+		}
+		// The up-front peerMetadata rejection already wrote a 400; do not
+		// overwrite it with a 500.
+		if responseWritten {
+			return nil
+		}
 		return h.Response(ctx, fasthttp.StatusInternalServerError, map[string]string{"error": "websocket upgrade error"})
 	}
 

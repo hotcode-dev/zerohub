@@ -18,15 +18,26 @@ var upgrader = websocket.FastHTTPUpgrader{
 	CheckOrigin:      func(ctx *fasthttp.RequestCtx) bool { return true },
 }
 
-// Upgrade upgrades the connection to a websocket connection.
-func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.Hub) error {
+// Upgrade upgrades the connection to a websocket connection. A malformed
+// `peerMetadata` is rejected up front with a 400 (returned as a nil error
+// with responseWritten=true); any other failure is a handshake error.
+// When responseWritten is true the caller must not write another response.
+func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.Hub) (error, bool) {
 	// Reject a malformed `peerMetadata` before the handshake: once upgraded,
 	// the connection is a websocket and no HTTP status can be sent.
 	if !validJSONQueryParam(ctx, "peerMetadata") {
-		return h.rejectInvalidJSONParam(ctx, "peerMetadata")
+		// rejectInvalidJSONParam writes the 400 via Response (which
+		// returns nil on success); it returns an error only if the body
+		// itself fails to marshal, in which case it has set 500.
+		//
+		// Note: the response is already written, so the returned error is
+		// nil here — responseWritten=true is what signals "upgrade did not
+		// happen" to the caller.
+		_ = h.rejectInvalidJSONParam(ctx, "peerMetadata")
+		return nil, true
 	}
 
-	err := upgrader.Upgrade(ctx, func(ws *websocket.Conn) {
+	upgradeErr := upgrader.Upgrade(ctx, func(ws *websocket.Conn) {
 		peer := peer.NewPeer(ws, string(ctx.QueryArgs().Peek("peerMetadata")))
 		hub.AddPeer(peer)
 
@@ -54,12 +65,12 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 		}
 	})
 
-	if err != nil {
-		if _, ok := err.(websocket.HandshakeError); ok {
-			return fmt.Errorf("websocket handshake: %v", err)
+	if upgradeErr != nil {
+		if _, ok := upgradeErr.(websocket.HandshakeError); ok {
+			return fmt.Errorf("websocket handshake: %v", upgradeErr), false
 		}
-		return fmt.Errorf("websocket upgrade error: %v", err)
+		return fmt.Errorf("websocket upgrade error: %v", upgradeErr), false
 	}
 
-	return nil
+	return nil, false
 }

@@ -94,8 +94,10 @@ type Handler interface {
 	CreateHubPermanent(ctx *fasthttp.RequestCtx) error
 
 	// Upgrade completes the HTTP handshake and returns the handler for
-	// WebSocket communication.
-	Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.Hub) error
+	// WebSocket communication. On failure, responseWritten is true when an
+	// HTTP response has already been written for the request; callers must
+	// not overwrite it.
+	Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.Hub) (error, bool)
 
 	// Serve starts the fasthttp server on the configured address.
 	Serve() error

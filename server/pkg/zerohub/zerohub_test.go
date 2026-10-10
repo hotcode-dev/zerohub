@@ -247,7 +247,7 @@ func TestGetOrCreateHubConcurrent(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			h, err := zh.GetOrCreateHub(id, "metadata", false)
+			h, _, err := zh.GetOrCreateHub(id, "metadata", false)
 			hubs[idx] = h
 			errs[idx] = err
 		}(i)
@@ -300,7 +300,7 @@ func TestGetOrCreateHubConcurrentGache(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			h, err := zh.GetOrCreateHub(id, "metadata", false)
+			h, _, err := zh.GetOrCreateHub(id, "metadata", false)
 			if err != nil {
 				t.Errorf("GetOrCreateHub[%d] returned error: %v", idx, err)
 				return
@@ -324,19 +324,25 @@ func TestGetOrCreateHubConcurrentGache(t *testing.T) {
 func TestGetOrCreateHubReturnsExisting(t *testing.T) {
 	zh := newTestZeroHub(t, "memory")
 
-	first, err := zh.GetOrCreateHub("a", "meta-a", false)
+	first, createdFirst, err := zh.GetOrCreateHub("a", "meta-a", false)
 	if err != nil {
 		t.Fatalf("first GetOrCreateHub: %v", err)
 	}
-	second, err := zh.GetOrCreateHub("a", "meta-a", false)
+	if !createdFirst {
+		t.Fatalf("first GetOrCreateHub created = false, want true (no hub %q existed)", "a")
+	}
+	second, createdSecond, err := zh.GetOrCreateHub("a", "meta-a", false)
 	if err != nil {
 		t.Fatalf("second GetOrCreateHub: %v", err)
+	}
+	if createdSecond {
+		t.Fatalf("second GetOrCreateHub created = true, want false (hub already exists)")
 	}
 	if first != second {
 		t.Fatalf("expected same hub instance, got %p and %p", first, second)
 	}
 
-	other, err := zh.GetOrCreateHub("b", "meta-b", false)
+	other, _, err := zh.GetOrCreateHub("b", "meta-b", false)
 	if err != nil {
 		t.Fatalf("GetOrCreateHub(b): %v", err)
 	}
