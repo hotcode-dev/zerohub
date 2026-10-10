@@ -307,6 +307,20 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
+   * Parses JSON metadata received from the server, returning `fallback`
+   * (with a warning logged) when the value is missing or malformed. The
+   * server stores and broadcasts metadata from unvalidated query params,
+   * so a bad value must never take down the message dispatcher.
+   */
+  private safeParseJson<T>(raw: string | undefined, fallback: T): T {
+    const value = safeParseJson(raw, fallback);
+    if (value === fallback) {
+      this.logger.warn("invalid JSON metadata from server, using fallback");
+    }
+    return value;
+  }
+
+  /**
    * Handles a message received from the ZeroHub server.
    *
    * @param serverMessage - The message received from the server.
@@ -318,9 +332,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       this.myPeerId = hubInfoMsg.myPeerId;
       this.hubInfo = {
         id: hubInfoMsg.id,
-        metadata: (hubInfoMsg.hubMetadata
-          ? JSON.parse(hubInfoMsg.hubMetadata)
-          : {}) as HubMetadata,
+        metadata: this.safeParseJson(hubInfoMsg.hubMetadata, {}) as HubMetadata,
         createTime: hubInfoMsg.createTime || new Date(),
       };
       if (this.onHubInfo) {
@@ -422,7 +434,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     const newPeer = new Peer<PeerMetadata>(
       peerId,
       PeerStatus.Pending,
-      (metadata ? JSON.parse(metadata) : {}) as PeerMetadata,
+      this.safeParseJson(metadata, {}) as PeerMetadata,
       joinTime || new Date(),
       new RTCPeerConnection(this.config.rtcConfig)
     );
@@ -925,5 +937,20 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     }
 
     this.connectToZeroHub(url);
+  }
+}
+
+/**
+ * Safely parses a JSON string. Returns `fallback` when `raw` is empty or
+ * when parsing fails, instead of throwing.
+ */
+function safeParseJson<T>(raw: string | undefined, fallback: T): T {
+  if (!raw) {
+    return fallback;
+  }
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
   }
 }
