@@ -40,6 +40,21 @@ func (m *MockZeroHub) EXPECT() *MockZeroHubMockRecorder {
 	return m.recorder
 }
 
+// CreateHubIfAbsent mocks base method.
+func (m *MockZeroHub) CreateHubIfAbsent(hubId, metadata string, isPermanent bool) (hub.Hub, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateHubIfAbsent", hubId, metadata, isPermanent)
+	ret0, _ := ret[0].(hub.Hub)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateHubIfAbsent indicates an expected call of CreateHubIfAbsent.
+func (mr *MockZeroHubMockRecorder) CreateHubIfAbsent(hubId, metadata, isPermanent any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateHubIfAbsent", reflect.TypeOf((*MockZeroHub)(nil).CreateHubIfAbsent), hubId, metadata, isPermanent)
+}
+
 // GetHubById mocks base method.
 func (m *MockZeroHub) GetHubById(id string) hub.Hub {
 	m.ctrl.T.Helper()
@@ -67,21 +82,6 @@ func (m *MockZeroHub) GetOrCreateHub(hubId, metadata string, isPermanent bool) (
 func (mr *MockZeroHubMockRecorder) GetOrCreateHub(hubId, metadata, isPermanent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrCreateHub", reflect.TypeOf((*MockZeroHub)(nil).GetOrCreateHub), hubId, metadata, isPermanent)
-}
-
-// NewHub mocks base method.
-func (m *MockZeroHub) NewHub(hubId, metadata string, isPermanent bool) (hub.Hub, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewHub", hubId, metadata, isPermanent)
-	ret0, _ := ret[0].(hub.Hub)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// NewHub indicates an expected call of NewHub.
-func (mr *MockZeroHubMockRecorder) NewHub(hubId, metadata, isPermanent any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewHub", reflect.TypeOf((*MockZeroHub)(nil).NewHub), hubId, metadata, isPermanent)
 }
 
 // RemoveHubById mocks base method.
