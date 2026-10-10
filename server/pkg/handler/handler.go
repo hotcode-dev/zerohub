@@ -9,7 +9,8 @@
 //
 //   - Static (/v1/hubs/*): Hub ID is supplied by the client (query parameter `id`).
 //   - Random (/v1/random-hubs/*): Server generates a unique ID when creating.
-//   - IP (/v1/ip-hubs/*): Hub ID is derived from the client's remote IP address.
+//   - IP (/v1/ip-hubs/*): Hub ID is derived from the client IP — the socket
+//     peer address, or the X-Forwarded-For entry when APP_TRUST_PROXY is set.
 //   - Permanent (/v1/permanent-hubs/*): Hub never expires; used for always-on
 //     collaboration rooms.
 //
@@ -106,10 +107,11 @@ type handler struct {
 	address string
 	// clientSecret is the client secret to use for authentication.
 	clientSecret string
-	// trustProxy gates whether the rate limiter may derive its per-client
-	// key from the X-Forwarded-For header. It must only be true behind a
-	// reverse proxy that sanitizes that header; otherwise the socket peer
-	// address is used, which is unspoofable.
+	// trustProxy gates whether per-client identity may be derived from the
+	// X-Forwarded-For header: the rate limiter keys its per-client budget and
+	// IP-keyed hubs key their hub ID from that header. It must only be true
+	// behind a reverse proxy that sanitizes that header; otherwise the socket
+	// peer address is used, which is unspoofable.
 	trustProxy bool
 
 	// migrateMu guards the migration state below. The two fields must be
@@ -177,6 +179,25 @@ func newRateLimitMiddleware(trustProxy bool) (*limiterFasthttp.Middleware, error
 		keyGetter = forwardedIPKey
 	}
 	return limiterFasthttp.NewMiddleware(limiterInstance, limiterFasthttp.WithKeyGetter(keyGetter)), nil
+}
+
+// clientIP returns the client IP used for per-client identity: the
+// rate-limiter key and the IP-hub key. When trustProxy is set (the server
+// sits behind a trusted reverse proxy), it is the first (outermost) entry
+// of X-Forwarded-For; otherwise the socket peer address, which is
+// unspoofable.
+//
+// SECURITY: only safe behind a proxy that strips or replaces
+// X-Forwarded-For. The value here must agree with the limiter's own IP
+// parsing (limiter.WithTrustForwardHeader) so the per-client budget is
+// applied per real client, never per socket.
+func (h *handler) clientIP(ctx *fasthttp.RequestCtx) string {
+	if h.trustProxy {
+		if ip := ipFromForwardedHeader(ctx); ip != "" {
+			return ip
+		}
+	}
+	return ctx.RemoteIP().String()
 }
 
 // remoteAddrKey returns the unspoofable TCP socket peer address.
