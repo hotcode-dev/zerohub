@@ -173,3 +173,24 @@ func TestStorageIsEmpty(t *testing.T) {
 		})
 	}
 }
+
+// TestGacheStorageNoTTL guards against a default TTL leaking into gache
+// entries: hub/peer lifecycle is application-managed (RemovePeerById /
+// RemoveHubById), so entries must never expire on their own.
+func TestGacheStorageNoTTL(t *testing.T) {
+	s := NewGacheStorage[int]()
+	s.Add("a", 1)
+
+	gs, ok := s.(*GacheStorage[int])
+	if !ok {
+		t.Fatalf("NewGacheStorage did not return *GacheStorage[int]")
+	}
+
+	_, expire, found := gs.GC.GetWithExpire("a")
+	if !found {
+		t.Fatal("GetWithExpire(a) not found; want entry present")
+	}
+	if expire > 0 {
+		t.Fatalf("entry has TTL expiry; want no expiration (NoTTL) so hub/peer lifecycle is app-managed")
+	}
+}
