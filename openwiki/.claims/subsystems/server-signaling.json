@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6f5278ba9f0f80c42f1dbf14ceef7643759cc5c01aa84d02e122c8837dbc1e78",
+  "pageVersion": "sha256:7f4445426a448a4ee1ec9946850758c5db0fe972c8edd6743b37b237705adbe9",
   "claims": [
     {
       "id": "claim_1d82fd64055a4062925029c4ae4e6575",
@@ -54,11 +54,15 @@
     },
     {
       "id": "claim_87b7649845d342a2a742287bdf02fff4",
-      "statement": "On WebSocket close, the close handler closes the peer and calls RemovePeerById; if the hub becomes empty and is not permanent, the hub is removed from its ZeroHub instance.",
+      "statement": "Hub teardown runs in two places in handler.Upgrade: the socket close handler (peer.Close() + RemovePeerById, with RemoveHubById when the hub empties) and a fallback right after hub.HandleMessage returns. Both call the idempotent hub.RemovePeerById, which returns false without broadcasting anything when the peer is already gone, so a duplicate removal cannot double-send the PeerDisconnectedMessage or double-trigger RemoveHubById.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/websocket.go#L22-L47",
-          "version": "repo-lines-v1:sha256:fe70b0c9c5d9ec3ea82eec016d380cc7fb090088086ca8170f7d7a8016c9b9bb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4YjM4M2I3YjdkMGJiMWY5NzdiMDU5Y2JkMDIyNWFmMjBiMjliZmU1NTRmZmMzMmNhYTgzNDkyMTRhNGY0MTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3YTliNWU5MDE5YzhkYjg3ODNlYzljM2ZlYmIwYTJjOTg2MmY2MWEwNWMzMDhmZTg5NWU0YTliZWQwM2VkYjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMyMzI4MjYxZjJmZTZlYjZjODEyYzkxMzQ0YjJkODM4NjNkYjk5M2JkZjBjYWNjOGI2ZWM1MDllYjljZjg0MTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEyYWQ3YTJiZmExYmM4ZGRmZWE1ZTQ1YjU0ZWFlNGI3NWExNzcyYjgyZDUxZGQ3NjBkM2VlM2ZjMDMwNTZmNGYifQ"
+          "resource": "repo://server/pkg/handler/websocket.go#L27-L48",
+          "version": "repo-lines-v1:sha256:f156c70d169fa5d2ce1876701e397bc78ec66cee9be78e51704b36a14a4df8fb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhZDI5NjE0MGU5NzUxZjNlMWRhMDY0NzZmODIyMGZkM2E4ZTYwMjE4MmI1NWJmMjNjZDI1MjgxNmQ3MzQwM2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0ZWZjNDk0MThkMjZkY2YxMjliMjJhNmFhMjExMDhjZWVjMzc2NzdhMzJkMDhlOWQ1ZmVlMzVkZGE2NmJiOWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhZjJkNmFiMWNlZDkwZDYxNDM0OTc0MTFiOTJiOTlhMGQ3Y2JlYzAzZWYwZDE0ODlhODVkYWI4YWU3MTBhZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjZGE1MDUyYjZkYzE3ZGQ5ZWM1ZDEwMDg0MTNjZGQzNDJjZGU5YTcyMzZjYzIyNmEzZjBkYzhjYWQ2ODIwYTQifQ"
+        },
+        {
+          "resource": "repo://server/pkg/hub/hub.go#L106-L109",
+          "version": "repo-lines-v1:sha256:15265520480f53f84eaf4f5e487468864693bfef626ad8137a4e6bbdd81e7888:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzcxNGFjY2Q1MDllNGJkNmMwYjk1Nzg4NTc4MDE4ZTg0ZWM0OTI4ZmIzOWQzZmI0NDU3YzRlMjg1NTA3MjU0NyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdjZGE4MmRhNjA2MjM4ZTA1ZTYyMzk5NTY5YzVlZTAzOTkzNDE5NjQ4YWU1ZDQzYTJiZjhjZDYzNDdmODI2MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmY2ODY1MDlmNjcxNWFhZjQxY2JiMmQ3MjRiNWI5NzI3NjE5Zjc2YTBkOGEzOWUwMTRiNjE2ODE1YTRiYzA0MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjkxZTg4ZTdlY2YyODkyYjI3NWJmMDgxZTg1OTVjNTFlNTUyMmMyMzZlMTE5YzhkZDBlMWY0YjM2YjJlY2NlNiJ9"
         }
       ]
     },
@@ -91,10 +95,24 @@
           "version": "repo-lines-v1:sha256:196b781204652cb5e3fcaae9a4023d6b72196752ed60a024b31b703e4eee49f4:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2RhMjU1NmJmNjViOWUwZGRmMDI4ZmZjMjNkMjYwYjcxMjQwYTI5MzRkODRjYmI3YTQyYWI4MThiODQ5NzVmNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTAwNzZmZDkyOThjODgxMzQzZTY3OGE0ZDRmYzk0NjdjMDk1NDM1Nzc5NmY0YmY5MWFlOGY2YzI5NWFjZmZkMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzRmZGMxYzk1NjdjNGRiMjljODA4MTJhNDAwMGM1OTYyYTJhNTc1YTY0ZmJmZGEwOWU4YmI1OGM3NjkyMDFkNCJ9"
         }
       ]
+    },
+    {
+      "id": "claim_5cbe6bd3cd134d1d833ce0a9aa9c3e10",
+      "statement": "hub.RemovePeerById checks PeerStorage.Get(id) first and returns false without broadcasting for a missing peer; for a present peer it deletes the entry, broadcasts the disconnect signal to all other peers, and returns true when the hub is empty unless IsPermanent. TestRemovePeerByIdIdempotent and TestRemovePeerByIdLastPeerTwice pin this duplicate-teardown behavior.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/hub/hub.go#L106-L135",
+          "version": "repo-lines-v1:sha256:cca966e1fff7f1bb8916646f19e93f86630eff51469ab8b1e7444b356f96a320:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3MTRhY2NkNTA5ZTRiZDZjMGI5NTc4ODU3ODAxOGU4NGVjNDkyOGZiMzlkM2ZiNDQ1N2M0ZTI4NTUwNzI1NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmNjg2NTA5ZjY3MTVhYWY0MWNiYjJkNzI0YjViOTcyNzYxOWY3NmEwZDhhMzllMDE0YjYxNjgxNWE0YmMwNDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ5OTJjOWM1ZmVkMjkzYTEwNmQyM2E2NmEwMTc1OTI4MzRiMDY0MWNkYTQ2NjY1MWZjMDRmZjI3OGY0NDg4NjcifQ"
+        },
+        {
+          "resource": "repo://server/pkg/hub/hub_test.go#L148-L184",
+          "version": "repo-lines-v1:sha256:6548ba734396107b963f998081f9e92761f1ebc4bbb13e8c4094d32acdfb97c8:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwZTU2ZjVhZGZlOTg0MTQxOGNkNWIxNzgwNWEzNWYyNjkyYjc2ZmM3YmUwMzNlY2M5YTM1MTUzN2U2ZGZlMmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkzYzhjODdlNTc4NGY3YmM2ZDRhNTJkNTQ5YTdkZjQ3MGY5MmExNGNiYTdkNzkxNWI5ZWFjZWM5M2Y2NjUxNzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVmYmI2YWJiYTkyYTY0OGZjMDRkZWZlYzMyMzc3NDI0NWRlODI0MTc1ODExMjVhZDllYzVkMzA5MDk2NDU5OWMifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-03T07:04:30.122Z"
+    "at": "2026-10-10T01:28:37.861Z"
   }
 }

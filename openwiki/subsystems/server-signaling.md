@@ -2,9 +2,6 @@
 type: "Reference"
 title: "Go Signaling Server"
 openwiki_generated: true
-verified:
-  - by: openwiki/0.6.0
-    at: 2026-10-03T07:04:30.122Z
 sources:
   - id: openwiki-source-926f5bdf2e4b77b0b06cf4e8
     resource: repo://server/cmd/server.go
@@ -16,13 +13,18 @@ sources:
     resource: repo://server/pkg/handler/migrate.go
   - id: openwiki-source-3fcd30e2964f43d36d37064d
     resource: repo://server/pkg/handler/websocket.go
+  - id: openwiki-source-46ad56ef17cb17e8c9ebaae3
+    resource: repo://server/pkg/hub/hub_test.go
   - id: openwiki-source-da50555ad2e1dffee0054a4e
     resource: repo://server/pkg/hub/hub.go
   - id: openwiki-source-95e157f67f42c6cf1b6fe738
     resource: repo://server/pkg/storage/gache.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-10-03T07:04:30.122Z" }
+generated: { by: "hermes", at: "2026-10-10T01:28:37.861Z" }
+verified:
+  - by: openwiki/0.6.0
+    at: 2026-10-10T01:28:37.861Z
 ---
 
 
@@ -90,18 +92,25 @@ creating.
 - **`hub.Hub`** (pkg/hub) owns one hub's peers. `AddPeer` assigns a monotonic
   numeric ID from an `atomic.Uint64` counter, stores the peer in `PeerStorage`,
   broadcasts a `PeerJoinedMessage` to other peers, and sends the new peer a
-  `HubInfoMessage`. `RemovePeerById` deletes the peer, broadcasts a
-  `PeerDisconnectedMessage`, and returns `true` when the hub is now empty
-  (unless the hub is permanent). `SendOfferToPeer` / `SendAnswerToPeer` relay
-  SDP to the target peer. `HandleMessage` is the per-socket read loop.
+  `HubInfoMessage`. `RemovePeerById` is **idempotent**: it first checks the
+  peer exists in `PeerStorage` and returns `false` without broadcasting
+  anything when it is missing, so a duplicate removal cannot double-send the
+  `PeerDisconnectedMessage` or double-trigger hub removal. For a present peer
+  it deletes the peer, broadcasts a `PeerDisconnectedMessage`, and returns
+  `true` when the hub is now empty (unless the hub is permanent).
+  `SendOfferToPeer` / `SendAnswerToPeer` relay SDP to the target peer.
+  `HandleMessage` is the per-socket read loop.
 - **`peer.Peer`** (pkg/peer) wraps a `fasthttp/websocket` connection plus
   metadata; it is guarded by a `sync.Mutex`. `NewPeer` has no ID until
   `AddPeer` sets one.
 
-**Hub teardown** happens in `handler.Upgrade`'s close handler: when the socket
-closes, the peer is closed and `RemovePeerById` is called; if the hub becomes
-empty and is not permanent, `zh.RemoveHubById` drops it. Permanent hubs never
-expire.
+**Hub teardown** happens in two places inside `handler.Upgrade`: the socket's
+close handler (`peer.Close()` + `RemovePeerById` → `zh.RemoveHubById` when the
+hub empties), and a fallback right after `hub.HandleMessage` returns (fires
+only when the read loop exited before the close handler ran, e.g. a read
+error). Both paths are safe to race because `RemovePeerById` is idempotent —
+the second call sees the missing peer, broadcasts nothing, and returns
+`false`. Permanent hubs never expire.
 
 ## Pluggable storage
 

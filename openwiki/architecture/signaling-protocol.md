@@ -3,9 +3,6 @@ type: protocol
 title: Signaling Protocol & Peer Lifecycle
 description: The ZeroHub client/server protobuf wire format, the SDP offer/answer exchange and offer-collision rule, ICE candidate flushing, and the full PeerStatus lifecycle that drives peer negotiation.
 tags: [protobuf, signaling, webrtc, sdp, peer-lifecycle, protocol]
-verified:
-  - by: openwiki/0.6.0
-    at: 2026-10-03T07:04:30.122Z
 sources:
   - id: openwiki-source-718b618612c033c4f36b3a45
     resource: repo://client/src/zeroHub.ts
@@ -16,6 +13,9 @@ sources:
   - id: openwiki-source-da50555ad2e1dffee0054a4e
     resource: repo://server/pkg/hub/hub.go
 generated: { by: "hermes", at: "2026-10-03T07:04:30.122Z" }
+verified:
+  - by: openwiki/0.6.0
+    at: 2026-10-10T01:28:37.861Z
 ---
 
 # Signaling Protocol & Peer Lifecycle
