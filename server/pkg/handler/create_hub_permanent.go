@@ -24,6 +24,11 @@ func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
 	}
 
 	hubId := string(ctx.QueryArgs().Peek("id"))
+	// Auth runs first (401 for unauthenticated requests wins over 400 for
+	// a bad id), then the ID is validated before any hub-state access.
+	if !validHubId(hubId) {
+		return h.rejectInvalidHubIdParam(ctx)
+	}
 	if !validJSONQueryParam(ctx, "hubMetadata") {
 		return h.rejectInvalidJSONParam(ctx, "hubMetadata")
 	}

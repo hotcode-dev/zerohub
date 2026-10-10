@@ -38,6 +38,12 @@ func (h *handler) rejectInvalidJSONParam(ctx *fasthttp.RequestCtx, param string)
 // uuid that cannot collide, so the 409 branch is unreachable there — the
 // shared path just stays safe.
 func (h *handler) CreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string) error {
+	// Static callers pass the `id` param verbatim; an empty/whitespace ID
+	// would otherwise create a hub under the empty-string key. Random-hub
+	// callers pass a uuid, which is never empty, so this is a no-op there.
+	if !validHubId(hubId) {
+		return h.rejectInvalidHubIdParam(ctx)
+	}
 	if !validJSONQueryParam(ctx, "hubMetadata") {
 		return h.rejectInvalidJSONParam(ctx, "hubMetadata")
 	}
