@@ -24,6 +24,10 @@ func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
 		return h.Response(ctx, fasthttp.StatusConflict, map[string]string{"error": "hub id already exists"})
 	}
 
+	if !validJSONQueryParam(ctx, "hubMetadata") {
+		return h.rejectInvalidJSONParam(ctx, "hubMetadata")
+	}
+
 	newHub, err := h.zeroHubPermanent.NewHub(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), true)
 	if err != nil {
 		log.Error().Err(err).Send()

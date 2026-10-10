@@ -12,6 +12,10 @@ import (
 // The get-or-create is atomic at the ZeroHub layer, so concurrent join-or-create
 // calls for the same ID always land in the same hub.
 func (h *handler) JoinOrCreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string) error {
+	if !validJSONQueryParam(ctx, "hubMetadata") {
+		return h.rejectInvalidJSONParam(ctx, "hubMetadata")
+	}
+
 	newHub, err := zh.GetOrCreateHub(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), false)
 	if err != nil {
 		log.Error().Err(err).Send()
