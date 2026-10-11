@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7f4445426a448a4ee1ec9946850758c5db0fe972c8edd6743b37b237705adbe9",
+  "pageVersion": "sha256:f7005bec80ca48f81902c0434380d91bb8b0d94771d4f7fc46a2fa838ba1cb02",
   "claims": [
     {
       "id": "claim_1d82fd64055a4062925029c4ae4e6575",
@@ -68,31 +68,39 @@
     },
     {
       "id": "claim_4df69d732b3049588880a9ea4bfaf548",
-      "statement": "The server applies a 60 requests/minute ulule/limiter v3 fasthttp middleware keyed by the socket peer address by default, or by the outermost X-Forwarded-For IP only when APP_TRUST_PROXY is set (which must only be enabled behind a proxy that strips/replaces that header).",
+      "statement": "The server applies a 60 requests/minute ulule/limiter v3 fasthttp middleware keyed by the socket peer address by default, or by the outermost X-Forwarded-For IP only when APP_TRUST_PROXY is set; handler.clientIP applies the same trust logic for IP-keyed hubs so /v1/ip-hubs/* do not collapse behind a reverse proxy.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/handler.go#L162-L200",
-          "version": "repo-lines-v1:sha256:2d0485b3b24bb86cf9cde3094f354c1093bc6d80dd8507c0c2e3340aadf63f4e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MzE3ZTZiOTJjZTFlNzQ2YWI3M2U2YTFjODc3MGJlNzRhYjE5NmZkOGU2OTgwNDBhM2VkZWRiODhhNGRkMjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ3MWI5NjhiNmY4MzE5N2EyMDk4Nzc5MGM3MzU0ZmZlZjZhNDgwMDk0ZjljYjE3ZTQwODA2ZTc3MzIxMDdmNTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE4ODIyY2MwM2QwNDMwYjM0MTExNzFmMjI1ODZmYjMwODk2Mjg5OTUyOTNhNzEyNTMyYzZiN2FlZjBlYjdiYTkifQ"
+          "resource": "repo://server/pkg/handler/handler.go",
+          "version": "repo-file-v1:sha256:b78551509ed1f4345bcc19eea5d03990fc3361d7f7599ff4049b1a1c7332e40a"
         }
       ]
     },
     {
       "id": "claim_91ae4835b8e64652b68f503c4c27458e",
-      "statement": "Zero-downtime migration: an authenticated /v1/admin/migrate?host=<new> call sets backupHost under a read-write mutex and then atomically flips isMigrating; while migrating, create/join-or-create requests are rejected via ForwardMigrate, which upgrades the connection and sends a going-away close (code 1001) whose reason is the backup host so clients reconnect to the new host.",
+      "statement": "Zero-downtime migration: an authenticated /v1/admin/migrate?host=<new> call first validates host via validateBackupHost (bare host or host:port, no scheme/path/query/fragment/userinfo, port 0..65535, 400 with no state change on failure); for a valid host it sets backupHost under migrateMu and then atomically flips isMigrating; while migrating, create/join-or-create requests are rejected via ForwardMigrate, which upgrades the connection and sends a going-away close (code 1001) whose reason is the backup host so clients reconnect to the new host.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/migrate.go#L23-L46",
-          "version": "repo-lines-v1:sha256:b1e763e5fdd5374e60f0310812b76ce49aab9a71e96dc14e0f423191cf6f925c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4YmFmMmYwYzMzNjMxYTg3MThiZmQ5OTdhOGRkZmJjOTgyYzM2ZTQxOThmOTgwMWIwZTkzZTQyZTZjMWJiMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI5MmQ2ZjFlMTUyNmMyNmY0NTRmMWE4YWVkM2FlYjU4ODZhMGU4YTJkZjYxYjZjZTRmNDdkNzg5M2MyZmI1OGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI2NWQ2Yzc1NDdmOGJjZDg1NDEwMDZhZDYzMGI4YmE0NGMzNmZiNDAwNmJhOTMyMTM1ZWYxNDNiYzhjMGMwMTAifQ"
+          "resource": "repo://server/pkg/handler/migrate.go",
+          "version": "repo-file-v1:sha256:1083e767529c337e711d65aedf041913410d7bf86ae3d59fcd9bb990822a03e0"
+        },
+        {
+          "resource": "repo://server/pkg/handler/migrate_test.go",
+          "version": "repo-file-v1:sha256:1b20c75be3fdd074a05fd88843d204143bbb92ea6790b5a941bec210ff657963"
         }
       ]
     },
     {
       "id": "claim_379d28f9a4504ca69894f2b9f180016c",
-      "statement": "Storage backends are selected by config: MemoryStorage is a mutex-guarded map, and GacheStorage wraps a ntsd/gache/v2 Gache instance with the expired hook disabled.",
+      "statement": "Storage backends are selected by config: MemoryStorage is a mutex-guarded map, and GacheStorage wraps a ntsd/gache/v2 Gache instance with the expired hook disabled and default expiration overridden to NoTTL via SetDefaultExpire (gache's 30s default TTL would otherwise expire live hub/peer entries).",
       "evidence": [
         {
-          "resource": "repo://server/pkg/storage/gache.go#L17-L23",
-          "version": "repo-lines-v1:sha256:196b781204652cb5e3fcaae9a4023d6b72196752ed60a024b31b703e4eee49f4:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2RhMjU1NmJmNjViOWUwZGRmMDI4ZmZjMjNkMjYwYjcxMjQwYTI5MzRkODRjYmI3YTQyYWI4MThiODQ5NzVmNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTAwNzZmZDkyOThjODgxMzQzZTY3OGE0ZDRmYzk0NjdjMDk1NDM1Nzc5NmY0YmY5MWFlOGY2YzI5NWFjZmZkMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzRmZGMxYzk1NjdjNGRiMjljODA4MTJhNDAwMGM1OTYyYTJhNTc1YTY0ZmJmZGEwOWU4YmI1OGM3NjkyMDFkNCJ9"
+          "resource": "repo://server/pkg/storage/gache.go",
+          "version": "repo-file-v1:sha256:a2c095ede439e8bb046806e3bf816c6f529d6e0d69db46f4a86960aec451fbe5"
+        },
+        {
+          "resource": "repo://server/pkg/storage/storage_test.go",
+          "version": "repo-file-v1:sha256:848c4b0f6c08f5b21b36a1b1664d76cf99bd459c5a52aa8e7f2ee3dc005ea422"
         }
       ]
     },
@@ -109,10 +117,38 @@
           "version": "repo-lines-v1:sha256:6548ba734396107b963f998081f9e92761f1ebc4bbb13e8c4094d32acdfb97c8:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwZTU2ZjVhZGZlOTg0MTQxOGNkNWIxNzgwNWEzNWYyNjkyYjc2ZmM3YmUwMzNlY2M5YTM1MTUzN2U2ZGZlMmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkzYzhjODdlNTc4NGY3YmM2ZDRhNTJkNTQ5YTdkZjQ3MGY5MmExNGNiYTdkNzkxNWI5ZWFjZWM5M2Y2NjUxNzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVmYmI2YWJiYTkyYTY0OGZjMDRkZWZlYzMyMzc3NDI0NWRlODI0MTc1ODExMjVhZDllYzVkMzA5MDk2NDU5OWMifQ"
         }
       ]
+    },
+    {
+      "id": "claim_dae7b9f58eef489a93ce60390462aa3c",
+      "statement": "Create/join-by-ID endpoints reject a missing or empty id query parameter with 400 (validHubId + rejectInvalidHubIdParam) instead of silently creating a hub under the empty-string key, which would squat that key and pull later no-id joins into a junk hub.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/handler/hub_id_validation_test.go",
+          "version": "repo-file-v1:sha256:b5e83e63d35238d2ee90dfc09b067c554a8c0eceaf64688c622cf405902dd63c"
+        },
+        {
+          "resource": "repo://server/pkg/handler/validation.go",
+          "version": "repo-file-v1:sha256:3a43c23f969801c49e4e5f4e00a9a520d398274044c0b711d4b8e61043efcb22"
+        }
+      ]
+    },
+    {
+      "id": "claim_4274b3013b23457fa90f75c5bda706b9",
+      "statement": "/v1/status is a public read-only endpoint that returns a static Access-Control-Allow-Origin: * plus Vary: Origin rather than reflecting the request's Origin header, avoiding the reflect-any-origin CORS anti-pattern that would expose migration state to malicious cross-origin sites.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/handler/status.go",
+          "version": "repo-file-v1:sha256:4a095ec36caaf93541ba7b8a700889d2280790745442b95f3f184b3c0664daf6"
+        },
+        {
+          "resource": "repo://server/pkg/handler/status_cors_test.go",
+          "version": "repo-file-v1:sha256:ac992fb41aaef603d21dd483d43a02330082942ed531f36ac386ce190f2f3fa0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-10T01:28:37.861Z"
+    "at": "2026-10-11T01:29:09.406Z"
   }
 }
