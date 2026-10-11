@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bc13e60dacdbc36839fdded9b3ecf0185785f59fa85927c3b748fc0172b53d25",
+  "pageVersion": "sha256:cbc5dd0c46da98e1f592d9f289d34da7f8c3a8c2ee64a34702c14cbf0a86c7e6",
   "claims": [
     {
       "id": "claim_9b265d25c6ea46ffb5cbb15403e8cd85",
@@ -61,10 +61,28 @@
           "version": "repo-file-v1:sha256:88e925b14c788e4c2ea098abc8791c1ad186880027ba73f56c3c7d6ff0fcb8ab"
         }
       ]
+    },
+    {
+      "id": "claim_f33facbd9da84a768fa22cfc3615c800",
+      "statement": "The client test suite includes regression unit specs run through the Playwright unit harness with a mocked RTCPeerConnection: unit-malformed-metadata.spec.ts pins that malformed hub or peer metadata is tolerated via the safeParseJson fallback rather than crashing the WebSocket message dispatcher, and unit-reconnect-peer-prune.spec.ts pins that hubInfoMessage roster reconciliation prunes peers no longer in the server roster after a reconnect.",
+      "evidence": [
+        {
+          "resource": "repo://test/tests/unit-malformed-metadata.spec.ts",
+          "version": "repo-file-v1:sha256:86bbfe2e8b9f83341959aac8924f4e634c829d9cf659d390601b14e242c0fd22"
+        },
+        {
+          "resource": "repo://test/tests/unit-reconnect-peer-prune.spec.ts",
+          "version": "repo-file-v1:sha256:69ae50a238d2efa9c453979bbf103c5914b902f909cb9fbe96ce5abfe5ffea70"
+        },
+        {
+          "resource": "repo://test/unit-harness/index.ts",
+          "version": "repo-file-v1:sha256:b13b276815b174a91a4d337fb29ddcd746d9b3b9490e93ca19a13ee505cefef8"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-11T01:29:09.406Z"
+    "at": "2026-10-11T02:02:37.375Z"
   }
 }

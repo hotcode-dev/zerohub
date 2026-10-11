@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f7005bec80ca48f81902c0434380d91bb8b0d94771d4f7fc46a2fa838ba1cb02",
+  "pageVersion": "sha256:ab8ec3aff2e3df2c85b04821ce879ecd9cbde53495d9350f990f7764a90dad13",
   "claims": [
     {
       "id": "claim_1d82fd64055a4062925029c4ae4e6575",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://server/cmd/server.go#L26-L50",
-          "version": "repo-lines-v1:sha256:a31a144a8b76f8df74c7d883b47a817266b8f9ac2321c0d6cf16ef0016c7175c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxODcxM2Y1NjFiODU2MTkxMzMwYzY4Njk3Njg2N2M1MzA2ZThiNzQzMjZjN2EyNzg5MTE1MDQ4Zjg5YTAyZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkZWEwZTRhYmQ0YzlkN2FkMjBiZDBmMjk5NDE1Njc4ZjYzMTZmNzg1NzRlYjBhMWQ0YzA0MjQ2MDZhZWI2ZDUifQ"
+          "version": "repo-lines-v1:sha256:a31a144a8b76f8df74c7d883b47a817266b8f9ac2321c0d6cf16ef0016c7175c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxODcxM2Y1NjFiODU2MTkxMzMwYzY4Njk3Njg2N2M1MzA2ZThiNzQzMjZjN2EyNzg5MTE1MDQ4Zjg5YTAyZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkZWEwZTRhYmQ0YzlkN2FkMjBiZDBmMjk5NDE1Njc4ZjYzMTZmNzg1NzRlYjBhMWQ0YzA0MjQ2MDZhZWI2ZDUifQ=="
         }
       ]
     },
@@ -18,7 +18,7 @@
       "evidence": [
         {
           "resource": "repo://server/pkg/config/config.go#L28-L40",
-          "version": "repo-lines-v1:sha256:db0b35d3b8b6e8ea8de056a900a7ad1369655fbb55ac3e3d0d66f213f4e689df:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmYWJkYTI2NGU5MDhhNDg0NmRmZDlhNDliNGE5ZDA5ZDgzYzY0ODI1ZmZhODY3YzllOTE5MTY5Zjk3NGY0NzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkYTg1ODBiYzc5NjY2NWQxOWU2MjFjOTVkOWZhMDA3YzcwNmZlNTc0ZDM1NGFiMDg0ZWQzZjg0OGJmMDYzNDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMjhlMTE0YTBiZjg5YjE4ZmUyODM2Zjc5MzI0ODJmMDJjODc1MTQ5MGVkZDczMmI3ODAzNzdiYzk4NmQ5NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEwNjhjOTE3Y2UxMDdlZjIzMzNlNmI4YmJkODAwZTA2ZTFhNjE4YzZjYTZkY2I1OGRlYWZiODA4ZTMyMGY0YjEifQ"
+          "version": "repo-lines-v1:sha256:db0b35d3b8b6e8ea8de056a900a7ad1369655fbb55ac3e3d0d66f213f4e689df:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmYWJkYTI2NGU5MDhhNDg0NmRmZDlhNDliNGE5ZDA5ZDgzYzY0ODI1ZmZhODY3YzllOTE5MTY5Zjk3NGY0NzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkYTg1ODBiYzc5NjY2NWQxOWU2MjFjOTVkOWZhMDA3YzcwNmZlNTc0ZDM1NGFiMDg0ZWQzZjg0OGJmMDYzNDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMjhlMTE0YTBiZjg5YjE4ZmUyODM2Zjc5MzI0ODJmMDJjODc1MTQ5MGVkZDczMmI3ODAzNzdiYzk4NmQ5NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEwNjhjOTE3Y2UxMDdlZjIzMzNlNmI4YmJkODAwZTA2ZTFhNjE4YzZjYTZkY2I1OGRlYWZiODA4ZTMyMGY0YjEifQ=="
         }
       ]
     },
@@ -28,7 +28,7 @@
       "evidence": [
         {
           "resource": "repo://server/pkg/handler/handler.go#L137-L149",
-          "version": "repo-lines-v1:sha256:fdafa857d3ddb0708244f56f919a64a2932f8676afee0cbbd0b7e218a85339a1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmZGFjN2ZkNzU4MGI5NGViMWNmNmFiZmRjZjJlNjg0MWJjNmQ4Yjg0OGU0MzhjZDE1NDdlMjAxMjc5MjI3MDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljOWJiNmZmNmJjMGE2MDlkMmUzYzFmMDg2ZDMxYmFlZTNjYjAwNGVlZGZkNjA3NmFmOGI2MzY5NzBhY2Q2ZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmN2FmODVhOTk1ZWY1YmY3ZWQ5MmIxMGJjOWM4Y2I3ZWJkYjBkZjQ4NzEzYzM0NDg5MjI5ZTBiNjc4OTliMTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1Yjg1YjU4YTRkMjFjZmEyNTcwYWNiODk5NWU5ZDhjNzcyNzlkZTFjMjI2NDI1YzkzYjY0ZTk4Njc4NzBkZDQifQ"
+          "version": "repo-lines-v1:sha256:37094b92ee24317319136016132242c0c360b6a015892cc3d5bc5ebdfd966dfc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5MmQ4ZmQ2NzA0ODBjYTA1MTE4YWFlYzM0YzM0OTg4NTNlY2E5YTY0OGY0NjMxZDUxMmYzNDRhYjNhOWQ1ZjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZiMDU3NTUxMDA4ZDUxNzI2NDYwMjQ1NWIwMGU5YmFlZGIwZjlkZjQ3ZGMwZWFkZGQwODg5OWM1NjNkNmU4N2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2YjYzMWQ0NGRiYWUyODRjZmI5NTc5MzA5MGU4ZDM1MzVhY2Q5YzBlNDYwN2Y5NzZlNTQ0ODA0NzMxNzFlNDgifQ=="
         }
       ]
     },
@@ -38,7 +38,7 @@
       "evidence": [
         {
           "resource": "repo://server/pkg/zerohub/zerohub.go#L85-L101",
-          "version": "repo-lines-v1:sha256:0c9d9b4222480ef205e5c3031845360f2b03b5b88e6b0c7133d0dee40eeaa22f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZjODAxNjY4Nzg4OWM0YjY2OWIxNWEwZTc1YTM2OGE4MWNmZGM2M2U1YmE4NDE1NDQ5YWU1MmRjYTI4NjZmNzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQyNDBkNDRlMzA3Yjg4ZGJkMjk2OWQ2NjRmNTAwZWU5MGZhMGQwODkwMTExYzBlYWRiODdmYWYzYWYyMzlmNTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJjZjM0NWZmZjk4YmYwMzRiYWE5MDk0YzgyNjEyOTBkNTU4ZjhmYWUwZGUwOTYwMTlhNWYxMzA0ZjBmMGMzZGMifQ"
+          "version": "repo-lines-v1:sha256:c28d9c8f790459ec109f62774ac8d0efc62ce618a4b21847a6d165ef197a8cbd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MGRjZTEyNzA1MGQ4YzJlOWY3MjRiY2JlMjQyNWUyODE2Y2M2M2Y5YzM2ZjY1NmNjNGEzOGFkZmJmYmRjMGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1MWYxMjg2NGFkYTZlOTkxOGVhNzExYjAzYmI3Y2ViODkyYWQ3NTM5NzNmYjAzNmUwNDNkOTA0YTE2ZTZiMjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZjZDg5NmRkMDdkNDM4ZTIyZGUwNTg0MmJiM2RkYjE4N2Y5M2VkYjE0ZTcxNzIxOTQyYjQ4MzNiZDZlM2YzODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQyNDBkNDRlMzA3Yjg4ZGJkMjk2OWQ2NjRmNTAwZWU5MGZhMGQwODkwMTExYzBlYWRiODdmYWYzYWYyMzlmNTUifQ=="
         }
       ]
     },
@@ -48,7 +48,7 @@
       "evidence": [
         {
           "resource": "repo://server/pkg/hub/hub.go#L68-L100",
-          "version": "repo-lines-v1:sha256:70a0f5a53cf2787a677b79b042633229ebe20dc6bf7e5d150ef234db464a20ff:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiMTQ5NDZhZDNiODJmNmJlMjE1NTg0MDRhNWY3MTQ2YTM4YTE3ZDRmNzUwZWQzZGZmNzI4Nzk3YTY4YWRhODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUxMzk4ZThlYWFlYTg3NzAyMTI4NjU5MTc0MTdkY2NkYWUyNTI3N2FjMWY1NGYzZmEwZjYwMWM2NWI0MjUwYTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3YTFiNDIzMzA0ZmJlNGZjODVhODc4MjMzMzIwNzI4ZjZhMTEyMzNkNDkyM2U3MTYyZmIyYjA0MjJkZjMzNzIifQ"
+          "version": "repo-lines-v1:sha256:70a0f5a53cf2787a677b79b042633229ebe20dc6bf7e5d150ef234db464a20ff:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiMTQ5NDZhZDNiODJmNmJlMjE1NTg0MDRhNWY3MTQ2YTM4YTE3ZDRmNzUwZWQzZGZmNzI4Nzk3YTY4YWRhODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUxMzk4ZThlYWFlYTg3NzAyMTI4NjU5MTc0MTdkY2NkYWUyNTI3N2FjMWY1NGYzZmEwZjYwMWM2NWI0MjUwYTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4YzM3NWVjYWI5YjY2YmRiZWJkOWMzM2MyMjQ0MGY4OTI3NjFjMTVkNGE4OWQ2ZTY2M2E4ZDJmZjBjNzI4OTYifQ=="
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://server/pkg/handler/websocket.go#L27-L48",
-          "version": "repo-lines-v1:sha256:f156c70d169fa5d2ce1876701e397bc78ec66cee9be78e51704b36a14a4df8fb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhZDI5NjE0MGU5NzUxZjNlMWRhMDY0NzZmODIyMGZkM2E4ZTYwMjE4MmI1NWJmMjNjZDI1MjgxNmQ3MzQwM2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0ZWZjNDk0MThkMjZkY2YxMjliMjJhNmFhMjExMDhjZWVjMzc2NzdhMzJkMDhlOWQ1ZmVlMzVkZGE2NmJiOWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhZjJkNmFiMWNlZDkwZDYxNDM0OTc0MTFiOTJiOTlhMGQ3Y2JlYzAzZWYwZDE0ODlhODVkYWI4YWU3MTBhZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjZGE1MDUyYjZkYzE3ZGQ5ZWM1ZDEwMDg0MTNjZGQzNDJjZGU5YTcyMzZjYzIyNmEzZjBkYzhjYWQ2ODIwYTQifQ"
+          "version": "repo-lines-v1:sha256:ae7ed98a85c8b7941335b659d406fc57a943d29d298913d785efa7855bea12b1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliZDc1NjQ0M2I2ZTU0NTFmN2YzNjlkZmNiY2VkOGY3Y2E2MTliOGMwODU3MzRmY2U3MDNhMzg4MzYzNWE2ZTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg2ZTkxZWNjYjhiNDEyMTBhNzQwZGNhZjQzZGEzNDMyMzA2ODQzZGFhYzJhNzVkNmQ4ZjVjZmYxYmZiZTNmMjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRjMGUxNjU4MzNjZTkwNjJmNjAyYWFlNTY1MzM1OGRiYzgyOTIzYzE0ZDk4ZmYxNzZmYjEwMzI1NTkzNDk0YzYifQ=="
         },
         {
           "resource": "repo://server/pkg/hub/hub.go#L106-L109",
@@ -68,39 +68,39 @@
     },
     {
       "id": "claim_4df69d732b3049588880a9ea4bfaf548",
-      "statement": "The server applies a 60 requests/minute ulule/limiter v3 fasthttp middleware keyed by the socket peer address by default, or by the outermost X-Forwarded-For IP only when APP_TRUST_PROXY is set; handler.clientIP applies the same trust logic for IP-keyed hubs so /v1/ip-hubs/* do not collapse behind a reverse proxy.",
+      "statement": "The server applies a 60 requests/minute ulule/limiter v3 fasthttp middleware keyed by the socket peer address by default, or by the outermost X-Forwarded-For IP only when APP_TRUST_PROXY is set (which must only be enabled behind a proxy that strips or replaces that header). The same clientIP() helper also derives the hub ID for IP-keyed hubs, so behind a trusted proxy the IP-hub ID tracks the real client IP rather than the proxy socket address.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/handler.go",
-          "version": "repo-file-v1:sha256:b78551509ed1f4345bcc19eea5d03990fc3361d7f7599ff4049b1a1c7332e40a"
+          "resource": "repo://server/pkg/handler/handler.go#L154-L238",
+          "version": "repo-lines-v1:sha256:8fead4c964ce4653409e639c22f885f5b930a57354f5510757b01ec95daafad3:eyJzZWxlY3RlZExpbmVDb3VudCI6ODUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzYzJjNGJlODZhZWY0YzlhNDFkYWVlYTc2MjNjZTNiNzFjNDQ1OWUwYjE4NzA1NmM1MGYwMGFiMDNmN2Y3ZjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNlNGU0MmY3MDQwMTdiZmYxMWViODYxODQ1ZDMyYTA0MjRhNjc4OGJhMWU3NDQyOGFiMTI2MDJjOGEzZmEyZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhNTFmODNlM2VkOTU2MDYzMjFlNDI3NWYxYzBjM2MyMmE0ZTliNTg4NGJhYWJlYzZjNjRmYWUzMTQwZmNhY2UifQ=="
+        },
+        {
+          "resource": "repo://server/pkg/handler/join_or_create_hub_ip.go#L16-L22",
+          "version": "repo-lines-v1:sha256:931f7a4a8f3b00bc368d95200ea9249bd69fc104890935a4f567e5c4f950d4d5:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjI3OTNiYmU3MDFjN2Y4YWI0MTFlMDI0ZjAyYjVmNjgwZmYwNTY2Y2Y4ZWMyYmUzNjY5Zjk5ODEwYjliYjM2ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDhhMGFmYzNhODlmOWM1OThiYTJmOGZhMWFhYjcxNjE5OWMyYjcxODBiZmViMDRkZTczOTlhZWMyNjlkZjM3OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiJ9"
         }
       ]
     },
     {
       "id": "claim_91ae4835b8e64652b68f503c4c27458e",
-      "statement": "Zero-downtime migration: an authenticated /v1/admin/migrate?host=<new> call first validates host via validateBackupHost (bare host or host:port, no scheme/path/query/fragment/userinfo, port 0..65535, 400 with no state change on failure); for a valid host it sets backupHost under migrateMu and then atomically flips isMigrating; while migrating, create/join-or-create requests are rejected via ForwardMigrate, which upgrades the connection and sends a going-away close (code 1001) whose reason is the backup host so clients reconnect to the new host.",
+      "statement": "Zero-downtime migration: an authenticated /v1/admin/migrate?host=<new> call first validates the host with validateBackupHost (a bare host or host:port, rejecting any scheme, //, path, query, fragment, userinfo, or out-of-range port with a 400 without touching state), then sets backupHost under a read-write mutex and atomically flips isMigrating; while migrating, create/join-or-create requests are rejected via ForwardMigrate, which upgrades the connection and sends a going-away close (code 1001) whose reason is the backup host so clients reconnect to the new host.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/migrate.go",
-          "version": "repo-file-v1:sha256:1083e767529c337e711d65aedf041913410d7bf86ae3d59fcd9bb990822a03e0"
+          "resource": "repo://server/pkg/handler/migrate.go#L100-L141",
+          "version": "repo-lines-v1:sha256:eb63f6d954b9a95955b60eb95d5f6d99d63316c10939f1706e2556804280241d:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhNzA1ODIxYzNhYjhjZjgyNTBhMmIxZDlhZmY4MzYxMGMxYWFjYmViZmIwNmZiNzM4YzgwZDFiMDMyNTdkYTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ1NTA2MmViNGM2M2FkNTE5NTI2ODQwNDU5YWZhZjdkNWY1OTM3MTIxYjcxNWRmZmRkMzQ1M2VjYjc5YmU1MzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIifQ=="
         },
         {
-          "resource": "repo://server/pkg/handler/migrate_test.go",
-          "version": "repo-file-v1:sha256:1b20c75be3fdd074a05fd88843d204143bbb92ea6790b5a941bec210ff657963"
+          "resource": "repo://server/pkg/handler/migrate.go#L26-L57",
+          "version": "repo-lines-v1:sha256:25c4fe50355c2b330abb396e45bbb7fe563dcf54345deb8431d94c2beddf775a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4YmFmMmYwYzMzNjMxYTg3MThiZmQ5OTdhOGRkZmJjOTgyYzM2ZTQxOThmOTgwMWIwZTkzZTQyZTZjMWJiMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI5MmQ2ZjFlMTUyNmMyNmY0NTRmMWE4YWVkM2FlYjU4ODZhMGU4YTJkZjYxYjZjZTRmNDdkNzg5M2MyZmI1OGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI2NWQ2Yzc1NDdmOGJjZDg1NDEwMDZhZDYzMGI4YmE0NGMzNmZiNDAwNmJhOTMyMTM1ZWYxNDNiYzhjMGMwMTAifQ=="
         }
       ]
     },
     {
       "id": "claim_379d28f9a4504ca69894f2b9f180016c",
-      "statement": "Storage backends are selected by config: MemoryStorage is a mutex-guarded map, and GacheStorage wraps a ntsd/gache/v2 Gache instance with the expired hook disabled and default expiration overridden to NoTTL via SetDefaultExpire (gache's 30s default TTL would otherwise expire live hub/peer entries).",
+      "statement": "Storage backends are selected by config: MemoryStorage is a mutex-guarded map, and GacheStorage wraps a ntsd/gache/v2 Gache instance with the expired hook disabled and the default TTL overridden to gache.NoTTL so hub and peer entries live until the application removes them explicitly rather than expiring after the 30s default that gache applies to every Set.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/storage/gache.go",
-          "version": "repo-file-v1:sha256:a2c095ede439e8bb046806e3bf816c6f529d6e0d69db46f4a86960aec451fbe5"
-        },
-        {
-          "resource": "repo://server/pkg/storage/storage_test.go",
-          "version": "repo-file-v1:sha256:848c4b0f6c08f5b21b36a1b1664d76cf99bd459c5a52aa8e7f2ee3dc005ea422"
+          "resource": "repo://server/pkg/storage/gache.go#L17-L28",
+          "version": "repo-lines-v1:sha256:9c965382e8ae0c8887680fa7f8dc948ac5e90dc9c824665b71feb760af6f5285:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkYTI1NTZiZjY1YjllMGRkZjAyOGZmYzIzZDI2MGI3MTI0MGEyOTM0ZDg0Y2JiN2E0MmFiODE4Yjg0OTc1ZjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUwMDc2ZmQ5Mjk4Yzg4MTM0M2U2NzhhNGQ0ZmM5NDY3YzA5NTQzNTc3OTZmNGJmOTFhZThmNmMyOTVhY2ZmZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM0ZmRjMWM5NTY3YzRkYjI5YzgwODEyYTQwMDBjNTk2MmEyYTU3NWE2NGZiZmRhMDllOGJiNThjNzY5MjAxZDQifQ=="
         }
       ]
     },
@@ -110,45 +110,37 @@
       "evidence": [
         {
           "resource": "repo://server/pkg/hub/hub.go#L106-L135",
-          "version": "repo-lines-v1:sha256:cca966e1fff7f1bb8916646f19e93f86630eff51469ab8b1e7444b356f96a320:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3MTRhY2NkNTA5ZTRiZDZjMGI5NTc4ODU3ODAxOGU4NGVjNDkyOGZiMzlkM2ZiNDQ1N2M0ZTI4NTUwNzI1NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmNjg2NTA5ZjY3MTVhYWY0MWNiYjJkNzI0YjViOTcyNzYxOWY3NmEwZDhhMzllMDE0YjYxNjgxNWE0YmMwNDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ5OTJjOWM1ZmVkMjkzYTEwNmQyM2E2NmEwMTc1OTI4MzRiMDY0MWNkYTQ2NjY1MWZjMDRmZjI3OGY0NDg4NjcifQ"
+          "version": "repo-lines-v1:sha256:cca966e1fff7f1bb8916646f19e93f86630eff51469ab8b1e7444b356f96a320:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3MTRhY2NkNTA5ZTRiZDZjMGI5NTc4ODU3ODAxOGU4NGVjNDkyOGZiMzlkM2ZiNDQ1N2M0ZTI4NTUwNzI1NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmNjg2NTA5ZjY3MTVhYWY0MWNiYjJkNzI0YjViOTcyNzYxOWY3NmEwZDhhMzllMDE0YjYxNjgxNWE0YmMwNDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ5OTJjOWM1ZmVkMjkzYTEwNmQyM2E2NmEwMTc1OTI4MzRiMDY0MWNkYTQ2NjY1MWZjMDRmZjI3OGY0NDg4NjcifQ=="
         },
         {
           "resource": "repo://server/pkg/hub/hub_test.go#L148-L184",
-          "version": "repo-lines-v1:sha256:6548ba734396107b963f998081f9e92761f1ebc4bbb13e8c4094d32acdfb97c8:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwZTU2ZjVhZGZlOTg0MTQxOGNkNWIxNzgwNWEzNWYyNjkyYjc2ZmM3YmUwMzNlY2M5YTM1MTUzN2U2ZGZlMmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkzYzhjODdlNTc4NGY3YmM2ZDRhNTJkNTQ5YTdkZjQ3MGY5MmExNGNiYTdkNzkxNWI5ZWFjZWM5M2Y2NjUxNzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVmYmI2YWJiYTkyYTY0OGZjMDRkZWZlYzMyMzc3NDI0NWRlODI0MTc1ODExMjVhZDllYzVkMzA5MDk2NDU5OWMifQ"
+          "version": "repo-lines-v1:sha256:6548ba734396107b963f998081f9e92761f1ebc4bbb13e8c4094d32acdfb97c8:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwZTU2ZjVhZGZlOTg0MTQxOGNkNWIxNzgwNWEzNWYyNjkyYjc2ZmM3YmUwMzNlY2M5YTM1MTUzN2U2ZGZlMmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkzYzhjODdlNTc4NGY3YmM2ZDRhNTJkNTQ5YTdkZjQ3MGY5MmExNGNiYTdkNzkxNWI5ZWFjZWM5M2Y2NjUxNzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVmYmI2YWJiYTkyYTY0OGZjMDRkZWZlYzMyMzc3NDI0NWRlODI0MTc1ODExMjVhZDllYzVkMzA5MDk2NDU5OWMifQ=="
         }
       ]
     },
     {
-      "id": "claim_dae7b9f58eef489a93ce60390462aa3c",
-      "statement": "Create/join-by-ID endpoints reject a missing or empty id query parameter with 400 (validHubId + rejectInvalidHubIdParam) instead of silently creating a hub under the empty-string key, which would squat that key and pull later no-id joins into a junk hub.",
+      "id": "claim_b7c8cd3abfc340d18ae8650a7ca05b08",
+      "statement": "CheckAdminAuth compares the base64-decoded Authorization header against APP_CLIENT_SECRET using crypto/subtle.ConstantTimeCompare, which closes the timing side-channel that a plain non-constant-time string comparison would leave open; on failure it writes a 401 JSON body and returns errAdminUnauthorized so callers perform no state mutation after an auth failure.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/hub_id_validation_test.go",
-          "version": "repo-file-v1:sha256:b5e83e63d35238d2ee90dfc09b067c554a8c0eceaf64688c622cf405902dd63c"
-        },
-        {
-          "resource": "repo://server/pkg/handler/validation.go",
-          "version": "repo-file-v1:sha256:3a43c23f969801c49e4e5f4e00a9a520d398274044c0b711d4b8e61043efcb22"
+          "resource": "repo://server/pkg/handler/auth.go#L21-L38",
+          "version": "repo-lines-v1:sha256:7ecbbd4e0f945d8ceb6ef92a6c806cc98634b9e46c7c18665c324cd2ceb1900d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkYTEyODNhOWRiNzAyMjc1YWUzMWZkZDBlMzRkMDIzNTMxYmM0NTIwNjE3ZWJiZDcxOWRiM2YyODRiMjE5MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ0ZDgzYjgwYzM3NjNhMWIzM2ZjNGM4ZDk3ZjliM2NiMTI1ODZhYTk5NDQ3MTM3ZmY1YmM1OTYzMjNiMmVjODgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIifQ=="
         }
       ]
     },
     {
-      "id": "claim_4274b3013b23457fa90f75c5bda706b9",
-      "statement": "/v1/status is a public read-only endpoint that returns a static Access-Control-Allow-Origin: * plus Vary: Origin rather than reflecting the request's Origin header, avoiding the reflect-any-origin CORS anti-pattern that would expose migration state to malicious cross-origin sites.",
+      "id": "claim_b250964785404c4591fbca79f764bdd7",
+      "statement": "/v1/status is a public read-only health and migration endpoint that answers with a static Access-Control-Allow-Origin: * plus Vary: Origin, a constant rather than a reflection of the request Origin header, because reflecting an arbitrary origin is the classic CORS anti-pattern and is unnecessary when the endpoint is open to all origins; the exposed status and backupHost data is considered public.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/status.go",
-          "version": "repo-file-v1:sha256:4a095ec36caaf93541ba7b8a700889d2280790745442b95f3f184b3c0664daf6"
-        },
-        {
-          "resource": "repo://server/pkg/handler/status_cors_test.go",
-          "version": "repo-file-v1:sha256:ac992fb41aaef603d21dd483d43a02330082942ed531f36ac386ce190f2f3fa0"
+          "resource": "repo://server/pkg/handler/status.go#L19-L28",
+          "version": "repo-lines-v1:sha256:c1bf59e8e04029feb476c42df4e21b53f7b23d1b0e43924e09db0c1389b1ce20:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmYzU4M2JlMTFmZjBlMjNjYjc1NjBiYWFkYjdlMjI3MjZkZjg4ODFlNTM3NmY2MmQ2YmYwNTk2YzY4MTFiOGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA1Yzc2ZmY4NjNmZjFhYzRmNGQ0Mzk5MWJlMDcyZWQ2NjlmZjUwYzA0N2JmNzVlMzlkOWNhYTZkMTZlOGZmZmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIifQ=="
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-11T01:29:09.406Z"
+    "at": "2026-10-11T02:02:37.375Z"
   }
 }

@@ -12,10 +12,16 @@ sources:
     resource: repo://test/package.json
   - id: openwiki-source-bb910847e63080c9ced0e830
     resource: repo://test/playwright.config.ts
-generated: { by: "hermes", at: "2026-10-11T01:29:09.406Z" }
+  - id: openwiki-source-1c91996f1afbceb960c6d3b4
+    resource: repo://test/tests/unit-malformed-metadata.spec.ts
+  - id: openwiki-source-29851cc9f0534cab4748f6fb
+    resource: repo://test/tests/unit-reconnect-peer-prune.spec.ts
+  - id: openwiki-source-801ca2739d5984913a9ac0eb
+    resource: repo://test/unit-harness/index.ts
+generated: { by: "hermes", at: "2026-10-11T02:02:37.375Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-11T01:29:09.406Z
+    at: 2026-10-11T02:02:37.375Z
 ---
 
 # Development & Testing
@@ -92,13 +98,13 @@ that instantiate the real `ZeroHubClient` (imported via relative path
 - **Specs** (`test/tests/`): `connnect.spec.ts` (create/join + peer status),
   `data-channel.spec.ts`, `concurrent.spec.ts`, `disconnect.spec.ts`,
   `migrate.spec.ts`, `multihosts.spec.ts`, plus seven `unit-*.spec.ts` specs
-  (`unit-sfu-election.spec.ts`, `unit-reconnect-error.spec.ts`,
-  `unit-malformed-metadata.spec.ts`, `unit-reconnect-peer-prune.spec.ts`,
-  `unit-peer-wiring.spec.ts`, `unit-rtc-offer-options.spec.ts`,
-  `unit-utils.spec.ts`) that
-  exercise client internals in a Playwright page through the unit harness
-  (`test/unit-harness/index.ts`) with a mocked `RTCPeerConnection` — no live
-  server or real WebRTC stack required.
+  (e.g. `unit-sfu-election.spec.ts`, `unit-reconnect-error.spec.ts`,
+  `unit-malformed-metadata.spec.ts`, `unit-reconnect-peer-prune.spec.ts`)
+  that exercise client internals in a Playwright page through the unit
+  harness (`test/unit-harness/index.ts`) with a mocked `RTCPeerConnection` —
+  no live server or real WebRTC stack required. The malformed-metadata spec
+  pins the `safeParseJson` fallback, and the reconnect-peer-prune spec pins
+  the `hubInfoMessage` roster reconciliation that removes stale peers.
 - **Dual servers**: `make e2e-test` spins up two signaling servers on 8080 and
   8081 (for multi-host/failover tests), sleeps 3s, then runs the suite.
 

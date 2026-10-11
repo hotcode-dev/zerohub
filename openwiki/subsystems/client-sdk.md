@@ -14,14 +14,10 @@ sources:
     resource: repo://client/src/topology/sfuTopology.ts
   - id: openwiki-source-718b618612c033c4f36b3a45
     resource: repo://client/src/zeroHub.ts
-  - id: openwiki-source-1c91996f1afbceb960c6d3b4
-    resource: repo://test/tests/unit-malformed-metadata.spec.ts
-  - id: openwiki-source-29851cc9f0534cab4748f6fb
-    resource: repo://test/tests/unit-reconnect-peer-prune.spec.ts
-generated: { by: "hermes", at: "2026-10-11T01:29:09.406Z" }
+generated: { by: "hermes", at: "2026-10-11T02:02:37.375Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-11T01:29:09.406Z
+    at: 2026-10-11T02:02:37.375Z
 ---
 
 # TypeScript Client SDK
@@ -91,31 +87,50 @@ with `id`, `hubMetadata`, `peerMetadata` as query params, and calls
 
 `handleZeroHubMessage` branches on the `ServerMessage` oneof:
 
-- `hubInfoMessage` — sets `myPeerId`/`hubInfo` (hub/peer metadata parsed via
-  `safeParseJson`, which returns a typed `{ ok, value }` result and falls back
-  to `{}` with a logged warning instead of throwing when the server sends
-  empty/malformed JSON — the dispatcher must never crash on unvalidated query
-  params), fires `onHubInfo`, then reconciles the local peer roster against
-  the authoritative roster in the message: adds a `Peer` for each roster peer
-  not yet in the map, and **prunes** any peer still held locally that is
-  absent from the roster (fires `ZeroHubDisconnected`, then tears it down via
-  the shared `removePeer` path). The prune pass matters on auto-reconnect:
-  `connectToZeroHub` does not reset `this.peers`, so without it, peers that
-  left while the socket was down would linger as stale entries with live,
-  unclosed `RTCPeerConnection`s on every transient reconnect.
+- `hubInfoMessage` — sets `myPeerId`/`hubInfo` (hub metadata is parsed through
+  `safeParseJson`, so a malformed value falls back to `{}` instead of crashing
+  the dispatcher), fires `onHubInfo`, and **reconciles the peer roster**
+  against the authoritative roster carried in the message: adds any roster
+  peer not yet in the map (via `addPeer`), and prunes any peer we still hold
+  that is no longer listed (and is not ourselves) via `removePeer`, firing
+  `ZeroHubDisconnected` first. The prune pass is the auto-reconnect fix —
+  a peer that left the hub while the socket was down is never told via
+  `peerDisconnectedMessage` (broadcast only while connected), so without it
+  that stale `Peer` (with a live, unclosed `RTCPeerConnection`) would leak
+  forever.
 - `offerMessage` — moves that peer to `AnswerPending` and, when
   `autoAnswer`, calls `sendAnswer`.
 - `answerMessage` — moves the peer to `AcceptPending` and, when
   `autoAcceptAnswer`, calls `acceptAnswer`.
-- `peerJoinedMessage` — creates a `Peer` for the joiner (if new).
+- `peerJoinedMessage` — creates a `Peer` for the joiner (if new, via
+  `addPeer`).
 - `peerDisconnectedMessage` — fires the `ZeroHubDisconnected` status, then
-  tears the peer down via the shared `removePeer` path (closes the
-  `RTCPeerConnection`, nulls its connection/ICE handlers so a stale ICE event
-  cannot call `restartIce()`, and removes it from the map). `removePeer` is
-  the single teardown used by the disconnect broadcast, the hubInfo
-  roster-prune pass, and `disconnect()`.
-- `createPeer`/`addPeer` route new-peer metadata through the same
-  `safeParseJson` guard before constructing the `Peer`.
+  tears the peer down through the shared `removePeer` helper.
+
+### Shared peer lifecycle helpers
+
+Peer creation and teardown are centralised so the several code paths that
+add or remove a peer can never diverge:
+
+- **`addPeer(peerId, metadata, joinTime)`** — builds a `Peer` with a fresh
+  `RTCPeerConnection`, parses its metadata via `safeParseJson`, wires
+  `onconnectionstatechange` / `oniceconnectionstatechange` (ICE restart on
+  `failed`), stores it in the map, and marks it `Pending`. Used by both the
+  `hubInfoMessage` and `peerJoinedMessage` paths.
+- **`removePeer(peerId)`** — closes the peer's `RTCPeerConnection`, nulls the
+  two state handlers so a stale ICE event cannot call `restartIce()` on a
+  closing connection, and deletes the peer from the map. No-op if already
+  gone. Used by `disconnect()`, the `peerDisconnectedMessage` broadcast, and
+  the `hubInfoMessage` roster-prune pass. The caller emits the appropriate
+  status first (it differs per path).
+
+`safeParseJson(raw, fallback)` (module-level helper) `JSON.parse`s the raw
+metadata string and returns the parsed value on success, or `fallback` when
+the input is missing or malformed. The client's private wrapper warns only on
+a genuine parse failure — never on a successful parse, since a valid value
+can legitimately equal the fallback — so a corrupt hub/peer metadata value
+from the server degrades to the fallback instead of crashing the WebSocket
+message dispatcher.
 
 ## Reconnection with host failover
 
@@ -144,10 +159,9 @@ with `id`, `hubMetadata`, `peerMetadata` as query params, and calls
 3. Detaches all WebSocket handlers (`onclose`/`onerror`/`onmessage`/`onopen`)
    so the close does **not** trigger auto-reconnect, then closes the socket
    with code 1000.
-4. Transitions every peer to `Disconnected`, then tears each down via the
-   shared `removePeer` path (which closes the `RTCPeerConnection` and nulls
-   its connection/ICE handlers so a stale ICE event can't call `restartIce()`
-   on a closing connection) and empties the `peers` map.
+4. Transitions every peer to `Disconnected` and closes each `RTCPeerConnection`
+   (nulling handlers around `close()` so a stale ICE event can't call
+   `restartIce()` on a closing connection), then empties the `peers` map.
 
 The client is **reusable** after `disconnect()`: calling any entrypoint again
 resets `isDisconnected` and starts a fresh connection. `sendZeroHubMessage`

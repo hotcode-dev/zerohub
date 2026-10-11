@@ -14,10 +14,16 @@ sources:
     resource: repo://Makefile
   - id: openwiki-source-e27a23c64f72b7d3d77630c6
     resource: repo://server/pkg/handler/handler.go
-generated: { by: "hermes", at: "2026-10-03T07:04:30.122Z" }
+  - id: openwiki-source-b7181b4d7359d016a13b092d
+    resource: repo://test/package.json
+  - id: openwiki-source-bb910847e63080c9ced0e830
+    resource: repo://test/playwright.config.ts
+  - id: openwiki-source-801ca2739d5984913a9ac0eb
+    resource: repo://test/unit-harness/index.ts
+generated: { by: "hermes", at: "2026-10-11T02:02:37.375Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-11T01:29:09.406Z
+    at: 2026-10-11T02:02:37.375Z
 ---
 
 # ZeroHub Quickstart
@@ -46,7 +52,7 @@ orient, then follow the related pages for depth:
 | `client/` | TypeScript/JavaScript SDK, published as `@zero-hub/client` on npm |
 | `server/` | Go signaling server (`fasthttp`) |
 | `proto/` | Protobuf definitions for client↔server communication |
-| `test/` | E2E tests (Playwright + Svelte) driving the real client |
+| `test/` | E2E tests (Playwright + Svelte) driving the real client, plus unit specs that exercise client internals with a mocked `RTCPeerConnection` |
 | `docs/` | Astro-based documentation site |
 | `Makefile` | Root orchestration (run, test, proto-gen, e2e) |
 | `AGENTS.md` | Repository development guide |
@@ -127,7 +133,8 @@ negotiate over the server and establish a direct WebRTC data channel.
 - **Regenerate protobuf** after editing `proto/*.proto`: `make proto-gen`.
 - **Run the full test cycle** (two servers + E2E): `make test-all`.
 - **Run server unit tests**: `make server-test` (or `cd server && go test ./...`).
-- **Run E2E tests**: `cd test && npm test` (the `pretest` step builds the
-  harness; don't invoke `npx playwright test` directly).
+- **Run E2E tests**: `cd test && npm test` (the `pretest` step builds both
+  the E2E Svelte harness and the unit-spec harness; don't invoke
+  `npx playwright test` directly).
 - **Factory precommit gate**: `./.zerofactory/precommit.sh` (format, build,
   test).
