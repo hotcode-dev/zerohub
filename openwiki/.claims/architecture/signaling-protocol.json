@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:95a60146c5a837fbbea9ac754fedd4b471860c4f323f8940750a0fae5b224f58",
+  "pageVersion": "sha256:bc2e0b1ef7ff5430a83a6608c4fdccd4b4fb8902477400f4420a663f76b74ff4",
   "claims": [
     {
       "id": "claim_d5e17f0a4db84690bce7a57930a4a2e7",
@@ -44,11 +44,15 @@
     },
     {
       "id": "claim_fa365a6d78bb422f877ccfacdecfc391",
-      "statement": "When the server broadcasts a PeerDisconnectedMessage, the client fires the ZeroHubDisconnected status change, closes the peer's RTCPeerConnection, nulls its connection/ICE handlers, and removes the peer from the peers map.",
+      "statement": "When the server broadcasts a PeerDisconnectedMessage, the client fires the ZeroHubDisconnected status change and then tears the peer down through the shared removePeer helper, which closes the peer RTCPeerConnection, nulls its connection and ICE handlers, and removes the peer from the peers map.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L426-L432",
-          "version": "repo-lines-v1:sha256:505e599d4af32879f61a4261c431435b19c644b8f5fb7769a31a8cbaf3ebce44:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWI2MmY2MGQ4NTkwYTU3OWNmNDZmOGQ2NzM3OGM0YzU3MmI5NjJjZWNjZGI5MGM3YTVmN2I0MmI5NjA3ODJhNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzY5YTI4OTIyMjg4YjgzNDMxMDZlYTgzMmZhNGNjMmNhODcxMDMzMGI1OTM2NDI0OGNhOGE1ZDMwMzRkOWNkOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTdkODYzMmU1NGU5Mjk4YWJiOTU4NzI3ZTJkNTE0MDhhYmFmMTM2NjAzNTM3OTEwMTQwYWJmNjViMzBhYjYxMyJ9"
+          "resource": "repo://client/src/zeroHub.ts#L420-L430",
+          "version": "repo-lines-v1:sha256:bed3172997d913e9599bdf6b864074b229cf0f6a8787bcb4cff5371576602232:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ2ZDRiMzg3ZTU3ODZhNTRkYmIzN2IxZjA2NDYzNWJkN2I1MWIwMWVlN2ZjNmI0NTk2NDgxMzE1OGU3NmIyMjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJlODM4NzdlNWRmN2YzMTlmZGE0MDVlOTQ4NGIyYTExMjFiMWI2YWVkYmI1ZGNmNDJkMzI3ZmIxMGE2MzA4NDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY5NmY5NDMwY2ZmMmZhYzc5YTk0ZDg2MzRkNjU2YzFiZmJhOGU1NWQ0MTdhNWIzM2U3NzdiOTk0OTlkYTllODAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk3ZDg2MzJlNTRlOTI5OGFiYjk1ODcyN2UyZDUxNDA4YWJhZjEzNjYwMzUzNzkxMDE0MGFiZjY1YjMwYWI2MTMifQ"
+        },
+        {
+          "resource": "repo://client/src/zeroHub.ts#L451-L460",
+          "version": "repo-lines-v1:sha256:babeb49a75469fd0f7c1fc3f02dde3b0cc4ce112558d3fdaf264aecf10941290:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjMzg5NGNkMTg2NDFlMDY3ODY3Mzk5YjRhMmQ1ZTNkNDgyZDNlNjgwZDMwN2QxMTkwNTk3MDkyM2NjNGE2MTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2YWE3ZDZiMjA1NDM3MmZjMTQzNmFmMWJmYjU4ODExMjcyMzUxMDFkODEwMzBiNGRiMmUyZTBjNGU5YzdkNjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhYzc4YjEzZGFmZTY5ZTNhZDcxODk3NmU3OTUzNTAzODYwYzJmYThkM2I5NzE2YzRlMWVlYWM5OGRmYjg4NjcifQ"
         }
       ]
     },
@@ -65,6 +69,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-10T01:28:37.861Z"
+    "at": "2026-10-11T02:02:37.375Z"
   }
 }

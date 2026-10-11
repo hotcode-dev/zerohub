@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1b6d506d5df9ca42099612edfb9b31e036c69bfdaa3eb9b962943cfc4a4b634f",
+  "pageVersion": "sha256:f780f82666781c72eff49f8d6da3a7ce8669d889e7d7875a16da5a1dbdca1993",
   "claims": [
     {
       "id": "claim_29b96b61359846dd9149060c8b57d3a3",
@@ -51,10 +51,28 @@
           "version": "repo-file-v1:sha256:88e925b14c788e4c2ea098abc8791c1ad186880027ba73f56c3c7d6ff0fcb8ab"
         }
       ]
+    },
+    {
+      "id": "claim_2c42fe6960e84b24ab6cfe916a4374f6",
+      "statement": "The test directory contains both the Playwright E2E suite (Svelte harness components driving the real ZeroHubClient against two live servers) and a set of unit specs that exercise client internals in a Playwright page through a unit harness with a mocked RTCPeerConnection, requiring no live server or real WebRTC stack; running the suite via cd test && npm test builds both the E2E Svelte harness and the unit-spec harness via esbuild before invoking Playwright.",
+      "evidence": [
+        {
+          "resource": "repo://test/package.json",
+          "version": "repo-file-v1:sha256:b0267776b479247664710982a114cd0550f260cbf429c8ffb2b6bf72e20e3ec4"
+        },
+        {
+          "resource": "repo://test/playwright.config.ts",
+          "version": "repo-file-v1:sha256:a0e5f4efc37af724af8cac7f4d0361ca73b7db18f0ea5844ce679e874d5d6758"
+        },
+        {
+          "resource": "repo://test/unit-harness/index.ts",
+          "version": "repo-file-v1:sha256:b13b276815b174a91a4d337fb29ddcd746d9b3b9490e93ca19a13ee505cefef8"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-10T01:28:37.861Z"
+    "at": "2026-10-11T02:02:37.375Z"
   }
 }

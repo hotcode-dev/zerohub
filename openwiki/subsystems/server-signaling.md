@@ -7,10 +7,16 @@ sources:
     resource: repo://server/cmd/server.go
   - id: openwiki-source-41f21ee88395963644de9448
     resource: repo://server/pkg/config/config.go
+  - id: openwiki-source-fe532a441d6120850e1025f4
+    resource: repo://server/pkg/handler/auth.go
   - id: openwiki-source-e27a23c64f72b7d3d77630c6
     resource: repo://server/pkg/handler/handler.go
+  - id: openwiki-source-260d31194d7a0cb2a0aa776c
+    resource: repo://server/pkg/handler/join_or_create_hub_ip.go
   - id: openwiki-source-1eae49f0a1c1e6b3c42e6b07
     resource: repo://server/pkg/handler/migrate.go
+  - id: openwiki-source-596cf169341f9612a2d0dea6
+    resource: repo://server/pkg/handler/status.go
   - id: openwiki-source-3fcd30e2964f43d36d37064d
     resource: repo://server/pkg/handler/websocket.go
   - id: openwiki-source-46ad56ef17cb17e8c9ebaae3
@@ -21,10 +27,10 @@ sources:
     resource: repo://server/pkg/storage/gache.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-10-10T01:28:37.861Z" }
+generated: { by: "hermes", at: "2026-10-11T02:02:37.375Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-10T01:28:37.861Z
+    at: 2026-10-11T02:02:37.375Z
 ---
 
 
@@ -84,11 +90,13 @@ creating.
 
 ## Hub & peer lifecycle
 
-- **`zerohub.ZeroHub`** (pkg/zerohub) is the hub registry. `GetOrCreateHub`
+- **`zerohub.ZeroHub`** (pkg/zerohub) is the hub registry. `CreateHubIfAbsent`
   performs the read-then-write under a `sync.Mutex` so concurrent
-  join-or-create calls for the same ID collapse to a single hub rather than
-  orphaning one. `NewHub`/`GetHubById`/`RemoveHubById` wrap the underlying
-  `HubStorage`.
+  create calls for the same ID collapse to a single hub: the race winner
+  creates and the rest receive `ErrHubAlreadyExists` (mapped to `409`),
+  instead of orphaning one. `GetOrCreateHub` does the same for
+  join-or-create: concurrent calls always return the same hub instance.
+  `GetHubById` / `RemoveHubById` wrap the underlying `HubStorage`.
 - **`hub.Hub`** (pkg/hub) owns one hub's peers. `AddPeer` assigns a monotonic
   numeric ID from an `atomic.Uint64` counter, stores the peer in `PeerStorage`,
   broadcasts a `PeerJoinedMessage` to other peers, and sends the new peer a
@@ -118,8 +126,11 @@ Hubs and peers are each stored behind `storage.Storage[T]`
 (pkg/storage), a generic interface (`Add`, `Get`, `GetAll` as
 `iter.Seq[T]`, `Update`, `Delete`, `IsEmpty`). Two backends implement it:
 `MemoryStorage` (a mutex-guarded map) and `GacheStorage` (wrapping a
-`ntsd/gache/v2` `Gache` instance with the expired hook disabled). `NewZeroHub` and `buildHub` select the backend per the
-`APP_HUB_STORAGE` / `APP_PEER_STORAGE` config, erroring on an unknown value.
+`ntsd/gache/v2` `Gache` instance with the expired hook disabled and the
+default TTL overridden to `gache.NoTTL` so entries live until the
+application removes them explicitly). `NewZeroHub` and `buildHub` select the
+backend per the `APP_HUB_STORAGE` / `APP_PEER_STORAGE` config, erroring on an
+unknown value.
 
 ## Rate limiting & proxy trust
 
@@ -133,23 +144,54 @@ at **60 requests/minute**. The limiter is keyed by:
 replaces `X-Forwarded-For`/`X-Real-IP`; otherwise a client could forge the
 header to defeat the per-client DoS throttle. The key getter and the
 limiter's own IP parsing must agree (see `remoteAddrKey` /
-`forwardedIPKey` / `ipFromForwardedHeader`).
+`forwardedIPKey` / `ipFromForwardedHeader`). The same `clientIP()` helper is
+also used to derive the hub ID for IP-keyed hubs (`JoinOrCreateHubIP`), so
+behind a trusted proxy the IP-hub ID tracks the real client IP rather than
+the proxy's socket address.
+
+## Input validation & CORS
+
+Before any WebSocket upgrade the handler rejects malformed query params with
+`400` (once upgraded, no HTTP status can be sent):
+
+- **Hub ID** — `validHubId` requires a non-empty, non-whitespace `id`; a
+  missing/empty ID is rejected up front instead of silently creating a junk
+  hub under the empty-string key. The check is a no-op for server-generated
+  IDs (uuid for random hubs, xxh3 hash for IP hubs).
+- **Metadata JSON** — `validJSONQueryParam` rejects a `hubMetadata` /
+  `peerMetadata` query param that is not valid JSON. Malformed metadata would
+  otherwise be stored and re-broadcast to every peer, where a client that
+  `JSON.parse`s it would crash its message dispatcher.
+
+`/v1/status` is a public, read-only health/migration endpoint, so it answers
+with a static `Access-Control-Allow-Origin: *` plus `Vary: Origin` — a
+constant, **not** a reflection of the request's `Origin` header (reflecting
+an arbitrary origin is the classic CORS anti-pattern and is unnecessary when
+the endpoint is open to all origins anyway). The exposed data
+(`status` + `backupHost`) is considered public.
 
 ## Admin auth & migration
 
 - **Admin auth** (`CheckAdminAuth`): the `Authorization` header is
-  base64-decoded and compared against `APP_CLIENT_SECRET`. On failure it writes
-  a 401 JSON body and returns `errAdminUnauthorized`; callers must treat a
-  non-nil error as a hard stop (no state mutation after failure). It guards
+  base64-decoded and compared against `APP_CLIENT_SECRET` using
+  `crypto/subtle.ConstantTimeCompare`, which closes the timing side-channel a
+  plain `!=` comparison would leave open. On failure it writes a 401 JSON
+  body and returns `errAdminUnauthorized`; callers must treat a non-nil error
+  as a hard stop (no state mutation after failure). It guards
   `/v1/admin/migrate` and `/v1/permanent-hubs/create`.
 - **Zero-downtime migration** (`Migrate` + `ForwardMigrate`): an admin call to
-  `/v1/admin/migrate?host=<new>` sets `backupHost` (under `migrateMu`) and then
-  atomically flips `isMigrating`. While migrating, create/join-or-create
-  requests are rejected with `ForwardMigrate`, which upgrades the connection
-  and sends a WebSocket *going-away* close (code 1001) whose reason is the
-  backup host. The client's `reconnect` reads that reason and reconnects to
-  the new host; existing sessions drain naturally. The two fields are kept
-  consistent as a unit: `isMigrating` implies `backupHost != ""`.
+  `/v1/admin/migrate?host=<new>` validates the host with
+  `validateBackupHost` (a bare `host` or `host:port` — no scheme, `//`,
+  path/query/fragment, userinfo, or out-of-range port; anything else is a
+  `400` without touching state, so a typo or an attacker holding
+  `APP_CLIENT_SECRET` cannot redirect every client to a garbage or malicious
+  host), then sets `backupHost` (under `migrateMu`) and atomically flips
+  `isMigrating`. While migrating, create/join-or-create requests are rejected
+  with `ForwardMigrate`, which upgrades the connection and sends a WebSocket
+  *going-away* close (code 1001) whose reason is the backup host. The
+  client's `reconnect` reads that reason and reconnects to the new host;
+  existing sessions drain naturally. The two fields are kept consistent as a
+  unit: `isMigrating` implies `backupHost != ""`.
 
 ## Failure behavior
 

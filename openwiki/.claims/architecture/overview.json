@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:09d666ccbc9634254177f0cf312fde9cd793faa6af423b18b82ba61989b402e0",
+  "pageVersion": "sha256:6e782ea788059e910e7c0d3ab6deb48a89a5c659bbcd867f022ea6dea177bb17",
   "claims": [
     {
       "id": "claim_937b0d08bd3849b4b3ddd56a5664ca43",
@@ -71,10 +71,42 @@
           "version": "repo-lines-v1:sha256:b6b4b0b26f2d9e19c953994fe3d4a209142ee3394f6ab6ff2f6d188e312c8afc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMGY5NDgxZGIwZTBlYmFkYzY5MDg3ZWQ3NjA4MTQ2N2I1ZGEyZjY0NDU5ZTc5NjFhMDIzYjQ5NTdkMmZhNDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYyOTY0MDc5YzNjNWM4MTUyMGVmMzNhMmI5ZDJlMTVhMWI4NGQ3MjgwZGI4NTkwZGNkNjU3NDdlM2UwMTJhNDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRjZTc4ZmRiNWUwODRkNmY5MWQ3YjFjNWE5ZTRiYjBlZTcxZTkzOTM1NDFmZTBhMDM5MWZmODY3ZTEzNzEyOWYifQ"
         }
       ]
+    },
+    {
+      "id": "claim_96c053cdb46a4bee82188877cdd6cbb6",
+      "statement": "Hub creation on the Go server is performed through the atomic CreateHubIfAbsent primitive on zerohub.ZeroHub, so concurrent create requests for the same hub ID collapse to a single hub: the race winner creates and the rest receive ErrHubAlreadyExists (surfaced as HTTP 409) instead of orphaning a hub.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/handler/create_hub_by_id.go#L40-L59",
+          "version": "repo-lines-v1:sha256:9d877bd6c7cd7d0667ce53d65d069dae35738602226384ccfe6ea83fe25534f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwZTEyZDYxOWIxOTc0ZTEyNmFhYzNhZmUzODhiMzA2MDZhZjMwYzhiYjYzNjI1OGI3ZGFlYWJlMDIzYWRmMzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM4ODMwY2NhZDJiMjMxNmVjNDQ2ZGUyMmZlM2VjNTgxYjVlY2M4NjMxMjMxZTUyZjg0MDc5NGFjYWU2MWExMDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcxYWRjZmE5ZDAxNTQ0ODZlOWU4ODExZGJhNDA2MTcwYmZjZTZjMzc1YTg3ZmFmN2QyYmE3YzgzODU1OTc2NzcifQ"
+        },
+        {
+          "resource": "repo://server/pkg/zerohub/zerohub.go#L83-L99",
+          "version": "repo-lines-v1:sha256:4fc5bd4f121095bcf771c348a077b4c6940d0c16601269e0ba1f9db8beeb7656:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiM2I4N2FiZWU3YzA3YWNhN2U5ZDg3NDZjNjgzZTAzN2IyZWI5NjAzMGE4Nzg0MGU0ZDk3NTVkMjc0NDAwNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3Mzc5N2RlMmRiMTEyMWE1Y2MyYjY2N2ZmYWEzZWMwNmQwZWRlZjc5MjdlYzcwMGRmYTc0MWQ0ZDMxYWJlOTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc0ZjI1ZWI1ZmQ4YzVlYjg3MWE3MWFmMjZjNDk2NmNlYWYxM2EzZDkyYmY3NTY3N2YwNGJhYzhmNWE0YzRjOTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2c43b5311acc47ee9d484447edca9b51",
+      "statement": "The Go signaling server validates hub-endpoint query parameters before the WebSocket handshake: a missing or empty id parameter and any non-JSON hubMetadata or peerMetadata are rejected with HTTP 400, so an empty-id request can no longer create a junk hub under the empty-string key and malformed metadata is not stored or re-broadcast.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/handler/create_hub_by_id.go#L18-L32",
+          "version": "repo-lines-v1:sha256:07b9820bdacd82b7ef08ed9c20f790436ee0520d62fbcf693e60614e2009d009:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwYzM2N2Y3YTU3NTFiNWMwZDM4OThhZjJkNzM5MzljMDBlMTdiM2UwNzU5N2NkNDEzY2M5MDNkOWY1YjAzYmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2ZTQyZmRlOGIwZWI5ZGUwOGY2YTgzODBiYWIzNjg4OWUwNjllYTRiOTk0MDkyODk2OWQ0MjRmODcxNWMwMjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlmMmRjNTA3MDU4YmEzN2NiOWM4ODVjOWJjZTA2OTUxNzc1Njc0NWE4MGI1YTc2NzhlYTg1MTEwNmFjMTY2ODcifQ"
+        },
+        {
+          "resource": "repo://server/pkg/handler/validation.go#L18-L28",
+          "version": "repo-lines-v1:sha256:17ed46d7eb0a346ccd2209e7fa37cfff2b083f3f39a628388e06da9d96d1ff60:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzZjc3OGQ2ZjllZTY2NjY3MmFkMTg2ODhlYjFjMDIyMDI1MzQ1OTViZDQ1ODY2ZWNjNjE1MTA3NDBlYjk3ZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAzODVmZDNjMTFmODFlOTA1Yzg2MmRmODZjNDc2YjFlNDE4Yzc1MDViNzIzOTVmYjBlYTAwODZjYTk0MzBkY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://server/pkg/handler/websocket.go#L25-L27",
+          "version": "repo-lines-v1:sha256:66ab21a4f5f601c754adaa6010482d5bfe7da68818c121867f74c2db9cbca9c8:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdiZWMwODdkMzAzOWM1ZGQ4ZWVhYjdkZWJhYWRkODBjNzY2MjdmOTdhNDMyODY3M2FhMjVlZjFhZmZhYWZlMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdjZGE4MmRhNjA2MjM4ZTA1ZTYyMzk5NTY5YzVlZTAzOTkzNDE5NjQ4YWU1ZDQzYTJiZjhjZDYzNDdmODI2MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTdkOWFmYjIzNDBhNjFiZGNkYTQ2MzhmYzg3NmFjOGM5NmM1ZjQ4NmQxMGZlNTNkZTliYTI1NmJjZTYyM2Y2NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzY0ZDFiYzNmMzczODlkNTZjMmVmNzA5YWU3MzJhZDQ5N2NjYjg5YmJlM2YxMjUyNGVlMWMwYjJmZGY4MTgwYiJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-10T01:28:37.861Z"
+    "at": "2026-10-11T02:02:37.375Z"
   }
 }

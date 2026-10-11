@@ -5,7 +5,7 @@ description: End-to-end explanation of how ZeroHub's Go signaling server, TypeSc
 tags: [architecture, webrtc, signaling, server, client, protobuf]
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-10T01:28:37.861Z
+    at: 2026-10-11T02:02:37.375Z
 sources:
   - id: openwiki-source-22df8f9ebcff0eeb4e4ed38f
     resource: repo://client/src/topology/meshTopology.ts
@@ -15,11 +15,19 @@ sources:
     resource: repo://client/src/zeroHub.ts
   - id: openwiki-source-926f5bdf2e4b77b0b06cf4e8
     resource: repo://server/cmd/server.go
+  - id: openwiki-source-b539b60065144e2cf7f200e7
+    resource: repo://server/pkg/handler/create_hub_by_id.go
+  - id: openwiki-source-b985a45eeefdba7d9abbac00
+    resource: repo://server/pkg/handler/validation.go
+  - id: openwiki-source-3fcd30e2964f43d36d37064d
+    resource: repo://server/pkg/handler/websocket.go
   - id: openwiki-source-da50555ad2e1dffee0054a4e
     resource: repo://server/pkg/hub/hub.go
   - id: openwiki-source-c8f6dfeddac50cd2f28ba214
     resource: repo://server/pkg/storage/storage.go
-generated: { by: "hermes", at: "2026-10-03T07:04:30.122Z" }
+  - id: openwiki-source-0eb2a9b2acf717d5c99e9894
+    resource: repo://server/pkg/zerohub/zerohub.go
+generated: { by: "hermes", at: "2026-10-11T02:02:37.375Z" }
 ---
 
 # Architecture Overview
@@ -75,8 +83,12 @@ A client calls one of the connection entrypoints
 (`createHub`, `joinHub`, `joinOrCreateHub`, IP/random variants). Each opens a
 WebSocket to a typed path (e.g. `/v1/hubs/create`, `/v1/hubs/join`) with `id`,
 `peerMetadata`, `hubMetadata` as query parameters. The handler authenticates
-where needed, resolves or creates the hub on the right `ZeroHub` instance, and
-upgrades the HTTP connection to a WebSocket.
+where needed, validates the query params up front — a missing/empty `id` or
+non-JSON metadata is rejected with `400` before the handshake — then resolves
+or creates the hub on the right `ZeroHub` instance and upgrades the HTTP
+connection to a WebSocket. Creates go through the atomic `CreateHubIfAbsent`
+primitive, so concurrent creates of the same ID collapse to a single hub
+(race winners create, the rest get `409`) instead of orphaning one.
 
 On upgrade (`handler.Upgrade`), the server wraps the socket in a
 `peer.Peer`, calls `hub.AddPeer`, and starts `hub.HandleMessage` — a read loop
@@ -130,9 +142,10 @@ the peer left; the local peer is torn down), and `Disconnected` (local
 
 ## Ownership & extension seams
 
-- **Server**: `zerohub.ZeroHub` (hub registry), `hub.Hub` (peer set + SDP
-  relay), `peer.Peer` (socket + metadata), `storage.Storage[T]` (pluggable
-  in-memory or Gache backends for hubs *and* peers).
+- **Server**: `zerohub.ZeroHub` (hub registry, with the atomic
+  `CreateHubIfAbsent` primitive), `hub.Hub` (peer set + SDP relay),
+  `peer.Peer` (socket + metadata), `storage.Storage[T]` (pluggable in-memory
+  or Gache backends for hubs *and* peers).
 - **Client**: `ZeroHubClient` (connection + SDP), `Topology` interface (how
   peers wire together) with `MeshTopology` (default) and `SFUTopology`.
 
