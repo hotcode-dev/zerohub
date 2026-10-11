@@ -91,7 +91,7 @@ that instantiate the real `ZeroHubClient` (imported via relative path
   state, keyed by `componentId`. Tests drive it via `page.evaluate`.
 - **Specs** (`test/tests/`): `connnect.spec.ts` (create/join + peer status),
   `data-channel.spec.ts`, `concurrent.spec.ts`, `disconnect.spec.ts`,
-  `migrate.spec.ts`, `multihosts.spec.ts`, plus eight `unit-*.spec.ts` specs
+  `migrate.spec.ts`, `multihosts.spec.ts`, plus seven `unit-*.spec.ts` specs
   (`unit-sfu-election.spec.ts`, `unit-reconnect-error.spec.ts`,
   `unit-malformed-metadata.spec.ts`, `unit-reconnect-peer-prune.spec.ts`,
   `unit-peer-wiring.spec.ts`, `unit-rtc-offer-options.spec.ts`,
