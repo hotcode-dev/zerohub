@@ -34,9 +34,18 @@ func TestJoinOrCreateHubConcurrent(t *testing.T) {
 		t.Fatalf("NewHub: %v", err)
 	}
 	// GetOrCreateHub is the ONLY hub-resolution call the handler may make.
+	// created=true: this call created the hub, so the cleanup-on-upgrade
+	// failure path may remove it (benign here; a plain GET fails the
+	// handshake, which is the expected error).
 	zerohubMock.EXPECT().
 		GetOrCreateHub(gomock.Any(), gomock.Any(), false).
-		Return(sharedHub, nil).
+		Return(sharedHub, true, nil).
+		MaxTimes(workers)
+	// The failed-upgrade cleanup path (created=true) removes the hub —
+	// this is the new rollback behavior the concurrent test now exercises
+	// as a side effect of its plain-GET handshake failures.
+	zerohubMock.EXPECT().
+		RemoveHubById(gomock.Any()).
 		MaxTimes(workers)
 
 	h := newTestHandler()

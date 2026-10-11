@@ -70,12 +70,13 @@ func (mr *MockZeroHubMockRecorder) GetHubById(id any) *gomock.Call {
 }
 
 // GetOrCreateHub mocks base method.
-func (m *MockZeroHub) GetOrCreateHub(hubId, metadata string, isPermanent bool) (hub.Hub, error) {
+func (m *MockZeroHub) GetOrCreateHub(hubId, metadata string, isPermanent bool) (hub.Hub, bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOrCreateHub", hubId, metadata, isPermanent)
 	ret0, _ := ret[0].(hub.Hub)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetOrCreateHub indicates an expected call of GetOrCreateHub.

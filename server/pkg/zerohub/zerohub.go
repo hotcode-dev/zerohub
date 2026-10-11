@@ -38,8 +38,11 @@ type ZeroHub interface {
 	// GetOrCreateHub atomically returns the existing hub with the given ID,
 	// or creates and stores a new hub if none exists. The check and the store
 	// happen under a single lock, so concurrent calls with the same ID always
-	// return the same hub instance. isPermanent controls hub expiry.
-	GetOrCreateHub(hubId string, metadata string, isPermanent bool) (hub.Hub, error)
+	// return the same hub instance. isPermanent controls hub expiry. created
+	// reports whether this call created the hub, so callers can decide whether
+	// it is safe to roll the hub back (e.g. when a failed upgrade must not
+	// remove a pre-existing hub with live peers).
+	GetOrCreateHub(hubId string, metadata string, isPermanent bool) (hub.Hub, bool, error)
 	// RemoveHubById removes a hub by its ID.
 	RemoveHubById(id string)
 }
@@ -101,23 +104,24 @@ func (z *zeroHub) CreateHubIfAbsent(hubId string, metadata string, isPermanent b
 // GetOrCreateHub atomically returns the existing hub with the given ID, or
 // creates and stores a new one if none exists. The read and the write happen
 // under z.mu, so concurrent calls for the same ID collapse to a single hub
-// instead of orphaning one.
-func (z *zeroHub) GetOrCreateHub(hubId string, metadata string, isPermanent bool) (hub.Hub, error) {
+// instead of orphaning one. created is true only when this call stored the
+// hub; callers use it to decide whether the hub is safe to roll back.
+func (z *zeroHub) GetOrCreateHub(hubId string, metadata string, isPermanent bool) (hub.Hub, bool, error) {
 	z.mu.Lock()
 	defer z.mu.Unlock()
 
 	if existing := z.GetHubById(hubId); existing != nil {
-		return existing, nil
+		return existing, false, nil
 	}
 
 	newHub, err := z.buildHub(hubId, metadata, isPermanent)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	z.HubStorage.Add(hubId, newHub)
 
-	return newHub, nil
+	return newHub, true, nil
 }
 
 // buildHub constructs a hub (with its own peer storage) without storing it.

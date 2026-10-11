@@ -32,10 +32,16 @@ func captureHubKey(t *testing.T, got *string) zerohub.ZeroHub {
 	zerohubMock := zerohub.NewMockZeroHub(ctrl)
 	zerohubMock.EXPECT().
 		GetOrCreateHub(gomock.Any(), gomock.Any(), false).
-		DoAndReturn(func(hubId string, metadata string, isPermanent bool) (hub.Hub, error) {
+		DoAndReturn(func(hubId string, metadata string, isPermanent bool) (hub.Hub, bool, error) {
 			*got = hubId
-			return sharedHub, nil
+			// created=true: model this call creating the hub, so the
+			// failed-upgrade cleanup path may remove it.
+			return sharedHub, true, nil
 		})
+	// The failed-upgrade cleanup path (created=true) removes the hub.
+	zerohubMock.EXPECT().
+		RemoveHubById(gomock.Any()).
+		MaxTimes(1)
 	return zerohubMock
 }
 

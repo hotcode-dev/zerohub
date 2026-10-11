@@ -58,10 +58,15 @@ func TestJoinOrCreateHubByIDAcceptsValidHubMetadata(t *testing.T) {
 		t.Fatalf("NewHub: %v", err)
 	}
 	// The metadata passed to hub resolution must be the verbatim raw string.
+	// created=true models this call creating the hub; the failed upgrade then
+	// triggers the RemoveHubById cleanup path.
 	zerohubMock.EXPECT().
 		GetOrCreateHub("valid-hub", valid, false).
-		Return(sharedHub, nil).
+		Return(sharedHub, true, nil).
 		Times(1)
+	zerohubMock.EXPECT().
+		RemoveHubById("valid-hub").
+		MaxTimes(1)
 	h := newTestHandler()
 
 	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join-or-create?id=valid-hub&hubMetadata=" +
@@ -129,9 +134,11 @@ func TestUpgradeRejectsMalformedPeerMetadata(t *testing.T) {
 	h := newTestHandler()
 
 	// Malformed peerMetadata: 400 written before the handshake attempt.
+	// Upgrade reports responseWritten=true: the 400 was already written and
+	// no caller-level fallback may overwrite it.
 	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join?id=upg-hub&peerMetadata=not-json")
-	if err := h.Upgrade(ctx, zerohubMock, hubInstance); err != nil {
-		t.Fatalf("Upgrade with malformed peerMetadata: unexpected error %v", err)
+	if err, responseWritten := h.Upgrade(ctx, zerohubMock, hubInstance); err != nil || responseWritten != true {
+		t.Fatalf("Upgrade with malformed peerMetadata: got (err=%v, responseWritten=%v), want (nil, true)", err, responseWritten)
 	}
 	if got := ctx.Response.StatusCode(); got != fasthttp.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", got)
@@ -143,8 +150,8 @@ func TestUpgradeRejectsMalformedPeerMetadata(t *testing.T) {
 	// Valid peerMetadata: passes validation and reaches the websocket
 	// handshake, which fails on the plain GET — expected.
 	ctx = newRequestCtx("http://127.0.0.1/v1/hubs/join?id=upg-hub&peerMetadata=%7B%22name%22%3A%22test%22%7D")
-	if err := h.Upgrade(ctx, zerohubMock, hubInstance); err == nil ||
-		!strings.Contains(err.Error(), "websocket") {
-		t.Fatalf("Upgrade with valid peerMetadata = %v, want websocket upgrade error", err)
+	if err, responseWritten := h.Upgrade(ctx, zerohubMock, hubInstance); err == nil ||
+		!strings.Contains(err.Error(), "websocket") || responseWritten != false {
+		t.Fatalf("Upgrade with valid peerMetadata = (err=%v, responseWritten=%v), want websocket upgrade error and responseWritten=false", err, responseWritten)
 	}
 }
