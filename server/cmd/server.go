@@ -46,7 +46,7 @@ func main() {
 
 	hdl, err := handler.NewHandler(cfg, zeroHub, zeroHubRandom, zeroHubIP, zeroHubPermanent)
 	if err != nil {
-		log.Panic().Err(fmt.Errorf("error to init logger: %w", err)).Send()
+		log.Panic().Err(fmt.Errorf("error to init handler: %w", err)).Send()
 	}
 
 	if err := hdl.Serve(); err != nil {
