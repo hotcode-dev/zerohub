@@ -9,8 +9,18 @@ sources:
     resource: repo://server/pkg/config/config.go
   - id: openwiki-source-e27a23c64f72b7d3d77630c6
     resource: repo://server/pkg/handler/handler.go
+  - id: openwiki-source-f6837207fa0a3a6c7628a3aa
+    resource: repo://server/pkg/handler/hub_id_validation_test.go
+  - id: openwiki-source-fab65a62461b36b0606ad363
+    resource: repo://server/pkg/handler/migrate_test.go
   - id: openwiki-source-1eae49f0a1c1e6b3c42e6b07
     resource: repo://server/pkg/handler/migrate.go
+  - id: openwiki-source-a1f6e693983efd0cb662df69
+    resource: repo://server/pkg/handler/status_cors_test.go
+  - id: openwiki-source-596cf169341f9612a2d0dea6
+    resource: repo://server/pkg/handler/status.go
+  - id: openwiki-source-b985a45eeefdba7d9abbac00
+    resource: repo://server/pkg/handler/validation.go
   - id: openwiki-source-3fcd30e2964f43d36d37064d
     resource: repo://server/pkg/handler/websocket.go
   - id: openwiki-source-46ad56ef17cb17e8c9ebaae3
@@ -19,12 +29,14 @@ sources:
     resource: repo://server/pkg/hub/hub.go
   - id: openwiki-source-95e157f67f42c6cf1b6fe738
     resource: repo://server/pkg/storage/gache.go
+  - id: openwiki-source-f1b878109bef07e171f1c894
+    resource: repo://server/pkg/storage/storage_test.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-10-10T01:28:37.861Z" }
+generated: { by: "hermes", at: "2026-10-11T01:29:09.406Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-10T01:28:37.861Z
+    at: 2026-10-11T01:29:09.406Z
 ---
 
 
@@ -118,7 +130,10 @@ Hubs and peers are each stored behind `storage.Storage[T]`
 (pkg/storage), a generic interface (`Add`, `Get`, `GetAll` as
 `iter.Seq[T]`, `Update`, `Delete`, `IsEmpty`). Two backends implement it:
 `MemoryStorage` (a mutex-guarded map) and `GacheStorage` (wrapping a
-`ntsd/gache/v2` `Gache` instance with the expired hook disabled). `NewZeroHub` and `buildHub` select the backend per the
+`ntsd/gache/v2` `Gache` instance with the expired hook disabled and the
+default expiration overridden to `NoTTL` via `SetDefaultExpire` — gache's
+30s default TTL would otherwise expire every hub/peer entry and break live
+hubs, so entries live until explicitly removed). `NewZeroHub` and `buildHub` select the backend per the
 `APP_HUB_STORAGE` / `APP_PEER_STORAGE` config, erroring on an unknown value.
 
 ## Rate limiting & proxy trust
@@ -135,6 +150,12 @@ header to defeat the per-client DoS throttle. The key getter and the
 limiter's own IP parsing must agree (see `remoteAddrKey` /
 `forwardedIPKey` / `ipFromForwardedHeader`).
 
+The same IP identity is used for **IP-keyed hubs**: `handler.clientIP`
+returns the outermost `X-Forwarded-For` entry when `APP_TRUST_PROXY` is set
+and the socket peer address otherwise, and `/v1/ip-hubs/*` derive the hub ID
+from it. Without this, every real client behind a reverse proxy would
+collapse into one shared IP hub (the proxy's egress address).
+
 ## Admin auth & migration
 
 - **Admin auth** (`CheckAdminAuth`): the `Authorization` header is
@@ -143,13 +164,36 @@ limiter's own IP parsing must agree (see `remoteAddrKey` /
   non-nil error as a hard stop (no state mutation after failure). It guards
   `/v1/admin/migrate` and `/v1/permanent-hubs/create`.
 - **Zero-downtime migration** (`Migrate` + `ForwardMigrate`): an admin call to
-  `/v1/admin/migrate?host=<new>` sets `backupHost` (under `migrateMu`) and then
-  atomically flips `isMigrating`. While migrating, create/join-or-create
-  requests are rejected with `ForwardMigrate`, which upgrades the connection
-  and sends a WebSocket *going-away* close (code 1001) whose reason is the
-  backup host. The client's `reconnect` reads that reason and reconnects to
-  the new host; existing sessions drain naturally. The two fields are kept
-  consistent as a unit: `isMigrating` implies `backupHost != ""`.
+  `/v1/admin/migrate?host=<new>` validates `host` first — `validateBackupHost`
+  requires a bare host or `host:port` (no scheme, `//`, path/query/fragment,
+  userinfo, or port outside 0..65535) and answers `400` with **no state
+  change** for a malformed target, since the client later embeds the stored
+  value verbatim as `ws(s)://<host>` on reconnect. For a valid host it sets
+  `backupHost` (under `migrateMu`) and then atomically flips
+  `isMigrating`. While migrating, create/join-or-create requests are rejected
+  with `ForwardMigrate`, which upgrades the connection and sends a WebSocket
+  *going-away* close (code 1001) whose reason is the backup host. The
+  client's `reconnect` reads that reason and reconnects to the new host;
+  existing sessions drain naturally. The two fields are kept consistent as a
+  unit: `isMigrating` implies `backupHost != ""`.
+
+## Input validation & status endpoint
+
+- **Hub ID validation** (`validation.go`): `validHubId` rejects empty or
+  whitespace-only IDs, and `rejectInvalidHubIdParam` writes the `400` for a
+  missing/empty `id` query parameter on `/v1/hubs/create` and
+  `/v1/hubs/join`. This stops a request without `id` from silently creating a
+  hub under the empty-string key, which would squat that key forever (every
+  later empty-id create gets 409, and any join without `id` lands in that
+  junk hub instead of a clean 404).
+- **`/v1/status` CORS** (`status.go`): the endpoint is public/read-only, so
+  the response carries a **static** `Access-Control-Allow-Origin: *` plus
+  `Vary: Origin`. It deliberately does **not** reflect the request's
+  `Origin` header — reflecting an arbitrary origin is the classic
+  "reflect any origin" CORS anti-pattern and would expose migration state to
+  malicious cross-origin sites. While migrating the body is a 301 with
+  `{ status: "migrating", backupHost: <host> }`; otherwise
+  `{ status: "ok" }`.
 
 ## Failure behavior
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cc94ef8b4f65d787ea0c51d128a6f51b89d49f8937b55b561a7ba46ebe14e48c",
+  "pageVersion": "sha256:8a772b8e0f24957740a50934302fcaa7e5d2153fc0d6c85865cf00e899f27abd",
   "claims": [
     {
       "id": "claim_f8eee7b4d94d405e8ae1cd7638c1d8cf",
@@ -14,11 +14,11 @@
     },
     {
       "id": "claim_4b0dc7e91368409180c96e9a923cf9e7",
-      "statement": "ZeroHubClient.disconnect() sets isDisconnected, clears pending ICE timeouts, detaches all WebSocket handlers (so onclose does not auto-reconnect) and closes the socket with code 1000, then transitions every peer to Disconnected, closes each RTCPeerConnection, and empties the peers map; the client is reusable afterwards.",
+      "statement": "ZeroHubClient.disconnect() sets isDisconnected, clears pending ICE timeouts, detaches all WebSocket handlers (so onclose does not auto-reconnect) and closes the socket with code 1000, then transitions every peer to Disconnected and tears each down via the shared removePeer path (closes the RTCPeerConnection, nulls its handlers, removes it from the map); the client is reusable afterwards.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L515-L547",
-          "version": "repo-lines-v1:sha256:72e868357b0f22f9e2ca68cb89aa7119c432746e8c0240e9d2ae5c8878e5bfdb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkMTExYmQzNTM1ZThmZThmMDg4YjcxZTQ3YjYwNmEyMWE4YmZlZDdiNmJiYThmNWU1MTk0N2ZmMzc1Njc0MDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNhMzk5OTQxNzMxOTQyN2IyOGU1MWI5YTMxOWFkOWRmOTYxNWY1MjhjZWJlYTA1OGIxM2E2NjQ1NjFmMGE3MTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ2MGQzZDg5Y2ZiN2UxYjU5M2FhNjdhMTEwZDlkODZkYzdkMWFjYWIxZDM0NjRjNTU4YTI2NDE3MDdiNTk0MmIifQ"
+          "resource": "repo://client/src/zeroHub.ts",
+          "version": "repo-file-v1:sha256:fc8a354a953aaa92e9cbc0cb09d0cd8899d70cd43aee637cf845058d5b31b67e"
         }
       ]
     },
@@ -141,10 +141,38 @@
           "version": "repo-lines-v1:sha256:fc82b4f27cb57609924cadac8f73f19748a9144a369742622b53d6ce1b59efd6:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZjNmQ0Mjg5ZjZlZmVkMTE2OWY4M2NjZDBiMDJjZWU1MmIwMjljZGVlODRkOTJhZGZjMmFlMjhhOGU1NWViM2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1YWRlNjY0MjAzNzc2ZWI0NDdhNDAyY2ZlZjcyNDZkYzExOGZiODlmNmZiMDBkNTk2ODkzODhmYzI5ZDA1NDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNmZDg5OWY2NmVmZjBiMDVjMzU5MjQwZTI5ZTg1MTk3NDIyNGY1Njg4N2NhZjNlZWIyMWRiMjMxMzVhYmE4YTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRmNzM5YTA2YzFjYmIxMjQ0ZTMzNjNkMzhiY2Y5ZmE1MGNlODRmZWQzOTljMjE5M2EzYzdmMDhkNTk5MThiMmEifQ"
         }
       ]
+    },
+    {
+      "id": "claim_5c0ea0a59b9d4c5e91d6fabb54d525e4",
+      "statement": "Server-sent hub/peer metadata is parsed via safeParseJson, which returns a typed { ok, value } result, falls back to {} with a logged warning on empty/malformed JSON, and never throws — a bad metadata value from an unvalidated query param cannot crash the WebSocket message dispatcher.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/zeroHub.ts",
+          "version": "repo-file-v1:sha256:fc8a354a953aaa92e9cbc0cb09d0cd8899d70cd43aee637cf845058d5b31b67e"
+        },
+        {
+          "resource": "repo://test/tests/unit-malformed-metadata.spec.ts",
+          "version": "repo-file-v1:sha256:86bbfe2e8b9f83341959aac8924f4e634c829d9cf659d390601b14e242c0fd22"
+        }
+      ]
+    },
+    {
+      "id": "claim_32eaa1e4a67c42dda3447f7839275865",
+      "statement": "On hubInfoMessage the client reconciles the local peer roster against the authoritative roster: it adds unknown roster peers and prunes locally-held peers absent from the roster (firing ZeroHubDisconnected and removing them via removePeer), so stale peers with live RTCPeerConnections do not accumulate across auto-reconnects.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/zeroHub.ts",
+          "version": "repo-file-v1:sha256:fc8a354a953aaa92e9cbc0cb09d0cd8899d70cd43aee637cf845058d5b31b67e"
+        },
+        {
+          "resource": "repo://test/tests/unit-reconnect-peer-prune.spec.ts",
+          "version": "repo-file-v1:sha256:69ae50a238d2efa9c453979bbf103c5914b902f909cb9fbe96ce5abfe5ffea70"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-10T01:28:37.861Z"
+    "at": "2026-10-11T01:29:09.406Z"
   }
 }

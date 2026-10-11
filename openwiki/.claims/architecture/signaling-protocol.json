@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:95a60146c5a837fbbea9ac754fedd4b471860c4f323f8940750a0fae5b224f58",
+  "pageVersion": "sha256:f7ffea0b9972eabb05a8b22eee5034c13c8e13487fbb5ee6ff9e7a03c5a73627",
   "claims": [
     {
       "id": "claim_d5e17f0a4db84690bce7a57930a4a2e7",
@@ -47,8 +47,8 @@
       "statement": "When the server broadcasts a PeerDisconnectedMessage, the client fires the ZeroHubDisconnected status change, closes the peer's RTCPeerConnection, nulls its connection/ICE handlers, and removes the peer from the peers map.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L426-L432",
-          "version": "repo-lines-v1:sha256:505e599d4af32879f61a4261c431435b19c644b8f5fb7769a31a8cbaf3ebce44:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWI2MmY2MGQ4NTkwYTU3OWNmNDZmOGQ2NzM3OGM0YzU3MmI5NjJjZWNjZGI5MGM3YTVmN2I0MmI5NjA3ODJhNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzY5YTI4OTIyMjg4YjgzNDMxMDZlYTgzMmZhNGNjMmNhODcxMDMzMGI1OTM2NDI0OGNhOGE1ZDMwMzRkOWNkOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTdkODYzMmU1NGU5Mjk4YWJiOTU4NzI3ZTJkNTE0MDhhYmFmMTM2NjAzNTM3OTEwMTQwYWJmNjViMzBhYjYxMyJ9"
+          "resource": "repo://client/src/zeroHub.ts",
+          "version": "repo-file-v1:sha256:fc8a354a953aaa92e9cbc0cb09d0cd8899d70cd43aee637cf845058d5b31b67e"
         }
       ]
     },
@@ -65,6 +65,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-10T01:28:37.861Z"
+    "at": "2026-10-11T01:29:09.406Z"
   }
 }

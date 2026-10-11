@@ -12,10 +12,10 @@ sources:
     resource: repo://test/package.json
   - id: openwiki-source-bb910847e63080c9ced0e830
     resource: repo://test/playwright.config.ts
-generated: { by: "hermes", at: "2026-10-10T01:28:37.861Z" }
+generated: { by: "hermes", at: "2026-10-11T01:29:09.406Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-10T01:28:37.861Z
+    at: 2026-10-11T01:29:09.406Z
 ---
 
 # Development & Testing
@@ -91,8 +91,11 @@ that instantiate the real `ZeroHubClient` (imported via relative path
   state, keyed by `componentId`. Tests drive it via `page.evaluate`.
 - **Specs** (`test/tests/`): `connnect.spec.ts` (create/join + peer status),
   `data-channel.spec.ts`, `concurrent.spec.ts`, `disconnect.spec.ts`,
-  `migrate.spec.ts`, `multihosts.spec.ts`, plus five `unit-*.spec.ts` specs
-  (e.g. `unit-sfu-election.spec.ts`, `unit-reconnect-error.spec.ts`) that
+  `migrate.spec.ts`, `multihosts.spec.ts`, plus seven `unit-*.spec.ts` specs
+  (`unit-sfu-election.spec.ts`, `unit-reconnect-error.spec.ts`,
+  `unit-malformed-metadata.spec.ts`, `unit-reconnect-peer-prune.spec.ts`,
+  `unit-peer-wiring.spec.ts`, `unit-rtc-offer-options.spec.ts`,
+  `unit-utils.spec.ts`) that
   exercise client internals in a Playwright page through the unit harness
   (`test/unit-harness/index.ts`) with a mocked `RTCPeerConnection` — no live
   server or real WebRTC stack required.
