@@ -137,7 +137,6 @@ For media streams, supply `mediaChannelConfig` with a `localStream` and `onTrack
 - `joinHub(id, peerMetadata?)`
 - `joinOrCreateHub(id, peerMetadata?, hubMetadata?)`
 - `joinOrCreateIPHub(peerMetadata?, hubMetadata?)`
-- `joinIPHub(id, peerMetadata?)`
 - `createRandomHub(peerMetadata?, hubMetadata?)`
 - `joinRandomHub(id, peerMetadata?)`
 

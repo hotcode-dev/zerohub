@@ -27,7 +27,6 @@
 //	/v1/random-hubs/join                       GET        Random      Join an existing random-hub
 //	/v1/random-hubs/get                        GET        Random      Get hub metadata
 //	/v1/ip-hubs/join-or-create                 GET        IP          Join or create an IP-keyed hub
-//	/v1/ip-hubs/join                           GET        IP          Join an IP-keyed hub
 //	/v1/permanent-hubs/join                    GET        Permanent   Join a permanent hub
 //	/v1/permanent-hubs/create                  GET        Permanent   Create a permanent hub
 //
@@ -271,8 +270,6 @@ func (h *handler) Serve() error {
 			err = h.JoinHub(ctx, h.zeroHubRandom)
 		case "/v1/ip-hubs/join-or-create":
 			err = h.JoinOrCreateHubIP(ctx, h.zeroHubIP)
-		case "/v1/ip-hubs/join":
-			err = h.JoinHub(ctx, h.zeroHubIP)
 		// TODO: rename permanent-hubs to static-hubs
 		case "/v1/permanent-hubs/join":
 			err = h.JoinHub(ctx, h.zeroHubPermanent)

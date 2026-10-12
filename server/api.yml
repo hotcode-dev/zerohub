@@ -132,22 +132,6 @@ channels:
       ws:
         method: GET
 
-  ipHubsJoin:
-    address: /v1/ip-hubs/join
-    description: |
-      Join an existing IP-based hub by id.
-      Query params:
-      - id (required): hub id
-      - peerMetadata (optional): stringified peer metadata
-    messages:
-      clientMessage:
-        $ref: '#/components/messages/ClientMessage'
-      serverMessage:
-        $ref: '#/components/messages/ServerMessage'
-    bindings:
-      ws:
-        method: GET
-
   permanentHubsJoin:
     address: /v1/permanent-hubs/join
     description: |
