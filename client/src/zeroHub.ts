@@ -740,36 +740,16 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       peer.rtcConn.setConfiguration(rtcConfig);
     }
 
-    let isSent = false;
-
-    peer.rtcConn.onicecandidate = (event) => {
-      if (!peer.rtcConn.localDescription || isSent || event.candidate) {
-        return;
-      }
-
-      isSent = true;
-      this.sendOfferToWebsocket(peerId, peer.rtcConn.localDescription);
-    };
-
     const offer = await peer.rtcConn.createOffer(rtcOfferOptions);
     await peer.rtcConn.setLocalDescription(offer);
 
-    // stop waiting for ice candidates if longer than timeout
-    // clear any prior pending handle so disconnect() cannot miss it
-    const priorOfferTimeout = this.iceTimeouts[peerId];
-    if (priorOfferTimeout) {
-      clearTimeout(priorOfferTimeout);
-    }
-    this.iceTimeouts[peerId] = setTimeout(() => {
-      delete this.iceTimeouts[peerId];
-      this.logger.warn("timeout waiting ICE candidates");
-      if (!peer.rtcConn.localDescription || isSent) {
+    this.armSendOnIceReady(peerId, peer.rtcConn, () => {
+      const localDescription = peer.rtcConn.localDescription;
+      if (!localDescription) {
         return;
       }
-
-      isSent = true;
-      this.sendOfferToWebsocket(peerId, peer.rtcConn.localDescription);
-    }, this.config.waitIceCandidatesTimeout);
+      this.sendOfferToWebsocket(peerId, localDescription);
+    });
   }
 
   /**
@@ -813,35 +793,72 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       sdp: offerSdp,
     });
 
+    const offer = await peer.rtcConn.createAnswer(rtcOfferOptions);
+    await peer.rtcConn.setLocalDescription(offer);
+
+    this.armSendOnIceReady(peerId, peer.rtcConn, () => {
+      const localDescription = peer.rtcConn.localDescription;
+      if (!localDescription) {
+        return;
+      }
+      this.sendAnswerToWebsocket(peerId, localDescription);
+    });
+  }
+
+  /**
+   * Wires the peer's `onicecandidate` handler plus a
+   * `waitIceCandidatesTimeout` fallback so `sendOnce` is invoked exactly
+   * once, as soon as the local description is ready:
+   *
+   * - `onicecandidate` fires the send on the first event that carries no
+   *   candidate (the ICE candidate gathering complete marker), skipping any
+   *   event that still carries a candidate.
+   * - The timer fires the send if no such event arrives within
+   *   `waitIceCandidatesTimeout` milliseconds.
+   *
+   * The two paths share a single `isSent` guard, so re-negotiation (or a
+   * late candidate after the timeout) can never send the SDP a second time.
+   * Re-arm clears the prior pending handle for `peerId` so
+   * `disconnect()` cannot miss it and records the timer in
+   * `this.iceTimeouts[peerId]`.
+   *
+   * @param peerId - The peer the SDP is destined for (the `iceTimeouts` key)
+   * @param rtcConn - The peer's RTCPeerConnection
+   * @param sendOnce - Invoked at most once to send the local SDP
+   */
+  private armSendOnIceReady(
+    peerId: string,
+    rtcConn: RTCPeerConnection,
+    sendOnce: () => void
+  ) {
     let isSent = false;
-    peer.rtcConn.onicecandidate = (event) => {
-      this.logger.log("onicecandidate", event);
-      if (!peer.rtcConn.localDescription || isSent || event.candidate) {
+
+    rtcConn.onicecandidate = (event: {
+      candidate?: RTCIceCandidate | null;
+    }) => {
+      if (!rtcConn.localDescription || isSent || event.candidate) {
         return;
       }
 
       isSent = true;
-      this.sendAnswerToWebsocket(peerId, peer.rtcConn.localDescription);
+      sendOnce();
     };
-
-    const offer = await peer.rtcConn.createAnswer(rtcOfferOptions);
-    await peer.rtcConn.setLocalDescription(offer);
 
     // stop waiting for ice candidates if longer than timeout
     // clear any prior pending handle so disconnect() cannot miss it
-    const priorAnswerTimeout = this.iceTimeouts[peerId];
-    if (priorAnswerTimeout) {
-      clearTimeout(priorAnswerTimeout);
+    const priorTimeout = this.iceTimeouts[peerId];
+    if (priorTimeout) {
+      clearTimeout(priorTimeout);
     }
     this.iceTimeouts[peerId] = setTimeout(() => {
       delete this.iceTimeouts[peerId];
       this.logger.warn("timeout waiting ICE candidates");
-      if (!peer.rtcConn.localDescription || isSent) {
+      if (!rtcConn.localDescription || isSent) {
         return;
       }
 
       isSent = true;
-      this.sendAnswerToWebsocket(peerId, peer.rtcConn.localDescription);
+      sendOnce();
     }, this.config.waitIceCandidatesTimeout);
   }
 

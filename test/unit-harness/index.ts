@@ -24,6 +24,7 @@ import {
   PeerStatus,
 } from "../../client/src/index";
 import { getWS } from "../../client/src/utils";
+import { ClientMessage } from "../../client/src/proto/zerohub/v1/client_message";
 
 let instanceSeq = 0;
 const createdInstances: MockRTCPeerConnection[] = [];
@@ -163,15 +164,18 @@ class MockRTCPeerConnection {
 
   createOffer(options?: RTCOfferOptions): Promise<{ type: string; sdp: string }> {
     this.__lastCreateOfferOptions = options ?? null;
-    return Promise.resolve({ type: "offer", sdp: "" });
+    return Promise.resolve({ type: "offer", sdp: "offer-sdp" });
   }
 
   createAnswer(options?: RTCOfferOptions): Promise<{ type: string; sdp: string }> {
     this.__lastCreateAnswerOptions = options ?? null;
-    return Promise.resolve({ type: "answer", sdp: "" });
+    return Promise.resolve({ type: "answer", sdp: "answer-sdp" });
   }
 
-  setLocalDescription(): Promise<void> {
+  setLocalDescription(desc?: { type: string; sdp: string }): Promise<void> {
+    if (desc) {
+      this.localDescription = desc;
+    }
     return Promise.resolve();
   }
 
@@ -219,6 +223,8 @@ interface ClientState {
   statusLog?: Array<{ peerId: string; status: string }>;
   /** `logger.warn` messages captured when built via `createClientWithLogger`. */
   warns?: string[];
+  /** SDP sends captured when the socket is stubbed via `stubSocket`. */
+  sends?: Array<{ kind: "offer" | "answer"; peerId: string; sdp: string }>;
 }
 
 const clients = new Map<number, ClientState>();
@@ -694,15 +700,96 @@ const ZeroHubUnitHarness = {
   },
 
   /**
-   * Installs a minimal WebSocket stub on `client.ws` so `sendOffer` /
-   * `sendAnswer` pass their "connected" guard without a real socket.
+   * Installs a capturing WebSocket stub on `client.ws` so `sendOffer` /
+   * `sendAnswer` pass their "connected" guard without a real socket. Each
+   * encoded `ClientMessage` sent over the stub is decoded and recorded in the
+   * per-client `sends` buffer (retrievable via `getSends` / `drainSends`),
+   * letting specs assert the SDP was sent exactly once and via which path.
    */
   stubSocket(id: number): void {
     const entry = clients.get(id);
     if (!entry) {
       throw new Error(`no client ${id}`);
     }
-    entry.client.ws = { close() {}, send() {} } as unknown as WebSocket;
+    if (!entry.sends) {
+      entry.sends = [];
+    }
+    entry.client.ws = {
+      close() {},
+      send(data: unknown) {
+        const msg = ClientMessage.decode(data as Uint8Array);
+        if (msg.sendOfferMessage) {
+          entry.sends?.push({
+            kind: "offer",
+            peerId: msg.sendOfferMessage.answerPeerId,
+            sdp: msg.sendOfferMessage.offerSdp,
+          });
+        }
+        if (msg.sendAnswerMessage) {
+          entry.sends?.push({
+            kind: "answer",
+            peerId: msg.sendAnswerMessage.offerPeerId,
+            sdp: msg.sendAnswerMessage.answerSdp,
+          });
+        }
+      },
+    } as unknown as WebSocket;
+  },
+
+  /**
+   * Sets the client's `config.waitIceCandidatesTimeout` to a custom value so
+   * specs can drive the ICE-candidate fallback timer on a short, controllable
+   * delay instead of the 2000ms default.
+   */
+  setWaitIceTimeout(id: number, ms: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.client.config.waitIceCandidatesTimeout = ms;
+  },
+
+  /**
+   * Fires the peer's `onicecandidate` handler with a given candidate value,
+   * simulating an ICE event from the mock `RTCPeerConnection`. Passing a
+   * truthy candidate models an in-flight candidate (the handler must ignore
+   * it); passing `null` models the "gathering complete" marker that triggers
+   * the SDP send.
+   */
+  fireIceCandidate(id: number, peerId: string, candidate: unknown): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const conn = asMock(entry.client.peers[peerId]?.rtcConn);
+    if (!conn) {
+      throw new Error(`no peer ${peerId} on client ${id}`);
+    }
+    if (conn.onicecandidate) {
+      conn.onicecandidate({ candidate });
+    }
+  },
+
+  /** The SDP sends captured for this client (since `stubSocket`). */
+  getSends(id: number): Array<{ kind: "offer" | "answer"; peerId: string; sdp: string }> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return entry.sends ?? [];
+  },
+
+  /** Returns and clears the captured SDP sends for this client. */
+  drainSends(
+    id: number
+  ): Array<{ kind: "offer" | "answer"; peerId: string; sdp: string }> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const sends = entry.sends ?? [];
+    entry.sends = [];
+    return sends;
   },
 
   /**
