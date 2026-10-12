@@ -865,16 +865,91 @@ const ZeroHubUnitHarness = {
       }));
   },
 
-  /**
-   * The `hostIndex` of the client (read-only accessor over a public field;
-   * exposed so specs can assert a replaced socket did not double-advance it).
-   */
+  /** The `hostIndex` of the client (read-only accessor over a public field;
+   * exposed so specs can assert a replaced socket did not double-advance it). */
   getHostIndex(id: number): number {
     const entry = clients.get(id);
     if (!entry) {
       throw new Error(`no client ${id}`);
     }
     return entry.client.hostIndex;
+  },
+
+  /** Create a client with an explicit host list; returns an opaque id. */
+  createClientWithHosts(hosts: string[]): number {
+    const id = ++nextClientId;
+    const client = new ZeroHubClient(
+      hosts,
+      { logLevel: LogLevel.None },
+      new NoopTopology()
+    );
+    clients.set(id, {
+      client,
+      createdAtConnSeq: createdInstances.length,
+      createdAtWsSeq: wsInstances.length,
+    });
+    return id;
+  },
+
+  /**
+   * The client's current `host` (public field; exposed so the migration
+   * redirect spec can assert `reconnect()` updated the state, not just the
+   * URL it was passed).
+   */
+  getHost(id: number): string {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return entry.client.host;
+  },
+
+  /**
+   * The URL string of the most recently created mock socket for this
+   * client, or null if the client opened none yet.
+   */
+  getLastSocketUrl(id: number): string | null {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const mine = wsInstances.filter((ws) => ws.__instanceId > entry.createdAtWsSeq);
+    return mine.length > 0 ? mine[mine.length - 1].url : null;
+  },
+
+  /**
+   * Simulate the server's migration close (`ForwardMigrate`): fire the live
+   * socket's `onclose` with code 1001 and the redirect host as the close
+   * reason. The client's onclose handler calls `reconnect(url, reason)`
+   * synchronously, so after this returns the redirected socket exists.
+   */
+  simulateMigrationClose(id: number, reason: string): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const ws = entry.client.ws as unknown as MockWebSocket;
+    if (!ws?.onclose) {
+      throw new Error(`client ${id} has no live socket with a close handler`);
+    }
+    ws.onclose({ code: 1001, reason });
+  },
+
+  /**
+   * Simulate an abnormal network close (code 1006, empty reason) on the
+   * live socket — the automatic host-failover path of `reconnect(url)` with
+   * no redirect host.
+   */
+  simulateAbnormalClose(id: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const ws = entry.client.ws as unknown as MockWebSocket;
+    if (!ws?.onclose) {
+      throw new Error(`client ${id} has no live socket with a close handler`);
+    }
+    ws.onclose({ code: 1006, reason: "" });
   },
 
   /**

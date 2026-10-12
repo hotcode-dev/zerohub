@@ -267,6 +267,19 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       this.logger.warn(
         `ZeroHub \`${this.host}\` is redirecting to \`${newHost}\`, reconnecting...`
       );
+      // Mirror the backup-host branch below: update the client's host state,
+      // not just this URL. Every entry point (createHub/joinHub/...) builds
+      // its URL from `this.host`, so leaving it stale makes the next call
+      // connect back to the migrating (or shut down) old host.
+      this.host = newHost;
+      // Keep hostIndex consistent: point at the redirected host when it is
+      // in the configured list, so a later automatic failover starts from
+      // here instead of the stale position; keep the previous index when it
+      // is not.
+      const redirectedIndex = this.hosts.indexOf(newHost);
+      if (redirectedIndex !== -1) {
+        this.hostIndex = redirectedIndex;
+      }
       currentURL.host = newHost;
       this.connectToZeroHub(currentURL);
       return;
