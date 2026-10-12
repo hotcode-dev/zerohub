@@ -34,6 +34,8 @@ type Harness = {
   getLastSocketUrl(id: number): string | null;
   simulateMigrationClose(id: number, reason: string): void;
   simulateAbnormalClose(id: number): void;
+  recordZeroHubErrors(id: number): void;
+  getZeroHubErrors(id: number): string[];
 };
 
 declare global {
@@ -131,4 +133,45 @@ test("migration redirect to a configured host starts automatic failover from tha
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
     "wss://b.zerohub.dev/v1/hubs/create?id=room"
   );
+});
+
+test("migration redirect to the current host (self-redirect) does not reconnect", async ({
+  page,
+}) => {
+  await prepareUnitHarnessPage(page);
+
+  // Single configured host: the operator points /admin/migrate at the
+  // current host (typo, or the old server still draining), so every
+  // connection is closed with 1001 + reason = our own host.
+  const id = await page.evaluate(
+    () => ZeroHubUnitHarness.createClientWithHosts(["a.zerohub.dev"])
+  );
+  await page.evaluate((clientId) => ZeroHubUnitHarness.recordZeroHubErrors(clientId), id);
+  await page.evaluate((clientId) => ZeroHubUnitHarness.createHub(clientId, "room"), id);
+  const originalUrl = await page.evaluate(
+    (clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId),
+    id
+  );
+  expect(originalUrl).toBe("wss://a.zerohub.dev/v1/hubs/create?id=room");
+
+  // Self-redirect: the close reason is the host we are already on.
+  await page.evaluate(
+    (clientId) => ZeroHubUnitHarness.simulateMigrationClose(clientId, "a.zerohub.dev"),
+    id
+  );
+
+  // The guard must stop the loop: no second socket is opened, host state
+  // stays put, and the terminal failure is surfaced to the application.
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
+    originalUrl
+  );
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHost(clientId), id)).toBe(
+    "a.zerohub.dev"
+  );
+  const errors = await page.evaluate(
+    (clientId) => ZeroHubUnitHarness.getZeroHubErrors(clientId),
+    id
+  );
+  expect(errors).toHaveLength(1);
+  expect(errors[0]).toContain("redirect target `a.zerohub.dev` is the current host, not retrying");
 });

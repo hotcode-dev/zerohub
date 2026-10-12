@@ -264,6 +264,21 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       return;
     }
     if (newHost) {
+      // Mirror the backup-host branch below: a redirect back to the host we
+      // just disconnected from (operator pointing /admin/migrate at the
+      // current host, or a proxy emitting a 1001 with our own host in the
+      // close reason) would cycle forever with no backoff and no terminal
+      // error. Surface it and stop.
+      if (newHost === this.host) {
+        const err = new Error(
+          `zero hub reconnecting failed: redirect target \`${newHost}\` is the current host, not retrying`
+        );
+        this.logger.error(err.message);
+        if (this.onZeroHubError) {
+          this.onZeroHubError(err);
+        }
+        return;
+      }
       this.logger.warn(
         `ZeroHub \`${this.host}\` is redirecting to \`${newHost}\`, reconnecting...`
       );
