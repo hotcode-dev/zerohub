@@ -161,6 +161,20 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    */
   public onOffer?: (peer: Peer<PeerMetadata>, offerSdp: string) => void;
   /**
+   * A callback function that is called when an answer is received from a
+   * remote peer while `autoAcceptAnswer` is `false` (manual answer
+   * handling). It is invoked with the answering peer and the incoming answer
+   * SDP, so the application can complete the exchange by calling
+   * `acceptAnswer(peer.id, answerSdp)`. Not invoked when `autoAcceptAnswer`
+   * is `true` (the default), because the client accepts the answer
+   * automatically.
+   *
+   * @param peer - The peer that sent the answer
+   * @param answerSdp - The answer Session Description Protocol (SDP) to accept
+   * @public
+   */
+  public onAnswer?: (peer: Peer<PeerMetadata>, answerSdp: string) => void;
+  /**
    * The logger used for logging messages.
    * @public
    */
@@ -472,6 +486,16 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
             err
           );
         });
+      } else {
+        // Manual answer handling: surface the incoming answer to the
+        // application so it can complete the exchange via
+        // `acceptAnswer(peer.id, answerSdp)`. Guard on the peer existing so a
+        // dangling answer (peer already torn down) is not surfaced. The
+        // `AcceptPending` status above fires before this callback.
+        const peer = this.peers[answerPeerId];
+        if (peer && this.onAnswer) {
+          this.onAnswer(peer, answerSdp);
+        }
       }
     } else if (serverMessage.peerJoinedMessage) {
       const peer = serverMessage.peerJoinedMessage.peer;
