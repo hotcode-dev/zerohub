@@ -36,6 +36,62 @@ function asMock(
 }
 
 /**
+ * A minimal stand-in for the browser `WebSocket`.
+ *
+ * Mirrors just the surface `ZeroHubClient` touches: `binaryType`, the
+ * `onmessage` / `onerror` / `onclose` / `onopen` handler slots, `close()`,
+ * and `send()`. Each instance is tagged with a unique `__instanceId` and
+ * records `close()` call codes so specs can detect leaked/orphaned sockets
+ * (a replaced socket that was never closed and still carries handlers).
+ */
+class MockWebSocket {
+  /** Unique per-instance id used to detect reuse vs. replacement. */
+  public readonly __instanceId: number;
+  /** The URL string the socket was opened with. */
+  public readonly url: string;
+  public binaryType: string;
+  /** Set by the client; nulled by `closeActiveSocket` on teardown. */
+  public onmessage: ((event: unknown) => void) | null;
+  public onerror: ((event: unknown) => void) | null;
+  public onclose: ((event: { code: number; reason: string }) => void) | null;
+  public onopen: (() => void) | null;
+  /** Close codes passed to `close()` (inspectable by specs). */
+  public readonly __closeCalls: number[];
+  /** Whether `close()` has been called. */
+  public __closed: boolean;
+
+  constructor(url: string | URL) {
+    this.__instanceId = ++wsInstanceSeq;
+    wsInstances.push(this);
+    this.url = String(url);
+    this.binaryType = "blob";
+    this.onmessage = null;
+    this.onerror = null;
+    this.onclose = null;
+    this.onopen = null;
+    this.__closeCalls = [];
+    this.__closed = false;
+  }
+
+  close(code?: number): void {
+    this.__closed = true;
+    this.__closeCalls.push(code ?? 1000);
+  }
+
+  send(_data: unknown): void {
+    // no-op
+  }
+}
+
+let wsInstanceSeq = 0;
+const wsInstances: MockWebSocket[] = [];
+
+// Install the mock *before* any client-driven `new WebSocket(url)` runs. The
+// client only opens sockets at runtime (inside `connectToZeroHub`), so this
+// assignment is in time.
+(globalThis as { WebSocket: unknown }).WebSocket = MockWebSocket;
+
+/**
  * A minimal stand-in for the browser `RTCPeerConnection`.
  *
  * Mirrors just the surface `ZeroHubClient` touches: the `connectionState` /
@@ -157,6 +213,8 @@ interface PeerSnapshot {
 interface ClientState {
   client: ZeroHubClient;
   createdAtConnSeq: number;
+  /** `createdSockets` count at client-creation time (baseline). */
+  createdAtWsSeq: number;
   /** Status transitions captured by `recordStatusChanges`. */
   statusLog?: Array<{ peerId: string; status: string }>;
   /** `logger.warn` messages captured when built via `createClientWithLogger`. */
@@ -212,7 +270,11 @@ const ZeroHubUnitHarness = {
       { logLevel: LogLevel.None },
       new NoopTopology()
     );
-    clients.set(id, { client, createdAtConnSeq: createdInstances.length });
+    clients.set(id, {
+      client,
+      createdAtConnSeq: createdInstances.length,
+      createdAtWsSeq: wsInstances.length,
+    });
     return id;
   },
 
@@ -241,6 +303,7 @@ const ZeroHubUnitHarness = {
     clients.set(id, {
       client,
       createdAtConnSeq: createdInstances.length,
+      createdAtWsSeq: wsInstances.length,
       warns,
     });
     return id;
@@ -640,6 +703,91 @@ const ZeroHubUnitHarness = {
       throw new Error(`no client ${id}`);
     }
     entry.client.ws = { close() {}, send() {} } as unknown as WebSocket;
+  },
+
+  /**
+   * Drives the public `createHub` entry point (opens a socket via
+   * `connectToZeroHub`) so specs can exercise the real connection path
+   * without a server.
+   */
+  createHub(
+    id: number,
+    hubId: string,
+    peerMetadata?: object,
+    hubMetadata?: object
+  ): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.client.createHub(hubId, peerMetadata, hubMetadata);
+  },
+
+  /**
+   * Drives the public `joinHub` entry point (opens a socket via
+   * `connectToZeroHub`) so specs can exercise the real connection path
+   * without a server.
+   */
+  joinHub(id: number, hubId: string, peerMetadata?: object): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.client.joinHub(hubId, peerMetadata);
+  },
+
+  /** Drives the public `disconnect()` on the client. */
+  disconnectClient(id: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.client.disconnect();
+  },
+
+  /**
+   * Snapshot every mock `WebSocket` the harness created, with the subset that
+   * still has a live handler slot. Lets specs assert no orphaned live socket
+   * survives a connection replacement.
+   */
+  snapshotSockets(id: number): Array<{
+    instanceId: number;
+    url: string;
+    closed: boolean;
+    closeCodes: number[];
+    hasMessageHandler: boolean;
+    hasErrorHandler: boolean;
+    hasCloseHandler: boolean;
+    hasOpenHandler: boolean;
+  }> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return wsInstances
+      .filter((ws) => ws.__instanceId > entry.createdAtWsSeq)
+      .map((ws) => ({
+        instanceId: ws.__instanceId,
+        url: ws.url,
+        closed: ws.__closed,
+        closeCodes: [...ws.__closeCalls],
+        hasMessageHandler: typeof ws.onmessage === "function",
+        hasErrorHandler: typeof ws.onerror === "function",
+        hasCloseHandler: typeof ws.onclose === "function",
+        hasOpenHandler: typeof ws.onopen === "function",
+      }));
+  },
+
+  /**
+   * The `hostIndex` of the client (read-only accessor over a public field;
+   * exposed so specs can assert a replaced socket did not double-advance it).
+   */
+  getHostIndex(id: number): number {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return entry.client.hostIndex;
   },
 
   /**

@@ -514,6 +514,28 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
+   * Closes the active WebSocket (if any) and clears it, without triggering
+   * its auto-reconnect `onclose` handler or surfacing a spurious
+   * `onZeroHubError` for the connection being intentionally replaced.
+   *
+   * Shared by `disconnect()` (manual teardown) and `connectToZeroHub`
+   * (replacing a socket left open by a previous connection entry point that
+   * did not go through `disconnect()`).
+   */
+  private closeActiveSocket() {
+    if (!this.ws) {
+      return;
+    }
+    const ws = this.ws;
+    ws.onclose = null;
+    ws.onerror = null;
+    ws.onmessage = null;
+    ws.onopen = null;
+    ws.close(1000);
+    delete this.ws;
+  }
+
+  /**
    * Connects to the ZeroHub using the provided URL and sets up WebSocket event handlers for receiving messages, errors, and close events.
    *
    * @param url - The URL of the ZeroHub to connect to
@@ -526,6 +548,13 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     // dead socket that still throws from sendZeroHubMessage().
     this.isDisconnected = false;
     this.iceTimeouts = {};
+
+    // Tear down a socket left open by a previous connection (e.g. a second
+    // entry-point call without disconnect()). Nulling the handlers before
+    // close(1000) keeps the replaced socket from firing reconnect() — which
+    // would advance hostIndex a second time for a single logical failure —
+    // or onZeroHubError, for the connection we are intentionally replacing.
+    this.closeActiveSocket();
 
     this.logger.log("connecting to ZeroHub:", url);
 
@@ -606,15 +635,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     this.iceTimeouts = {};
 
     // close the WebSocket without triggering the auto-reconnect onclose handler
-    if (this.ws) {
-      const ws = this.ws;
-      ws.onclose = null;
-      ws.onerror = null;
-      ws.onmessage = null;
-      ws.onopen = null;
-      ws.close(1000);
-      delete this.ws;
-    }
+    this.closeActiveSocket();
 
     // transition peers to disconnected and close their WebRTC connections
     // (removePeer also removes them from the map, so the map is empty when
