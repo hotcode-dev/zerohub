@@ -9,8 +9,12 @@ sources:
     resource: repo://server/pkg/config/config.go
   - id: openwiki-source-fe532a441d6120850e1025f4
     resource: repo://server/pkg/handler/auth.go
+  - id: openwiki-source-b539b60065144e2cf7f200e7
+    resource: repo://server/pkg/handler/create_hub_by_id.go
   - id: openwiki-source-e27a23c64f72b7d3d77630c6
     resource: repo://server/pkg/handler/handler.go
+  - id: openwiki-source-9df2276596bc3c7c9f0676fd
+    resource: repo://server/pkg/handler/join_or_create_hub_by_id.go
   - id: openwiki-source-260d31194d7a0cb2a0aa776c
     resource: repo://server/pkg/handler/join_or_create_hub_ip.go
   - id: openwiki-source-1eae49f0a1c1e6b3c42e6b07
@@ -27,10 +31,10 @@ sources:
     resource: repo://server/pkg/storage/gache.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-10-11T02:02:37.375Z" }
+generated: { by: "hermes", at: "2026-10-12T02:33:24.782Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-11T02:02:37.375Z
+    at: 2026-10-12T02:33:24.782Z
 ---
 
 
@@ -96,7 +100,10 @@ creating.
   creates and the rest receive `ErrHubAlreadyExists` (mapped to `409`),
   instead of orphaning one. `GetOrCreateHub` does the same for
   join-or-create: concurrent calls always return the same hub instance.
-  `GetHubById` / `RemoveHubById` wrap the underlying `HubStorage`.
+  `GetOrCreateHub` also returns a `created` flag reporting whether this call
+  stored the hub, so a caller can tell whether the hub is safe to roll back
+  when the subsequent WebSocket upgrade fails. `GetHubById` /
+  `RemoveHubById` wrap the underlying `HubStorage`.
 - **`hub.Hub`** (pkg/hub) owns one hub's peers. `AddPeer` assigns a monotonic
   numeric ID from an `atomic.Uint64` counter, stores the peer in `PeerStorage`,
   broadcasts a `PeerJoinedMessage` to other peers, and sends the new peer a
@@ -119,6 +126,19 @@ only when the read loop exited before the close handler ran, e.g. a read
 error). Both paths are safe to race because `RemovePeerById` is idempotent —
 the second call sees the missing peer, broadcasts nothing, and returns
 `false`. Permanent hubs never expire.
+
+**Orphan-hub rollback on failed upgrade.** `handler.Upgrade` returns
+`(error, responseWritten bool)`: a real handshake error yields a non-nil
+error, while the up-front `peerMetadata` rejection (a `400` already written
+before the handshake) yields a nil error with `responseWritten=true` so the
+caller does not overwrite it with a `500`. Because `AddPeer` only runs inside
+the upgrade callback, whenever the upgrade does not fully succeed this
+request never added a peer, so the freshly-created hub would be an empty
+orphan. `CreateHubByID` therefore always calls `zh.RemoveHubById` on that
+path; `JoinOrCreateHubByID` does the same only when `GetOrCreateHub` reported
+`created=true`, leaving a pre-existing hub (which may hold live peers) in
+place. This prevents an unbounded empty-hub leak on storage backends with no
+TTL.
 
 ## Pluggable storage
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ab8ec3aff2e3df2c85b04821ce879ecd9cbde53495d9350f990f7764a90dad13",
+  "pageVersion": "sha256:945936233c9652205c57c86982185d682f55d0548f4b81905879dfc2c94d2a9f",
   "claims": [
     {
       "id": "claim_1d82fd64055a4062925029c4ae4e6575",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://server/cmd/server.go#L26-L50",
-          "version": "repo-lines-v1:sha256:a31a144a8b76f8df74c7d883b47a817266b8f9ac2321c0d6cf16ef0016c7175c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxODcxM2Y1NjFiODU2MTkxMzMwYzY4Njk3Njg2N2M1MzA2ZThiNzQzMjZjN2EyNzg5MTE1MDQ4Zjg5YTAyZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkZWEwZTRhYmQ0YzlkN2FkMjBiZDBmMjk5NDE1Njc4ZjYzMTZmNzg1NzRlYjBhMWQ0YzA0MjQ2MDZhZWI2ZDUifQ=="
+          "version": "repo-lines-v1:sha256:4628bcfe3af583ef85187ededaa4e54fcf5128f79435736014b85dcc7602a03f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxODcxM2Y1NjFiODU2MTkxMzMwYzY4Njk3Njg2N2M1MzA2ZThiNzQzMjZjN2EyNzg5MTE1MDQ4Zjg5YTAyZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkZWEwZTRhYmQ0YzlkN2FkMjBiZDBmMjk5NDE1Njc4ZjYzMTZmNzg1NzRlYjBhMWQ0YzA0MjQ2MDZhZWI2ZDUifQ"
         }
       ]
     },
@@ -57,8 +57,8 @@
       "statement": "Hub teardown runs in two places in handler.Upgrade: the socket close handler (peer.Close() + RemovePeerById, with RemoveHubById when the hub empties) and a fallback right after hub.HandleMessage returns. Both call the idempotent hub.RemovePeerById, which returns false without broadcasting anything when the peer is already gone, so a duplicate removal cannot double-send the PeerDisconnectedMessage or double-trigger RemoveHubById.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/websocket.go#L27-L48",
-          "version": "repo-lines-v1:sha256:ae7ed98a85c8b7941335b659d406fc57a943d29d298913d785efa7855bea12b1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliZDc1NjQ0M2I2ZTU0NTFmN2YzNjlkZmNiY2VkOGY3Y2E2MTliOGMwODU3MzRmY2U3MDNhMzg4MzYzNWE2ZTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg2ZTkxZWNjYjhiNDEyMTBhNzQwZGNhZjQzZGEzNDMyMzA2ODQzZGFhYzJhNzVkNmQ4ZjVjZmYxYmZiZTNmMjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRjMGUxNjU4MzNjZTkwNjJmNjAyYWFlNTY1MzM1OGRiYzgyOTIzYzE0ZDk4ZmYxNzZmYjEwMzI1NTkzNDk0YzYifQ=="
+          "resource": "repo://server/pkg/handler/websocket.go#L27-L66",
+          "version": "repo-lines-v1:sha256:f295c37b3e95da36afc7e8d9bb230fd81fd7d51c9b56ac6711acee7a9e67ba53:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxYjgyYmVjNGMxZjIwZjI2NWM5YWEyZjg2NWU1OTYwN2Q0ZDQ4NmEwNDFjZjA1MzhkMTJlNzFiYmUwOTk3ZjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3YTliNWU5MDE5YzhkYjg3ODNlYzljM2ZlYmIwYTJjOTg2MmY2MWEwNWMzMDhmZTg5NWU0YTliZWQwM2VkYjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNkMDE0NzE4N2E1NjFhNDEyODhiYmIwNWY3ZjAyNGZjZTdjZWRmODNiYWNjMmUwNTZhZTAxYTM3YWQwNDcyNDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdlMTlhMGZmZDE2NmVkYzMzZmVlYmUxODg3ZDg5ZGJjZDZmNDM4ZWMzMzdkNzY2NjE2NGM3ZjgwNDRlOGVjOTYifQ"
         },
         {
           "resource": "repo://server/pkg/hub/hub.go#L106-L109",
@@ -137,10 +137,32 @@
           "version": "repo-lines-v1:sha256:c1bf59e8e04029feb476c42df4e21b53f7b23d1b0e43924e09db0c1389b1ce20:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmYzU4M2JlMTFmZjBlMjNjYjc1NjBiYWFkYjdlMjI3MjZkZjg4ODFlNTM3NmY2MmQ2YmYwNTk2YzY4MTFiOGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA1Yzc2ZmY4NjNmZjFhYzRmNGQ0Mzk5MWJlMDcyZWQ2NjlmZjUwYzA0N2JmNzVlMzlkOWNhYTZkMTZlOGZmZmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIifQ=="
         }
       ]
+    },
+    {
+      "id": "claim_a136659f51db4390a1d740452655d3d0",
+      "statement": "handler.Upgrade returns (error, responseWritten bool). When the upgrade does not fully succeed - a real handshake error, or the up-front peerMetadata rejection that already wrote a 400 - the request never added a peer, so CreateHubByID always removes the freshly-created hub and JoinOrCreateHubByID does the same only when GetOrCreateHub reported created=true, leaving a pre-existing hub (which may hold live peers) in place to prevent an unbounded empty-hub leak on storage with no TTL.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/handler/create_hub_by_id.go#L61-L75",
+          "version": "repo-lines-v1:sha256:3aa3fcae530ce3355e47153679505a20a797e86eec1d697ca9f89b67c46b22fb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0YzVhYjFmZGQzOGFiMjZkMTkxNGJlM2UyMTI4ZGU0MzE3NWEzMWE5MWZmZTc5ZGI5ZGRkNzk3YTAzZjIyZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY2N2I5YTk4Y2U1ODIwMWVjYmY1YjUxMDc5NDdiZjBmZTQyMGQ0OTk0MWE0NTUyODU2ZjYxY2RiOTg3OGQ1OTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUyYjE5MjJjZTExMzUyNGEzOWFkZGM5YzY3ZDBlNzBiZTFjNDdlNzNhODE1OTA0YjA3Y2RhZTc4YzU0NTg5YmEifQ"
+        },
+        {
+          "resource": "repo://server/pkg/handler/join_or_create_hub_by_id.go#L32-L51",
+          "version": "repo-lines-v1:sha256:1556d9148daf5c51d8b11c094c59abb768d8d43de6c072ed83dd1bd1d9123c5a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0YzVhYjFmZGQzOGFiMjZkMTkxNGJlM2UyMTI4ZGU0MzE3NWEzMWE5MWZmZTc5ZGI5ZGRkNzk3YTAzZjIyZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY2N2I5YTk4Y2U1ODIwMWVjYmY1YjUxMDc5NDdiZjBmZTQyMGQ0OTk0MWE0NTUyODU2ZjYxY2RiOTg3OGQ1OTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUyYjE5MjJjZTExMzUyNGEzOWFkZGM5YzY3ZDBlNzBiZTFjNDdlNzNhODE1OTA0YjA3Y2RhZTc4YzU0NTg5YmEifQ"
+        },
+        {
+          "resource": "repo://server/pkg/handler/websocket.go#L25-L38",
+          "version": "repo-lines-v1:sha256:086c97af7e4827ded2e606ccd6f08dc04ecfc9bb01222934d3055774815519c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMTcyMTkzNTU1YmExZjAwMjhhNzllZTZhZjc2N2UwNzUxZTdlYTk2OWQ1NDYzZTE1MDhiYzJlNWJkNmI5OWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0OGMwN2ZhYTQzOWRiOGE4NTE5OGU1YWEzYWRhZTA4ZWFmNGIxOGY2YmE3ODcyMGU2NjI3ZDNhMThlNWNlYjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkwMzI4Zjk3OTVhMjkzYTI4NGNkNTczYTc3ZDRmNTAxMmIzZmM2MzExZDA2OTY4YzlhMDU0NDQxNzNmMmU3YzAifQ"
+        },
+        {
+          "resource": "repo://server/pkg/zerohub/zerohub.go#L104-L125",
+          "version": "repo-lines-v1:sha256:dac1955cb6a3d78745217ffa6a5da52aed52dc2d8d108e801e24964699e1ea31:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1MWYxMjg2NGFkYTZlOTkxOGVhNzExYjAzYmI3Y2ViODkyYWQ3NTM5NzNmYjAzNmUwNDNkOTA0YTE2ZTZiMjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM2NWY5ZGQxYWQxM2E2ZWUwZGQ3OGM2ODY5Nzc0MjYxNzE3MTFjMDA5YjUyNGQ2Nzg4ZmJiODllMzFjMDRlMmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJjZjM0NWZmZjk4YmYwMzRiYWE5MDk0YzgyNjEyOTBkNTU4ZjhmYWUwZGUwOTYwMTlhNWYxMzA0ZjBmMGMzZGMifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-11T02:02:37.375Z"
+    "at": "2026-10-12T02:33:24.782Z"
   }
 }

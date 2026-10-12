@@ -5,7 +5,7 @@ description: End-to-end explanation of how ZeroHub's Go signaling server, TypeSc
 tags: [architecture, webrtc, signaling, server, client, protobuf]
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-11T02:02:37.375Z
+    at: 2026-10-12T02:33:24.782Z
 sources:
   - id: openwiki-source-22df8f9ebcff0eeb4e4ed38f
     resource: repo://client/src/topology/meshTopology.ts
@@ -17,8 +17,6 @@ sources:
     resource: repo://server/cmd/server.go
   - id: openwiki-source-b539b60065144e2cf7f200e7
     resource: repo://server/pkg/handler/create_hub_by_id.go
-  - id: openwiki-source-b985a45eeefdba7d9abbac00
-    resource: repo://server/pkg/handler/validation.go
   - id: openwiki-source-3fcd30e2964f43d36d37064d
     resource: repo://server/pkg/handler/websocket.go
   - id: openwiki-source-da50555ad2e1dffee0054a4e
@@ -27,7 +25,7 @@ sources:
     resource: repo://server/pkg/storage/storage.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-10-11T02:02:37.375Z" }
+generated: { by: "hermes", at: "2026-10-12T02:33:24.782Z" }
 ---
 
 # Architecture Overview
@@ -93,6 +91,15 @@ primitive, so concurrent creates of the same ID collapse to a single hub
 On upgrade (`handler.Upgrade`), the server wraps the socket in a
 `peer.Peer`, calls `hub.AddPeer`, and starts `hub.HandleMessage` — a read loop
 that decodes `ClientMessage` protobuf frames.
+
+If the upgrade does not fully succeed — a real handshake error, or the
+up-front `peerMetadata` rejection that already wrote a `400` — this request
+never added a peer. The handler therefore rolls back a hub that this very
+call created (`zh.RemoveHubById`), so it cannot linger as an empty orphan on
+storage with no TTL; a pre-existing hub is left in place because it may hold
+live peers. The create path always rolls back (it created the hub); the
+join-or-create path rolls back only when `GetOrCreateHub` reports
+`created == true`.
 
 ### 3. Signaling via protobuf
 

@@ -44,7 +44,7 @@
     },
     {
       "id": "claim_bd4128b0cd9d456c8ec9c4355a36c977",
-      "statement": "SFUTopology routes all P2P traffic through a single SFU peer (the numerically lowest peer ID by default, or an explicitly set one \u2014 peer IDs are sequential decimal strings, so election sorts parseInt(id, 10) rather than lexicographically); the SFU offers to every client and non-SFU peers connect only to the SFU, trading a single point of failure for better large-group scalability.",
+      "statement": "SFUTopology routes all P2P traffic through a single SFU peer (the numerically lowest peer ID by default, or an explicitly set one — peer IDs are sequential decimal strings, so election sorts parseInt(id, 10) rather than lexicographically); the SFU offers to every client and non-SFU peers connect only to the SFU, trading a single point of failure for better large-group scalability.",
       "evidence": [
         {
           "resource": "repo://client/src/topology/sfuTopology.ts#L121-L166",
