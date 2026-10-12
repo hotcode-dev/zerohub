@@ -161,6 +161,8 @@ class MockRTCPeerConnection {
   public __lastCreateOfferOptions: RTCOfferOptions | null = null;
   /** Options last passed to `createAnswer` (inspectable by specs). */
   public __lastCreateAnswerOptions: RTCOfferOptions | null = null;
+  /** `setRemoteDescription` calls (inspectable by specs). */
+  public __remoteDescriptions: Array<{ type: string; sdp: string }> = [];
 
   createOffer(options?: RTCOfferOptions): Promise<{ type: string; sdp: string }> {
     this.__lastCreateOfferOptions = options ?? null;
@@ -179,7 +181,12 @@ class MockRTCPeerConnection {
     return Promise.resolve();
   }
 
-  setRemoteDescription(): Promise<void> {
+  setRemoteDescription(
+    desc?: { type: string; sdp: string }
+  ): Promise<void> {
+    if (desc) {
+      this.__remoteDescriptions.push({ type: desc.type, sdp: desc.sdp });
+    }
     return Promise.resolve();
   }
 }
@@ -225,6 +232,8 @@ interface ClientState {
   zeroHubErrors?: string[];
   /** `onOffer` (peer, offerSdp) captures from `recordOffers`. */
   offers?: Array<{ peerId: string; offerSdp: string }>;
+  /** `onAnswer` (peer, answerSdp) captures from `recordAnswers`. */
+  answers?: Array<{ peerId: string; answerSdp: string }>;
   /** `logger.warn` messages captured when built via `createClientWithLogger`. */
   warns?: string[];
   /** SDP sends captured when the socket is stubbed via `stubSocket`. */
@@ -1093,6 +1102,98 @@ const ZeroHubUnitHarness = {
       throw new Error(`no client ${id}`);
     }
     return entry.offers ?? [];
+  },
+
+  /**
+   * Flips the client's `config.autoAcceptAnswer` flag so specs can exercise
+   * the manual-answer-handling path of the `answerMessage` branch.
+   */
+  setAutoAcceptAnswer(id: number, autoAcceptAnswer: boolean): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.client.config.autoAcceptAnswer = autoAcceptAnswer;
+  },
+
+  /**
+   * Starts capturing `onAnswer` callbacks on the client so specs can assert
+   * the incoming answer SDP is surfaced when `autoAcceptAnswer` is `false`.
+   */
+  recordAnswers(id: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.answers = [];
+    entry.client.onAnswer = (peer, answerSdp) => {
+      entry.answers?.push({ peerId: peer.id, answerSdp });
+    };
+  },
+
+  /** The `(peerId, answerSdp)` pairs captured by `recordAnswers`. */
+  getAnswers(id: number): Array<{ peerId: string; answerSdp: string }> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return entry.answers ?? [];
+  },
+
+  /**
+   * Feeds an `answerMessage` (an incoming answer from a remote peer) into
+   * the client's dispatcher, so specs can drive the answer-accept path
+   * without a server.
+   */
+  sendAnswerMessage(id: number, answerPeerId: string, answerSdp: string): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.client.handleZeroHubMessage({
+      answerMessage: { answerPeerId, answerSdp },
+    } as never);
+  },
+
+  /**
+   * Drives the public `acceptAnswer(peerId, answerSdp)` entry point and
+   * reports whether it resolved. The underlying `setRemoteDescription` call
+   * (type "answer", the exact SDP) is recorded on the mock connection and
+   * readable via `getRemoteDescriptions`.
+   */
+  async invokeAcceptAnswer(
+    id: number,
+    peerId: string,
+    answerSdp: string
+  ): Promise<void> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    await entry.client.acceptAnswer(peerId, answerSdp);
+  },
+
+  /**
+   * The `setRemoteDescription` calls made on this client's peer connections
+   * (type + sdp), in call order — lets specs assert which SDPs were applied
+   * to which peer and that `acceptAnswer`/`sendAnswer` actually consumed the
+   * right one.
+   */
+  getRemoteDescriptions(
+    id: number
+  ): Array<{ peerId: string; type: string; sdp: string }> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const calls: Array<{ peerId: string; type: string; sdp: string }> = [];
+    for (const [peerId, peer] of Object.entries(entry.client.peers)) {
+      const conn = asMock(peer.rtcConn);
+      for (const desc of conn?.__remoteDescriptions ?? []) {
+        calls.push({ peerId, type: desc.type, sdp: desc.sdp });
+      }
+    }
+    return calls;
   },
 
   /**

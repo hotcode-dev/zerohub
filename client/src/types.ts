@@ -222,7 +222,9 @@ export interface Config<PeerMetadata = object> {
   /**
    * Auto accept incoming answers from remote peers.
    * Default is true.
-   * If false, you need to call `acceptAnswer` manually.
+   * If false, the incoming answer is surfaced through the `onAnswer`
+   * callback and you need to call `acceptAnswer(peer.id, answerSdp)`
+   * manually to complete the exchange.
    */
   autoAcceptAnswer: boolean;
   /**
