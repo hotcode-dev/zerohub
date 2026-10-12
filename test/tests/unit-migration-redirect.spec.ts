@@ -175,3 +175,102 @@ test("migration redirect to the current host (self-redirect) does not reconnect"
   expect(errors).toHaveLength(1);
   expect(errors[0]).toContain("redirect target `a.zerohub.dev` is the current host, not retrying");
 });
+
+test("1001 close with a non-host reason does not corrupt host state and fails over", async ({
+  page,
+}) => {
+  await prepareUnitHarnessPage(page);
+
+  // An intermediate hop (reverse proxy, load balancer) closes the socket
+  // with code 1001 and a human-readable reason instead of the ZeroHub
+  // server's migration redirect. The reason must NOT be trusted as a host.
+  const id = await page.evaluate(
+    () => ZeroHubUnitHarness.createClientWithHosts(["a.zerohub.dev", "b.zerohub.dev"])
+  );
+  await page.evaluate((clientId) => ZeroHubUnitHarness.createHub(clientId, "room"), id);
+  const originalUrl = await page.evaluate(
+    (clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId),
+    id
+  );
+  expect(originalUrl).toBe("wss://a.zerohub.dev/v1/hubs/create?id=room");
+
+  await page.evaluate(
+    (clientId) =>
+      ZeroHubUnitHarness.simulateMigrationClose(
+        clientId,
+        "Server going away for maintenance"
+      ),
+    id
+  );
+
+  // Host state moved by the automatic failover path, not the redirect path:
+  // it dialed the next configured host `b` (hostIndex advanced), and it is
+  // never the garbage reason string.
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHost(clientId), id)).toBe(
+    "b.zerohub.dev"
+  );
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHostIndex(clientId), id)).toBe(
+    1
+  );
+
+  // The client dialed the next configured host, not the garbage reason: no
+  // socket exists against "Server going away for maintenance".
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
+    "wss://b.zerohub.dev/v1/hubs/create?id=room"
+  );
+});
+
+test("1001 close with a non-host reason on the last host surfaces a terminal error instead of wedging", async ({
+  page,
+}) => {
+  await prepareUnitHarnessPage(page);
+
+  // Single configured host: the automatic-failover fallback has no backup
+  // host to move to, so the client must surface a terminal error via
+  // `onZeroHubError` — not throw out of the close handler or leave the
+  // client wedged with corrupted host state.
+  const id = await page.evaluate(
+    () => ZeroHubUnitHarness.createClientWithHosts(["a.zerohub.dev"])
+  );
+  await page.evaluate((clientId) => ZeroHubUnitHarness.recordZeroHubErrors(clientId), id);
+  await page.evaluate((clientId) => ZeroHubUnitHarness.createHub(clientId, "room"), id);
+  const originalUrl = await page.evaluate(
+    (clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId),
+    id
+  );
+  expect(originalUrl).toBe("wss://a.zerohub.dev/v1/hubs/create?id=room");
+
+  // `simulateMigrationClose` would reject with a stack trace if the close
+  // handler threw; reaching this point means `onclose` completed cleanly.
+  await page.evaluate(
+    (clientId) =>
+      ZeroHubUnitHarness.simulateMigrationClose(clientId, "Maintenance in progress"),
+    id
+  );
+  // The failover rejection settles in microtasks; flush them.
+  await page.evaluate(async () => {
+    for (let i = 0; i < 5; i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  });
+
+  // No socket was opened toward the reason string; host state is intact.
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
+    originalUrl
+  );
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHost(clientId), id)).toBe(
+    "a.zerohub.dev"
+  );
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHostIndex(clientId), id)).toBe(
+    0
+  );
+
+  // The terminal failure (all hosts exhausted) is surfaced to the
+  // application instead of being silently wedged.
+  const errors = await page.evaluate(
+    (clientId) => ZeroHubUnitHarness.getZeroHubErrors(clientId),
+    id
+  );
+  expect(errors).toHaveLength(1);
+  expect(errors[0]).toContain("all ZeroHub hosts are not working");
+});

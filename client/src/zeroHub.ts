@@ -9,7 +9,7 @@ import { ClientMessage } from "./proto/zerohub/v1/client_message";
 import { ServerMessage } from "./proto/zerohub/v1/server_message";
 import { MeshTopology, Topology } from "./topology";
 import { PeerStatus, type Config, type HubInfo } from "./types";
-import { getWS } from "./utils";
+import { getWS, isWellFormedHost } from "./utils";
 
 /**
  * ZeroHubClient manages the full lifecycle of connecting to a ZeroHub
@@ -277,6 +277,24 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       return;
     }
     if (newHost) {
+      // 1001 ("going away") is a generic RFC 6455 code: besides the ZeroHub
+      // server's migration redirect, any intermediate hop (reverse proxy,
+      // load balancer, edge device) can close with 1001 and a
+      // human-readable reason ("Server going away", "Maintenance in
+      // progress", ...). Trust such a value as a redirect host and the
+      // client would permanently corrupt `this.host` (every entry point
+      // builds its URL from it) or throw out of the close handler when
+      // assigning `currentURL.host`. Validate the shape first and, on
+      // failure, fall through to the automatic host-failover path below
+      // without touching host state — mirroring the server's
+      // `validateBackupHost` for the host it emits in migration closes.
+      if (!isWellFormedHost(newHost)) {
+        this.logger.warn(
+          `ZeroHub 1001 close reason \`${newHost}\` is not a well-formed host, falling back to host failover`
+        );
+        this.reconnect(currentURL);
+        return;
+      }
       // Mirror the backup-host branch below: a redirect back to the host we
       // just disconnected from (operator pointing /admin/migrate at the
       // current host, or a proxy emitting a 1001 with our own host in the
