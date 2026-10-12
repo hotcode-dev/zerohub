@@ -221,6 +221,8 @@ interface ClientState {
   createdAtWsSeq: number;
   /** Status transitions captured by `recordStatusChanges`. */
   statusLog?: Array<{ peerId: string; status: string }>;
+  /** `onZeroHubError` messages captured by `recordZeroHubErrors`. */
+  zeroHubErrors?: string[];
   /** `logger.warn` messages captured when built via `createClientWithLogger`. */
   warns?: string[];
   /** SDP sends captured when the socket is stubbed via `stubSocket`. */
@@ -1004,6 +1006,31 @@ const ZeroHubUnitHarness = {
       .map((peer) => asMock(peer.rtcConn))
       .filter((conn): conn is MockRTCPeerConnection => conn !== undefined)
       .map((conn) => conn.__instanceId);
+  },
+
+  /**
+   * Starts capturing `onZeroHubError` callbacks on the client so specs can
+   * assert that terminal reconnect failures surfaced to the application
+   * (e.g. the self-redirect guard in `reconnect()`).
+   */
+  recordZeroHubErrors(id: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.zeroHubErrors = [];
+    entry.client.onZeroHubError = (error) => {
+      entry.zeroHubErrors?.push(error.message);
+    };
+  },
+
+  /** The `onZeroHubError` messages captured by `recordZeroHubErrors`. */
+  getZeroHubErrors(id: number): string[] {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return entry.zeroHubErrors ?? [];
   },
 
   /**
