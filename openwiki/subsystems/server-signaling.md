@@ -9,8 +9,14 @@ sources:
     resource: repo://server/pkg/config/config.go
   - id: openwiki-source-fe532a441d6120850e1025f4
     resource: repo://server/pkg/handler/auth.go
+  - id: openwiki-source-b539b60065144e2cf7f200e7
+    resource: repo://server/pkg/handler/create_hub_by_id.go
   - id: openwiki-source-e27a23c64f72b7d3d77630c6
     resource: repo://server/pkg/handler/handler.go
+  - id: openwiki-source-3c52325a8fc10ab26c610646
+    resource: repo://server/pkg/handler/join_hub.go
+  - id: openwiki-source-9df2276596bc3c7c9f0676fd
+    resource: repo://server/pkg/handler/join_or_create_hub_by_id.go
   - id: openwiki-source-260d31194d7a0cb2a0aa776c
     resource: repo://server/pkg/handler/join_or_create_hub_ip.go
   - id: openwiki-source-1eae49f0a1c1e6b3c42e6b07
@@ -27,10 +33,10 @@ sources:
     resource: repo://server/pkg/storage/gache.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-10-11T02:02:37.375Z" }
+generated: { by: "hermes", at: "2026-10-12T01:31:27.169Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-11T02:02:37.375Z
+    at: 2026-10-12T01:31:27.169Z
 ---
 
 
@@ -119,6 +125,20 @@ only when the read loop exited before the close handler ran, e.g. a read
 error). Both paths are safe to race because `RemovePeerById` is idempotent —
 the second call sees the missing peer, broadcasts nothing, and returns
 `false`. Permanent hubs never expire.
+
+**Upgrade-failure cleanup** plugs an orphaned-hub leak. `Upgrade` reports a
+failed connection two ways: a non-nil error (a real handshake error) or
+`responseWritten=true` (the up-front `peerMetadata` rejection that already
+wrote a `400`). `AddPeer` only runs inside the upgrade callback, so whenever
+`Upgrade` does not fully succeed, no peer was added for this request and the
+hub is empty. `CreateHubByID` and `JoinOrCreateHubByID` therefore call
+`zh.RemoveHubById` on that hub immediately, so a failed handshake (or a
+rejected `peerMetadata`) cannot leave an empty hub squatting in the registry
+forever — an unbounded leak on memory storage. `JoinOrCreateHubByID` removes
+the hub only when this call created it, because a pre-existing hub may hold
+live peers; `JoinHub` never creates a hub and has nothing to clean up. When
+`responseWritten` is true the already-written `400` is not overwritten by a
+`500`.
 
 ## Pluggable storage
 

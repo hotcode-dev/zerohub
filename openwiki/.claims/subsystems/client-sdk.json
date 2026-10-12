@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3fd86fc741a25cc7e25292d9f90bece96cf6d017b501a214497ee338ac2cf8a5",
+  "pageVersion": "sha256:c42f82edc80b6b7e44d33c2eef4a1088f1d8c56963df3c5546c6bf2ab4e99dd3",
   "claims": [
     {
       "id": "claim_f8eee7b4d94d405e8ae1cd7638c1d8cf",
@@ -44,7 +44,7 @@
     },
     {
       "id": "claim_bd4128b0cd9d456c8ec9c4355a36c977",
-      "statement": "SFUTopology routes all P2P traffic through a single SFU peer (the numerically lowest peer ID by default, or an explicitly set one \u2014 peer IDs are sequential decimal strings, so election sorts parseInt(id, 10) rather than lexicographically); the SFU offers to every client and non-SFU peers connect only to the SFU, trading a single point of failure for better large-group scalability.",
+      "statement": "SFUTopology routes all P2P traffic through a single SFU peer (the numerically lowest peer ID by default, or an explicitly set one — peer IDs are sequential decimal strings, so election sorts parseInt(id, 10) rather than lexicographically); the SFU offers to every client and non-SFU peers connect only to the SFU, trading a single point of failure for better large-group scalability.",
       "evidence": [
         {
           "resource": "repo://client/src/topology/sfuTopology.ts#L121-L166",
@@ -179,6 +179,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-11T02:02:37.375Z"
+    "at": "2026-10-12T01:31:27.169Z"
   }
 }
