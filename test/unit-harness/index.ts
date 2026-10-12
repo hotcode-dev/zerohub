@@ -223,6 +223,8 @@ interface ClientState {
   statusLog?: Array<{ peerId: string; status: string }>;
   /** `onZeroHubError` messages captured by `recordZeroHubErrors`. */
   zeroHubErrors?: string[];
+  /** `onOffer` (peer, offerSdp) captures from `recordOffers`. */
+  offers?: Array<{ peerId: string; offerSdp: string }>;
   /** `logger.warn` messages captured when built via `createClientWithLogger`. */
   warns?: string[];
   /** SDP sends captured when the socket is stubbed via `stubSocket`. */
@@ -1055,6 +1057,67 @@ const ZeroHubUnitHarness = {
       await Promise.resolve();
     }
     return log;
+  },
+
+  /**
+   * Flips the client's `config.autoAnswer` flag so specs can exercise the
+   * manual-offer-handling path of the `offerMessage` branch.
+   */
+  setAutoAnswer(id: number, autoAnswer: boolean): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.client.config.autoAnswer = autoAnswer;
+  },
+
+  /**
+   * Starts capturing `onOffer` callbacks on the client so specs can assert the
+   * incoming offer SDP is surfaced when `autoAnswer` is `false`.
+   */
+  recordOffers(id: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.offers = [];
+    entry.client.onOffer = (peer, offerSdp) => {
+      entry.offers?.push({ peerId: peer.id, offerSdp });
+    };
+  },
+
+  /** The `(peerId, offerSdp)` pairs captured by `recordOffers`. */
+  getOffers(id: number): Array<{ peerId: string; offerSdp: string }> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return entry.offers ?? [];
+  },
+
+  /**
+   * Feeds an `offerMessage` (an incoming offer from a remote peer) into the
+   * client's dispatcher, so specs can drive the offer/answer path without a
+   * server.
+   */
+  sendOfferMessage(id: number, offerPeerId: string, offerSdp: string): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.client.handleZeroHubMessage({
+      offerMessage: { offerPeerId, offerSdp },
+    } as never);
+  },
+
+  /** The status string of a single peer (or `null` if absent). */
+  getPeerStatus(id: number, peerId: string): string | null {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const peer = entry.client.peers[peerId];
+    return peer ? peer.status : null;
   },
 };
 
