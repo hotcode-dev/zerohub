@@ -148,6 +148,19 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    */
   public onPeerError?: (peer: Peer<PeerMetadata>, error: Error) => void;
   /**
+   * A callback function that is called when an offer is received from a
+   * remote peer while `autoAnswer` is `false` (manual offer handling). It is
+   * invoked with the offering peer and the incoming offer SDP, so the
+   * application can complete the exchange by calling
+   * `sendAnswer(peer.id, offerSdp)`. Not invoked when `autoAnswer` is `true`
+   * (the default), because the client answers automatically.
+   *
+   * @param peer - The peer that sent the offer
+   * @param offerSdp - The offer Session Description Protocol (SDP) to answer
+   * @public
+   */
+  public onOffer?: (peer: Peer<PeerMetadata>, offerSdp: string) => void;
+  /**
    * The logger used for logging messages.
    * @public
    */
@@ -416,6 +429,16 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         this.sendAnswer(offerPeerId, offerSdp).catch((err) => {
           this.logger.error("Failed to send answer to peer", offerPeerId, err);
         });
+      } else {
+        // Manual offer handling: surface the incoming offer to the
+        // application so it can complete the exchange via
+        // `sendAnswer(peer.id, offerSdp)`. Guard on the peer existing so a
+        // dangling offer (peer already torn down) is not surfaced. The
+        // `AnswerPending` status above fires before this callback.
+        const peer = this.peers[offerPeerId];
+        if (peer && this.onOffer) {
+          this.onOffer(peer, offerSdp);
+        }
       }
     } else if (serverMessage.answerMessage) {
       const answerPeerId = serverMessage.answerMessage.answerPeerId;

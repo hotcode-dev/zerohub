@@ -214,7 +214,9 @@ export interface Config<PeerMetadata = object> {
   /**
    * Auto answer incoming offers from remote peers.
    * Default is true.
-   * If false, you need to call `acceptOffer` manually.
+   * If false, the incoming offer is surfaced through the `onOffer` callback
+   * and you need to call `sendAnswer(peer.id, offerSdp)` manually to
+   * complete the exchange.
    */
   autoAnswer: boolean;
   /**

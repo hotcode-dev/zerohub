@@ -55,13 +55,28 @@ client.createHub("demo-room", { name: "Alice" }, { roomName: "Demo" });
 | `tls`                             | `true`                                                       | Switches between `wss://` and `ws://` when connecting. Disable for local dev. |
 | `logLevel`                        | `LogLevel.Warning`                                           | Controls `ZeroHubLogger` verbosity. Set to `LogLevel.Debug` while debugging.  |
 | `waitIceCandidatesTimeout`        | `2000`                                                       | Milliseconds to gather ICE candidates before sending offers/answers.          |
-| `autoAnswer` / `autoAcceptAnswer` | `true`                                                       | Turn off to manually call `acceptOffer` or `acceptAnswer`.                    |
+| `autoAnswer` / `autoAcceptAnswer` | `true`                                                       | Turn off `autoAnswer` to handle offers manually via the `onOffer` callback + `sendAnswer(peer.id, offerSdp)`. Turn off `autoAcceptAnswer` to manually call `acceptAnswer`. |
 | `rtcConfig`                       | Google STUN servers                                          | Merge with your own TURN/STUN list per peer connection.                       |
 | `rtcOfferOptions`                 | `{ offerToReceiveAudio: false, offerToReceiveVideo: false }` | Provide custom `RTCOfferOptions` when creating offers.                        |
 | `dataChannelConfig`               | `undefined`                                                  | Configure data channel count, init options, and callback.                     |
 | `mediaChannelConfig`              | `undefined`                                                  | Attach local media streams and handle remote tracks.                          |
 
 Partial configs are merged with `DEFAULT_CONFIG`, so you only set what you need.
+
+## Manual offer handling
+
+By default the client answers every incoming offer automatically. To take control, set `autoAnswer: false` and complete the exchange yourself from the `onOffer` callback:
+
+```ts
+const client = new ZeroHubClient<PeerMetadata, HubMetadata>(hosts, {
+  autoAnswer: false,
+});
+
+client.onOffer = (peer, offerSdp) => {
+  // `peer.status` is `PeerStatus.AnswerPending` here.
+  client.sendAnswer(peer.id, offerSdp);
+};
+```
 
 ## Peer lifecycle events
 
