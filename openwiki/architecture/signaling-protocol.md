@@ -12,10 +12,10 @@ sources:
     resource: repo://proto/zerohub/v1/server_message.proto
   - id: openwiki-source-da50555ad2e1dffee0054a4e
     resource: repo://server/pkg/hub/hub.go
-generated: { by: "hermes", at: "2026-10-03T07:04:30.122Z" }
+generated: { by: "hermes", at: "2026-10-13T01:29:56.745Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-12T01:31:27.169Z
+    at: 2026-10-13T01:29:56.745Z
 ---
 
 # Signaling Protocol & Peer Lifecycle
@@ -88,21 +88,52 @@ The server never inspects SDP content — it only relays it. The exchange:
 7. Once the `RTCPeerConnection` reaches `connectionState === "connected"`, the
    client marks the peer `PeerStatus.Connected`.
 
+## Manual offer/answer handling
+
+`autoAnswer` and `autoAcceptAnswer` (both default `true`) switch the exchange
+from automatic to application-driven. When off, the incoming SDP is no longer
+answered/accepted by the client and is surfaced through a callback instead:
+
+- `autoAnswer: false` — an incoming `offer_message` still moves the peer to
+  `AnswerPending`, then invokes the public `onOffer(peer, offerSdp)` callback.
+  The application completes the exchange by calling
+  `sendAnswer(peer.id, offerSdp)` (which performs `createAnswer` and ships the
+  SDP).
+- `autoAcceptAnswer: false` — an incoming `answer_message` still moves the
+  peer to `AcceptPending`, then invokes the public
+  `onAnswer(peer, answerSdp)` callback. The application completes the
+  exchange by calling `acceptAnswer(peer.id, answerSdp)` (which sets the
+  remote answer description).
+
+Both callbacks are guarded on the peer still existing in the `peers` map, so
+a dangling SDP for an already-torn-down peer is not surfaced. The status
+transition (`AnswerPending` / `AcceptPending`) fires before the callback in
+either mode.
+
 ## ICE candidate handling
 
 Rather than signaling individual ICE candidates (the
 `ice_candidate_message` / `send_ice_candidate_message` frames exist but are
-marked unused), ZeroHub relies on **trickle-avoidance via a timeout**:
+marked unused), ZeroHub relies on **trickle-avoidance via a timeout**. The
+duplicated wait-and-send logic from `sendOffer`/`sendAnswer` is extracted into
+the shared private helper `armSendOnIceReady(peerId, rtcConn, sendOnce)`, so
+the two paths can never diverge:
 
-- In `sendOffer`/`sendAnswer`, `onicecandidate` sends the SDP to the server the
-  moment `event.candidate` is null (gathering finished) and no prior send
-  happened.
+- `sendOffer`/`sendAnswer` run `createOffer`/`createAnswer` +
+  `setLocalDescription`, then call `armSendOnIceReady` with a callback that
+  ships the current local description via `sendOfferToWebsocket` /
+  `sendAnswerToWebsocket`.
+- `onicecandidate` fires the send on the first event that carries no
+  candidate (the gathering-complete marker), skipping any event that still
+  carries a candidate.
 - A `setTimeout` of `waitIceCandidatesTimeout` (default **2000 ms**, from
   `DEFAULT_CONFIG`) fires as a fallback: if candidates are still pending, it
   flushes the current SDP anyway so negotiation is not blocked forever.
-- Pending ICE timeout handles are tracked per peer in `iceTimeouts` and cleared
-  on `disconnect()`, so a timer can never write to a closed socket. The prior
-  handle for a peer is always cleared before arming a new one.
+- Both paths share a single `isSent` guard, so re-negotiation (or a late
+  candidate after the timeout) can never send the SDP a second time.
+- Pending ICE timeout handles are tracked per peer in `iceTimeouts[peerId]`
+  and cleared on `disconnect()`, so a timer can never write to a closed
+  socket. Re-arming clears the prior pending handle for that peer first.
 
 ## Peer status lifecycle
 
@@ -145,4 +176,7 @@ and where `SFUTopology` decides which peers wire directly to the SFU.
   breaks on read errors, non-`BinaryMessage` frames, or protobuf unmarshal
   failures.
 - The `autoAnswer` / `autoAcceptAnswer` config flags default to `true`; setting
-  either to `false` shifts the corresponding step to a manual client call.
+  either to `false` shifts the corresponding step to a manual client call:
+  the incoming SDP is surfaced via the `onOffer` / `onAnswer` callback and the
+  application completes the exchange by calling `sendAnswer(peer.id, offerSdp)`
+  or `acceptAnswer(peer.id, answerSdp)` (see Manual offer/answer handling).

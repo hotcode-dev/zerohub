@@ -20,10 +20,10 @@ sources:
     resource: repo://test/playwright.config.ts
   - id: openwiki-source-801ca2739d5984913a9ac0eb
     resource: repo://test/unit-harness/index.ts
-generated: { by: "hermes", at: "2026-10-11T02:02:37.375Z" }
+generated: { by: "hermes", at: "2026-10-13T01:29:56.745Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-12T01:31:27.169Z
+    at: 2026-10-13T01:29:56.745Z
 ---
 
 # ZeroHub Quickstart
@@ -52,7 +52,7 @@ orient, then follow the related pages for depth:
 | `client/` | TypeScript/JavaScript SDK, published as `@zero-hub/client` on npm |
 | `server/` | Go signaling server (`fasthttp`) |
 | `proto/` | Protobuf definitions for client↔server communication |
-| `test/` | E2E tests (Playwright + Svelte) driving the real client, plus unit specs that exercise client internals with a mocked `RTCPeerConnection` |
+| `test/` | E2E tests (Playwright + Svelte) driving the real client, plus unit specs that exercise client internals with a mocked `WebSocket` and `RTCPeerConnection` |
 | `docs/` | Astro-based documentation site |
 | `Makefile` | Root orchestration (run, test, proto-gen, e2e) |
 | `AGENTS.md` | Repository development guide |
@@ -114,6 +114,11 @@ client.createHub('my-hub', { name: 'Alice' });
 
 For a second peer, call `joinHub` with the same hub ID. The two clients
 negotiate over the server and establish a direct WebRTC data channel.
+
+> Manual SDP handling: set `autoAnswer: false` / `autoAcceptAnswer: false` to
+> surface incoming offers/answers via the `onOffer` / `onAnswer` callbacks and
+> complete the exchange yourself with `sendAnswer` / `acceptAnswer` (see
+> [TypeScript Client SDK](subsystems/client-sdk.md)).
 
 ## 3. Core concepts (in one line each)
 
