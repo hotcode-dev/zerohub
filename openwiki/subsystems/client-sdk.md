@@ -14,10 +14,10 @@ sources:
     resource: repo://client/src/topology/sfuTopology.ts
   - id: openwiki-source-718b618612c033c4f36b3a45
     resource: repo://client/src/zeroHub.ts
-generated: { by: "hermes", at: "2026-10-11T02:02:37.375Z" }
+generated: { by: "hermes", at: "2026-10-13T03:37:16.218Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-12T01:31:27.169Z
+    at: 2026-10-13T03:37:16.218Z
 ---
 
 # TypeScript Client SDK
@@ -41,7 +41,8 @@ signaling server, drives SDP offer/answer negotiation, and hands the resulting
 - `ws` — the active WebSocket (binary `arraybuffer` frames).
 - `isDisconnected` — manual-disconnect flag.
 - `iceTimeouts` — per-peer pending ICE candidate timers.
-- Callbacks: `onZeroHubError`, `onHubInfo`, `onPeerStatusChange`, `onPeerError`.
+- Callbacks: `onZeroHubError`, `onHubInfo`, `onPeerStatusChange`, `onPeerError`,
+  `onOffer`, `onAnswer`.
 - `logger` — a `ZeroHubLogger` honoring `logLevel`.
 
 The constructor validates that at least one host is supplied, merges the RTC
@@ -73,6 +74,11 @@ with `id`, `hubMetadata`, `peerMetadata` as query params, and calls
 - **Resets state** for reuse: sets `isDisconnected = false` and clears
   `iceTimeouts`, so a client that previously called `disconnect()` can be
   reconnected cleanly.
+- **Tears down a leaked socket**: calls `closeActiveSocket()` to close any
+  socket left open by a previous entry-point call that did not go through
+  `disconnect()`, nulling all handlers before `close(1000)` so the replaced
+  socket does not fire `reconnect()` (which would advance `hostIndex` a second
+  time for a single logical failure) or `onZeroHubError`.
 - Opens `new WebSocket(url)` with `binaryType = "arraybuffer"`.
 - `onmessage` — decodes the frame with `ServerMessage.decode(...)` and routes
   it through `handleZeroHubMessage`.
@@ -81,9 +87,11 @@ with `id`, `hubMetadata`, `peerMetadata` as query params, and calls
   1006, and reconnecting in both would advance `hostIndex` twice for a single
   failure (skipping two hosts). All reconnection happens in `onclose`.
 - `onclose` — interprets the close code: `1000` (normal) does nothing;
-  `1001` (going away) reconnects to the host named in the close *reason*
-  (the migration redirect); `1006`/`1011` (abnormal/internal error) reconnect;
-  anything else fires `onZeroHubError`.
+  `1001` (going away) hands the close *reason* to `reconnect(url, reason)` as
+  the migration redirect — which validates the reason as a well-formed host
+  before acting on it (see Reconnection below); `1006`/`1011`
+  (abnormal/internal error) reconnect; anything else fires
+  `onZeroHubError`.
 
 `handleZeroHubMessage` branches on the `ServerMessage` oneof:
 
@@ -98,10 +106,17 @@ with `id`, `hubMetadata`, `peerMetadata` as query params, and calls
   `peerDisconnectedMessage` (broadcast only while connected), so without it
   that stale `Peer` (with a live, unclosed `RTCPeerConnection`) would leak
   forever.
-- `offerMessage` — moves that peer to `AnswerPending` and, when
-  `autoAnswer`, calls `sendAnswer`.
+- `offerMessage` — moves that peer to `AnswerPending` and, when `autoAnswer`,
+  calls `sendAnswer`. When `autoAnswer` is `false`, the incoming offer is
+  surfaced through the `onOffer(peer, offerSdp)` callback instead (guarded on
+  the peer still existing in the map, so a dangling offer for a torn-down peer
+  is not surfaced), and the application completes the exchange by calling
+  `sendAnswer(peer.id, offerSdp)`.
 - `answerMessage` — moves the peer to `AcceptPending` and, when
-  `autoAcceptAnswer`, calls `acceptAnswer`.
+  `autoAcceptAnswer`, calls `acceptAnswer`. When `autoAcceptAnswer` is
+  `false`, the incoming answer is surfaced through the
+  `onAnswer(peer, answerSdp)` callback instead (same peer-exists guard), and
+  the application calls `acceptAnswer(peer.id, answerSdp)`.
 - `peerJoinedMessage` — creates a `Peer` for the joiner (if new, via
   `addPeer`).
 - `peerDisconnectedMessage` — fires the `ZeroHubDisconnected` status, then
@@ -137,8 +152,20 @@ message dispatcher.
 `reconnect(currentURL, newHost?)`:
 
 - Returns immediately if `isDisconnected` (manual disconnect).
-- If `newHost` is supplied (the 1001 going-away redirect case), it points the
-  URL at `newHost` and reconnects.
+- If `newHost` is supplied (the 1001 going-away redirect case), the close
+  reason is first validated as a well-formed host by `isWellFormedHost`
+  (client/src/utils.ts — a bare hostname or `host:port`, no scheme, no
+  path/query/fragment, no userinfo, port in 0..65535; it mirrors the
+  server's `validateBackupHost` for the host emitted in migration closes).
+  `1001` is a generic RFC 6455 code, so a proxy or load balancer may close
+  with a human-readable reason: a malformed reason logs a warning and falls
+  through to the automatic host-failover path below **without touching host
+  state**. A redirect back to the current host (`newHost === this.host`, e.g.
+  an operator pointing `/admin/migrate` at the current host) is surfaced
+  through `onZeroHubError` and stopped, since it would cycle forever with no
+  backoff and no terminal error. A valid redirect updates `this.host` (every
+  entry point builds its URL from it) and `hostIndex` (pointing at the
+  redirected host when it is in the configured list) before reconnecting.
 - Otherwise it calls `getZeroHubBackupHost()`, which advances `hostIndex` to
   the next host in the list and resolves it (rejecting when the last host has
   been exhausted). **Critically, the `isDisconnected` flag is re-checked inside
@@ -156,9 +183,11 @@ message dispatcher.
 
 1. Sets `isDisconnected = true`.
 2. Clears all pending `iceTimeouts`.
-3. Detaches all WebSocket handlers (`onclose`/`onerror`/`onmessage`/`onopen`)
-   so the close does **not** trigger auto-reconnect, then closes the socket
-   with code 1000.
+3. Calls the shared `closeActiveSocket()` helper, which detaches all WebSocket
+   handlers (`onclose`/`onerror`/`onmessage`/`onopen`) so the close does
+   **not** trigger auto-reconnect, then closes the socket with code 1000.
+   (The same helper is used by `connectToZeroHub` to replace a socket left
+   open by a previous entry-point call.)
 4. Transitions every peer to `Disconnected` and closes each `RTCPeerConnection`
    (nulling handlers around `close()` so a stale ICE event can't call
    `restartIce()` on a closing connection), then empties the `peers` map.
@@ -169,18 +198,31 @@ throws if called while disconnected or when no socket exists.
 
 ## SDP send/receive
 
-- `sendOffer(peerId, ...)` — runs `createOffer`/`setLocalDescription`, wires
-  `onicecandidate`, and flushes the SDP to the server either on candidate
-  completion or after `waitIceCandidatesTimeout`. Transitions the peer to
-  `Offering`. Offer options are **spread into a fresh local object**
+- `sendOffer(peerId, ...)` — runs `createOffer`/`setLocalDescription`, then
+  delegates the ICE-candidate wait-and-send to the shared
+  `armSendOnIceReady` helper (below). Transitions the peer to `Offering`.
+  Offer options are **spread into a fresh local object**
   (`{ ...config.rtcOfferOptions, ...rtcOfferOptions }`) rather than
   `Object.assign`-ed onto the shared config, so per-call options can never
   leak into the stored `config.rtcOfferOptions`.
 - `sendAnswer(peerId, offerSdp, ...)` — sets the remote offer description,
-  creates the answer, and flushes it back. Transitions to `Answering`.
+  creates the answer, and delegates to the same `armSendOnIceReady` helper.
+  Transitions to `Answering`.
 - `acceptAnswer(peerId, answerSdp)` — sets the remote answer description.
 - `sendOfferToWebsocket` / `sendAnswerToWebsocket` — wrap the SDP in a
   `ClientMessage` and send it; they also advance the peer status.
+
+`armSendOnIceReady(peerId, rtcConn, sendOnce)` (private, shared by
+`sendOffer` and `sendAnswer`) wires the peer's `onicecandidate` handler plus a
+`waitIceCandidatesTimeout` fallback so `sendOnce` is invoked **exactly once**:
+`onicecandidate` fires the send on the first event that carries no candidate
+(the gathering-complete marker), skipping events that still carry a candidate;
+the timer fires the send if no such event arrives within
+`waitIceCandidatesTimeout` milliseconds. The two paths share a single `isSent`
+guard, so re-negotiation (or a late candidate after the timeout) can never
+send the SDP a second time. Re-arm clears the prior pending handle for
+`peerId` so `disconnect()` cannot miss it and records the timer in
+`this.iceTimeouts[peerId]`.
 
 ICE timeout handles are tracked in `iceTimeouts[peerId]`; a prior handle is
 cleared before arming a new one, and all handles are cleared on disconnect.
