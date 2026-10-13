@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3edff566c689e1e32abbef395f99690a39a0f5aedf54b2045561bbfe508a62a9",
+  "pageVersion": "sha256:f814362f14ba8406632715c348d25ef00ab72f1af01c2291839153f24a16fb82",
   "claims": [
     {
       "id": "claim_f8eee7b4d94d405e8ae1cd7638c1d8cf",
@@ -31,8 +31,8 @@
       "statement": "The WebSocket onclose handler interprets close codes: 1000 does nothing, 1001 (going away) reconnects to the host named in the close reason (the migration redirect), and 1006/1011 reconnect, while other codes fire onZeroHubError.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L553-L584",
-          "version": "repo-lines-v1:sha256:cd5d82aa7499e609c1e00e9e4b912fbc672263974b32c44c1394f13388e8500a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiZjQ1OThmMmM3ZjNjOWRkZTljYzA3NDFjMDU2YmFiMmRhZmVkZmUyYzUzYTNmYzlhMWJmODhkNjQwMDRmZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkOWUxMjU0NjQyNTU3NmQzZGVhZThjOWI5ZGJmMTI4ZDVkNmRkYWY1ZDdmZTg1NzkzNDkyN2RlZmZhM2I5ZGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4M2M0YjJhYjY3YTdmZGU3ODY4NWUzMTUwODhkMDZhM2QxY2ZjMThlNjBmY2ZlMTVhMzhhZjAzMzk3ZDhkNzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI4ZTc1ZjJjNDVkYzYwNDRhNjRiOWY3Y2Y1ODNhZjJkZDNhZjQzODNhOWQxOTZkNDM3M2UwMmRjYWI2ODVkMTMifQ=="
+          "resource": "repo://client/src/zeroHub.ts#L675-L706",
+          "version": "repo-lines-v1:sha256:cd5d82aa7499e609c1e00e9e4b912fbc672263974b32c44c1394f13388e8500a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiZjQ1OThmMmM3ZjNjOWRkZTljYzA3NDFjMDU2YmFiMmRhZmVkZmUyYzUzYTNmYzlhMWJmODhkNjQwMDRmZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkOWUxMjU0NjQyNTU3NmQzZGVhZThjOWI5ZGJmMTI4ZDVkNmRkYWY1ZDdmZTg1NzkzNDkyN2RlZmZhM2I5ZGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4M2M0YjJhYjY3YTdmZGU3ODY4NWUzMTUwODhkMDZhM2QxY2ZjMThlNjBmY2ZlMTVhMzhhZjAzMzk3ZDhkNzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI4ZTc1ZjJjNDVkYzYwNDRhNjRiOWY3Y2Y1ODNhZjJkZDNhZjQzODNhOWQxOTZkNDM3M2UwMmRjYWI2ODVkMTMifQ"
         }
       ]
     },
@@ -41,8 +41,8 @@
       "statement": "connectToZeroHub resets the manual-disconnect flag and clears stale ICE timeout handles, so a client that previously called disconnect() starts a clean reusable connection on any new entrypoint.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L521-L528",
-          "version": "repo-lines-v1:sha256:42b1a27675c0d03812bf8552e1ddf4f62d9807d27d0042a3e6efa6e7ef869496:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTEyMjE3OWE5NTNiZWRkZDY0YTNhYWRjOWE0N2Y4NmQ0NDJhMzQ0N2E0MjhmZjQ1MGE2NTFmOTQwNTA0NjkyZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmEzZWMzNTk2NzZkMDNkNmNlMmE3N2YzMDE2NmQyMTFkNDk1MzEyNzU0NjVkMmE0Y2M1NzYyN2M3NDk1ZWUxOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmY3MjU3NWJmMzllOGQ3YjY2MmM4ZjcxNDIyZjNkMzYwNGE1NmFkNTZhYTE0MTgxM2FjMzkwNmVlZGViOGZiOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjM1MGY1OGM2Zjk5Y2Q4NGVmMWM4NzY0ZTU3NGEyMzg3OWIwMGRhZjg3N2NjMGJiMDczYzM3OGMyYWY3MzAyNyJ9"
+          "resource": "repo://client/src/zeroHub.ts#L636-L643",
+          "version": "repo-lines-v1:sha256:42b1a27675c0d03812bf8552e1ddf4f62d9807d27d0042a3e6efa6e7ef869496:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTEyMjE3OWE5NTNiZWRkZDY0YTNhYWRjOWE0N2Y4NmQ0NDJhMzQ0N2E0MjhmZjQ1MGE2NTFmOTQwNTA0NjkyZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmEzZWMzNTk2NzZkMDNkNmNlMmE3N2YzMDE2NmQyMTFkNDk1MzEyNzU0NjVkMmE0Y2M1NzYyN2M3NDk1ZWUxOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmY3MjU3NWJmMzllOGQ3YjY2MmM4ZjcxNDIyZjNkMzYwNGE1NmFkNTZhYTE0MTgxM2FjMzkwNmVlZGViOGZiOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjRhZTBlZTQ5MTAxNTU0NDdiOTFkMGY0NGFhMjFmMTYzMjlhM2U1OThkYjA1N2RmMTYxZWRhNDYwNmJjNjIxYiJ9"
         }
       ]
     },
@@ -89,8 +89,8 @@
       "statement": "sendZeroHubMessage throws an error if called while isDisconnected is true or when no WebSocket exists, requiring the client to reconnect via createHub/joinHub before sending.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L633-L643",
-          "version": "repo-lines-v1:sha256:bcdeb48d4bd0ccc542c3ff44de690b15117198876f2605b338185d470c9a965f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOGRkNjVlM2Y3NWZlYWQ2NWU0YjExMDQzOTM3N2FhYjFhMDJjOWM2Yzg0ZmVlYjI1YjE2OWQxMWExMjJiNjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyYjkzNDdkNjFiMDEzYTkyNDc3MTNmNWZkYWQ4MDJiMmZkYzU3ZDY5ZTM3NDNiNzc4MjIyMTZjOGVmZWMzMzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlMzY5NmVmNTI4YmE5MWYyYjYzOThkNzUzMjhjODE0Y2ZhMWIyYWMzZmViOWUwMjZiZjVkZjE0NmRjMDY2NDUifQ=="
+          "resource": "repo://client/src/zeroHub.ts#L747-L761",
+          "version": "repo-lines-v1:sha256:542c2df038f17eb0b461cc21f013d34915e39d5853f7f55eee7ec0cd5e0df7ea:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOGRkNjVlM2Y3NWZlYWQ2NWU0YjExMDQzOTM3N2FhYjFhMDJjOWM2Yzg0ZmVlYjI1YjE2OWQxMWExMjJiNjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyYjkzNDdkNjFiMDEzYTkyNDc3MTNmNWZkYWQ4MDJiMmZkYzU3ZDY5ZTM3NDNiNzc4MjIyMTZjOGVmZWMzMzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNmYTdmZTY1ZjUyYjE3NDU5MjM4MGE2MGNhODM3MDRkOTNiOTM0NGFkNjQzNDcwNDk4MzQ4OThkMjRiMmU0NDAifQ"
         }
       ]
     },
@@ -99,11 +99,11 @@
       "statement": "When getZeroHubBackupHost rejects because every host in the failover list is exhausted, reconnect's .catch handler surfaces the terminal error ('all ZeroHub hosts are not working, please check the ZeroHub hosts') through onZeroHubError; no further automatic retry is attempted.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L214-L224",
-          "version": "repo-lines-v1:sha256:9bf8f65001b08057405ad57172113d1b6e866e48fabb8c2941625cdaf6e6dd5d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzZjI2MzM3NmY3YjY4MWMzZmY0NjFhZTA4OGI2OTAwOWJjZjliMjU1NDljMDI0OTE4OTdmZDVmZDM0NGM0NjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3MjEyYjY4YmZlNmMxNjg1MDA4NTUzZTY1MWJhMmU2OWVlNzdkYTgwNTQ2YTk3ODQ4MjQwZDg4MzI1Nzk1ZGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlMWVjODE5YTc5MDhhNTAyMzNjNmE2NWNmNDEyMDEwYmZjZTYwYWJmOTkwYTQzODYzOTExNzk2M2I1OWYxZTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0NTEyOWM5NzgxOGMzYzM3NTFjYjY4ZjdiZjIyYzlhMWY3MzU4YjdkNWI3NzQzZjQ1ODg2NjlmNjA0NDQ5MWMifQ=="
+          "resource": "repo://client/src/zeroHub.ts#L241-L254",
+          "version": "repo-lines-v1:sha256:6f5b9af2e9be33eb392a84f7413871721aa94af6149325522300f7f17bc53cbd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzZjI2MzM3NmY3YjY4MWMzZmY0NjFhZTA4OGI2OTAwOWJjZjliMjU1NDljMDI0OTE4OTdmZDVmZDM0NGM0NjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlMWVjODE5YTc5MDhhNTAyMzNjNmE2NWNmNDEyMDEwYmZjZTYwYWJmOTkwYTQzODYzOTExNzk2M2I1OWYxZTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM0YzgxY2QyOTYwZjllM2RmMDMwOWMyNjNhYmNhZDE5OWEwOTJhMzczOTIxNmQ2YWJhY2FiOGMxZDRhYmFkMTkifQ"
         },
         {
-          "resource": "repo://client/src/zeroHub.ts#L299-L306",
+          "resource": "repo://client/src/zeroHub.ts#L372-L379",
           "version": "repo-lines-v1:sha256:fd56f41b46176016b5aec81a9c3261bef5529000a81e7039eae317e40cbd54c4:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWQxMDRlNjA3YzY0MGMwOWM3YTliYzc3OGIzOGMyZjljZDM5N2NlMTBjMGQ5MTY3M2NhNjhkYzc4ODllY2UzZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzE3YWYxMTAxYzk3YjdjMmY1MjU0MDc4MmU2MzRjYzQ0NDBmMGU5NzAzNDFlNTJmOTc1MjMxMWQ3OGI3ZDdkMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2NiNzNiZTI5Y2NkMjI0YWUzMTlhMjExZDM1ZDc4NjM3Y2Q0NTU5MGM0ODlmOWMzNzlmNTI0YjIzNGY2MjdiZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWE5MjkzZmQ4MDU0YjZlNDcyNDgzNzNmMzlmNGRkNzc4MDAxMDVlYjc1ODM0ODY4NzI1NDI4NWNkMTI4MmI3OCJ9"
         }
       ]
@@ -113,11 +113,11 @@
       "statement": "sendOffer and sendAnswer merge per-call RTC options by spreading into a fresh local object ({ ...config.rtcOfferOptions, ...options }) instead of mutating the shared config, so call-site options cannot leak into the stored config.rtcOfferOptions.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L707-L710",
+          "resource": "repo://client/src/zeroHub.ts#L821-L824",
           "version": "repo-lines-v1:sha256:922e126ae5c3e5d439ff70d7e66a7747839e7a1eead7ec63b2c2bb9613321085:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQ3NTMxNzRlMjFiMzBmMTNmMmNmYjE2NjBjMTIxZjI2YWIxMDJhMjA3MzgxNTIxMTZlYzBiYjZkZWMyMTM4MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWQ5ZTEyNTQ2NDI1NTc2ZDNkZWFlOGM5YjlkYmYxMjhkNWQ2ZGRhZjVkN2ZlODU3OTM0OTI3ZGVmZmEzYjlkZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2ZhN2Y0MDgxZGUzNTVjMzkyYjBjMWQ5NmMxN2JjNDQxODdkOWU5OWZlMzMxYWI3YWVhYjc2Y2FlNzU2ODlmYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWJhOTM4M2IzYTQ1MmIxY2QxNTBiODJkMGUxODBmODNiODhlNDc0NzlkNmU2ODhkODI4ZDc2NjljOTU2NGY5NyJ9"
         },
         {
-          "resource": "repo://client/src/zeroHub.ts#L774-L777",
+          "resource": "repo://client/src/zeroHub.ts#L868-L871",
           "version": "repo-lines-v1:sha256:922e126ae5c3e5d439ff70d7e66a7747839e7a1eead7ec63b2c2bb9613321085:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQ3NTMxNzRlMjFiMzBmMTNmMmNmYjE2NjBjMTIxZjI2YWIxMDJhMjA3MzgxNTIxMTZlYzBiYjZkZWMyMTM4MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWQ5ZTEyNTQ2NDI1NTc2ZDNkZWFlOGM5YjlkYmYxMjhkNWQ2ZGRhZjVkN2ZlODU3OTM0OTI3ZGVmZmEzYjlkZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2ZhN2Y0MDgxZGUzNTVjMzkyYjBjMWQ5NmMxN2JjNDQxODdkOWU5OWZlMzMxYWI3YWVhYjc2Y2FlNzU2ODlmYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjU3MWRmOTJlODhhMjYzZDJlZmJiNWE2MjQwNWZhOGRlZTFhMTI2NmJhNWUzNWFhYzVjZjg0OGJhYWYxMDgxMyJ9"
         }
       ]
@@ -127,7 +127,7 @@
       "statement": "The WebSocket onerror handler logs and fires onZeroHubError but does not call reconnect: per RFC 6455 a network failure fires error and then close with code 1006, and reconnecting in both handlers would advance hostIndex twice for a single failure (skipping two hosts); all reconnection is handled in onclose.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L545-L552",
+          "resource": "repo://client/src/zeroHub.ts#L667-L674",
           "version": "repo-lines-v1:sha256:d185ed3dc5fe82df3fb50161baca93df1edb59d081417444306692adbba42bce:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDc1NzYyOWVlYThjYjYxZjFiODZkZGIyZjVmMDBmYTMxNjJlYTQ1ZGE2NjA5NzdjNTNhMzI4YTliODVhNzg1ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWQ5ZTEyNTQ2NDI1NTc2ZDNkZWFlOGM5YjlkYmYxMjhkNWQ2ZGRhZjVkN2ZlODU3OTM0OTI3ZGVmZmEzYjlkZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTcwM2FkMGE1MWI1Yzk4ODE2YTgwOTJkNWFhZjY3MTM4YTVkNmU1MjRmNjgwYjI5MWM3Y2I3NTRlYWM0ZmVkMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiY2ViMTI1YzA0ZWM0NWQ0MjU0ZmIwOWQzYjMwNDQ0MmE1NzAzNTk2NDNmMTQ3MTcxY2RkYjhkOTgwNzEzYmU1MiJ9"
         }
       ]
@@ -137,12 +137,12 @@
       "statement": "All seven hub connection entrypoints (createHub, joinHub, joinOrCreateHub, joinOrCreateIPHub, joinIPHub, createRandomHub, joinRandomHub) funnel into the private openHubConnection helper, which stores supplied metadata, builds a URL from getWS(host, tls) with id/hubMetadata/peerMetadata query params, and calls connectToZeroHub.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L854-L950",
-          "version": "repo-lines-v1:sha256:f843b8d695925b28c38a8c045dc57d585f0dcfcab9e00b8e975d00131ba52203:eyJzZWxlY3RlZExpbmVDb3VudCI6OTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZmNWRhNjEzMTFkZDc3NTQwMzNmNDM4OTE5MGU0Y2Q2M2JmMDk5YTk3NDRlMjk3M2E4YWI0MTcyOGE1NzBiZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAxMWNmYzA4ZmZlOTlkMDQ2ZDlkMTEwMjZkMTA5NTgxYWU0ODY0MDY5ZjEyZmMyYThhZDM0ZmJmNTE5MmUwM2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAxYWUyMzU0YTMyZmM4NTNhODNhOWI4MmI3M2VjMGI1ZTk3OGMzNmZkMTU3OTUyOTBkMTkzNjQ2ZDRiYzA0Y2QifQ=="
+          "resource": "repo://client/src/zeroHub.ts#L1095-L1120",
+          "version": "repo-lines-v1:sha256:0de34f8b7d331a62474f639f32749cee572d7fba730a5b9c9a6cd48464cb448b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZjNmQ0Mjg5ZjZlZmVkMTE2OWY4M2NjZDBiMDJjZWU1MmIwMjljZGVlODRkOTJhZGZjMmFlMjhhOGU1NWViM2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNmZDg5OWY2NmVmZjBiMDVjMzU5MjQwZTI5ZTg1MTk3NDIyNGY1Njg4N2NhZjNlZWIyMWRiMjMxMzVhYmE4YTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3OTI5ZTkxZTBmOTljM2U4MjVkZTY5YjQzNWZiNjQ4NGQxYjBhMWRmMmY0NjU2MWFiZjFhMjlmMDQxODhiODgifQ"
         },
         {
-          "resource": "repo://client/src/zeroHub.ts#L964-L989",
-          "version": "repo-lines-v1:sha256:0de34f8b7d331a62474f639f32749cee572d7fba730a5b9c9a6cd48464cb448b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZjNmQ0Mjg5ZjZlZmVkMTE2OWY4M2NjZDBiMDJjZWU1MmIwMjljZGVlODRkOTJhZGZjMmFlMjhhOGU1NWViM2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNmZDg5OWY2NmVmZjBiMDVjMzU5MjQwZTI5ZTg1MTk3NDIyNGY1Njg4N2NhZjNlZWIyMWRiMjMxMzVhYmE4YTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3OTI5ZTkxZTBmOTljM2U4MjVkZTY5YjQzNWZiNjQ4NGQxYjBhMWRmMmY0NjU2MWFiZjFhMjlmMDQxODhiODgifQ=="
+          "resource": "repo://client/src/zeroHub.ts#L985-L1081",
+          "version": "repo-lines-v1:sha256:f843b8d695925b28c38a8c045dc57d585f0dcfcab9e00b8e975d00131ba52203:eyJzZWxlY3RlZExpbmVDb3VudCI6OTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZmNWRhNjEzMTFkZDc3NTQwMzNmNDM4OTE5MGU0Y2Q2M2JmMDk5YTk3NDRlMjk3M2E4YWI0MTcyOGE1NzBiZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAxMWNmYzA4ZmZlOTlkMDQ2ZDlkMTEwMjZkMTA5NTgxYWU0ODY0MDY5ZjEyZmMyYThhZDM0ZmJmNTE5MmUwM2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAxYWUyMzU0YTMyZmM4NTNhODNhOWI4MmI3M2VjMGI1ZTk3OGMzNmZkMTU3OTUyOTBkMTkzNjQ2ZDRiYzA0Y2QifQ"
         }
       ]
     },
@@ -151,8 +151,8 @@
       "statement": "On a hubInfoMessage the client reconciles its local peer roster against the authoritative roster carried in the message: it adds any roster peer not yet in the map and prunes any peer it still holds that is no longer listed and is not itself, firing ZeroHubDisconnected and tearing the peer down via the shared removePeer helper. This prune pass is the auto-reconnect fix; without it a peer that left the hub while the socket was down would linger as a stale Peer holding a live, unclosed RTCPeerConnection.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L345-L380",
-          "version": "repo-lines-v1:sha256:d3d0b505365f1fcf569ad0e1ce62d17196b3cf4e497b4e748839f64e935777da:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlZWVlNWJlMzQ5ZjE5ZDc5MGVhMzRkNDM2ZTc1MTYwMWEzMjYzYWY4M2E3ZWMyN2FkYWIwNjQ4MDFhMGJkYjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ5YzBkNGVmNTA5MWZiMzU3MTdlMzY5N2ViMTRlMmY2OWFiNzA4ZDUyMGFhMjFkZGM4ZDVjMDA5NjU5ZDExOWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjZGM1NmEyNDA1MzBmMzVhODUwNjgxNTVhMTFhNDQ0ODEyMjk2M2JiOGRjMmE1YmI1ZDA4YjM3NmZkMzI5NjUifQ=="
+          "resource": "repo://client/src/zeroHub.ts#L405-L453",
+          "version": "repo-lines-v1:sha256:9c5329aa7d7171db5bbf5441d6784f1102fe52869b66705185ed0966b8360d4a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxNWExNDYyOTRlZjQ5MTI1MWVkZjg3NWQ2OTljZWU3N2ZkMTNmNzUzZTc1NDZhZTVmOTJlOGVmYzM4ZDcyNzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwZjg2OGYyOTM4NDhlZmRjNzQ1NDUzYmUwOGQ1ZTI5OTY5MTQ3NjIyZDFkOTI4MDRiOTc5YWQ5YzgwZTdhYzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjZGM1NmEyNDA1MzBmMzVhODUwNjgxNTVhMTFhNDQ0ODEyMjk2M2JiOGRjMmE1YmI1ZDA4YjM3NmZkMzI5NjUifQ"
         }
       ]
     },
@@ -161,12 +161,12 @@
       "statement": "Hub and peer metadata received from the server is parsed through the module-level safeParseJson(raw, fallback) helper, which returns the parsed JSON on success or the fallback when the input is missing or malformed; the caller logs a warning only on a genuine parse failure, so a corrupt metadata value from the server degrades to the fallback instead of throwing and crashing the WebSocket message dispatcher.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L315-L324",
-          "version": "repo-lines-v1:sha256:c383ea26c090c3a321e62c13aa649fdbf43cc96560ba2d8f85675d003f77e446:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlMzQ0NDYzNjUwNTI2NmY5OThmODRhNjQwZjY2ZjIwZjE1ZTE4ZDI4OWQ1NzA1ZjA2NWViNzdlN2RhYWI1NTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2YTdmNzcyMjFjZTVlOTI2YzllNTM1ZDAwNjM4YzkxNDVhNTM3Nzk5N2UxZDIxNTZkMjE1ZmNjZDFhOWFlODAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjOGYwY2VjMzE3ODk3M2NlNjBlMjg0N2RmMzRlNzE1MTMwNjJjZTAzNjAwZTUyNDU0OWIxZDgyNDk5MWE2OTAifQ=="
+          "resource": "repo://client/src/zeroHub.ts#L1123-L1141",
+          "version": "repo-lines-v1:sha256:fe57e32795bff59fc73cba3a781ef67852aba8288b7541512c3dd6329a7452a2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZiNTgwZTk2NGY4M2E0NzNmNDNkNDQzODQ2Mjk0OWQ2OGI1NjAwZmRhNzg3ZjE2Mzc0NWQwMGRlODljYmYzNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://client/src/zeroHub.ts#L998-L1010",
-          "version": "repo-lines-v1:sha256:889bb0b5b35166beb6b3e2d31f0ada41002c5429882019007964ef95d9352f92:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMzFlOWJiMTE1NTE2YjgyZmYyNTc1M2ZiOTBiNTMwYWFiNDIwNTMzODM5NTAwZDY2YjRjMWQ0Y2E3ZTgwMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlOGFlNzJiMzRjNjBkZWUwYzA0M2QwOTkzODI0YTA5ZjZkMzNjZDMxMjkzMjhhYjRkMmQwOWE4MjA4NGUyMTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIifQ=="
+          "resource": "repo://client/src/zeroHub.ts#L382-L397",
+          "version": "repo-lines-v1:sha256:c313f6351d9b327729112120371d95eb563bd266b4993389e12b26b121d5b90d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmMmEyZjk5NmYwOGU2ODBiZDI5MjEzNWE2ZmE0OTc4YmRhMjZlNjAyZDg0ZjMzY2IxZDU5NDc3NWQ0MzA0YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVlYjczYTM1YzhjMzlkMThhY2ViYjc3MDU4ZjAyYmExNzkwZDQ5YTQxMTU1MWFiYWYxZDg0NTE1MThkOWE2MGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjOGYwY2VjMzE3ODk3M2NlNjBlMjg0N2RmMzRlNzE1MTMwNjJjZTAzNjAwZTUyNDU0OWIxZDgyNDk5MWE2OTAifQ"
         }
       ]
     },
@@ -175,8 +175,12 @@
       "statement": "Peer creation and teardown are centralised in the shared addPeer and removePeer helpers: addPeer builds a Peer with a fresh RTCPeerConnection, parses metadata, wires the connection and ICE state handlers, stores it, and marks it Pending; removePeer closes the RTCPeerConnection, nulls the state handlers so a stale ICE event cannot call restartIce on a closing connection, and deletes the peer from the map (a no-op if already gone). These are shared by the hubInfoMessage, peerJoinedMessage, peerDisconnectedMessage, roster-prune, and disconnect paths so teardown semantics cannot diverge.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L451-L514",
-          "version": "repo-lines-v1:sha256:342215021afb94a8362a42b11b999d40ae623350afcc7a8174f38f9e653933fe:eyJzZWxlY3RlZExpbmVDb3VudCI6NjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjMzg5NGNkMTg2NDFlMDY3ODY3Mzk5YjRhMmQ1ZTNkNDgyZDNlNjgwZDMwN2QxMTkwNTk3MDkyM2NjNGE2MTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2YWE3ZDZiMjA1NDM3MmZjMTQzNmFmMWJmYjU4ODExMjcyMzUxMDFkODEwMzBiNGRiMmUyZTBjNGU5YzdkNjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE5YzkxNzYyZDk2ZjRlMmUyMGM5NmNjZTI2MmE1NTIwOWYzMTUxNjc4NzJkNzlhMTMwNGJjNzVmNTZiNTcyZjYifQ=="
+          "resource": "repo://client/src/zeroHub.ts#L544-L553",
+          "version": "repo-lines-v1:sha256:babeb49a75469fd0f7c1fc3f02dde3b0cc4ce112558d3fdaf264aecf10941290:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjMzg5NGNkMTg2NDFlMDY3ODY3Mzk5YjRhMmQ1ZTNkNDgyZDNlNjgwZDMwN2QxMTkwNTk3MDkyM2NjNGE2MTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2YWE3ZDZiMjA1NDM3MmZjMTQzNmFmMWJmYjU4ODExMjcyMzUxMDFkODEwMzBiNGRiMmUyZTBjNGU5YzdkNjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhYzc4YjEzZGFmZTY5ZTNhZDcxODk3NmU3OTUzNTAzODYwYzJmYThkM2I5NzE2YzRlMWVlYWM5OGRmYjg4NjcifQ"
+        },
+        {
+          "resource": "repo://client/src/zeroHub.ts#L576-L616",
+          "version": "repo-lines-v1:sha256:a0fb6731e74eb7f1dc9764b60253b1d7838085960836e261f79914d15df08acb:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwMzNlNzUxY2NkNjYyMTE1YjQxYzM1ZWQ5Y2Y1YmRlMzRhMjVjYjg2MmRkZDdhODFiNjkzYjRhZDdkMWVjZDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2ZTY3ZjYyNDM0ZWJmYmMzOTlkMWVlYmUwMzM4NDViYTQwMWYzY2NlZTA2OGU2YWVjNzQyNDAwYmMyYjAwYzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkzZGVkMGRiZGE4ZmM1OGY2NjA0Mjg3Y2NmYWQ5YjRhNmRmZmIwNjllODU4ZGM5Y2ZmMmQxOWYxYTUxN2Q1M2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzNTEwNjYxNzFiMGEzNzA5Yzg1OWM1OTI3MzJjMjVlYThjZmYzM2MxMTNiN2I3ZTdmYjVmYjQxY2Y4OTNkNDMifQ"
         }
       ]
     },
@@ -229,6 +233,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-13T01:29:56.745Z"
+    "at": "2026-10-13T04:09:40.318Z"
   }
 }

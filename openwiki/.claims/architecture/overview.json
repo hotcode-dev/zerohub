@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ed2969e45bbae29a08fd1bae95482b44936c7ed3e30742bbf6bb9d9e8b320102",
+  "pageVersion": "sha256:e36223eeb5acbbc9215252cf5456c11b92c93ea7855d7350ce0f1af64b67af86",
   "claims": [
     {
       "id": "claim_937b0d08bd3849b4b3ddd56a5664ca43",
@@ -27,8 +27,8 @@
       "statement": "SDP offers and answers are exchanged as protobuf ClientMessage/ServerMessage frames over the signaling WebSocket, and ICE candidates are flushed to the wire after a waitIceCandidatesTimeout (default 2000 ms) instead of being held indefinitely.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L484-L488",
-          "version": "repo-lines-v1:sha256:47bb300b5372e34ceddc1ca946f6580c28f529b50adf4938e6bc3dd72124008d:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTIxYjY0ODEzNjc2YmE5YzIyZGE5MjQxMDhmYzgzNjU0ZjIyOTgzYWEzMWU4MzRhN2YwYTAzYzA4MzI1NzlhZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzM2N2I0NzMyYmIwYjNmMWI3Njk1ZTMwZjU4ODc1ZGY4ZGViMjcxMjJhZTY5OGMwNTg0OTNlMDAwMDJhY2Y1ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWVjNWQ3YzQyNzM4Mjk5OTEyNTE1M2FlZDZkNThjZWEzNzRlMzkzMTA5YzgzNmMzNzg4YWFhNTg2YWQ1Y2RjMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjY5MGRjMTQxZjI3YzhiYjE0MTJlYTQ0MmRlMzc2Yzk0OTY1MjUxNTdjZTU2NDlmNjdiYWZkZDc3NGMxYTI0NCJ9"
+          "resource": "repo://client/src/zeroHub.ts#L901-L956",
+          "version": "repo-lines-v1:sha256:3aa9667674eaa2dc2a2f7eb92e754b88d071fa93ba677f8a394e05691213924a:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmMmEyZjk5NmYwOGU2ODBiZDI5MjEzNWE2ZmE0OTc4YmRhMjZlNjAyZDg0ZjMzY2IxZDU5NDc3NWQ0MzA0YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlMTJiNjExODk0M2UzMGMwMDY4MzNlNzgxNjMwYTUzYjMyZjQxN2VmNWY5Nzk1YzNmMTJmMzMwODAyNGM1ZDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMzMzYyNWQwMzMxMjJmODNhMzQwMTlhODIwMmE5N2Y1MTBmODY2ZWJjYzAwNWY3YzEyMDQyMGY2YzI1ZmZlMDYifQ"
         }
       ]
     },
@@ -107,6 +107,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-13T01:29:56.745Z"
+    "at": "2026-10-13T04:09:40.318Z"
   }
 }
