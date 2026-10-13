@@ -2,6 +2,9 @@ package hub
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,12 +13,19 @@ import (
 	"github.com/hotcode-dev/zerohub/pkg/peer"
 	pb "github.com/hotcode-dev/zerohub/pkg/proto/zerohub/v1"
 	"github.com/hotcode-dev/zerohub/pkg/storage"
+	"google.golang.org/protobuf/proto"
 )
 
-// fakePeer is a peer.Peer that records how many binary messages it receives.
+// fakePeer is a peer.Peer that records how many binary messages it receives
+// and captures the SDP offers/answers sent to it.
 type fakePeer struct {
-	id       string
-	received int
+	id         string
+	conn       *websocket.Conn
+	received   int
+	offerPeer  string
+	offerSdp   string
+	answerPeer string
+	answerSdp  string
 }
 
 func (p *fakePeer) SendBinaryMessage(data []byte) error {
@@ -27,13 +37,65 @@ func (p *fakePeer) SendHubInfo(hubInfoPb *pb.HubInfoMessage) error {
 	panic("not implemented")
 }
 
-func (p *fakePeer) SendOffer(offerPeerId string, offerSdp string) error    { return nil }
-func (p *fakePeer) SendAnswer(answerPeerId string, answerSdp string) error { return nil }
-func (p *fakePeer) GetId() string                                          { return p.id }
-func (p *fakePeer) SetId(id string)                                        { p.id = id }
-func (p *fakePeer) GetWSConn() *websocket.Conn                             { return nil }
-func (p *fakePeer) Close()                                                 {}
-func (p *fakePeer) ToProtobuf() *pb.Peer                                   { panic("not implemented") }
+func (p *fakePeer) SendOffer(offerPeerId string, offerSdp string) error {
+	p.offerPeer = offerPeerId
+	p.offerSdp = offerSdp
+	return nil
+}
+func (p *fakePeer) SendAnswer(answerPeerId string, answerSdp string) error {
+	p.answerPeer = answerPeerId
+	p.answerSdp = answerSdp
+	return nil
+}
+func (p *fakePeer) GetId() string              { return p.id }
+func (p *fakePeer) SetId(id string)            { p.id = id }
+func (p *fakePeer) GetWSConn() *websocket.Conn { return p.conn }
+func (p *fakePeer) Close()                     {}
+func (p *fakePeer) ToProtobuf() *pb.Peer       { panic("not implemented") }
+
+var testUpgrader = websocket.Upgrader{
+	ReadBufferSize:  4096,
+	WriteBufferSize: 4096,
+	CheckOrigin:     func(r *http.Request) bool { return true },
+}
+
+// newTestConnPair spins up an in-process websocket server, dials it, and
+// returns the server-side conn (a live non-nil *websocket.Conn suitable for
+// fakePeer.GetWSConn) plus the client-side conn for feeding HandleMessage.
+// The handler does NOT drain the conn: the test owns reads of the server conn.
+func newTestConnPair(t *testing.T) (server, client *websocket.Conn) {
+	t.Helper()
+
+	ready := make(chan *websocket.Conn, 1)
+	quit := make(chan struct{})
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := testUpgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		ready <- conn
+
+		// Hold the handler (and thus the hijacked conn) until cleanup.
+		<-quit
+	}))
+	t.Cleanup(s.Close)
+
+	clientURL := "ws://" + strings.TrimPrefix(s.URL, "http://")
+	c, _, err := websocket.DefaultDialer.Dial(clientURL, nil)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	t.Cleanup(func() { _ = c.Close() })
+	t.Cleanup(func() { close(quit) })
+
+	select {
+	case conn := <-ready:
+		return conn, c
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for server conn")
+		return nil, nil
+	}
+}
 
 func TestMemoryStorageHubAddPeer(t *testing.T) {
 	t.Parallel()
@@ -232,5 +294,170 @@ func TestRemovePeerByIdUnknownPeer(t *testing.T) {
 	}
 	if other.received != 0 {
 		t.Fatalf("remaining peer received %d disconnect signals for unknown peer removal; want 0", other.received)
+	}
+}
+
+// TestSendOfferToPeer routes an offer to the target peer, passing the local
+// peer's id and the SDP verbatim.
+func TestSendOfferToPeer(t *testing.T) {
+	t.Parallel()
+
+	h := &hub{
+		Id:          "id",
+		CreatedAt:   time.Now(),
+		Metadata:    "metadata",
+		IsPermanent: true,
+		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	}
+
+	target := &fakePeer{id: "2", conn: &websocket.Conn{}}
+	other := &fakePeer{id: "3"}
+	h.PeerStorage.Add("2", target)
+	h.PeerStorage.Add("3", other)
+
+	h.SendOfferToPeer("2", "1", "offer-sdp")
+
+	if target.offerPeer != "1" {
+		t.Fatalf("target offerPeerId: want %q, got %q", "1", target.offerPeer)
+	}
+	if target.offerSdp != "offer-sdp" {
+		t.Fatalf("target offerSdp: want %q, got %q", "offer-sdp", target.offerSdp)
+	}
+	if other.offerPeer != "" || other.offerSdp != "" {
+		t.Fatalf("non-target peer got an offer: peer=%q sdp=%q", other.offerPeer, other.offerSdp)
+	}
+}
+
+// TestSendAnswerToPeer routes an answer to the target peer, passing the local
+// peer's id and the SDP verbatim.
+func TestSendAnswerToPeer(t *testing.T) {
+	t.Parallel()
+
+	h := &hub{
+		Id:          "id",
+		CreatedAt:   time.Now(),
+		Metadata:    "metadata",
+		IsPermanent: true,
+		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	}
+
+	target := &fakePeer{id: "2", conn: &websocket.Conn{}}
+	other := &fakePeer{id: "3"}
+	h.PeerStorage.Add("2", target)
+	h.PeerStorage.Add("3", other)
+
+	h.SendAnswerToPeer("2", "1", "answer-sdp")
+
+	if target.answerPeer != "1" {
+		t.Fatalf("target answerPeerId: want %q, got %q", "1", target.answerPeer)
+	}
+	if target.answerSdp != "answer-sdp" {
+		t.Fatalf("target answerSdp: want %q, got %q", "answer-sdp", target.answerSdp)
+	}
+	if other.answerPeer != "" || other.answerSdp != "" {
+		t.Fatalf("non-target peer got an answer: peer=%q sdp=%q", other.answerPeer, other.answerSdp)
+	}
+}
+
+// TestSendRelayToMissingPeer covers the peer-not-found / nil-WSConn guard: a
+// missing target must not error the call, nor send to any other peer.
+func TestSendRelayToMissingPeer(t *testing.T) {
+	t.Parallel()
+
+	h := &hub{
+		Id:          "id",
+		CreatedAt:   time.Now(),
+		Metadata:    "metadata",
+		IsPermanent: true,
+		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	}
+
+	// Peer "3" is in the hub but has no WS conn (closed peer).
+	noConn := &fakePeer{id: "3"}
+	h.PeerStorage.Add("3", noConn)
+
+	// Unknown peer: must be a no-op.
+	h.SendOfferToPeer("99", "1", "offer-sdp")
+	h.SendAnswerToPeer("99", "1", "answer-sdp")
+
+	// Known peer with nil conn: must also be a no-op, not fall through to it.
+	h.SendOfferToPeer("3", "1", "offer-sdp")
+	h.SendAnswerToPeer("3", "1", "answer-sdp")
+
+	if noConn.offerPeer != "" || noConn.offerSdp != "" || noConn.answerPeer != "" || noConn.answerSdp != "" {
+		t.Fatalf("peer without conn received relay: offer=%q/%q answer=%q/%q",
+			noConn.offerPeer, noConn.offerSdp, noConn.answerPeer, noConn.answerSdp)
+	}
+}
+
+// TestHandleMessageRelay routes wire messages: a SendOfferMessage on the wire
+// must reach the target peer's SendOffer with the local peer's id, and a
+// SendAnswerMessage must reach SendAnswer the same way.
+func TestHandleMessageRelay(t *testing.T) {
+	t.Parallel()
+
+	h := &hub{
+		Id:          "id",
+		CreatedAt:   time.Now(),
+		Metadata:    "metadata",
+		IsPermanent: true,
+		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	}
+
+	serverConn, clientConn := newTestConnPair(t)
+	sender := &fakePeer{id: "1", conn: serverConn}
+	target := &fakePeer{id: "2", conn: &websocket.Conn{}}
+	h.PeerStorage.Add("1", sender)
+	h.PeerStorage.Add("2", target)
+
+	offer := &pb.ClientMessage{Message: &pb.ClientMessage_SendOfferMessage{SendOfferMessage: &pb.SendOfferMessage{
+		AnswerPeerId: "2",
+		OfferSdp:     "offer-sdp",
+	}}}
+	offerData, err := proto.Marshal(offer)
+	if err != nil {
+		t.Fatalf("marshal offer: %v", err)
+	}
+	if err := clientConn.WriteMessage(websocket.BinaryMessage, offerData); err != nil {
+		t.Fatalf("write offer: %v", err)
+	}
+
+	answer := &pb.ClientMessage{Message: &pb.ClientMessage_SendAnswerMessage{SendAnswerMessage: &pb.SendAnswerMessage{
+		OfferPeerId: "2",
+		AnswerSdp:   "answer-sdp",
+	}}}
+	answerData, err := proto.Marshal(answer)
+	if err != nil {
+		t.Fatalf("marshal answer: %v", err)
+	}
+	if err := clientConn.WriteMessage(websocket.BinaryMessage, answerData); err != nil {
+		t.Fatalf("write answer: %v", err)
+	}
+
+	// HandleMessage relays both frames, then blocks on the next read until
+	// we close the conn from the client side.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		h.HandleMessage(sender)
+	}()
+	_ = clientConn.Close()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("HandleMessage did not return after conn close")
+	}
+
+	if target.offerPeer != "1" {
+		t.Fatalf("offer routed with wrong offerPeerId: want %q, got %q", "1", target.offerPeer)
+	}
+	if target.offerSdp != "offer-sdp" {
+		t.Fatalf("offer sdp: want %q, got %q", "offer-sdp", target.offerSdp)
+	}
+	if target.answerPeer != "1" {
+		t.Fatalf("answer routed with wrong answerPeerId: want %q, got %q", "1", target.answerPeer)
+	}
+	if target.answerSdp != "answer-sdp" {
+		t.Fatalf("answer sdp: want %q, got %q", "answer-sdp", target.answerSdp)
 	}
 }
