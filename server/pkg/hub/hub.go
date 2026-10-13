@@ -65,19 +65,25 @@ func NewHub(hubId string, metadata string, peerStorage storage.Storage[peer.Peer
 }
 
 // AddPeer adds a peer to the hub.
+// The join signal is marshaled BEFORE the peer is registered in PeerStorage
+// (same validate-then-mutate ordering as RemovePeerById), so a marshal failure
+// is a no-op: no peer ID side effect, no storage entry, no broadcast, and the
+// new peer is never left half-registered without its HubInfo.
 func (h *hub) AddPeer(newPeer peer.Peer) {
 	newPeer.SetId(strconv.FormatUint(h.CurrentPeerId.Add(1), 10))
 
-	h.PeerStorage.Add(newPeer.GetId(), newPeer)
-
-	peersProtobuf := []*pb.Peer{}
-
-	// broadcast peer joined for all peers
+	// build the join signal before mutating any state
 	joinedSignalProto, err := CreateJoinedSignalProtobuf(newPeer.ToProtobuf())
 	if err != nil {
 		log.Error().Msg(err.Error())
 		return
 	}
+
+	peersProtobuf := []*pb.Peer{}
+
+	h.PeerStorage.Add(newPeer.GetId(), newPeer)
+
+	// broadcast peer joined for all peers
 	for peer := range h.PeerStorage.GetAll() {
 		if peer.GetId() != newPeer.GetId() {
 			if err := peer.SendBinaryMessage(joinedSignalProto); err != nil {
