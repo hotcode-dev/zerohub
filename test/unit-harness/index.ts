@@ -836,6 +836,37 @@ const ZeroHubUnitHarness = {
     entry.client.joinHub(hubId, peerMetadata);
   },
 
+  /**
+   * Drives the public `createPermanentHub` entry point (opens a socket via
+   * `connectToZeroHub`) so specs can exercise the real connection path
+   * without a server.
+   */
+  createPermanentHub(
+    id: number,
+    hubId: string,
+    peerMetadata?: object,
+    hubMetadata?: object
+  ): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.client.createPermanentHub(hubId, peerMetadata, hubMetadata);
+  },
+
+  /**
+   * Drives the public `joinPermanentHub` entry point (opens a socket via
+   * `connectToZeroHub`) so specs can exercise the real connection path
+   * without a server.
+   */
+  joinPermanentHub(id: number, hubId: string, peerMetadata?: object): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.client.joinPermanentHub(hubId, peerMetadata);
+  },
+
   /** Drives the public `disconnect()` on the client. */
   disconnectClient(id: number): void {
     const entry = clients.get(id);
