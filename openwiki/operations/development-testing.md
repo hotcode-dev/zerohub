@@ -12,16 +12,26 @@ sources:
     resource: repo://test/package.json
   - id: openwiki-source-bb910847e63080c9ced0e830
     resource: repo://test/playwright.config.ts
+  - id: openwiki-source-36a6408534491a7638f8089e
+    resource: repo://test/tests/unit-ice-candidate-send.spec.ts
   - id: openwiki-source-1c91996f1afbceb960c6d3b4
     resource: repo://test/tests/unit-malformed-metadata.spec.ts
+  - id: openwiki-source-7ceb47a072238480d4d7c02a
+    resource: repo://test/tests/unit-manual-answer-handling.spec.ts
+  - id: openwiki-source-7afb406b1f937d036581a006
+    resource: repo://test/tests/unit-manual-offer-handling.spec.ts
+  - id: openwiki-source-d5ba4efac3261c35045dc88c
+    resource: repo://test/tests/unit-migration-redirect.spec.ts
   - id: openwiki-source-29851cc9f0534cab4748f6fb
     resource: repo://test/tests/unit-reconnect-peer-prune.spec.ts
+  - id: openwiki-source-30c344265a55823115544978
+    resource: repo://test/tests/unit-ws-replacement.spec.ts
   - id: openwiki-source-801ca2739d5984913a9ac0eb
     resource: repo://test/unit-harness/index.ts
-generated: { by: "hermes", at: "2026-10-11T02:02:37.375Z" }
+generated: { by: "hermes", at: "2026-10-13T01:29:56.745Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-12T01:31:27.169Z
+    at: 2026-10-13T01:29:56.745Z
 ---
 
 # Development & Testing
@@ -97,14 +107,18 @@ that instantiate the real `ZeroHubClient` (imported via relative path
   state, keyed by `componentId`. Tests drive it via `page.evaluate`.
 - **Specs** (`test/tests/`): `connnect.spec.ts` (create/join + peer status),
   `data-channel.spec.ts`, `concurrent.spec.ts`, `disconnect.spec.ts`,
-  `migrate.spec.ts`, `multihosts.spec.ts`, plus seven `unit-*.spec.ts` specs
+  `migrate.spec.ts`, `multihosts.spec.ts`, plus twelve `unit-*.spec.ts` specs
   (e.g. `unit-sfu-election.spec.ts`, `unit-reconnect-error.spec.ts`,
-  `unit-malformed-metadata.spec.ts`, `unit-reconnect-peer-prune.spec.ts`)
+  `unit-malformed-metadata.spec.ts`, `unit-reconnect-peer-prune.spec.ts`,
+  `unit-ice-candidate-send.spec.ts`, `unit-manual-offer-handling.spec.ts`,
+  `unit-manual-answer-handling.spec.ts`, `unit-migration-redirect.spec.ts`,
+  `unit-ws-replacement.spec.ts`)
   that exercise client internals in a Playwright page through the unit
-  harness (`test/unit-harness/index.ts`) with a mocked `RTCPeerConnection` —
-  no live server or real WebRTC stack required. The malformed-metadata spec
-  pins the `safeParseJson` fallback, and the reconnect-peer-prune spec pins
-  the `hubInfoMessage` roster reconciliation that removes stale peers.
+  harness (`test/unit-harness/index.ts`) with a mocked `WebSocket` and a
+  mocked `RTCPeerConnection` — no live server or real WebRTC stack required.
+  The malformed-metadata spec pins the `safeParseJson` fallback, and the
+  reconnect-peer-prune spec pins the `hubInfoMessage` roster reconciliation
+  that removes stale peers.
 - **Dual servers**: `make e2e-test` spins up two signaling servers on 8080 and
   8081 (for multi-host/failover tests), sleeps 3s, then runs the suite.
 
@@ -150,8 +164,11 @@ and relies on a CI runner for the race detector. `install-hook` symlinks
   offer/answer logic.
 - **ICE timing** — wait `waitIceCandidatesTimeout` (default 2000 ms) before
   flushing the offer/answer.
-- **Auto-answer** — defaults `true`; set `autoAnswer: false` only for manual
-  offer handling.
+- **Auto-answer** — `autoAnswer` / `autoAcceptAnswer` default `true`; set
+  `autoAnswer: false` to surface incoming offers via the `onOffer` callback
+  (manual answer via `sendAnswer(peer.id, offerSdp)`) and
+  `autoAcceptAnswer: false` to surface incoming answers via the `onAnswer`
+  callback (manual accept via `acceptAnswer(peer.id, answerSdp)`).
 - **Proto changes** — breaking wire changes require a client SDK version bump;
   regenerate both languages.
 - **Cross-workspace imports** — test/examples use relative imports
