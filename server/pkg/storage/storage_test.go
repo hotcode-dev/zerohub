@@ -33,6 +33,12 @@ func TestStorageAddGet(t *testing.T) {
 				t.Fatalf("Get(b) = %v, %v; want 2, nil", v, err)
 			}
 
+			// Re-Add on the same key must overwrite (upsert semantics).
+			newStorage.Add("a", 99)
+			if v, err := newStorage.Get("a"); err != nil || v != 99 {
+				t.Fatalf("Get(a) after re-Add = %v, %v; want 99, nil", v, err)
+			}
+
 			if _, err := newStorage.Get("missing"); err == nil {
 				t.Fatal("Get(missing) = nil error; want not found")
 			}
@@ -68,25 +74,6 @@ func TestStorageGetAll(t *testing.T) {
 				if _, ok := got[v]; !ok {
 					t.Fatalf("GetAll missing item %d; got %v", v, got)
 				}
-			}
-		})
-	}
-}
-
-func TestStorageUpdate(t *testing.T) {
-	t.Parallel()
-
-	for _, b := range backends {
-		newStorage := b.Factory()
-
-		t.Run(b.Name, func(t *testing.T) {
-			t.Parallel()
-
-			newStorage.Add("a", 1)
-			newStorage.Update("a", 42)
-
-			if v, err := newStorage.Get("a"); err != nil || v != 42 {
-				t.Fatalf("Get(a) after Update = %v, %v; want 42, nil", v, err)
 			}
 		})
 	}
