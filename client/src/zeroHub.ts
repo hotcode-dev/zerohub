@@ -1042,16 +1042,6 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
-   * Join an existing IP Hub on ZeroHub
-   *
-   * @param hubId - The id of the IP Hub to join
-   * @param peerMetadata - Peer metadata will share to each peer in the Hub
-   */
-  public joinIPHub(hubId: string, peerMetadata?: PeerMetadata) {
-    this.openHubConnection("/v1/ip-hubs/join", hubId, peerMetadata);
-  }
-
-  /**
    * Creates a new Random Hub on ZeroHub
    * The Random Hub is a hub that will use a random id as the hub id
    *

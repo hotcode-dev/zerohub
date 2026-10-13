@@ -60,7 +60,7 @@ It handles:
 - `joinHub(hubId, peerMetadata?)` - join an existing hub
 - `joinOrCreateHub(hubId, peerMetadata?, hubMetadata?)` - join or create a fixed hub
 - `createRandomHub(peerMetadata?, hubMetadata?)` / `joinRandomHub(hubId, peerMetadata?)` - random hub APIs
-- `joinOrCreateIPHub(peerMetadata?, hubMetadata?)` / `joinIPHub(hubId, peerMetadata?)` - IP hub APIs
+- `joinOrCreateIPHub(peerMetadata?, hubMetadata?)` - IP hub API (hub id is derived from the caller's IP)
 
 ## Peer lifecycle and signaling
 
