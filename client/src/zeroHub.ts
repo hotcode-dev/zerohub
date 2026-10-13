@@ -1001,6 +1001,44 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
+   * Creates a new permanent hub on ZeroHub
+   * The Permanent Hub never expires; it is used for always-on
+   * collaboration rooms.
+   *
+   * Note: the server additionally gates this endpoint behind admin
+   * authentication (the `Authorization` secret header), so the SDK can
+   * open the connection but creation is gated.
+   *
+   * @param hubId - The id of the hub to create
+   * @param peerMetadata - Peer metadata will share to each peer in the Hub
+   * @param hubMetadata - Hub metadata will share to each peer in the Hub
+   */
+  public createPermanentHub(
+    hubId: string,
+    peerMetadata?: PeerMetadata,
+    hubMetadata?: HubMetadata
+  ) {
+    this.openHubConnection(
+      "/v1/permanent-hubs/create",
+      hubId,
+      peerMetadata,
+      hubMetadata
+    );
+  }
+
+  /**
+   * Join an existing permanent hub on ZeroHub
+   * The Permanent Hub never expires; it is used for always-on
+   * collaboration rooms.
+   *
+   * @param hubId - The id of the hub to join
+   * @param peerMetadata - Peer metadata will share to each peer in the Hub
+   */
+  public joinPermanentHub(hubId: string, peerMetadata?: PeerMetadata) {
+    this.openHubConnection("/v1/permanent-hubs/join", hubId, peerMetadata);
+  }
+
+  /**
    * Join an existing hub or create if not on ZeroHub
    *
    * @param hubId - The id of the hub to join or create
