@@ -24,25 +24,10 @@ func main() {
 		stdLog.Panic(fmt.Errorf("error to init logger: %w", err))
 	}
 
-	zeroHub, err := zerohub.NewZeroHub(cfg)
-	if err != nil {
-		log.Panic().Err(fmt.Errorf("error to init zero hub: %w", err)).Send()
-	}
-
-	zeroHubRandom, err := zerohub.NewZeroHub(cfg)
-	if err != nil {
-		log.Panic().Err(fmt.Errorf("error to init zero hub: %w", err)).Send()
-	}
-
-	zeroHubIP, err := zerohub.NewZeroHub(cfg)
-	if err != nil {
-		log.Panic().Err(fmt.Errorf("error to init zero hub: %w", err)).Send()
-	}
-
-	zeroHubPermanent, err := zerohub.NewZeroHub(cfg)
-	if err != nil {
-		log.Panic().Err(fmt.Errorf("error to init zero hub: %w", err)).Send()
-	}
+	zeroHub := newZeroHubOrPanic(cfg, "static")
+	zeroHubRandom := newZeroHubOrPanic(cfg, "random")
+	zeroHubIP := newZeroHubOrPanic(cfg, "ip")
+	zeroHubPermanent := newZeroHubOrPanic(cfg, "permanent")
 
 	hdl, err := handler.NewHandler(cfg, zeroHub, zeroHubRandom, zeroHubIP, zeroHubPermanent)
 	if err != nil {
@@ -52,4 +37,14 @@ func main() {
 	if err := hdl.Serve(); err != nil {
 		log.Error().Err(fmt.Errorf("error to serve: %w", err)).Send()
 	}
+}
+
+// newZeroHubOrPanic creates a new ZeroHub instance for the given hub mode name.
+// It aborts startup via panic on any construction failure.
+func newZeroHubOrPanic(cfg *config.Config, name string) zerohub.ZeroHub {
+	zh, err := zerohub.NewZeroHub(cfg)
+	if err != nil {
+		log.Panic().Err(fmt.Errorf("error to init %s zero hub: %w", name, err)).Send()
+	}
+	return zh
 }
