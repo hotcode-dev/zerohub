@@ -46,11 +46,6 @@ func (s *GacheStorage[T]) Get(id string) (T, error) {
 	return v, nil
 }
 
-// Update updates an item in the storage.
-func (s *GacheStorage[T]) Update(id string, data T) {
-	s.GC.Set(id, data)
-}
-
 // Delete deletes an item from the storage by its ID.
 func (s *GacheStorage[T]) Delete(id string) {
 	s.GC.Delete(id)

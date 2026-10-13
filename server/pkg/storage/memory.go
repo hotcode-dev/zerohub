@@ -54,14 +54,6 @@ func (s *memoryStorage[T]) Get(id string) (T, error) {
 	return s.data[id], nil
 }
 
-// Update updates an item in the storage.
-func (s *memoryStorage[T]) Update(id string, data T) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.data[id] = data
-}
-
 // Delete deletes an item from the storage by its ID.
 func (s *memoryStorage[T]) Delete(id string) {
 	s.mu.Lock()
