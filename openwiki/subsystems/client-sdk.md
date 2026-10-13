@@ -1,9 +1,11 @@
 ---
 type: subsystem
 title: TypeScript Client SDK
-description: The @zero-hub/client SDK — ZeroHubClient connection lifecycle, reconnection with host failover, disconnect/reuse semantics, the pluggable topology system, data/media channel configuration, and SDP send/receive.
+description: The @zero-hub/client SDK — ZeroHubClient connection lifecycle, reconnection with host failover, migration-redirect handling, manual offer/answer handling, disconnect/reuse semantics, the pluggable topology system, data/media channel configuration, and SDP send/receive.
 tags: [typescript, client, sdk, webrtc, topology, reconnection, data-channel]
 sources:
+  - id: openwiki-source-61fafffac07a0fdf636cac43
+    resource: repo://client/README.md
   - id: openwiki-source-df0d81c76704b851d02513e1
     resource: repo://client/src/const.ts
   - id: openwiki-source-22df8f9ebcff0eeb4e4ed38f
@@ -12,6 +14,8 @@ sources:
     resource: repo://client/src/topology/peerSetup.ts
   - id: openwiki-source-bd409d9bd601f67e5d47a03d
     resource: repo://client/src/topology/sfuTopology.ts
+  - id: openwiki-source-789a383133ee54e1b441a8df
+    resource: repo://client/src/utils.ts
   - id: openwiki-source-718b618612c033c4f36b3a45
     resource: repo://client/src/zeroHub.ts
 generated: { by: "hermes", at: "2026-10-13T03:37:16.218Z" }
@@ -226,6 +230,25 @@ send the SDP a second time. Re-arm clears the prior pending handle for
 
 ICE timeout handles are tracked in `iceTimeouts[peerId]`; a prior handle is
 cleared before arming a new one, and all handles are cleared on disconnect.
+
+## Manual offer/answer handling
+
+The `autoAnswer` / `autoAcceptAnswer` config flags (both default `true`)
+switch the exchange from automatic to application-driven, documented in
+`client/README.md`:
+
+- `autoAnswer: false` — the `offerMessage` branch no longer calls
+  `sendAnswer`; instead it invokes the public `onOffer(peer, offerSdp)`
+  callback (after the peer has moved to `AnswerPending`, and only while the
+  peer still exists in the map). The application completes the exchange with
+  `sendAnswer(peer.id, offerSdp)`.
+- `autoAcceptAnswer: false` — the `answerMessage` branch no longer calls
+  `acceptAnswer`; instead it invokes the public `onAnswer(peer, answerSdp)`
+  callback (after `AcceptPending`). The application completes the exchange
+  with `acceptAnswer(peer.id, answerSdp)`.
+
+Both callbacks are public fields on `ZeroHubClient`, so applications can
+inspect/modify the SDP before completing the exchange.
 
 ## Topology system
 

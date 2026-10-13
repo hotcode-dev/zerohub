@@ -95,11 +95,36 @@ The server never inspects SDP content — it only relays it. The exchange:
 7. Once the `RTCPeerConnection` reaches `connectionState === "connected"`, the
    client marks the peer `PeerStatus.Connected`.
 
+## Manual offer/answer handling
+
+`autoAnswer` and `autoAcceptAnswer` (both default `true`) switch the exchange
+from automatic to application-driven. When off, the incoming SDP is no longer
+answered/accepted by the client and is surfaced through a callback instead:
+
+- `autoAnswer: false` — an incoming `offer_message` still moves the peer to
+  `AnswerPending`, then invokes the public `onOffer(peer, offerSdp)` callback.
+  The application completes the exchange by calling
+  `sendAnswer(peer.id, offerSdp)` (which performs `createAnswer` and ships the
+  SDP).
+- `autoAcceptAnswer: false` — an incoming `answer_message` still moves the
+  peer to `AcceptPending`, then invokes the public
+  `onAnswer(peer, answerSdp)` callback. The application completes the
+  exchange by calling `acceptAnswer(peer.id, answerSdp)` (which sets the
+  remote answer description).
+
+Both callbacks are guarded on the peer still existing in the `peers` map, so
+a dangling SDP for an already-torn-down peer is not surfaced. The status
+transition (`AnswerPending` / `AcceptPending`) fires before the callback in
+either mode.
+
 ## ICE candidate handling
 
 Rather than signaling individual ICE candidates (the
 `ice_candidate_message` / `send_ice_candidate_message` frames exist but are
-marked unused), ZeroHub relies on **trickle-avoidance via a timeout**:
+marked unused), ZeroHub relies on **trickle-avoidance via a timeout**. The
+duplicated wait-and-send logic from `sendOffer`/`sendAnswer` is extracted into
+the shared private helper `armSendOnIceReady(peerId, rtcConn, sendOnce)`, so
+the two paths can never diverge:
 
 - Both `sendOffer`/`sendAnswer` delegate the ICE wait-and-send to the shared
   `armSendOnIceReady(peerId, rtcConn, sendOnce)` helper: `onicecandidate` sends

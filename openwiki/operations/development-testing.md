@@ -172,8 +172,11 @@ and relies on a CI runner for the race detector. `install-hook` symlinks
   offer/answer logic.
 - **ICE timing** — wait `waitIceCandidatesTimeout` (default 2000 ms) before
   flushing the offer/answer.
-- **Auto-answer** — defaults `true`; set `autoAnswer: false` only for manual
-  offer handling.
+- **Auto-answer** — `autoAnswer` / `autoAcceptAnswer` default `true`; set
+  `autoAnswer: false` to surface incoming offers via the `onOffer` callback
+  (manual answer via `sendAnswer(peer.id, offerSdp)`) and
+  `autoAcceptAnswer: false` to surface incoming answers via the `onAnswer`
+  callback (manual accept via `acceptAnswer(peer.id, answerSdp)`).
 - **Proto changes** — breaking wire changes require a client SDK version bump;
   regenerate both languages.
 - **Cross-workspace imports** — test/examples use relative imports
