@@ -19,13 +19,21 @@ import (
 // fakePeer is a peer.Peer that records how many binary messages it receives
 // and captures the SDP offers/answers sent to it.
 type fakePeer struct {
-	id         string
-	conn       *websocket.Conn
-	received   int
-	offerPeer  string
-	offerSdp   string
+	id       string
+	conn     *websocket.Conn
+	received int
+	// offerPeer/offerSdp capture the SDP offer the peer received.
+	offerPeer string
+	offerSdp  string
+	// answerPeer/answerSdp capture the SDP answer the peer received.
 	answerPeer string
 	answerSdp  string
+	// sentHubInfo reports whether SendHubInfo was called.
+	sentHubInfo bool
+	// protoOverride, if non-nil, is returned by ToProtobuf and lets a test
+	// force the join-signal marshal path to fail (an invalid-UTF-8 Id makes
+	// proto.Marshal of the resulting PeerJoinedMessage return an error).
+	protoOverride *pb.Peer
 }
 
 func (p *fakePeer) SendBinaryMessage(data []byte) error {
@@ -34,7 +42,8 @@ func (p *fakePeer) SendBinaryMessage(data []byte) error {
 }
 
 func (p *fakePeer) SendHubInfo(hubInfoPb *pb.HubInfoMessage) error {
-	panic("not implemented")
+	p.sentHubInfo = true
+	return nil
 }
 
 func (p *fakePeer) SendOffer(offerPeerId string, offerSdp string) error {
@@ -51,7 +60,12 @@ func (p *fakePeer) GetId() string              { return p.id }
 func (p *fakePeer) SetId(id string)            { p.id = id }
 func (p *fakePeer) GetWSConn() *websocket.Conn { return p.conn }
 func (p *fakePeer) Close()                     {}
-func (p *fakePeer) ToProtobuf() *pb.Peer       { panic("not implemented") }
+func (p *fakePeer) ToProtobuf() *pb.Peer {
+	if p.protoOverride != nil {
+		return p.protoOverride
+	}
+	return &pb.Peer{Id: p.id}
+}
 
 var testUpgrader = websocket.Upgrader{
 	ReadBufferSize:  4096,
@@ -205,6 +219,95 @@ func BenchmarkGacheStorageHubAddPeer(b *testing.B) {
 			h.AddPeer(peer.NewPeer(nil, "metadata"))
 		}
 	})
+}
+
+// TestAddPeerMarshalFailureLeavesNoOrphan is a regression test for the
+// inverted ordering in AddPeer: the join signal used to be marshaled AFTER
+// the peer was already registered in PeerStorage. On a marshal failure the
+// early return left a half-registered orphan (ID assigned, present in
+// storage) that was never announced and never received its HubInfo. The join
+// signal must now be marshaled before any state is mutated, so a failure is a
+// complete no-op.
+func TestAddPeerMarshalFailureLeavesNoOrphan(t *testing.T) {
+	t.Parallel()
+
+	h := &hub{
+		Id:          "id",
+		CreatedAt:   time.Now(),
+		Metadata:    "metadata",
+		IsPermanent: true,
+		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	}
+
+	// A peer already in the hub; a successful add would broadcast to it.
+	existing := &fakePeer{id: "5"}
+	h.PeerStorage.Add("5", existing)
+
+	// newPeer.ToProtobuf returns a Peer whose Id is not valid UTF-8, so
+	// CreateJoinedSignalProtobuf -> proto.Marshal fails deterministically
+	// without mocking the package-level helper.
+	newPeer := &fakePeer{protoOverride: &pb.Peer{Id: "\xff\xfe\x01"}}
+
+	h.AddPeer(newPeer)
+
+	// The new peer was assigned an ID ("1") but must NOT be in storage.
+	if _, err := h.PeerStorage.Get(newPeer.GetId()); err == nil {
+		t.Fatalf("new peer %q present in PeerStorage after a marshal failure", newPeer.GetId())
+	}
+
+	// Storage must still hold only the pre-existing peer.
+	var ids []string
+	for p := range h.PeerStorage.GetAll() {
+		ids = append(ids, p.GetId())
+	}
+	if len(ids) != 1 || ids[0] != "5" {
+		t.Fatalf("PeerStorage holds %v after marshal failure; want only [5]", ids)
+	}
+
+	// No join signal should have been broadcast to the existing peer.
+	if existing.received != 0 {
+		t.Fatalf("existing peer received %d join signals after a failed add; want 0", existing.received)
+	}
+
+	// The new peer must not have received its HubInfo either.
+	if newPeer.sentHubInfo {
+		t.Fatal("SendHubInfo was called on a peer that failed to register")
+	}
+}
+
+// TestAddPeerSuccessRegistersAndNotifies locks in the happy path that the
+// reorder must preserve: on a successful marshal the peer is registered, the
+// join signal is broadcast to existing peers, and the new peer receives its
+// HubInfo.
+func TestAddPeerSuccessRegistersAndNotifies(t *testing.T) {
+	t.Parallel()
+
+	h := &hub{
+		Id:          "id",
+		CreatedAt:   time.Now(),
+		Metadata:    "metadata",
+		IsPermanent: true,
+		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	}
+
+	existing := &fakePeer{id: "5"}
+	h.PeerStorage.Add("5", existing)
+
+	newPeer := &fakePeer{} // valid ToProtobuf -> marshal succeeds
+	h.AddPeer(newPeer)
+
+	if newPeer.GetId() != "1" {
+		t.Fatalf("new peer id = %q; want 1", newPeer.GetId())
+	}
+	if _, err := h.PeerStorage.Get("1"); err != nil {
+		t.Fatalf("new peer not in storage after successful add: %v", err)
+	}
+	if existing.received != 1 {
+		t.Fatalf("existing peer received %d join signals; want 1", existing.received)
+	}
+	if !newPeer.sentHubInfo {
+		t.Fatal("new peer did not receive its HubInfo after a successful add")
+	}
 }
 
 // TestRemovePeerByIdIdempotent is a regression test for the duplicate

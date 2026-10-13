@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4c3694a00b0fd05a4b50fb0cdbbb53c9c7b9e683d6818303f481abedb356300c",
+  "pageVersion": "sha256:00369fba26d277790989cdc6a7f9173f2dd43ed0785b9ab299366e28faf0ef5b",
   "claims": [
     {
       "id": "claim_9b265d25c6ea46ffb5cbb15403e8cd85",
@@ -64,25 +64,45 @@
     },
     {
       "id": "claim_f33facbd9da84a768fa22cfc3615c800",
-      "statement": "The client test suite includes regression unit specs run through the Playwright unit harness with a mocked RTCPeerConnection: unit-malformed-metadata.spec.ts pins that malformed hub or peer metadata is tolerated via the safeParseJson fallback rather than crashing the WebSocket message dispatcher, and unit-reconnect-peer-prune.spec.ts pins that hubInfoMessage roster reconciliation prunes peers no longer in the server roster after a reconnect.",
+      "statement": "The client test suite includes regression unit specs run through the Playwright unit harness with a mocked WebSocket and mocked RTCPeerConnection: unit-malformed-metadata.spec.ts pins that malformed hub or peer metadata is tolerated via the safeParseJson fallback rather than crashing the WebSocket message dispatcher, unit-reconnect-peer-prune.spec.ts pins that hubInfoMessage roster reconciliation prunes peers no longer in the server roster after a reconnect, unit-ice-candidate-send.spec.ts pins that the shared armSendOnIceReady helper sends the offer/answer SDP exactly once (on the gathering-complete candidate event or after waitIceCandidatesTimeout), unit-manual-offer-handling.spec.ts and unit-manual-answer-handling.spec.ts pin that autoAnswer:false surfaces the offer via onOffer and autoAcceptAnswer:false surfaces the answer via onAnswer, unit-migration-redirect.spec.ts pins that a 1001 migration close updates this.host and hostIndex, and unit-ws-replacement.spec.ts pins that a second connection entry-point call closes the previous WebSocket instead of leaking it.",
       "evidence": [
+        {
+          "resource": "repo://test/tests/unit-ice-candidate-send.spec.ts",
+          "version": "repo-file-v1:sha256:ad350af6625f84c19fb58135e2d61974e4096ecd4af2262f8dd69f4f6ecbae1d"
+        },
         {
           "resource": "repo://test/tests/unit-malformed-metadata.spec.ts",
           "version": "repo-file-v1:sha256:86bbfe2e8b9f83341959aac8924f4e634c829d9cf659d390601b14e242c0fd22"
+        },
+        {
+          "resource": "repo://test/tests/unit-manual-answer-handling.spec.ts",
+          "version": "repo-file-v1:sha256:931d421db4180c99dd199d41eee1e5171edb619482fdcb2793c44dfcf8bdec60"
+        },
+        {
+          "resource": "repo://test/tests/unit-manual-offer-handling.spec.ts",
+          "version": "repo-file-v1:sha256:901a4db9df11b581b64c6713b8ecfcd5dfd0e46f956baea0d0828075ee2eee3a"
+        },
+        {
+          "resource": "repo://test/tests/unit-migration-redirect.spec.ts",
+          "version": "repo-file-v1:sha256:08a181e7e43909ec13a70b354790f06d3534c2e264e7594d950c9bd64bd3497c"
         },
         {
           "resource": "repo://test/tests/unit-reconnect-peer-prune.spec.ts",
           "version": "repo-file-v1:sha256:69ae50a238d2efa9c453979bbf103c5914b902f909cb9fbe96ce5abfe5ffea70"
         },
         {
+          "resource": "repo://test/tests/unit-ws-replacement.spec.ts",
+          "version": "repo-file-v1:sha256:89e7b5b96524406185a6c2549d12ccb42c763587f4cdc9470ef08531dd7808aa"
+        },
+        {
           "resource": "repo://test/unit-harness/index.ts",
-          "version": "repo-file-v1:sha256:b13b276815b174a91a4d337fb29ddcd746d9b3b9490e93ca19a13ee505cefef8"
+          "version": "repo-file-v1:sha256:f38acc9828170a8d345ac6d6f5b2b36835a4f3fef7beae70d3d3da0ad1cb4b83"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-12T01:31:27.169Z"
+    "at": "2026-10-13T01:29:56.745Z"
   }
 }

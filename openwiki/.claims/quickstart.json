@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ff41b2f1398d1892544c99bef4afb76d57d1312a884b36f996412414ddb24745",
+  "pageVersion": "sha256:b10c39d2d93c89528ae0248581e1aeb2632a6d34632b9305ece14a37b2cf2e82",
   "claims": [
     {
       "id": "claim_29b96b61359846dd9149060c8b57d3a3",
@@ -27,8 +27,8 @@
       "statement": "Instantiating a ZeroHubClient makes no network connection; a connection is only opened when a hub entrypoint such as createHub or joinHub is called.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L163-L203",
-          "version": "repo-lines-v1:sha256:3bdfdae235cd09d10c28dad36beaee613850626f954884b0d9533e691f491f1a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhNWRmODI2OGE5ZjcwMDM4OTQ1MTc5NTQ0N2RlYjUyZTRkMjBiNzUxMjMyNjJhYTcyNTA2MGRkZWZiMTk2ZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNiNzIzN2E5YTI5ZTZjMGFkMjdjZmJjNGM2MmZmOGI2YjFhY2Q2NDVmNjFjZDcwMzk3M2UzY2U2YzQ2YmIzMjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk1ZDEwMGEzMjEyZmIyMTVmMTFiNjM1Zjc0MTQ0OThlZGZmZDMwYzQxMWJhYzM4NGI5ODdkMTJlZWRjMzIxODQifQ=="
+          "resource": "repo://client/src/zeroHub.ts#L190-L230",
+          "version": "repo-lines-v1:sha256:3bdfdae235cd09d10c28dad36beaee613850626f954884b0d9533e691f491f1a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhNWRmODI2OGE5ZjcwMDM4OTQ1MTc5NTQ0N2RlYjUyZTRkMjBiNzUxMjMyNjJhYTcyNTA2MGRkZWZiMTk2ZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNiNzIzN2E5YTI5ZTZjMGFkMjdjZmJjNGM2MmZmOGI2YjFhY2Q2NDVmNjFjZDcwMzk3M2UzY2U2YzQ2YmIzMjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk1ZDEwMGEzMjEyZmIyMTVmMTFiNjM1Zjc0MTQ0OThlZGZmZDMwYzQxMWJhYzM4NGI5ODdkMTJlZWRjMzIxODQifQ"
         }
       ]
     },
@@ -54,7 +54,7 @@
     },
     {
       "id": "claim_2c42fe6960e84b24ab6cfe916a4374f6",
-      "statement": "The test directory contains both the Playwright E2E suite (Svelte harness components driving the real ZeroHubClient against two live servers) and a set of unit specs that exercise client internals in a Playwright page through a unit harness with a mocked RTCPeerConnection, requiring no live server or real WebRTC stack; running the suite via cd test && npm test builds both the E2E Svelte harness and the unit-spec harness via esbuild before invoking Playwright.",
+      "statement": "The test directory contains both the Playwright E2E suite (Svelte harness components driving the real ZeroHubClient against two live servers) and a set of unit specs that exercise client internals in a Playwright page through a unit harness with a mocked WebSocket and mocked RTCPeerConnection, requiring no live server or real WebRTC stack; running the suite via cd test && npm test builds both the E2E Svelte harness and the unit-spec harness via esbuild before invoking Playwright.",
       "evidence": [
         {
           "resource": "repo://test/package.json",
@@ -66,13 +66,13 @@
         },
         {
           "resource": "repo://test/unit-harness/index.ts",
-          "version": "repo-file-v1:sha256:b13b276815b174a91a4d337fb29ddcd746d9b3b9490e93ca19a13ee505cefef8"
+          "version": "repo-file-v1:sha256:f38acc9828170a8d345ac6d6f5b2b36835a4f3fef7beae70d3d3da0ad1cb4b83"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-12T01:31:27.169Z"
+    "at": "2026-10-13T04:09:40.318Z"
   }
 }

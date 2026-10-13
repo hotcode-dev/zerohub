@@ -113,16 +113,6 @@ client.joinOrCreateIPHub(
 );
 ```
 
-### Joining a Specific IP Hub
-
-```typescript
-// Join a specific IP-based hub
-client.joinIPHub(
-  "192.168.1.1", // Specific IP address
-  { username: "remote_user", device: "mobile" } // Peer metadata
-);
-```
-
 ### Use Cases
 
 - **Local network communication**: Connect devices on the same network
