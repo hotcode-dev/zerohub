@@ -1,24 +1,24 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f814362f14ba8406632715c348d25ef00ab72f1af01c2291839153f24a16fb82",
+  "pageVersion": "sha256:bef65ef61e57b890f1fac91671b01325dd6ff1bc994cbcdec37366a6fbaa650e",
   "claims": [
     {
       "id": "claim_f8eee7b4d94d405e8ae1cd7638c1d8cf",
-      "statement": "ZeroHubClient.reconnect re-checks the isDisconnected flag inside the async getZeroHubBackupHost().then callback (not just at entry) so a disconnect() called while the backup-host fetch is in flight does not resurrect the connection; it also aborts if the backup host equals the current host.",
+      "statement": "ZeroHubClient.reconnect handles the 1001 going-away redirect case (newHost argument) before falling back to host failover: the close reason is validated as a well-formed host via isWellFormedHost (client/src/utils.ts, mirroring the server's validateBackupHost); a malformed reason logs a warning and falls through to the automatic host-failover path without touching host state; a redirect equal to this.host (self-redirect) surfaces onZeroHubError and stops; a valid redirect updates this.host and hostIndex (pointing at the redirected host when it is in the configured list) before calling connectToZeroHub. For the host-failover path (no newHost), reconnect re-checks the isDisconnected flag inside the async getZeroHubBackupHost().then callback (not just at entry) so a disconnect() called while the backup-host fetch is in flight does not resurrect the connection, and aborts if the backup host equals the current host.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L288-L378",
-          "version": "repo-lines-v1:sha256:63d26832a1846de77473b683bba15ec7b4484feb1ab67316f6f9918f84e28a23:eyJzZWxlY3RlZExpbmVDb3VudCI6OTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliY2FlYTFkOGVkZTZhYTJkMmY4MmUyY2IwNDE4Y2UzNjVlMjE1Y2NhMDMxNDExNjg2ZjJhNzZjOGFlOTBkZDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3YWZjMGU3YmY2YTM4NzVkMTk0OTk1Zjg3M2MxYWEyZGFmNmRjNTNhZDdjN2Y1MTZiMmE4ODEwMmRhYjJjYWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVlYjczYTM1YzhjMzlkMThhY2ViYjc3MDU4ZjAyYmExNzkwZDQ5YTQxMTU1MWFiYWYxZDg0NTE1MThkOWE2MGEifQ"
+          "resource": "repo://client/src/zeroHub.ts#L288-L380",
+          "version": "repo-lines-v1:sha256:e652757e5757dce0f9ffe558e27c3c8a2eff0f1c50e19cc1491d09c9bfa7a1b8:eyJzZWxlY3RlZExpbmVDb3VudCI6OTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliY2FlYTFkOGVkZTZhYTJkMmY4MmUyY2IwNDE4Y2UzNjVlMjE1Y2NhMDMxNDExNjg2ZjJhNzZjOGFlOTBkZDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3YWZjMGU3YmY2YTM4NzVkMTk0OTk1Zjg3M2MxYWEyZGFmNmRjNTNhZDdjN2Y1MTZiMmE4ODEwMmRhYjJjYWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVlYzk4OWIwODdkMDIyMDAzZjc0NDdiYTIyMzU0YWIwYmQ5ZjIzZTk3OWUzN2MxYmEzMTE3ZDJjYjVmYTZiMWIifQ"
         }
       ]
     },
     {
       "id": "claim_4b0dc7e91368409180c96e9a923cf9e7",
-      "statement": "ZeroHubClient.disconnect() sets isDisconnected, clears pending ICE timeouts, calls the shared closeActiveSocket helper (which detaches all WebSocket handlers so onclose does not auto-reconnect, closes the socket with code 1000, and clears this.ws), then transitions every peer to Disconnected, closes each RTCPeerConnection via removePeer, and empties the peers map; the client is reusable afterwards.",
+      "statement": "ZeroHubClient.disconnect() sets isDisconnected, clears pending ICE timeouts, calls the shared closeActiveSocket() helper (which detaches onclose/onerror/onmessage/onopen and closes the socket with code 1000 so onclose does not auto-reconnect), then transitions every peer to Disconnected and closes each RTCPeerConnection via removePeer, emptying the peers map; the client is reusable afterwards. connectToZeroHub also calls closeActiveSocket() at the top to tear down any socket left open by a previous entry-point call without going through disconnect(), nulling handlers first so the replaced socket does not fire reconnect() (which would advance hostIndex a second time for a single logical failure) or onZeroHubError.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L609-L629",
-          "version": "repo-lines-v1:sha256:7a98ae0d4455e5705a4f2317d01bd0cfc67494051edb08df57007778538fca26:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmMmEyZjk5NmYwOGU2ODBiZDI5MjEzNWE2ZmE0OTc4YmRhMjZlNjAyZDg0ZjMzY2IxZDU5NDc3NWQ0MzA0YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYxMTMyYmI1MGU0ZjVmYTA1MmU0Y2FhMGQzNDE5MDc2NTgyYTI1ZDkyYjViM2VmMjczZTM3ZTFlN2EwYzk2ZDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE5YzkxNzYyZDk2ZjRlMmUyMGM5NmNjZTI2MmE1NTIwOWYzMTUxNjc4NzJkNzlhMTMwNGJjNzVmNTZiNTcyZjYifQ"
+          "resource": "repo://client/src/zeroHub.ts#L618-L629",
+          "version": "repo-lines-v1:sha256:0f9b8246a41893c3af6043a7d7529ebfce115acbf7614b50da89621fe6b49b81:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4MzRkMTExYWIzMWRkYjU2YWQwNDMwYmQwODMzMDRlNGY2MjZmNTg3NDI3OWYzODAzZDc4NDExNTM4NWQxMmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcwODQ5NjBmNjk1MmM1NWUyZWNiMDU1NmE4ZjE1ZmU0NzFjNDQ3YmRjMDk2Zjc1ZDNjZDQ4ZmFiYzU0MWMyY2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE5YzkxNzYyZDk2ZjRlMmUyMGM5NmNjZTI2MmE1NTIwOWYzMTUxNjc4NzJkNzlhMTMwNGJjNzVmNTZiNTcyZjYifQ"
         },
         {
           "resource": "repo://client/src/zeroHub.ts#L721-L740",
@@ -229,10 +229,24 @@
           "version": "repo-lines-v1:sha256:12f3038bef05e68d78d5a9591c208f1a0bf61b00ecc69197ededd5242d90e24a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlYjI4OTJlMDY2NDc5ZGFiODk2MDdjNWZhZWU4MmQ2YzczN2EzYzg2YzgzNDhlNzJkZjQ4NjJlZGExOWY5MmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmMmNjNzg1OGY1MjFkMzlmNDViNjg3MDQ4NDU4MGIzMjVhYzJjNDA5ZTIyNmQyMGFmYThmNzczMjM0OGUwZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI1YzRjZDNkZWJlZjg5MDc2ZDNmOTU3OWFkNDIzNDcxMTAxYjM4ODY2N2UzMWViOTg2OWMzM2JkOTk4MjE1NzAifQ"
         }
       ]
+    },
+    {
+      "id": "claim_229a309d921a4176b3233d02a2dac5c5",
+      "statement": "ZeroHubClient exposes two new public callbacks for manual SDP handling: onOffer(peer, offerSdp) is invoked when an offerMessage arrives while autoAnswer is false (the peer has just transitioned to AnswerPending) instead of being silently dropped, so the application completes the exchange by calling sendAnswer(peer.id, offerSdp); onAnswer(peer, answerSdp) is invoked when an answerMessage arrives while autoAcceptAnswer is false (the peer has just transitioned to AcceptPending), so the application completes the exchange by calling acceptAnswer(peer.id, answerSdp). Both callbacks are guarded on the peer still existing in this.peers, so a dangling offer/answer for a peer already torn down is not surfaced.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/zeroHub.ts#L148-L176",
+          "version": "repo-lines-v1:sha256:82232e5ec39333afcdfd0319b8d74fba25ca7b3a9a1af2b10b918426886576d9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlNzExMjdmN2Y1ZjE3MTdiOTZlN2U5NzY5MGE3ZDE4MWE1MDcyMzdmY2FkMTg4NDBiYmIwOTM0MDIyYTkyMGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzNDQ0OTEwOGY5MjQ2Mzc3NzU3YmM4M2JhYWNmYjI1YjMyZGVhNGIyZDFhMzk5ZWMwYzIyNjhlZTYyY2E1ZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3N2NjNWQyYTVkNDIwZTExZjNiN2Q2MThlOGI5NjkxNzE2MmZhN2JjNWE3ZTk4NmZjZmZhZDY2MjYzZDQ5NjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiMTYyNWY2OGFiOWFmZmQyNDVhMzNmMzQ1Y2NkZjY1MDQzYTYzYWY0ZjdjOGViZjVlMDVlYzI0ZmJiNjc1ZjUifQ"
+        },
+        {
+          "resource": "repo://client/src/zeroHub.ts#L464-L499",
+          "version": "repo-lines-v1:sha256:62bb837f3dd5161b94972df843f1a0a513b9186118340507257b5dea89634f92:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmMDliMjYxNDlhNzI0Y2E5ZGQ0ODJkOGZhMTc4YThiOGZhMDA0NzAzMjBhOGVlY2Y0YzRlZDU4Njk5ZTExNTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY5YjkwNTMxZjllOWE2ODFlNDAzZDRlMzk0OGVmZjE0NDM0OTM4ZWFmNGQxNTFmZDdhZjYzMDk0ZjA3Y2M4MGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI1YzRjZDNkZWJlZjg5MDc2ZDNmOTU3OWFkNDIzNDcxMTAxYjM4ODY2N2UzMWViOTg2OWMzM2JkOTk4MjE1NzAifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-13T04:09:40.318Z"
+    "at": "2026-10-13T03:37:16.218Z"
   }
 }

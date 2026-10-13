@@ -12,10 +12,10 @@ sources:
     resource: repo://proto/zerohub/v1/server_message.proto
   - id: openwiki-source-da50555ad2e1dffee0054a4e
     resource: repo://server/pkg/hub/hub.go
-generated: { by: "hermes", at: "2026-10-13T01:29:56.745Z" }
+generated: { by: "hermes", at: "2026-10-13T03:37:16.218Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-13T01:29:56.745Z
+    at: 2026-10-13T03:37:16.218Z
 ---
 
 # Signaling Protocol & Peer Lifecycle
@@ -81,10 +81,17 @@ The server never inspects SDP content — it only relays it. The exchange:
 5. The target decodes the `offer_message`, moves to `PeerStatus.AnswerPending`,
    and (when `autoAnswer`, default true) calls `sendAnswer`, which sets the
    remote offer description, creates the answer, and ships it back via
-   `send_answer_message`. It transitions to `PeerStatus.Answering`.
+   `send_answer_message`. It transitions to `PeerStatus.Answering`. When
+   `autoAnswer` is `false` the offer is surfaced to the application through the
+   `onOffer` callback (the peer is in `AnswerPending`) instead of being
+   auto-answered, and the application completes the exchange by calling
+   `sendAnswer(peer.id, offerSdp)`.
 6. The offerer decodes the `answer_message`, moves to
    `PeerStatus.AcceptPending`, and (when `autoAcceptAnswer`, default true)
-   calls `acceptAnswer` to set the remote answer description.
+   calls `acceptAnswer` to set the remote answer description. When
+   `autoAcceptAnswer` is `false` the answer is surfaced through the `onAnswer`
+   callback (the peer is in `AcceptPending`) and the application calls
+   `acceptAnswer(peer.id, answerSdp)`.
 7. Once the `RTCPeerConnection` reaches `connectionState === "connected"`, the
    client marks the peer `PeerStatus.Connected`.
 
@@ -119,21 +126,18 @@ duplicated wait-and-send logic from `sendOffer`/`sendAnswer` is extracted into
 the shared private helper `armSendOnIceReady(peerId, rtcConn, sendOnce)`, so
 the two paths can never diverge:
 
-- `sendOffer`/`sendAnswer` run `createOffer`/`createAnswer` +
-  `setLocalDescription`, then call `armSendOnIceReady` with a callback that
-  ships the current local description via `sendOfferToWebsocket` /
-  `sendAnswerToWebsocket`.
-- `onicecandidate` fires the send on the first event that carries no
-  candidate (the gathering-complete marker), skipping any event that still
-  carries a candidate.
-- A `setTimeout` of `waitIceCandidatesTimeout` (default **2000 ms**, from
-  `DEFAULT_CONFIG`) fires as a fallback: if candidates are still pending, it
-  flushes the current SDP anyway so negotiation is not blocked forever.
-- Both paths share a single `isSent` guard, so re-negotiation (or a late
-  candidate after the timeout) can never send the SDP a second time.
-- Pending ICE timeout handles are tracked per peer in `iceTimeouts[peerId]`
-  and cleared on `disconnect()`, so a timer can never write to a closed
-  socket. Re-arming clears the prior pending handle for that peer first.
+- Both `sendOffer`/`sendAnswer` delegate the ICE wait-and-send to the shared
+  `armSendOnIceReady(peerId, rtcConn, sendOnce)` helper: `onicecandidate` sends
+  the SDP to the server the moment `event.candidate` is null (gathering
+  finished) and no prior send happened, and a `setTimeout` of
+  `waitIceCandidatesTimeout` (default **2000 ms**, from `DEFAULT_CONFIG`)
+  fires as a fallback: if candidates are still pending, it flushes the current
+  SDP anyway so negotiation is not blocked forever. The two paths share a
+  single `isSent` guard inside the helper, so the SDP is sent exactly once even
+  if a late candidate event and the timer race.
+- Pending ICE timeout handles are tracked per peer in `iceTimeouts` and cleared
+  on `disconnect()`, so a timer can never write to a closed socket. The prior
+  handle for a peer is always cleared before arming a new one.
 
 ## Peer status lifecycle
 
@@ -176,7 +180,7 @@ and where `SFUTopology` decides which peers wire directly to the SFU.
   breaks on read errors, non-`BinaryMessage` frames, or protobuf unmarshal
   failures.
 - The `autoAnswer` / `autoAcceptAnswer` config flags default to `true`; setting
-  either to `false` shifts the corresponding step to a manual client call:
-  the incoming SDP is surfaced via the `onOffer` / `onAnswer` callback and the
-  application completes the exchange by calling `sendAnswer(peer.id, offerSdp)`
-  or `acceptAnswer(peer.id, answerSdp)` (see Manual offer/answer handling).
+  either to `false` shifts the corresponding step to a manual client call — the
+  incoming SDP is surfaced through the `onOffer` / `onAnswer` callback instead
+  of being silently dropped, and the application completes the exchange with
+  `sendAnswer` / `acceptAnswer`.

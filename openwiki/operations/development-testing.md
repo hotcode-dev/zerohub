@@ -28,10 +28,10 @@ sources:
     resource: repo://test/tests/unit-ws-replacement.spec.ts
   - id: openwiki-source-801ca2739d5984913a9ac0eb
     resource: repo://test/unit-harness/index.ts
-generated: { by: "hermes", at: "2026-10-13T01:29:56.745Z" }
+generated: { by: "hermes", at: "2026-10-13T03:37:16.218Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-13T01:29:56.745Z
+    at: 2026-10-13T03:37:16.218Z
 ---
 
 # Development & Testing
@@ -114,11 +114,19 @@ that instantiate the real `ZeroHubClient` (imported via relative path
   `unit-manual-answer-handling.spec.ts`, `unit-migration-redirect.spec.ts`,
   `unit-ws-replacement.spec.ts`)
   that exercise client internals in a Playwright page through the unit
-  harness (`test/unit-harness/index.ts`) with a mocked `WebSocket` and a
-  mocked `RTCPeerConnection` — no live server or real WebRTC stack required.
-  The malformed-metadata spec pins the `safeParseJson` fallback, and the
+  harness (`test/unit-harness/index.ts`) with a mocked `RTCPeerConnection`
+  and a `MockWebSocket` installed on `globalThis` (each mock socket is
+  instance-tagged and records `close()` codes, so specs can detect a leaked
+  or orphaned socket) — no live server or real WebRTC stack required. The
+  malformed-metadata spec pins the `safeParseJson` fallback, the
   reconnect-peer-prune spec pins the `hubInfoMessage` roster reconciliation
-  that removes stale peers.
+  that removes stale peers, the ice-candidate-send spec pins the shared
+  ICE-candidate wait-and-send behavior, the manual offer/answer specs pin the
+  `onOffer`/`onAnswer` manual-SDP paths, the migration-redirect spec pins the
+  1001 close-reason host validation (and the self-redirect stop plus the
+  `host`/`hostIndex` update on a valid redirect), and the ws-replacement spec
+  pins that a second entry-point call tears down the previous socket instead
+  of leaking it.
 - **Dual servers**: `make e2e-test` spins up two signaling servers on 8080 and
   8081 (for multi-host/failover tests), sleeps 3s, then runs the suite.
 
