@@ -84,6 +84,22 @@ channels:
       ws:
         method: GET
 
+  hubsGet:
+    address: /v1/hubs/get
+    description: |
+      Get the metadata (peers, creation time, hub metadata) of an existing
+      static hub.
+      Query params:
+      - id (required): hub id
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
   randomHubsCreate:
     address: /v1/random-hubs/create
     description: |
@@ -107,6 +123,22 @@ channels:
       Query params:
       - id (required): hub id
       - peerMetadata (optional): stringified peer metadata
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
+  randomHubsGet:
+    address: /v1/random-hubs/get
+    description: |
+      Get the metadata (peers, creation time, hub metadata) of an existing
+      random hub.
+      Query params:
+      - id (required): hub id
     messages:
       clientMessage:
         $ref: '#/components/messages/ClientMessage'
@@ -148,6 +180,23 @@ channels:
       ws:
         method: GET
 
+  permanentHubsCreate:
+    address: /v1/permanent-hubs/create
+    description: |
+      Create a permanent hub that never expires. Requires admin
+      authentication.
+      Query params:
+      - id (required): hub id
+      - hubMetadata (optional): stringified hub metadata
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
 operations:
   clientSendOnHubsCreate:
     action: send
@@ -176,6 +225,20 @@ operations:
       $ref: '#/channels/hubsJoin'
     messages:
       - $ref: '#/channels/hubsJoin/messages/serverMessage'
+
+  clientSendOnHubsGet:
+    action: send
+    channel:
+      $ref: '#/channels/hubsGet'
+    messages:
+      - $ref: '#/channels/hubsGet/messages/clientMessage'
+
+  clientReceiveOnHubsGet:
+    action: receive
+    channel:
+      $ref: '#/channels/hubsGet'
+    messages:
+      - $ref: '#/channels/hubsGet/messages/serverMessage'
 
   clientSendOnHubsJoinOrCreate:
     action: send
@@ -219,6 +282,20 @@ operations:
     messages:
       - $ref: '#/channels/randomHubsJoin/messages/serverMessage'
 
+  clientSendOnRandomHubsGet:
+    action: send
+    channel:
+      $ref: '#/channels/randomHubsGet'
+    messages:
+      - $ref: '#/channels/randomHubsGet/messages/clientMessage'
+
+  clientReceiveOnRandomHubsGet:
+    action: receive
+    channel:
+      $ref: '#/channels/randomHubsGet'
+    messages:
+      - $ref: '#/channels/randomHubsGet/messages/serverMessage'
+
   clientSendOnIpHubsJoinOrCreate:
     action: send
     channel:
@@ -233,20 +310,6 @@ operations:
     messages:
       - $ref: '#/channels/ipHubsJoinOrCreate/messages/serverMessage'
 
-  clientSendOnIpHubsJoin:
-    action: send
-    channel:
-      $ref: '#/channels/ipHubsJoin'
-    messages:
-      - $ref: '#/channels/ipHubsJoin/messages/clientMessage'
-
-  clientReceiveOnIpHubsJoin:
-    action: receive
-    channel:
-      $ref: '#/channels/ipHubsJoin'
-    messages:
-      - $ref: '#/channels/ipHubsJoin/messages/serverMessage'
-
   clientSendOnPermanentHubsJoin:
     action: send
     channel:
@@ -260,6 +323,20 @@ operations:
       $ref: '#/channels/permanentHubsJoin'
     messages:
       - $ref: '#/channels/permanentHubsJoin/messages/serverMessage'
+
+  clientSendOnPermanentHubsCreate:
+    action: send
+    channel:
+      $ref: '#/channels/permanentHubsCreate'
+    messages:
+      - $ref: '#/channels/permanentHubsCreate/messages/clientMessage'
+
+  clientReceiveOnPermanentHubsCreate:
+    action: receive
+    channel:
+      $ref: '#/channels/permanentHubsCreate'
+    messages:
+      - $ref: '#/channels/permanentHubsCreate/messages/serverMessage'
 
 components:
   messages:
