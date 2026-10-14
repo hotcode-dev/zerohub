@@ -139,6 +139,13 @@ For media streams, supply `mediaChannelConfig` with a `localStream` and `onTrack
 - `joinOrCreateIPHub(peerMetadata?, hubMetadata?)`
 - `createRandomHub(peerMetadata?, hubMetadata?)`
 - `joinRandomHub(id, peerMetadata?)`
+- `joinPermanentHub(id, peerMetadata?)` - join an existing permanent (never-expires) hub
+
+Permanent hubs are created out-of-band via the admin HTTP endpoint
+`GET /v1/permanent-hubs/create` (requires the `Authorization` header), since
+the browser WebSocket API cannot send custom headers. Use an HTTP client
+(curl, `fetch` from a Node.js process) to create a permanent hub, then connect
+to it with `joinPermanentHub`.
 
 Each call issues a WebSocket handshake to `/v1/...` endpoints on the ZeroHub server. Metadata objects are serialized and shared with other peers upon connection.
 

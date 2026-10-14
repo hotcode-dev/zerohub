@@ -61,6 +61,13 @@ It handles:
 - `joinOrCreateHub(hubId, peerMetadata?, hubMetadata?)` - join or create a fixed hub
 - `createRandomHub(peerMetadata?, hubMetadata?)` / `joinRandomHub(hubId, peerMetadata?)` - random hub APIs
 - `joinOrCreateIPHub(peerMetadata?, hubMetadata?)` - IP hub API (hub id is derived from the caller's IP)
+- `joinPermanentHub(hubId, peerMetadata?)` - join an existing permanent (never-expires) hub
+
+Permanent hubs are created out-of-band via the admin HTTP endpoint
+`GET /v1/permanent-hubs/create` (requires the `Authorization` header), since
+the browser WebSocket API cannot send custom headers. Use an HTTP client
+(curl, `fetch` from a Node.js process) to create a permanent hub, then connect
+to it with `joinPermanentHub`.
 
 ## Peer lifecycle and signaling
 
