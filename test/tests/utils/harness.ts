@@ -30,6 +30,14 @@ export function getJoinPeerStatusTestId(componentId: string) {
   return `join-peer-status-${componentId}`;
 }
 
+export function getJoinPermanentHubTestId(componentId: string) {
+  return `join-permanent-hub-id-${componentId}`;
+}
+
+export function getJoinPermanentPeerStatusTestId(componentId: string) {
+  return `join-permanent-peer-status-${componentId}`;
+}
+
 export function getDisconnectStatusTestId(componentId: string) {
   return `disconnect-status-${componentId}`;
 }
