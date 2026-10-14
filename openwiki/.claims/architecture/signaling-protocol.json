@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f93eddb78aa1a60044240f3a1d2ea9439f6cecc1006de12fb2135f3ef7b4b08f",
+  "pageVersion": "sha256:fcebf6ee6c88427db464195a4f7993cbff73e8fd1b71f794f5cfff68621cd711",
   "claims": [
     {
       "id": "claim_d5e17f0a4db84690bce7a57930a4a2e7",
@@ -27,8 +27,8 @@
       "statement": "The server hub routes a client SendOfferMessage to the named answer peer and a SendAnswerMessage to the named offer peer; the server relays SDP verbatim without inspecting its content.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/hub/hub.go#L184-L191",
-          "version": "repo-lines-v1:sha256:d7e17e1b54da3979e8be7fd60173c28e44c0b289f1a5c8a6a914840be1adcba0:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDEwZGM0OWUxNWJiYzJiNWQxOTc1NDMxYmRlNTNjOTUyZjVkNmRhZTY1MjdlNTVmZTk1ZWYwNzgxNzEyMDdjMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmIxYjMwOGE1ZWFkYmE0MWExY2MwMzU2ZTFiNWFlYzc1MTQzOTgxYjI4MTU3ZjUxOTNkYWNkOGYzZGEwYWUyYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDcwMDUxNzg4OWRkYTNlZjdiMjJmMzk3MGQyNzBmZmQxY2Y5YTc5YzMxM2M2ZDM4ZDE0M2E0MjUzZTlmODhmYSJ9"
+          "resource": "repo://server/pkg/hub/hub.go#L197-L205",
+          "version": "repo-lines-v1:sha256:beb81b1fc7ef696140e333cc04fed6aac8768a9ce412f67cf914a6ae96578bc9:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDEwZGM0OWUxNWJiYzJiNWQxOTc1NDMxYmRlNTNjOTUyZjVkNmRhZTY1MjdlNTVmZTk1ZWYwNzgxNzEyMDdjMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdjZGE4MmRhNjA2MjM4ZTA1ZTYyMzk5NTY5YzVlZTAzOTkzNDE5NjQ4YWU1ZDQzYTJiZjhjZDYzNDdmODI2MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTRiZmQ1MzlmMTVjZGVmNzdlNzE1YzAwOWE4NDMxNzZjNjdhODNlMzIyZjQ0NGM1YjIyZWFhY2JmNjM4Y2RhOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGNlNzhmZGI1ZTA4NGQ2ZjkxZDdiMWM1YTllNGJiMGVlNzFlOTM5MzU0MWZlMGEwMzkxZmY4NjdlMTM3MTI5ZiJ9"
         }
       ]
     },
@@ -83,6 +83,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-14T01:29:11.350Z"
+    "at": "2026-10-14T09:24:33.856Z"
   }
 }

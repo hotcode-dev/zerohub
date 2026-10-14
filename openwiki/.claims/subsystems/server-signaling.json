@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f0790f2d7f061884aecce7b17d534e57511e27889aa2ff9a8b93e7aa719c9917",
+  "pageVersion": "sha256:26c75352cfd51f969b3a5ef4af09647a05a9e3ce67ac235b91ce826abd9a8730",
   "claims": [
     {
       "id": "claim_1d82fd64055a4062925029c4ae4e6575",
@@ -41,8 +41,8 @@
       "statement": "ZeroHub.GetOrCreateHub performs the read-then-write under a sync.Mutex so concurrent join-or-create calls for the same hub ID collapse to a single hub instead of orphaning one.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/zerohub/zerohub.go#L85-L101",
-          "version": "repo-lines-v1:sha256:c28d9c8f790459ec109f62774ac8d0efc62ce618a4b21847a6d165ef197a8cbd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MGRjZTEyNzA1MGQ4YzJlOWY3MjRiY2JlMjQyNWUyODE2Y2M2M2Y5YzM2ZjY1NmNjNGEzOGFkZmJmYmRjMGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1MWYxMjg2NGFkYTZlOTkxOGVhNzExYjAzYmI3Y2ViODkyYWQ3NTM5NzNmYjAzNmUwNDNkOTA0YTE2ZTZiMjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZjZDg5NmRkMDdkNDM4ZTIyZGUwNTg0MmJiM2RkYjE4N2Y5M2VkYjE0ZTcxNzIxOTQyYjQ4MzNiZDZlM2YzODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQyNDBkNDRlMzA3Yjg4ZGJkMjk2OWQ2NjRmNTAwZWU5MGZhMGQwODkwMTExYzBlYWRiODdmYWYzYWYyMzlmNTUifQ=="
+          "resource": "repo://server/pkg/zerohub/zerohub.go#L109-L124",
+          "version": "repo-lines-v1:sha256:ebd3f7b0a5c85305f8544fa8b90283564ddcb08152dfc3a29174153c880a1791:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3MmU2OThiOTE4MmUzMThmNGZiOTY2YjM0MjgzZDExNzVmOWY5Y2FhYjY2MzAxZGI2MDNiNGMzZjQ4ZmE4NzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhOWVlZmI2NmJhMzJmOTU3NGE5YjZlYmU0NWY2ZDAxMTM4Y2VlYjM4MGJlMTdhMDZmZGFlNTZjZWQyNWQyNjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU2N2Y5NTkxMjliYzI2OTE2NmM1Y2QzYjBjOTAwMmY3Yjc3NTlmNmNhOWJjODRjOWFlMzFjZGY2MTliMmVlZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI0ZDBiY2JlNDVhYjliNmU5ODUyNjAzOWI1N2NjZjhlODI0MzUxMWE3NDQ2NGJlY2ZlMDM4NGM0ZjFmOGE2MzgifQ"
         }
       ]
     },
@@ -167,6 +167,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-14T01:29:11.350Z"
+    "at": "2026-10-14T09:24:33.856Z"
   }
 }
