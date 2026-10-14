@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:aa80b263e3b4258f26c38d47881af2664e44ceaf2518b92e269db4efc37802c4",
+  "pageVersion": "sha256:6d5dacb94328bb62d92663e74511c8f4d8349ebaead77356021442a407bcf330",
   "claims": [
     {
       "id": "claim_9b265d25c6ea46ffb5cbb15403e8cd85",
@@ -64,7 +64,7 @@
     },
     {
       "id": "claim_f33facbd9da84a768fa22cfc3615c800",
-      "statement": "The client test suite includes regression unit specs run through the Playwright unit harness (which installs a mocked RTCPeerConnection and a globalThis MockWebSocket whose instances are tagged and record close() codes, and which records setRemoteDescription calls): unit-malformed-metadata.spec.ts pins that malformed hub or peer metadata is tolerated via the safeParseJson fallback; unit-reconnect-peer-prune.spec.ts pins that hubInfoMessage roster reconciliation prunes peers no longer in the server roster after a reconnect; unit-ice-candidate-send.spec.ts pins the shared ICE-candidate wait-and-send behavior; unit-manual-offer-handling.spec.ts / unit-manual-answer-handling.spec.ts pin the onOffer/onAnswer manual-SDP paths; unit-migration-redirect.spec.ts pins the 1001 close-reason host validation, the self-redirect stop, and the host/hostIndex update on a valid redirect; and unit-ws-replacement.spec.ts pins that connectToZeroHub tears down a previously leaked socket instead of leaking it.",
+      "statement": "The client test suite includes regression unit specs run through the Playwright unit harness (which installs a mocked RTCPeerConnection and a globalThis MockWebSocket whose instances are tagged and record close() codes, and which records setRemoteDescription calls): unit-malformed-metadata.spec.ts pins that malformed hub or peer metadata is tolerated via the safeParseJson fallback; unit-reconnect-peer-prune.spec.ts pins that hubInfoMessage roster reconciliation prunes peers no longer in the server roster after a reconnect; unit-ice-candidate-send.spec.ts pins the shared ICE-candidate wait-and-send behavior; unit-manual-offer-handling.spec.ts / unit-manual-answer-handling.spec.ts pin the onOffer/onAnswer manual-SDP paths; unit-migration-redirect.spec.ts pins the 1001 close-reason host validation, the self-redirect stop, and the host/hostIndex update on a valid redirect; unit-permanent-hub-endpoints.spec.ts pins that the public createPermanentHub/joinPermanentHub entry points dial /v1/permanent-hubs/create and /v1/permanent-hubs/join with the hub id and metadata query params; and unit-ws-replacement.spec.ts pins that connectToZeroHub tears down a previously leaked socket instead of leaking it.",
       "evidence": [
         {
           "resource": "repo://test/tests/unit-ice-candidate-send.spec.ts",
@@ -87,6 +87,10 @@
           "version": "repo-file-v1:sha256:08a181e7e43909ec13a70b354790f06d3534c2e264e7594d950c9bd64bd3497c"
         },
         {
+          "resource": "repo://test/tests/unit-permanent-hub-endpoints.spec.ts",
+          "version": "repo-file-v1:sha256:8e325027ca62cb03910a40cecabca76791387e46d1670c0249a0e5798b838660"
+        },
+        {
           "resource": "repo://test/tests/unit-reconnect-peer-prune.spec.ts",
           "version": "repo-file-v1:sha256:69ae50a238d2efa9c453979bbf103c5914b902f909cb9fbe96ce5abfe5ffea70"
         },
@@ -96,13 +100,13 @@
         },
         {
           "resource": "repo://test/unit-harness/index.ts",
-          "version": "repo-file-v1:sha256:f38acc9828170a8d345ac6d6f5b2b36835a4f3fef7beae70d3d3da0ad1cb4b83"
+          "version": "repo-file-v1:sha256:43686dadf678577ec8bb43067d03885da044a8bc757b94f1ccfc596a3f96001d"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-13T03:37:16.218Z"
+    "at": "2026-10-14T01:29:11.350Z"
   }
 }

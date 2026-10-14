@@ -18,10 +18,10 @@ sources:
     resource: repo://client/src/utils.ts
   - id: openwiki-source-718b618612c033c4f36b3a45
     resource: repo://client/src/zeroHub.ts
-generated: { by: "hermes", at: "2026-10-13T03:37:16.218Z" }
+generated: { by: "hermes", at: "2026-10-14T01:29:11.350Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-13T03:37:16.218Z
+    at: 2026-10-14T01:29:11.350Z
 ---
 
 # TypeScript Client SDK
@@ -67,9 +67,15 @@ with `id`, `hubMetadata`, `peerMetadata` as query params, and calls
 | `joinHub(hubId, peerMetadata?)` | `/v1/hubs/join` | join a static hub |
 | `joinOrCreateHub(...)` | `/v1/hubs/join-or-create` | join or create |
 | `joinOrCreateIPHub(...)` | `/v1/ip-hubs/join-or-create` | IP-keyed join-or-create |
-| `joinIPHub(hubId, peerMetadata?)` | `/v1/ip-hubs/join` | join IP hub |
+| `createPermanentHub(hubId, peerMetadata?, hubMetadata?)` | `/v1/permanent-hubs/create` | create a permanent (never-expires) hub; server gates creation behind admin auth |
+| `joinPermanentHub(hubId, peerMetadata?)` | `/v1/permanent-hubs/join` | join a permanent hub |
 | `createRandomHub(...)` | `/v1/random-hubs/create` | create a random hub |
 | `joinRandomHub(hubId, peerMetadata?)` | `/v1/random-hubs/join` | join a random hub |
+
+The old `joinIPHub(hubId)` entry point was removed: an IP hub's id is derived
+from the caller's IP by the server, so a client-supplied hub id can never
+resolve to an IP hub (the endpoint always returned 404). Use
+`joinOrCreateIPHub` instead.
 
 ## WebSocket lifecycle & message dispatch
 

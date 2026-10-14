@@ -33,10 +33,10 @@ sources:
     resource: repo://server/pkg/storage/gache.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-10-12T01:31:27.169Z" }
+generated: { by: "hermes", at: "2026-10-14T01:29:11.350Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-13T03:37:16.218Z
+    at: 2026-10-14T01:29:11.350Z
 ---
 
 
@@ -59,8 +59,10 @@ entrypoint in `server/cmd/server.go`.
    (default `memory`), and `APP_TRUST_PROXY` (default `false`).
 2. `logger.InitLogger(cfg)` — configures the global zerolog logger.
 3. Constructs **four separate `zerohub.ZeroHub` instances** — `zeroHub`
-   (static), `zeroHubRandom`, `zeroHubIP`, `zeroHubPermanent` — so each hub
-   type has an isolated hub registry and its own peer/expiry semantics.
+   (static), `zeroHubRandom`, `zeroHubIP`, `zeroHubPermanent` — via a shared
+   `newZeroHubOrPanic(cfg, name)` constructor that panics on any construction
+   failure, so each hub type has an isolated hub registry and its own
+   peer/expiry semantics.
 4. `handler.NewHandler(...)` then `Serve()`.
 
 `NewHandler` refuses to start if `APP_CLIENT_SECRET` is empty, because the
@@ -82,7 +84,6 @@ admin endpoint would otherwise be open to unauthenticated requests.
 | `/v1/random-hubs/get` | `GetHub` | random | |
 | `/v1/random-hubs/join` | `JoinHub` | random | |
 | `/v1/ip-hubs/join-or-create` | `JoinOrCreateHubIP` | IP | ID from client IP |
-| `/v1/ip-hubs/join` | `JoinHub` | IP | |
 | `/v1/permanent-hubs/join` | `JoinHub` | permanent | |
 | `/v1/permanent-hubs/create` | `CreateHubPermanent` | permanent | admin auth |
 
@@ -104,7 +105,9 @@ creating.
   join-or-create: concurrent calls always return the same hub instance.
   `GetHubById` / `RemoveHubById` wrap the underlying `HubStorage`.
 - **`hub.Hub`** (pkg/hub) owns one hub's peers. `AddPeer` assigns a monotonic
-  numeric ID from an `atomic.Uint64` counter, stores the peer in `PeerStorage`,
+  numeric ID from an `atomic.Uint64` counter, marshals the join signal **before**
+  registering the peer in `PeerStorage` (so a marshal failure is a no-op — no
+  storage entry, no broadcast, no half-registered peer), then stores the peer,
   broadcasts a `PeerJoinedMessage` to other peers, and sends the new peer a
   `HubInfoMessage`. `RemovePeerById` is **idempotent**: it first checks the
   peer exists in `PeerStorage` and returns `false` without broadcasting
@@ -144,7 +147,7 @@ live peers; `JoinHub` never creates a hub and has nothing to clean up. When
 
 Hubs and peers are each stored behind `storage.Storage[T]`
 (pkg/storage), a generic interface (`Add`, `Get`, `GetAll` as
-`iter.Seq[T]`, `Update`, `Delete`, `IsEmpty`). Two backends implement it:
+`iter.Seq[T]`, `Delete`, `IsEmpty`). Two backends implement it:
 `MemoryStorage` (a mutex-guarded map) and `GacheStorage` (wrapping a
 `ntsd/gache/v2` `Gache` instance with the expired hook disabled and the
 default TTL overridden to `gache.NoTTL` so entries live until the
