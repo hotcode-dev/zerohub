@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bef65ef61e57b890f1fac91671b01325dd6ff1bc994cbcdec37366a6fbaa650e",
+  "pageVersion": "sha256:343159e48586a98da405b154ae710a866bcf10769b23de17ca755a399cdfe83c",
   "claims": [
     {
       "id": "claim_f8eee7b4d94d405e8ae1cd7638c1d8cf",
@@ -134,15 +134,15 @@
     },
     {
       "id": "claim_3d7994bff5cc4ef1aa3bd7aaf510d9a3",
-      "statement": "All seven hub connection entrypoints (createHub, joinHub, joinOrCreateHub, joinOrCreateIPHub, joinIPHub, createRandomHub, joinRandomHub) funnel into the private openHubConnection helper, which stores supplied metadata, builds a URL from getWS(host, tls) with id/hubMetadata/peerMetadata query params, and calls connectToZeroHub.",
+      "statement": "All eight hub connection entrypoints (createHub, joinHub, createPermanentHub, joinPermanentHub, joinOrCreateHub, joinOrCreateIPHub, createRandomHub, joinRandomHub) funnel into the private openHubConnection helper, which stores supplied metadata, builds a URL from getWS(host, tls) with id/hubMetadata/peerMetadata query params, and calls connectToZeroHub; the former joinIPHub entrypoint was removed because a client-supplied id can never resolve to an IP hub.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L1095-L1120",
+          "resource": "repo://client/src/zeroHub.ts#L1123-L1148",
           "version": "repo-lines-v1:sha256:0de34f8b7d331a62474f639f32749cee572d7fba730a5b9c9a6cd48464cb448b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZjNmQ0Mjg5ZjZlZmVkMTE2OWY4M2NjZDBiMDJjZWU1MmIwMjljZGVlODRkOTJhZGZjMmFlMjhhOGU1NWViM2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNmZDg5OWY2NmVmZjBiMDVjMzU5MjQwZTI5ZTg1MTk3NDIyNGY1Njg4N2NhZjNlZWIyMWRiMjMxMzVhYmE4YTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3OTI5ZTkxZTBmOTljM2U4MjVkZTY5YjQzNWZiNjQ4NGQxYjBhMWRmMmY0NjU2MWFiZjFhMjlmMDQxODhiODgifQ"
         },
         {
-          "resource": "repo://client/src/zeroHub.ts#L985-L1081",
-          "version": "repo-lines-v1:sha256:f843b8d695925b28c38a8c045dc57d585f0dcfcab9e00b8e975d00131ba52203:eyJzZWxlY3RlZExpbmVDb3VudCI6OTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZmNWRhNjEzMTFkZDc3NTQwMzNmNDM4OTE5MGU0Y2Q2M2JmMDk5YTk3NDRlMjk3M2E4YWI0MTcyOGE1NzBiZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAxMWNmYzA4ZmZlOTlkMDQ2ZDlkMTEwMjZkMTA5NTgxYWU0ODY0MDY5ZjEyZmMyYThhZDM0ZmJmNTE5MmUwM2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAxYWUyMzU0YTMyZmM4NTNhODNhOWI4MmI3M2VjMGI1ZTk3OGMzNmZkMTU3OTUyOTBkMTkzNjQ2ZDRiYzA0Y2QifQ"
+          "resource": "repo://client/src/zeroHub.ts#L985-L1121",
+          "version": "repo-lines-v1:sha256:cebe29605f88e17757453628649d7ced7d7ee877094aff35d97f4b293de94ef1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmZjVkYTYxMzExZGQ3NzU0MDMzZjQzODkxOTBlNGNkNjNiZjA5OWE5NzQ0ZTI5NzNhOGFiNDE3MjhhNTcwYmU4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4MzRlYmE2MDU4NDliOTFjZGM3YjUzNjM1YWQzZjE0NmQ0YWQ2ODJhZTcxYzQwY2E5ZTlmMjMwNDA0MDk3Mzk3IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwMTFjZmMwOGZmZTk5ZDA0NmQ5ZDExMDI2ZDEwOTU4MWFlNDg2NDA2OWYxMmZjMmE4YWQzNGZiZjUxOTJlMDNhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhNGE0MzAwZjYxOTYyMzVjMDFjNDNlYmZhNTg0ZGRjZTllZWIwNGRmNzM0OWU1MWRlM2NiNDFmODc1ZmIxNTE5In0"
         }
       ]
     },
@@ -218,7 +218,7 @@
       "evidence": [
         {
           "resource": "repo://client/README.md",
-          "version": "repo-file-v1:sha256:a949456799e12caf43d0928f40dc1f303d1d022c79195a123a4be8889ca0b8d5"
+          "version": "repo-file-v1:sha256:ae29b6e2faaa989fd4ab7f27169fc49509ebb36078eed7943eca68181b9e3cc9"
         },
         {
           "resource": "repo://client/src/zeroHub.ts#L147-L176",
@@ -247,6 +247,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-13T03:37:16.218Z"
+    "at": "2026-10-14T01:29:11.350Z"
   }
 }

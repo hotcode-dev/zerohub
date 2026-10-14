@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b362afd860ab81234607ae8a5326c413a960f636cd907ccceb6bc6553a782d44",
+  "pageVersion": "sha256:f4ddd3f1a18084897a61dab43192d82cb0ad09d1a949bed9a3b74df03efe0e3b",
   "claims": [
     {
       "id": "claim_29b96b61359846dd9149060c8b57d3a3",
@@ -66,13 +66,13 @@
         },
         {
           "resource": "repo://test/unit-harness/index.ts",
-          "version": "repo-file-v1:sha256:f38acc9828170a8d345ac6d6f5b2b36835a4f3fef7beae70d3d3da0ad1cb4b83"
+          "version": "repo-file-v1:sha256:43686dadf678577ec8bb43067d03885da044a8bc757b94f1ccfc596a3f96001d"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-13T03:37:16.218Z"
+    "at": "2026-10-14T01:29:11.350Z"
   }
 }

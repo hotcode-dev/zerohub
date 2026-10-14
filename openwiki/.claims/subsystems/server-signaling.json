@@ -1,14 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:55c46fefcfce817371d736d042e25e10b5b496ab89e2e55c5004e66cc5592a41",
+  "pageVersion": "sha256:f0790f2d7f061884aecce7b17d534e57511e27889aa2ff9a8b93e7aa719c9917",
   "claims": [
     {
       "id": "claim_1d82fd64055a4062925029c4ae4e6575",
-      "statement": "The server entrypoint loads config, initializes the logger, then constructs four independent ZeroHub instances (static, random, IP, permanent) and passes them to the handler, so each hub type has an isolated hub registry.",
+      "statement": "The server entrypoint loads config, initializes the logger, then constructs four independent ZeroHub instances (static, random, IP, permanent) via a shared newZeroHubOrPanic constructor that panics on construction failure, and passes them to the handler, so each hub type has an isolated hub registry.",
       "evidence": [
         {
-          "resource": "repo://server/cmd/server.go#L26-L50",
-          "version": "repo-lines-v1:sha256:4628bcfe3af583ef85187ededaa4e54fcf5128f79435736014b85dcc7602a03f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxODcxM2Y1NjFiODU2MTkxMzMwYzY4Njk3Njg2N2M1MzA2ZThiNzQzMjZjN2EyNzg5MTE1MDQ4Zjg5YTAyZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkZWEwZTRhYmQ0YzlkN2FkMjBiZDBmMjk5NDE1Njc4ZjYzMTZmNzg1NzRlYjBhMWQ0YzA0MjQ2MDZhZWI2ZDUifQ"
+          "resource": "repo://server/cmd/server.go#L26-L30",
+          "version": "repo-lines-v1:sha256:7309af0b4408d0c5b67a36cc99f9b613ede7ab7775472a46fa5b07186bde0719:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODQzYjQzOGRjMjEyZjdkZTE2NWFhOGZmZTZiODZiNWRiZDU3MzY4NjIxYTA5YjE1NjExNzRmY2MzNjk0NzhhMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzE4NzEzZjU2MWI4NTYxOTEzMzBjNjg2OTc2ODY3YzUzMDZlOGI3NDMyNmM3YTI3ODkxMTUwNDhmODlhMDJmNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWRkMjUwMTg5MTBjYjIzNTIwMWI3NGFiNGU0MTZlMjMzMmRkMDVkMDJhMTEzM2Q1NGE3OWIwYWQ0NzE3ODNlZCJ9"
+        },
+        {
+          "resource": "repo://server/cmd/server.go#L42-L50",
+          "version": "repo-lines-v1:sha256:de30767efb3115fe6498da80ed9a06712ef6a3e029bb7f939055017c649009fc:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmZmNWRiMTQwMjQxYWVhY2Y5MGNiMmU4ZTM2NzhhZTQ1MTIwYWZmNmZiODM5NWUwYzNkMmVmY2MwNTdjNjE3ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjI5NjQwNzljM2M1YzgxNTIwZWYzM2EyYjlkMmUxNWExYjg0ZDcyODBkYjg1OTBkY2Q2NTc0N2UzZTAxMmE0MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
         }
       ]
     },
@@ -44,11 +48,11 @@
     },
     {
       "id": "claim_973b6aefbd374b2793b3dbf5ba1a17ff",
-      "statement": "hub.AddPeer assigns a peer a monotonic numeric ID from an atomic counter, stores it in PeerStorage, broadcasts a PeerJoinedMessage to the other peers, and sends the new peer a HubInfoMessage.",
+      "statement": "hub.AddPeer assigns a peer a monotonic numeric ID from an atomic counter, marshals the join signal before registering the peer in PeerStorage (so a marshal failure is a no-op and never leaves a half-registered peer), then stores it in PeerStorage, broadcasts a PeerJoinedMessage to the other peers, and sends the new peer a HubInfoMessage.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/hub/hub.go#L68-L100",
-          "version": "repo-lines-v1:sha256:70a0f5a53cf2787a677b79b042633229ebe20dc6bf7e5d150ef234db464a20ff:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiMTQ5NDZhZDNiODJmNmJlMjE1NTg0MDRhNWY3MTQ2YTM4YTE3ZDRmNzUwZWQzZGZmNzI4Nzk3YTY4YWRhODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUxMzk4ZThlYWFlYTg3NzAyMTI4NjU5MTc0MTdkY2NkYWUyNTI3N2FjMWY1NGYzZmEwZjYwMWM2NWI0MjUwYTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4YzM3NWVjYWI5YjY2YmRiZWJkOWMzM2MyMjQ0MGY4OTI3NjFjMTVkNGE4OWQ2ZTY2M2E4ZDJmZjBjNzI4OTYifQ=="
+          "resource": "repo://server/pkg/hub/hub.go#L70-L107",
+          "version": "repo-lines-v1:sha256:d33adcb3c4e73afa73f1bb759ba76426f5d59d436c2ebdf0790d85e6ab4c7743:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3MjdiMzdhYmJhNjRhOTZlMTJkNmUxODIyNGNkMjJlM2M2ZGI4OWNjMmZlZThmMjI1MzhkM2VhNzkyZDIxYjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjMzZlY2Y2NmY3ODE0YWNjOWRjODE2OGE2ZDVjNWMwY2E2ZjhlMDAzODdiNzRiMjcyZTZlNzg1NTQzNzcwNzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAwZjFmMjEyNzYxMjFhY2UyNzJjNmYwNGM2NTU1ZDE2ZmUxYzk2YWVjNTRlMmI1YmY1YmUyZTExZGU0ZWRkNTcifQ"
         }
       ]
     },
@@ -163,6 +167,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-13T03:37:16.218Z"
+    "at": "2026-10-14T01:29:11.350Z"
   }
 }

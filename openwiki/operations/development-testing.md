@@ -22,16 +22,18 @@ sources:
     resource: repo://test/tests/unit-manual-offer-handling.spec.ts
   - id: openwiki-source-d5ba4efac3261c35045dc88c
     resource: repo://test/tests/unit-migration-redirect.spec.ts
+  - id: openwiki-source-28ab2f95a9b9d21c0110a864
+    resource: repo://test/tests/unit-permanent-hub-endpoints.spec.ts
   - id: openwiki-source-29851cc9f0534cab4748f6fb
     resource: repo://test/tests/unit-reconnect-peer-prune.spec.ts
   - id: openwiki-source-30c344265a55823115544978
     resource: repo://test/tests/unit-ws-replacement.spec.ts
   - id: openwiki-source-801ca2739d5984913a9ac0eb
     resource: repo://test/unit-harness/index.ts
-generated: { by: "hermes", at: "2026-10-13T03:37:16.218Z" }
+generated: { by: "hermes", at: "2026-10-14T01:29:11.350Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-13T03:37:16.218Z
+    at: 2026-10-14T01:29:11.350Z
 ---
 
 # Development & Testing
@@ -107,12 +109,12 @@ that instantiate the real `ZeroHubClient` (imported via relative path
   state, keyed by `componentId`. Tests drive it via `page.evaluate`.
 - **Specs** (`test/tests/`): `connnect.spec.ts` (create/join + peer status),
   `data-channel.spec.ts`, `concurrent.spec.ts`, `disconnect.spec.ts`,
-  `migrate.spec.ts`, `multihosts.spec.ts`, plus twelve `unit-*.spec.ts` specs
+  `migrate.spec.ts`, `multihosts.spec.ts`, plus thirteen `unit-*.spec.ts` specs
   (e.g. `unit-sfu-election.spec.ts`, `unit-reconnect-error.spec.ts`,
   `unit-malformed-metadata.spec.ts`, `unit-reconnect-peer-prune.spec.ts`,
   `unit-ice-candidate-send.spec.ts`, `unit-manual-offer-handling.spec.ts`,
   `unit-manual-answer-handling.spec.ts`, `unit-migration-redirect.spec.ts`,
-  `unit-ws-replacement.spec.ts`)
+  `unit-permanent-hub-endpoints.spec.ts`, `unit-ws-replacement.spec.ts`)
   that exercise client internals in a Playwright page through the unit
   harness (`test/unit-harness/index.ts`) with a mocked `RTCPeerConnection`
   and a `MockWebSocket` installed on `globalThis` (each mock socket is
@@ -124,7 +126,10 @@ that instantiate the real `ZeroHubClient` (imported via relative path
   ICE-candidate wait-and-send behavior, the manual offer/answer specs pin the
   `onOffer`/`onAnswer` manual-SDP paths, the migration-redirect spec pins the
   1001 close-reason host validation (and the self-redirect stop plus the
-  `host`/`hostIndex` update on a valid redirect), and the ws-replacement spec
+  `host`/`hostIndex` update on a valid redirect), the
+  permanent-hub-endpoints spec pins that `createPermanentHub`/`joinPermanentHub`
+  dial `/v1/permanent-hubs/create` and `/v1/permanent-hubs/join` with the
+  correct `id`/`hubMetadata`/`peerMetadata` query params, and the ws-replacement spec
   pins that a second entry-point call tears down the previous socket instead
   of leaking it.
 - **Dual servers**: `make e2e-test` spins up two signaling servers on 8080 and

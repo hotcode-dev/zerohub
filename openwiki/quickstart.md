@@ -23,7 +23,7 @@ sources:
 generated: { by: "hermes", at: "2026-10-13T01:29:56.745Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-13T03:37:16.218Z
+    at: 2026-10-14T01:29:11.350Z
 ---
 
 # ZeroHub Quickstart

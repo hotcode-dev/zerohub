@@ -5,7 +5,7 @@ description: End-to-end explanation of how ZeroHub's Go signaling server, TypeSc
 tags: [architecture, webrtc, signaling, server, client, protobuf]
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-13T03:37:16.218Z
+    at: 2026-10-14T01:29:11.350Z
 sources:
   - id: openwiki-source-22df8f9ebcff0eeb4e4ed38f
     resource: repo://client/src/topology/meshTopology.ts
@@ -27,7 +27,7 @@ sources:
     resource: repo://server/pkg/storage/storage.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-10-11T02:02:37.375Z" }
+generated: { by: "hermes", at: "2026-10-14T01:29:11.350Z" }
 ---
 
 # Architecture Overview
@@ -105,7 +105,11 @@ All frames on the WebSocket are protobuf. The server sends `ServerMessage`
 When a peer joins, the hub assigns it a monotonically increasing numeric ID,
 broadcasts a `PeerJoinedMessage` to existing peers, and sends the newcomer a
 `HubInfoMessage` carrying its own ID, the hub's metadata, and the roster of
-existing peers. The client materializes `Peer` objects for the roster, each
+existing peers. The join signal is marshaled before the peer is registered in
+storage, so a marshal failure is a no-op: no storage entry, no broadcast, and
+no half-registered peer is ever left without its `HubInfoMessage`.
+
+The client materializes `Peer` objects for the roster, each
 starting at `PeerStatus.Pending`.
 
 ### 4. SDP offer/answer over the socket
