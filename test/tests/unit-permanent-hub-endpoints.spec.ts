@@ -3,19 +3,26 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
- * Coverage for the permanent-hub entry points `createPermanentHub` /
- * `joinPermanentHub` on `ZeroHubClient`.
+ * Coverage for the `joinPermanentHub` entry point on `ZeroHubClient`.
  *
- * The server implements permanent hubs (`/v1/permanent-hubs/create` and
- * `/v1/permanent-hubs/join`; see `server/pkg/handler/handler.go`) — hubs
- * that never expire, used for always-on collaboration rooms — but the
- * client SDK had no public methods reaching them, so documented
- * permanent-hub mode was unreachable through the public API.
+ * The server implements permanent hubs — hubs that never expire, used for
+ * always-on collaboration rooms — at `/v1/permanent-hubs/join` (WebSocket)
+ * and `/v1/permanent-hubs/create` (plain HTTP JSON, admin-gated via the
+ * `Authorization` header; see `server/pkg/handler/handler.go` and
+ * `create_hub_permanent.go`).
  *
- * These specs pin the URL each entry point must dial (path, `id` query
- * param, and `hubMetadata`/`peerMetadata` serialization), mirroring the
- * static-hub pair (`createHub` → `/v1/hubs/create`, `joinHub` →
- * `/v1/hubs/join`).
+ * Creation is deliberately NOT exposed on the SDK: the browser WebSocket
+ * API cannot send custom headers, so `new WebSocket()` could never carry
+ * the `Authorization` header the create endpoint requires (and every
+ * signaling endpoint on the server upgrades to WebSocket, so a browser
+ * client hitting the JSON create endpoint just gets a failed handshake).
+ * Permanent hubs are therefore created out-of-band with an HTTP client
+ * (curl / Node fetch) that can set the header. `joinPermanentHub` is the
+ * public SDK entry point.
+ *
+ * These specs pin the URL the entry point must dial (path, `id` query
+ * param, and `peerMetadata` serialization), mirroring the static-hub pair
+ * (`createHub` → `/v1/hubs/create`, `joinHub` → `/v1/hubs/join`).
  *
  * Runs without a server or real WebRTC: the client is bundled with the
  * unit harness (mocked `WebSocket`, mocked `RTCPeerConnection`, no-op
@@ -25,12 +32,6 @@ import { fileURLToPath } from "node:url";
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
 type Harness = {
   createClient(): number;
-  createPermanentHub(
-    id: number,
-    hubId: string,
-    peerMetadata?: object,
-    hubMetadata?: object
-  ): void;
   joinPermanentHub(id: number, hubId: string, peerMetadata?: object): void;
   getLastSocketUrl(id: number): string | null;
 };
@@ -56,48 +57,6 @@ function unitHarnessPath(): string {
 
 /** `createClient` builds against `localhost:1` with the default `tls: true`. */
 const HOST = "localhost:1";
-
-test("createPermanentHub dials /v1/permanent-hubs/create with the hub id", async ({
-  page,
-}) => {
-  await prepareUnitHarnessPage(page);
-  const id = await page.evaluate(() => ZeroHubUnitHarness.createClient());
-
-  await page.evaluate(
-    (clientId) => ZeroHubUnitHarness.createPermanentHub(clientId, "room"),
-    id
-  );
-
-  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
-    `wss://${HOST}/v1/permanent-hubs/create?id=room`
-  );
-});
-
-test("createPermanentHub forwards peerMetadata and hubMetadata as query params", async ({
-  page,
-}) => {
-  await prepareUnitHarnessPage(page);
-  const id = await page.evaluate(() => ZeroHubUnitHarness.createClient());
-
-  await page.evaluate(
-    (clientId) =>
-      ZeroHubUnitHarness.createPermanentHub(
-        clientId,
-        "room",
-        { name: "Alice" },
-        { theme: "dark" }
-      ),
-    id
-  );
-
-  const expected =
-    `wss://${HOST}/v1/permanent-hubs/create?id=room` +
-    `&hubMetadata=${encodeURIComponent(JSON.stringify({ theme: "dark" }))}` +
-    `&peerMetadata=${encodeURIComponent(JSON.stringify({ name: "Alice" }))}`;
-  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
-    expected
-  );
-});
 
 test("joinPermanentHub dials /v1/permanent-hubs/join with the hub id", async ({
   page,

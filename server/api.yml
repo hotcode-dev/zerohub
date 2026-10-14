@@ -148,6 +148,35 @@ channels:
       ws:
         method: GET
 
+  permanentHubsCreate:
+    address: /v1/permanent-hubs/create
+    description: |
+      Create a permanent (never-expires) hub.
+
+      Unlike every other create/join endpoint, this is a plain HTTP admin
+      endpoint, NOT a WebSocket signaling channel. It requires the
+      `Authorization` header (the base64 encoding of the server's
+      APP_CLIENT_SECRET) and returns a single JSON object describing the
+      created hub (HTTP 200) — it does not upgrade to WebSocket and adds
+      no peer.
+
+      Because a browser `WebSocket` handshake cannot carry custom headers,
+      this endpoint is unreachable from the SDK and is instead called
+      out-of-band with an HTTP client (curl, fetch from a Node.js
+      process) that can set the `Authorization` header. After creating a
+      hub this way, clients connect to it with `/v1/permanent-hubs/join`.
+
+      Query params:
+      - id (required): hub id
+      - hubMetadata (optional): stringified hub metadata
+    messages:
+      createdHub:
+        $ref: '#/components/messages/PermanentHubCreated'
+    bindings:
+      http:
+        method: GET
+        type: request
+
 operations:
   clientSendOnHubsCreate:
     action: send
@@ -218,6 +247,24 @@ operations:
       $ref: '#/channels/randomHubsJoin'
     messages:
       - $ref: '#/channels/randomHubsJoin/messages/serverMessage'
+
+  # Plain-HTTP admin endpoint (not a WebSocket channel): the admin tool
+  # issues the request (the query params `id`/`hubMetadata` and the
+  # `Authorization` header are carried by the HTTP request itself) and
+  # receives a single JSON `createdHub` response.
+  adminSendOnPermanentHubsCreate:
+    action: send
+    channel:
+      $ref: '#/channels/permanentHubsCreate'
+    messages:
+      - $ref: '#/channels/permanentHubsCreate/messages/createdHub'
+
+  adminReceiveOnPermanentHubsCreate:
+    action: receive
+    channel:
+      $ref: '#/channels/permanentHubsCreate'
+    messages:
+      - $ref: '#/channels/permanentHubsCreate/messages/createdHub'
 
   clientSendOnIpHubsJoinOrCreate:
     action: send
@@ -291,7 +338,30 @@ components:
           - $ref: '#/components/schemas/ServerIceCandidateVariant'
       x-protobuf-message: proto.zerohub.v1.ServerMessage
 
+    PermanentHubCreated:
+      name: PermanentHubCreated
+      title: Permanent hub creation response
+      summary: JSON body returned by the admin-gated permanent-hub create endpoint
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PermanentHubCreated'
+
   schemas:
+    PermanentHubCreated:
+      type: object
+      required: [id, createdAt, metadata, isPermanent]
+      description: JSON body of the /v1/permanent-hubs/create response (the created hub).
+      properties:
+        id:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        metadata:
+          type: string
+        isPermanent:
+          type: boolean
+
     ClientSendOfferVariant:
       type: object
       required: [send_offer_message]

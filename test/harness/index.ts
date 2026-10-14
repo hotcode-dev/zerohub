@@ -16,6 +16,7 @@ type BaseOptions = {
 
 type CreateHubOptions = BaseOptions;
 type JoinHubOptions = BaseOptions & { hubId: string };
+type JoinPermanentHubOptions = BaseOptions & { hubId: string };
 type DisconnectOptions = Pick<BaseOptions, "componentId">;
 type ReuseCreateHubOptions = Pick<BaseOptions, "componentId">;
 
@@ -330,6 +331,65 @@ function joinHub(options: JoinHubOptions) {
   registerInstance(componentId, zeroHub, container);
 }
 
+/**
+ * Joins an existing permanent hub via the public `joinPermanentHub` entry
+ * point. Used by the permanent-hub e2e spec to prove the
+ * `/v1/permanent-hubs/join` WebSocket upgrade actually establishes a live
+ * signaling connection (the hub is created out-of-band by the spec via the
+ * admin HTTP endpoint, since the SDK cannot send the `Authorization` header).
+ */
+function joinPermanentHub(options: JoinPermanentHubOptions) {
+  const { componentId, zeroHubHosts, testName, hubId } = options;
+  const root = ensureRoot();
+  const container = document.createElement("section");
+  container.dataset["componentId"] = componentId;
+
+  container.appendChild(createLabel("Join Permanent Hub"));
+  if (testName) {
+    container.appendChild(createLabel(`Test Name: ${testName}`));
+  }
+  container.appendChild(createLabel(`Hub ID: ${hubId}`));
+  container.appendChild(createLabel(`Component ID: ${componentId}`));
+
+  const hubIdDiv = createDataDiv(`join-permanent-hub-id-${componentId}`);
+  const peerStatusDiv = createDataDiv(
+    `join-permanent-peer-status-${componentId}`
+  );
+  container.appendChild(hubIdDiv);
+  container.appendChild(peerStatusDiv);
+
+  root.appendChild(container);
+
+  const zeroHub = new ZeroHubClient<PeerMetadata, Record<string, unknown>>(
+    zeroHubHosts,
+    {
+      logLevel: LogLevel.Debug,
+      tls: false,
+      waitIceCandidatesTimeout: 5000,
+      dataChannelConfig: {
+        numberOfChannels: 1,
+        rtcDataChannelInit: { ordered: true },
+        onDataChannel: (_peer, dataChannel) => {
+          watchDataChannel(componentId, container, dataChannel);
+        },
+      },
+    }
+  );
+
+  zeroHub.onHubInfo = (hubInfo) => {
+    hubIdDiv.textContent = hubInfo.id;
+  };
+
+  zeroHub.onPeerStatusChange = (peer) => {
+    peerStatusDiv.textContent = peer.status;
+    logPeerStatus(componentId, peer);
+  };
+
+  zeroHub.joinPermanentHub(hubId, { name: "test" });
+
+  registerInstance(componentId, zeroHub, container);
+}
+
 function disconnect(options: DisconnectOptions) {
   const { componentId } = options;
   const instance = instances.get(componentId);
@@ -387,6 +447,7 @@ function reuseCreateHub(options: ReuseCreateHubOptions) {
 const ZeroHubHarness = {
   createHub,
   joinHub,
+  joinPermanentHub,
   disconnect,
   reuseCreateHub,
   getDataChannelStatus,
