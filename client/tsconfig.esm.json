@@ -4,5 +4,6 @@
     "outDir": "./dist/esm",
     "module": "ESNext",
     "moduleResolution": "Bundler"
-  }
+  },
+  "exclude": ["**/*.test.ts"]
 }
