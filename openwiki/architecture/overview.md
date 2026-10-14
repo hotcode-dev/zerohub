@@ -5,7 +5,7 @@ description: End-to-end explanation of how ZeroHub's Go signaling server, TypeSc
 tags: [architecture, webrtc, signaling, server, client, protobuf]
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-14T01:29:11.350Z
+    at: 2026-10-14T09:24:33.856Z
 sources:
   - id: openwiki-source-22df8f9ebcff0eeb4e4ed38f
     resource: repo://client/src/topology/meshTopology.ts
