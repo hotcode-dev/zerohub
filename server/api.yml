@@ -201,6 +201,13 @@ channels:
       Query params:
       - id (required): hub id
       - hubMetadata (optional): stringified hub metadata
+
+      Hub ids are not globally unique across modes: each hub type (static,
+      random, IP, permanent) keeps its own storage. If a hub with the same
+      id already exists in the static or random namespace on this server,
+      this endpoint returns 409 Conflict with the body
+      `{"error": "hub id collides with another hub type"}` instead of
+      creating a shadow hub under the same id.
     messages:
       createdHub:
         $ref: '#/components/messages/PermanentHubCreated'
