@@ -125,6 +125,14 @@ func TestCreateHubPermanentConcurrent(t *testing.T) {
 		MaxTimes(workers)
 
 	h := newTestHandler()
+	// The cross-mode collision guard probes the static and random
+	// instances before touching the permanent one; both are empty here.
+	staticMock := zerohub.NewMockZeroHub(ctrl)
+	staticMock.EXPECT().GetHubById(gomock.Any()).Return(nil).MaxTimes(workers)
+	randomMock := zerohub.NewMockZeroHub(ctrl)
+	randomMock.EXPECT().GetHubById(gomock.Any()).Return(nil).MaxTimes(workers)
+	h.zeroHub = staticMock
+	h.zeroHubRandom = randomMock
 	h.zeroHubPermanent = zerohubMock
 
 	var wg sync.WaitGroup
@@ -159,6 +167,14 @@ func TestCreateHubPermanentAlreadyExists(t *testing.T) {
 		MaxTimes(1)
 
 	h := newTestHandler()
+	// The cross-mode collision guard probes the static and random
+	// instances before touching the permanent one; both are empty here.
+	staticMock := zerohub.NewMockZeroHub(ctrl)
+	staticMock.EXPECT().GetHubById(gomock.Any()).Return(nil).MaxTimes(1)
+	randomMock := zerohub.NewMockZeroHub(ctrl)
+	randomMock.EXPECT().GetHubById(gomock.Any()).Return(nil).MaxTimes(1)
+	h.zeroHub = staticMock
+	h.zeroHubRandom = randomMock
 	h.zeroHubPermanent = zerohubMock
 
 	ctx := &fasthttp.RequestCtx{}
@@ -173,5 +189,63 @@ func TestCreateHubPermanentAlreadyExists(t *testing.T) {
 	}
 	if body := string(ctx.Response.Body()); !strings.Contains(body, "hub id already exists") {
 		t.Errorf("body = %q, want it to contain the already-exists error", body)
+	}
+}
+
+// TestCreateHubPermanentCollidesWithOtherMode pins the cross-mode
+// collision guard: when the static or random instance already holds a
+// hub with the requested id, the permanent create must answer 409 with
+// the collision error instead of silently minting a shadow hub in the
+// permanent namespace.
+func TestCreateHubPermanentCollidesWithOtherMode(t *testing.T) {
+	const hubId = "hot-hub"
+
+	colliding, err := hub.NewHub(hubId, `{"name":"test"}`, nil, false)
+	if err != nil {
+		t.Fatalf("NewHub: %v", err)
+	}
+
+	tests := []struct {
+		name       string
+		seedStatic bool
+	}{
+		{"static", true},
+		{"random", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			staticMock := zerohub.NewMockZeroHub(ctrl)
+			randomMock := zerohub.NewMockZeroHub(ctrl)
+			permanentMock := zerohub.NewMockZeroHub(ctrl)
+
+			if tc.seedStatic {
+				staticMock.EXPECT().GetHubById(hubId).Return(colliding)
+				// || short-circuits: the random probe never runs.
+			} else {
+				staticMock.EXPECT().GetHubById(hubId).Return(nil)
+				randomMock.EXPECT().GetHubById(hubId).Return(colliding)
+			}
+			// No CreateHubIfAbsent expectation: the collision must be
+			// rejected before the permanent instance is touched.
+
+			h := newTestHandler()
+			h.zeroHub = staticMock
+			h.zeroHubRandom = randomMock
+			h.zeroHubPermanent = permanentMock
+
+			ctx := newRequestCtx("http://127.0.0.1/v1/permanent-hubs/create?id=" + hubId)
+			ctx.Request.Header.Set("Authorization", adminAuthHeader())
+
+			if err := h.CreateHubPermanent(ctx); err != nil {
+				t.Fatalf("CreateHubPermanent returned unexpected error: %v", err)
+			}
+			if code := ctx.Response.StatusCode(); code != fasthttp.StatusConflict {
+				t.Errorf("status = %d, want %d", code, fasthttp.StatusConflict)
+			}
+			if body := string(ctx.Response.Body()); !strings.Contains(body, "hub id collides with another hub type") {
+				t.Errorf("body = %q, want it to contain the collision error", body)
+			}
+		})
 	}
 }

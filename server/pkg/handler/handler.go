@@ -28,7 +28,7 @@
 //	/v1/random-hubs/get                        GET        Random      Get hub metadata
 //	/v1/ip-hubs/join-or-create                 GET        IP          Join or create an IP-keyed hub
 //	/v1/permanent-hubs/join                    GET        Permanent   Join a permanent hub
-//	/v1/permanent-hubs/create                  GET        Permanent   Create a permanent hub
+//	/v1/permanent-hubs/create                  GET        Permanent   Create a permanent hub (cross-mode collision-checked against static/random: 409 if the id exists in another mode's storage)
 //
 // All non-status endpoints require an HTTP GET with a query parameter `id`
 // (or `peerMetadata` / `hubMetadata`). After the HTTP handshake, the
