@@ -564,3 +564,65 @@ func TestHandleMessageRelay(t *testing.T) {
 		t.Fatalf("answer sdp: want %q, got %q", "answer-sdp", target.answerSdp)
 	}
 }
+
+// TestHandleMessageSelfTargetRelay verifies that a SendOfferMessage /
+// SendAnswerMessage whose target equals the sender's own peer ID is dropped:
+// the sender must not receive its own SDP back.
+func TestHandleMessageSelfTargetRelay(t *testing.T) {
+	t.Parallel()
+
+	h := &hub{
+		Id:          "id",
+		CreatedAt:   time.Now(),
+		Metadata:    "metadata",
+		IsPermanent: true,
+		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	}
+
+	serverConn, clientConn := newTestConnPair(t)
+	sender := &fakePeer{id: "1", conn: serverConn}
+	h.PeerStorage.Add("1", sender)
+
+	offer := &pb.ClientMessage{Message: &pb.ClientMessage_SendOfferMessage{SendOfferMessage: &pb.SendOfferMessage{
+		AnswerPeerId: "1", // self-target
+		OfferSdp:     "offer-sdp",
+	}}}
+	offerData, err := proto.Marshal(offer)
+	if err != nil {
+		t.Fatalf("marshal offer: %v", err)
+	}
+	if err := clientConn.WriteMessage(websocket.BinaryMessage, offerData); err != nil {
+		t.Fatalf("write offer: %v", err)
+	}
+
+	answer := &pb.ClientMessage{Message: &pb.ClientMessage_SendAnswerMessage{SendAnswerMessage: &pb.SendAnswerMessage{
+		OfferPeerId: "1", // self-target
+		AnswerSdp:   "answer-sdp",
+	}}}
+	answerData, err := proto.Marshal(answer)
+	if err != nil {
+		t.Fatalf("marshal answer: %v", err)
+	}
+	if err := clientConn.WriteMessage(websocket.BinaryMessage, answerData); err != nil {
+		t.Fatalf("write answer: %v", err)
+	}
+
+	// HandleMessage processes both frames, then blocks on the next read until
+	// we close the conn from the client side.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		h.HandleMessage(sender)
+	}()
+	_ = clientConn.Close()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("HandleMessage did not return after conn close")
+	}
+
+	if sender.offerPeer != "" || sender.offerSdp != "" || sender.answerPeer != "" || sender.answerSdp != "" {
+		t.Fatalf("sender received its own SDP: offer=%q/%q answer=%q/%q",
+			sender.offerPeer, sender.offerSdp, sender.answerPeer, sender.answerSdp)
+	}
+}
