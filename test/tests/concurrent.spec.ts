@@ -108,14 +108,14 @@ test("multiple concurrent hub creation and joining", async ({ page }) => {
         { componentId: creatorId, zeroHubHost, index: i }
       );
 
-      // Verify hub creation success
+      // Verify hub creation success: the harness creates the hub with the
+      // componentId as the static hub id, which /v1/hubs/create returns
+      // verbatim.
       const hubIdLoc = page
         .getByTestId(getCreateHubTestId(creatorId))
         .first();
 
-      await expect(hubIdLoc).toHaveText(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-      );
+      await expect(hubIdLoc).toHaveText(creatorId);
 
       const hubId = (await hubIdLoc.textContent()) || "";
       hubIds.push(hubId);

@@ -328,7 +328,10 @@ function createHub(options: CreateHubOptions) {
     hubIdTestId: `create-hub-id-${componentId}`,
     peerStatusTestId: `create-peer-status-${componentId}`,
     invoke: (zeroHub) => {
-      zeroHub.createRandomHub({ name: "test" });
+      // The hub id is the componentId: a unique, spec-provided id that the
+      // `/v1/hubs/create` handler returns verbatim, so the create hub id can
+      // be asserted against a known value instead of a uuid shape.
+      zeroHub.createHub(componentId, { name: "test" });
     },
   });
 }
@@ -344,7 +347,23 @@ function joinHub(options: JoinHubOptions) {
     hubIdTestId: `join-hub-id-${componentId}`,
     peerStatusTestId: `join-peer-status-${componentId}`,
     invoke: (zeroHub) => {
-      zeroHub.joinRandomHub(hubId, { name: "test" });
+      zeroHub.joinHub(hubId, { name: "test" });
+    },
+  });
+}
+
+function joinOrCreateHub(options: JoinHubOptions) {
+  const { componentId, zeroHubHosts, testName, hubId } = options;
+  buildHubClient({
+    componentId,
+    zeroHubHosts,
+    testName,
+    label: "Join or Create Hub",
+    hubIdLabel: `Hub ID: ${hubId}`,
+    hubIdTestId: `join-or-create-hub-id-${componentId}`,
+    peerStatusTestId: `join-or-create-peer-status-${componentId}`,
+    invoke: (zeroHub) => {
+      zeroHub.joinOrCreateHub(hubId, { name: "test" });
     },
   });
 }
@@ -429,6 +448,7 @@ function reuseCreateHub(options: ReuseCreateHubOptions) {
 const ZeroHubHarness = {
   createHub,
   joinHub,
+  joinOrCreateHub,
   joinPermanentHub,
   disconnect,
   reuseCreateHub,
