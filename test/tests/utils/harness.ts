@@ -34,6 +34,14 @@ export function getJoinPermanentHubTestId(componentId: string) {
   return `join-permanent-hub-id-${componentId}`;
 }
 
+export function getJoinOrCreateHubTestId(componentId: string) {
+  return `join-or-create-hub-id-${componentId}`;
+}
+
+export function getJoinOrCreatePeerStatusTestId(componentId: string) {
+  return `join-or-create-peer-status-${componentId}`;
+}
+
 export function getJoinPermanentPeerStatusTestId(componentId: string) {
   return `join-permanent-peer-status-${componentId}`;
 }

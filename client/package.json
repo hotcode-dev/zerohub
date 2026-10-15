@@ -39,7 +39,8 @@
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.{ts,js,json,md}\" \"!src/proto/**\"",
     "format:check": "prettier --check \"src/**/*.{ts,js,json,md}\" \"!src/proto/**\"",
-    "check": "npm run lint && npm run format:check && npm run tsc",
+    "test": "vitest run",
+    "check": "npm run lint && npm run format:check && npm run tsc && npm run test",
     "fix": "npm run lint:fix && npm run format"
   },
   "repository": {
@@ -73,7 +74,8 @@
     "typedoc": "^0.28.15",
     "typedoc-plugin-markdown": "^4.9.0",
     "typescript": "^5.6.3",
-    "typescript-eslint": "^8.44.1"
+    "typescript-eslint": "^8.44.1",
+    "vitest": "^5.0.4"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.10.1"

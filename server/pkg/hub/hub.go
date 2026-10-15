@@ -196,9 +196,19 @@ func (h *hub) HandleMessage(p peer.Peer) {
 
 		switch {
 		case clientMessage.GetSendOfferMessage() != nil:
-			h.SendOfferToPeer(clientMessage.GetSendOfferMessage().AnswerPeerId, p.GetId(), clientMessage.GetSendOfferMessage().OfferSdp)
+			m := clientMessage.GetSendOfferMessage()
+			if m.AnswerPeerId != p.GetId() {
+				h.SendOfferToPeer(m.AnswerPeerId, p.GetId(), m.OfferSdp)
+			} else {
+				log.Warn().Msgf("ignoring self-targeted send-offer from peer %s", p.GetId())
+			}
 		case clientMessage.GetSendAnswerMessage() != nil:
-			h.SendAnswerToPeer(clientMessage.GetSendAnswerMessage().OfferPeerId, p.GetId(), clientMessage.GetSendAnswerMessage().AnswerSdp)
+			m := clientMessage.GetSendAnswerMessage()
+			if m.OfferPeerId != p.GetId() {
+				h.SendAnswerToPeer(m.OfferPeerId, p.GetId(), m.AnswerSdp)
+			} else {
+				log.Warn().Msgf("ignoring self-targeted send-answer from peer %s", p.GetId())
+			}
 		default:
 			log.Error().Msg("invalid client message type")
 		}
