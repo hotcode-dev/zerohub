@@ -84,6 +84,22 @@ channels:
       ws:
         method: GET
 
+  hubsGet:
+    address: /v1/hubs/get
+    description: |
+      Get the metadata (peers, creation time, hub metadata) of an existing
+      static hub.
+      Query params:
+      - id (required): hub id
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
   randomHubsCreate:
     address: /v1/random-hubs/create
     description: |
@@ -107,6 +123,22 @@ channels:
       Query params:
       - id (required): hub id
       - peerMetadata (optional): stringified peer metadata
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
+  randomHubsGet:
+    address: /v1/random-hubs/get
+    description: |
+      Get the metadata (peers, creation time, hub metadata) of an existing
+      random hub.
+      Query params:
+      - id (required): hub id
     messages:
       clientMessage:
         $ref: '#/components/messages/ClientMessage'
@@ -206,6 +238,20 @@ operations:
     messages:
       - $ref: '#/channels/hubsJoin/messages/serverMessage'
 
+  clientSendOnHubsGet:
+    action: send
+    channel:
+      $ref: '#/channels/hubsGet'
+    messages:
+      - $ref: '#/channels/hubsGet/messages/clientMessage'
+
+  clientReceiveOnHubsGet:
+    action: receive
+    channel:
+      $ref: '#/channels/hubsGet'
+    messages:
+      - $ref: '#/channels/hubsGet/messages/serverMessage'
+
   clientSendOnHubsJoinOrCreate:
     action: send
     channel:
@@ -248,6 +294,20 @@ operations:
     messages:
       - $ref: '#/channels/randomHubsJoin/messages/serverMessage'
 
+  clientSendOnRandomHubsGet:
+    action: send
+    channel:
+      $ref: '#/channels/randomHubsGet'
+    messages:
+      - $ref: '#/channels/randomHubsGet/messages/clientMessage'
+
+  clientReceiveOnRandomHubsGet:
+    action: receive
+    channel:
+      $ref: '#/channels/randomHubsGet'
+    messages:
+      - $ref: '#/channels/randomHubsGet/messages/serverMessage'
+
   # Plain-HTTP admin endpoint (not a WebSocket channel): the admin tool
   # issues the request (the query params `id`/`hubMetadata` and the
   # `Authorization` header are carried by the HTTP request itself) and
@@ -279,20 +339,6 @@ operations:
       $ref: '#/channels/ipHubsJoinOrCreate'
     messages:
       - $ref: '#/channels/ipHubsJoinOrCreate/messages/serverMessage'
-
-  clientSendOnIpHubsJoin:
-    action: send
-    channel:
-      $ref: '#/channels/ipHubsJoin'
-    messages:
-      - $ref: '#/channels/ipHubsJoin/messages/clientMessage'
-
-  clientReceiveOnIpHubsJoin:
-    action: receive
-    channel:
-      $ref: '#/channels/ipHubsJoin'
-    messages:
-      - $ref: '#/channels/ipHubsJoin/messages/serverMessage'
 
   clientSendOnPermanentHubsJoin:
     action: send
