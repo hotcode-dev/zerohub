@@ -15,17 +15,21 @@ import (
 // concurrent requests for the same ID never orphan a hub: exactly one wins
 // and the rest get 409.
 func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
-	if h.isMigrating.Load() {
-		return h.ForwardMigrate(ctx)
-	}
-
+	// Auth runs before the migration check so an unauthenticated request is
+	// answered with 401 instead of a WebSocket close whose reason is the
+	// internal backup host. No state is mutated between the two checks, so
+	// this ordering is safe.
 	if err := h.CheckAdminAuth(ctx); err != nil {
 		return err
 	}
 
+	if h.isMigrating.Load() {
+		return h.ForwardMigrate(ctx)
+	}
+
 	hubId := string(ctx.QueryArgs().Peek("id"))
-	// Auth runs first (401 for unauthenticated requests wins over 400 for
-	// a bad id), then the ID is validated before any hub-state access.
+	// The 401 for unauthenticated requests wins over 400 for a bad id, then
+	// the ID is validated before any hub-state access.
 	if !validHubId(hubId) {
 		return h.rejectInvalidHubIdParam(ctx)
 	}
