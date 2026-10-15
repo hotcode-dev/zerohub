@@ -931,7 +931,59 @@ const ZeroHubUnitHarness = {
   },
 
   /**
-   * The URL string of the most recently created mock socket for this
+   * Replaces the live socket's `send` with a decoder that records encoded
+   * `ClientMessage`s in the per-client `sends` buffer (the same buffer
+   * `getSends` / `drainSends` read). Use AFTER a reconnect has replaced
+   * `client.ws` with a fresh `MockWebSocket`, when `stubSocket`'s capture
+   * no longer wraps the live socket. No-op if the live socket is not a
+   * `MockWebSocket` (e.g. already a capturing stub).
+   */
+  captureSocket(id: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    if (!entry.sends) {
+      entry.sends = [];
+    }
+    const ws = entry.client.ws as unknown as MockWebSocket | undefined;
+    if (!ws || typeof ws.send !== "function") {
+      throw new Error(`client ${id} has no live socket to capture`);
+    }
+    ws.send = function (data: unknown) {
+      const msg = ClientMessage.decode(data as Uint8Array);
+      if (msg.sendOfferMessage) {
+        entry.sends?.push({
+          kind: "offer",
+          peerId: msg.sendOfferMessage.answerPeerId,
+          sdp: msg.sendOfferMessage.offerSdp,
+        });
+      }
+      if (msg.sendAnswerMessage) {
+        entry.sends?.push({
+          kind: "answer",
+          peerId: msg.sendAnswerMessage.offerPeerId,
+          sdp: msg.sendAnswerMessage.answerSdp,
+        });
+      }
+    };
+  },
+
+  /**
+   * Number of mock `WebSocket` instances this client opened since creation
+   * (each `connectToZeroHub` call opens exactly one) — lets specs assert a
+   * reconnect actually dialed a new socket.
+   */
+  getSocketCount(id: number): number {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return wsInstances.filter((ws) => ws.__instanceId > entry.createdAtWsSeq)
+      .length;
+  },
+
+  /** The URL string of the most recently created mock socket for this
    * client, or null if the client opened none yet.
    */
   getLastSocketUrl(id: number): string | null {

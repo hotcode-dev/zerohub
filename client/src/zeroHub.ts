@@ -634,13 +634,21 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * @param url - The URL of the ZeroHub to connect to
    */
   public connectToZeroHub(url: URL) {
-    // Starting a fresh connection resets the manual-disconnect flag and drops
-    // any stale ICE timeout handles, so a client that previously called
-    // disconnect() can be reused: a new createHub()/joinHub() (or any other
-    // connection entry point) begins a clean, live connection instead of a
-    // dead socket that still throws from sendZeroHubMessage().
+    // Starting a fresh connection resets the manual-disconnect flag, so a
+    // client that previously called disconnect() can be reused: a new
+    // createHub()/joinHub() (or any other connection entry point) begins a
+    // clean, live connection instead of a dead socket that still throws from
+    // sendZeroHubMessage().
+    //
+    // NOTE: pending ICE candidate timeouts are intentionally NOT reset here.
+    // disconnect() already clears them when the user manually disconnects, so
+    // that path is covered. Preserving them across a reconnect keeps an
+    // in-flight offer/answer send alive: the underlying RTCPeerConnection is
+    // independent of the WebSocket, and its localDescription is already set,
+    // so the armed timeout fires on the new socket (sendOnce uses this.ws).
+    // The isSent guard in armSendOnIceReady() prevents double-sending if the
+    // SDP already went out on the old socket.
     this.isDisconnected = false;
-    this.iceTimeouts = {};
 
     // Tear down a socket left open by a previous connection (e.g. a second
     // entry-point call without disconnect()). Nulling the handlers before
