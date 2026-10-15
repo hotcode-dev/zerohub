@@ -15,7 +15,7 @@ server-serve:
 	cd server && APP_CLIENT_SECRET=client_secret go run ./cmd/server.go
 
 server-serve-2:
-	cd server && APP_PORT=8081 go run ./cmd/server.go
+	cd server && APP_PORT=8081 APP_CLIENT_SECRET=client_secret go run ./cmd/server.go
 
 server-mock:
 	# Reflex mode read ZeroHub mock
@@ -45,9 +45,11 @@ e2e-test:
 	( make server-serve-2 ) & \
 	SERVER2_PID=$$!; \
 	sleep 3; \
-	( cd ./test && PWDEBUG=console npm run test ) || true; \
+	( cd ./test && npm run test ); \
+	E2E_STATUS=$$?; \
 	kill $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; \
 	wait $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; \
+	exit $$E2E_STATUS; \
 
 link-agent:
 	ln AGENTS.md .github/copilot-instructions.md
