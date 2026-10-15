@@ -232,20 +232,57 @@ function registerInstance(
   instances.set(componentId, { client, container });
 }
 
-function createHub(options: CreateHubOptions) {
-  const { componentId, zeroHubHosts, testName } = options;
+type BuildHubClientOptions = {
+  componentId: string;
+  zeroHubHosts: string[];
+  // `| undefined` so callers may pass a destructured `testName` under
+  // `exactOptionalPropertyTypes`.
+  testName?: string | undefined;
+  /** Section title label, e.g. `"Create Hub"` / `"Join Hub"`. */
+  label: string;
+  /** Optional `Hub ID: ...` label shown when joining a specific hub. */
+  hubIdLabel?: string;
+  /** data-testid of the hub-id div. */
+  hubIdTestId: string;
+  /** data-testid of the peer-status div. */
+  peerStatusTestId: string;
+  /** Entry-point call (`createRandomHub` / `joinRandomHub` / `joinPermanentHub`). */
+  invoke: (zeroHub: ZeroHubClient<PeerMetadata, Record<string, unknown>>) => void;
+};
+
+/**
+ * Shared scaffolding for `createHub`, `joinHub` and `joinPermanentHub`:
+ * builds the DOM section (labels + data divs), constructs a
+ * `ZeroHubClient` with the harness's standard config, wires the
+ * `onHubInfo` / `onPeerStatusChange` handlers, runs the per-entry-point
+ * `invoke`, and registers the instance.
+ */
+function buildHubClient(options: BuildHubClientOptions) {
+  const {
+    componentId,
+    zeroHubHosts,
+    testName,
+    label,
+    hubIdLabel,
+    hubIdTestId,
+    peerStatusTestId,
+    invoke,
+  } = options;
   const root = ensureRoot();
   const container = document.createElement("section");
   container.dataset["componentId"] = componentId;
 
-  container.appendChild(createLabel("Create Hub"));
+  container.appendChild(createLabel(label));
   if (testName) {
     container.appendChild(createLabel(`Test Name: ${testName}`));
   }
+  if (hubIdLabel) {
+    container.appendChild(createLabel(hubIdLabel));
+  }
   container.appendChild(createLabel(`Component ID: ${componentId}`));
 
-  const hubIdDiv = createDataDiv(`create-hub-id-${componentId}`);
-  const peerStatusDiv = createDataDiv(`create-peer-status-${componentId}`);
+  const hubIdDiv = createDataDiv(hubIdTestId);
+  const peerStatusDiv = createDataDiv(peerStatusTestId);
   container.appendChild(hubIdDiv);
   container.appendChild(peerStatusDiv);
 
@@ -276,59 +313,40 @@ function createHub(options: CreateHubOptions) {
     logPeerStatus(componentId, peer);
   };
 
-  zeroHub.createRandomHub({ name: "test" });
+  invoke(zeroHub);
 
   registerInstance(componentId, zeroHub, container);
 }
 
+function createHub(options: CreateHubOptions) {
+  const { componentId, zeroHubHosts, testName } = options;
+  buildHubClient({
+    componentId,
+    zeroHubHosts,
+    testName,
+    label: "Create Hub",
+    hubIdTestId: `create-hub-id-${componentId}`,
+    peerStatusTestId: `create-peer-status-${componentId}`,
+    invoke: (zeroHub) => {
+      zeroHub.createRandomHub({ name: "test" });
+    },
+  });
+}
+
 function joinHub(options: JoinHubOptions) {
   const { componentId, zeroHubHosts, testName, hubId } = options;
-  const root = ensureRoot();
-  const container = document.createElement("section");
-  container.dataset["componentId"] = componentId;
-
-  container.appendChild(createLabel("Join Hub"));
-  if (testName) {
-    container.appendChild(createLabel(`Test Name: ${testName}`));
-  }
-  container.appendChild(createLabel(`Hub ID: ${hubId}`));
-  container.appendChild(createLabel(`Component ID: ${componentId}`));
-
-  const hubIdDiv = createDataDiv(`join-hub-id-${componentId}`);
-  const peerStatusDiv = createDataDiv(`join-peer-status-${componentId}`);
-  container.appendChild(hubIdDiv);
-  container.appendChild(peerStatusDiv);
-
-  root.appendChild(container);
-
-  const zeroHub = new ZeroHubClient<PeerMetadata, Record<string, unknown>>(
+  buildHubClient({
+    componentId,
     zeroHubHosts,
-    {
-      logLevel: LogLevel.Debug,
-      tls: false,
-      waitIceCandidatesTimeout: 5000,
-      dataChannelConfig: {
-        numberOfChannels: 1,
-        rtcDataChannelInit: { ordered: true },
-        onDataChannel: (_peer, dataChannel) => {
-          watchDataChannel(componentId, container, dataChannel);
-        },
-      },
-    }
-  );
-
-  zeroHub.onHubInfo = (hubInfo) => {
-    hubIdDiv.textContent = hubInfo.id;
-  };
-
-  zeroHub.onPeerStatusChange = (peer) => {
-    peerStatusDiv.textContent = peer.status;
-    logPeerStatus(componentId, peer);
-  };
-
-  zeroHub.joinRandomHub(hubId, { name: "test" });
-
-  registerInstance(componentId, zeroHub, container);
+    testName,
+    label: "Join Hub",
+    hubIdLabel: `Hub ID: ${hubId}`,
+    hubIdTestId: `join-hub-id-${componentId}`,
+    peerStatusTestId: `join-peer-status-${componentId}`,
+    invoke: (zeroHub) => {
+      zeroHub.joinRandomHub(hubId, { name: "test" });
+    },
+  });
 }
 
 /**
@@ -340,54 +358,18 @@ function joinHub(options: JoinHubOptions) {
  */
 function joinPermanentHub(options: JoinPermanentHubOptions) {
   const { componentId, zeroHubHosts, testName, hubId } = options;
-  const root = ensureRoot();
-  const container = document.createElement("section");
-  container.dataset["componentId"] = componentId;
-
-  container.appendChild(createLabel("Join Permanent Hub"));
-  if (testName) {
-    container.appendChild(createLabel(`Test Name: ${testName}`));
-  }
-  container.appendChild(createLabel(`Hub ID: ${hubId}`));
-  container.appendChild(createLabel(`Component ID: ${componentId}`));
-
-  const hubIdDiv = createDataDiv(`join-permanent-hub-id-${componentId}`);
-  const peerStatusDiv = createDataDiv(
-    `join-permanent-peer-status-${componentId}`
-  );
-  container.appendChild(hubIdDiv);
-  container.appendChild(peerStatusDiv);
-
-  root.appendChild(container);
-
-  const zeroHub = new ZeroHubClient<PeerMetadata, Record<string, unknown>>(
+  buildHubClient({
+    componentId,
     zeroHubHosts,
-    {
-      logLevel: LogLevel.Debug,
-      tls: false,
-      waitIceCandidatesTimeout: 5000,
-      dataChannelConfig: {
-        numberOfChannels: 1,
-        rtcDataChannelInit: { ordered: true },
-        onDataChannel: (_peer, dataChannel) => {
-          watchDataChannel(componentId, container, dataChannel);
-        },
-      },
-    }
-  );
-
-  zeroHub.onHubInfo = (hubInfo) => {
-    hubIdDiv.textContent = hubInfo.id;
-  };
-
-  zeroHub.onPeerStatusChange = (peer) => {
-    peerStatusDiv.textContent = peer.status;
-    logPeerStatus(componentId, peer);
-  };
-
-  zeroHub.joinPermanentHub(hubId, { name: "test" });
-
-  registerInstance(componentId, zeroHub, container);
+    testName,
+    label: "Join Permanent Hub",
+    hubIdLabel: `Hub ID: ${hubId}`,
+    hubIdTestId: `join-permanent-hub-id-${componentId}`,
+    peerStatusTestId: `join-permanent-peer-status-${componentId}`,
+    invoke: (zeroHub) => {
+      zeroHub.joinPermanentHub(hubId, { name: "test" });
+    },
+  });
 }
 
 function disconnect(options: DisconnectOptions) {
