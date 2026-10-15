@@ -111,7 +111,7 @@ test("disconnect tears down websocket and peer connections", async ({
       { componentId }
     );
 
-    // A fresh createRandomHub() on the same (previously disconnected)
+    // A fresh createHub() on the same (previously disconnected)
     // client must open a live connection: the server responds with a new
     // HubInfoMessage and the client is NOT stuck with a dead socket
     // (which would leave the new hub id unset).
