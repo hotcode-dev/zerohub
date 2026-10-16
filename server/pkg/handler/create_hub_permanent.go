@@ -23,8 +23,14 @@ func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
 		return err
 	}
 
+	// This endpoint is plain HTTP, not a WebSocket signaling channel: it does
+	// not upgrade the connection, so ForwardMigrate (which requires a
+	// WebSocket handshake) would surface a 503 "websocket handshake" to an
+	// out-of-band HTTP create. Reject it with the same HTTP-level migration
+	// response Status returns — a 301 carrying the backup host. No hub is
+	// created while migrating.
 	if h.isMigrating.Load() {
-		return h.ForwardMigrate(ctx)
+		return h.migrateHTTPResponse(ctx)
 	}
 
 	hubId := string(ctx.QueryArgs().Peek("id"))

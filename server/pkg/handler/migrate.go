@@ -89,6 +89,23 @@ func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
 	return nil
 }
 
+// migrateHTTPResponse answers a plain-HTTP (non-WebSocket) request that
+// arrives while the server is in migrate mode with a 301 carrying the backup
+// host — the HTTP-level equivalent of the migration state Status reports.
+//
+// It is the counterpart of ForwardMigrate, which is valid only for the
+// WebSocket signaling endpoints: those clients are already mid-handshake, so
+// the server upgrades the connection and sends a 1001 close frame whose
+// reason is the backup host. A plain-HTTP client (e.g. curl or Node fetch
+// calling /v1/permanent-hubs/create) sends no Upgrade: websocket header, so
+// attempting an upgrade would fail the handshake and surface as a 503
+// "websocket handshake". Plain-HTTP handlers must return this response
+// instead and must never call ForwardMigrate.
+func (h *handler) migrateHTTPResponse(ctx *fasthttp.RequestCtx) error {
+	return h.Response(ctx, fasthttp.StatusMovedPermanently,
+		map[string]string{"status": "migrating", "backupHost": h.getBackupHost()})
+}
+
 // getBackupHost returns the current backup host under a read lock so it is
 // safe to read concurrently with Migrate.
 func (h *handler) getBackupHost() string {
