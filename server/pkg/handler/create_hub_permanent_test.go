@@ -5,12 +5,10 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/fasthttp/websocket"
 	"github.com/valyala/fasthttp"
 )
 
@@ -146,12 +144,59 @@ func TestCreateHubPermanentUnauthorizedDuringMigration(t *testing.T) {
 	}
 }
 
-// TestCreateHubPermanentAuthorizedDuringMigration pins the companion invariant:
-// a valid-authorized create request during migration must still be forwarded
-// (WebSocket-upgraded and closed with the backup host as the close reason), not
-// rejected with 401. This guards against over-correcting the ordering so that
-// even admins cannot be redirected to the backup host.
-func TestCreateHubPermanentAuthorizedDuringMigration(t *testing.T) {
+// TestCreateHubPermanentMigratingPlainHTTP pins the P0 fix: an out-of-band
+// plain-HTTP create (curl, Node fetch) that arrives while the server is in
+// migrate mode must get the HTTP-level migration response — a 301 with
+// {"status":"migrating","backupHost":<host>} — not a 503 "websocket
+// handshake". Pre-fix the handler routed through the WebSocket-only
+// ForwardMigrate, whose upgrade failed on a request that carries no
+// Upgrade: websocket header. No hub may be created while migrating.
+func TestCreateHubPermanentMigratingPlainHTTP(t *testing.T) {
+	const hubId = "room"
+	h := newTestHandler()
+	// Real (memory-backed) instances so the "no hub created" assertion
+	// inspects actual storage state, not mock call history.
+	h.zeroHub = newRealZeroHub(t)
+	h.zeroHubRandom = newRealZeroHub(t)
+	h.zeroHubPermanent = newRealZeroHub(t)
+	addr := startPermanentCreateTestServer(t, h)
+	client := newTestClient(addr)
+
+	// Enter migrate mode through the real, auth-gated endpoint.
+	status, body, err := doRequest(t, client, "/v1/admin/migrate?host="+testBackupHost,
+		map[string]string{"Authorization": adminAuthHeader()})
+	if err != nil || status != fasthttp.StatusOK {
+		t.Fatalf("migrate with auth = (%d, %q, %v), want 200", status, body, err)
+	}
+
+	// An authorized plain-HTTP create: no Upgrade/Sec-WebSocket-* headers,
+	// exactly what curl sends.
+	status, body, err = doRequest(t, client, "/v1/permanent-hubs/create?id="+hubId,
+		map[string]string{"Authorization": adminAuthHeader()})
+	if err != nil {
+		t.Fatalf("create during migration: transport error: %v", err)
+	}
+	if status != fasthttp.StatusMovedPermanently {
+		t.Fatalf("create during migration = (%d, %q), want 301", status, body)
+	}
+	// Same JSON shape /v1/status reports while migrating.
+	checkStatusBody(t, body, "migrating", testBackupHost)
+
+	// The hub must NOT have been created.
+	if got := h.zeroHubPermanent.GetHubById(hubId); got != nil {
+		t.Fatalf("hub %q was created during migration, want none", hubId)
+	}
+}
+
+// TestCreateHubPermanentMigratingNeverUpgradesWebSocket pins the companion
+// invariant: even when a client sends a WebSocket-handshake-shaped request
+// (Upgrade/Sec-WebSocket-Key headers, with valid admin auth), the plain-HTTP
+// permanent-create endpoint must NOT upgrade the connection. It answers 301
+// with the backup host like every other plain-HTTP migration response.
+// Pre-fix, an authorized handshake completed with a 101 and the server
+// followed it with a 1001 close frame carrying the backup host —
+// signaling-client semantics that do not apply to this endpoint.
+func TestCreateHubPermanentMigratingNeverUpgradesWebSocket(t *testing.T) {
 	h := newTestHandler()
 	addr := startPermanentCreateTestServer(t, h)
 	client := newTestClient(addr)
@@ -162,50 +207,39 @@ func TestCreateHubPermanentAuthorizedDuringMigration(t *testing.T) {
 		t.Fatalf("migrate with auth = (%d, %q, %v), want 200", status, body, err)
 	}
 
-	// A real WebSocket client WITH admin auth must complete the 101 upgrade.
-	// If the handler had answered 401, the handshake would fail.
-	u, _ := url.Parse("ws://" + addr + "/v1/permanent-hubs/create?id=room")
-	conn, resp, err := websocket.NewClient(
-		dialConn(t, addr),
-		u,
-		map[string][]string{"Authorization": {adminAuthHeader()}},
-		0, 0,
-	)
-	if err != nil {
-		if resp != nil && resp.StatusCode == fasthttp.StatusUnauthorized {
-			t.Fatalf("authorized create during migration was rejected with 401; want ForwardMigrate")
-		}
-		t.Fatalf("websocket handshake: %v", err)
-	}
-	defer conn.Close()
-
-	// The server closes the upgraded connection with the backup host as the
-	// close reason; the client must observe that close frame.
-	msgType, payload, err := conn.ReadMessage()
-	if err != nil {
-		// Some paths surface the peer close as an error; in that case the
-		// close reason is still the backup host, so assert on the error.
-		if strings.Contains(err.Error(), testBackupHost) {
-			return
-		}
-		t.Fatalf("read close frame: %v", err)
-	}
-	if msgType != websocket.CloseMessage {
-		t.Fatalf("message type = %d, want close message (%d)", msgType, websocket.CloseMessage)
-	}
-	// FormatCloseMessage payload: 2-byte close code (1001) + the reason text.
-	if len(payload) < 2 || !strings.Contains(string(payload[2:]), testBackupHost) {
-		t.Fatalf("close reason = %q, want it to contain the backup host %q", string(payload), testBackupHost)
-	}
-}
-
-// dialConn opens a raw TCP connection to the test server (used to hand a
-// net.Conn to websocket.NewClient).
-func dialConn(t *testing.T, addr string) net.Conn {
-	t.Helper()
+	// A WebSocket-handshake-shaped GET carrying the admin Authorization
+	// header. Pre-fix this completed the 101 upgrade; post-fix it must be
+	// answered over plain HTTP.
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
-	return conn
+	req := "GET /v1/permanent-hubs/create?id=room HTTP/1.1\r\n" +
+		"Host: " + addr + "\r\n" +
+		"Authorization: " + adminAuthHeader() + "\r\n" +
+		"Upgrade: websocket\r\n" +
+		"Connection: Upgrade\r\n" +
+		"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+		"Sec-WebSocket-Version: 13\r\n\r\n"
+	if _, err := conn.Write([]byte(req)); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	statusLine, statusCode, allBytes := readFirstResponse(t, conn)
+	_ = conn.Close()
+
+	got := string(allBytes)
+	if strings.Contains(statusLine, "101") && strings.Contains(got, "Switching Protocols") {
+		t.Fatalf("authorized create during migration was WebSocket-upgraded; want a plain-HTTP 301:\n%s", got)
+	}
+	if statusCode != fasthttp.StatusMovedPermanently {
+		t.Fatalf("authorized create during migration = %q (%d), want 301", statusLine, statusCode)
+	}
+	// The backup host must ride in the JSON body, not in a close frame or a
+	// 401.
+	if !strings.Contains(got, `"status":"migrating"`) || !strings.Contains(got, testBackupHost) {
+		t.Fatalf("migration response = %q, want a 301 body carrying status=migrating and the backup host %q", got, testBackupHost)
+	}
+	if strings.Contains(got, "websocket handshake") {
+		t.Fatalf("migration response = %q still reports a websocket handshake error", got)
+	}
 }
