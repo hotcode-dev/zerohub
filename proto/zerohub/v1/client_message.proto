@@ -23,7 +23,7 @@ message SendAnswerMessage {
   string answer_sdp = 2;
 }
 
-// Send ICE candidate message is not using yet
+// Send ICE candidate message is sent to the target peer with a trickled ICE candidate
 message SendIceCandidateMessage {
   // ID of the peer
   string peer_id = 1;

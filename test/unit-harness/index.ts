@@ -163,10 +163,20 @@ class MockRTCPeerConnection {
   public __lastCreateAnswerOptions: RTCOfferOptions | null = null;
   /** `setRemoteDescription` calls (inspectable by specs). */
   public __remoteDescriptions: Array<{ type: string; sdp: string }> = [];
+  /** `addIceCandidate` arguments (inspectable by specs). */
+  public __addedIceCandidates: Array<string> = [];
 
   createOffer(options?: RTCOfferOptions): Promise<{ type: string; sdp: string }> {
     this.__lastCreateOfferOptions = options ?? null;
     return Promise.resolve({ type: "offer", sdp: "offer-sdp" });
+  }
+
+  /** `RTCIceCandidate`-shaped objects as passed to `addIceCandidate`. */
+  addIceCandidate(candidate?: unknown): Promise<void> {
+    if (candidate) {
+      this.__addedIceCandidates.push(JSON.stringify(candidate));
+    }
+    return Promise.resolve();
   }
 
   createAnswer(options?: RTCOfferOptions): Promise<{ type: string; sdp: string }> {
@@ -236,8 +246,13 @@ interface ClientState {
   answers?: Array<{ peerId: string; answerSdp: string }>;
   /** `logger.warn` messages captured when built via `createClientWithLogger`. */
   warns?: string[];
-  /** SDP sends captured when the socket is stubbed via `stubSocket`. */
-  sends?: Array<{ kind: "offer" | "answer"; peerId: string; sdp: string }>;
+  /** SDP/ICE sends captured when the socket is stubbed via `stubSocket`. */
+  sends?: Array<{
+    kind: "offer" | "answer" | "iceCandidate";
+    peerId: string;
+    sdp?: string;
+    candidate?: string;
+  }>;
 }
 
 const clients = new Map<number, ClientState>();
@@ -745,6 +760,13 @@ const ZeroHubUnitHarness = {
             sdp: msg.sendAnswerMessage.answerSdp,
           });
         }
+        if (msg.sendIceCandidateMessage) {
+          entry.sends?.push({
+            kind: "iceCandidate",
+            peerId: msg.sendIceCandidateMessage.peerId,
+            candidate: msg.sendIceCandidateMessage.candidate,
+          });
+        }
       },
     } as unknown as WebSocket;
   },
@@ -783,8 +805,15 @@ const ZeroHubUnitHarness = {
     }
   },
 
-  /** The SDP sends captured for this client (since `stubSocket`). */
-  getSends(id: number): Array<{ kind: "offer" | "answer"; peerId: string; sdp: string }> {
+  /** The SDP/ICE sends captured for this client (since `stubSocket`). */
+  getSends(
+    id: number
+  ): Array<{
+    kind: "offer" | "answer" | "iceCandidate";
+    peerId: string;
+    sdp?: string;
+    candidate?: string;
+  }> {
     const entry = clients.get(id);
     if (!entry) {
       throw new Error(`no client ${id}`);
@@ -792,10 +821,15 @@ const ZeroHubUnitHarness = {
     return entry.sends ?? [];
   },
 
-  /** Returns and clears the captured SDP sends for this client. */
+  /** Returns and clears the captured SDP/ICE sends for this client. */
   drainSends(
     id: number
-  ): Array<{ kind: "offer" | "answer"; peerId: string; sdp: string }> {
+  ): Array<{
+    kind: "offer" | "answer" | "iceCandidate";
+    peerId: string;
+    sdp?: string;
+    candidate?: string;
+  }> {
     const entry = clients.get(id);
     if (!entry) {
       throw new Error(`no client ${id}`);
@@ -964,6 +998,13 @@ const ZeroHubUnitHarness = {
           kind: "answer",
           peerId: msg.sendAnswerMessage.offerPeerId,
           sdp: msg.sendAnswerMessage.answerSdp,
+        });
+      }
+      if (msg.sendIceCandidateMessage) {
+        entry.sends?.push({
+          kind: "iceCandidate",
+          peerId: msg.sendIceCandidateMessage.peerId,
+          candidate: msg.sendIceCandidateMessage.candidate,
         });
       }
     };
@@ -1284,6 +1325,35 @@ const ZeroHubUnitHarness = {
     }
     const peer = entry.client.peers[peerId];
     return peer ? peer.status : null;
+  },
+
+  /**
+   * Feeds an `iceCandidateMessage` (an incoming trickled ICE candidate from a
+   * remote peer) into the client's dispatcher, so specs can drive the
+   * `addIceCandidate` path without a server.
+   */
+  sendIceCandidateMessage(id: number, peerId: string, candidate: string): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.client.handleZeroHubMessage({
+      iceCandidateMessage: { peerId, candidate },
+    } as never);
+  },
+
+  /**
+   * The `addIceCandidate` arguments applied to a peer's `RTCPeerConnection`,
+   * as serialized strings, in call order — lets specs assert an incoming
+   * trickled candidate actually reached the target peer's connection.
+   */
+  getAddedIceCandidates(id: number, peerId: string): string[] {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const conn = asMock(entry.client.peers[peerId]?.rtcConn);
+    return conn?.__addedIceCandidates ?? [];
   },
 };
 

@@ -230,19 +230,24 @@ describe("reconnect — 1001 close reason host validation", () => {
   });
 });
 
-describe("armSendOnIceReady — single-send guard", () => {
+describe("armSendOnIceReady — single-send guard + trickle ICE", () => {
   let client: ZeroHubClient;
+  let sendIceSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.useFakeTimers();
     client = makeClient();
+    // Spying the forwarder keeps the fake from throwing (no `ws` in this
+    // harness) while still recording every trickled candidate.
+    sendIceSpy = vi.fn();
+    client.sendIceCandidateToWebsocket = sendIceSpy as never;
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it("sends exactly once when the candidate-complete marker arrives first", () => {
+  it("fires the send exactly once on the first candidate and trickles the rest", () => {
     const sendOnce = vi.fn();
     const rtc = new FakeRTCPeerConnection();
     // A local SDP has been set (as the real offer/answer paths do before
@@ -254,21 +259,28 @@ describe("armSendOnIceReady — single-send guard", () => {
 
     invokeArmSend(client, "2", rtc, sendOnce);
 
-    // A real candidate arrives first — it must NOT trigger the send.
+    // The first candidate that arrives fires the SDP send AND trickles the
+    // candidate to the remote peer.
     rtc.onicecandidate?.({ candidate: { candidate: "candidate:1" } });
-    expect(sendOnce).not.toHaveBeenCalled();
-
-    // The ICE-gathering-complete marker (no candidate) fires the send once.
-    rtc.onicecandidate?.({ candidate: null });
     expect(sendOnce).toHaveBeenCalledTimes(1);
+    expect(sendIceSpy).toHaveBeenCalledTimes(1);
+    expect(sendIceSpy).toHaveBeenCalledWith("2", { candidate: "candidate:1" });
 
-    // A second marker or a late candidate must not re-send.
-    rtc.onicecandidate?.({ candidate: null });
+    // A later candidate does not re-send the SDP but IS trickled.
     rtc.onicecandidate?.({ candidate: { candidate: "candidate:2" } });
     expect(sendOnce).toHaveBeenCalledTimes(1);
+    expect(sendIceSpy).toHaveBeenCalledTimes(2);
+    expect(sendIceSpy).toHaveBeenLastCalledWith("2", {
+      candidate: "candidate:2",
+    });
+
+    // The gathering-complete marker does not re-send or trickle anything.
+    rtc.onicecandidate?.({ candidate: null });
+    expect(sendOnce).toHaveBeenCalledTimes(1);
+    expect(sendIceSpy).toHaveBeenCalledTimes(2);
   });
 
-  it("sends exactly once when the waitIceCandidatesTimeout timer fires first", () => {
+  it("fires the send once from the timer and trickles late candidates", () => {
     client.config = { ...client.config, waitIceCandidatesTimeout: 50 };
     const sendOnce = vi.fn();
     const rtc = new FakeRTCPeerConnection();
@@ -282,13 +294,18 @@ describe("armSendOnIceReady — single-send guard", () => {
 
     invokeArmSend(client, "3", rtc, sendOnce);
 
-    // No complete marker ever arrives; the timer fires the send.
+    // No candidate arrives; the timer fires the send (no trickle yet).
     vi.advanceTimersByTime(50);
     expect(sendOnce).toHaveBeenCalledTimes(1);
+    expect(sendIceSpy).not.toHaveBeenCalled();
 
-    // A late complete marker after the send must not re-send.
-    rtc.onicecandidate?.({ candidate: null });
+    // A late candidate after the send does not re-send but IS trickled.
+    rtc.onicecandidate?.({ candidate: { candidate: "candidate:late" } });
     expect(sendOnce).toHaveBeenCalledTimes(1);
+    expect(sendIceSpy).toHaveBeenCalledTimes(1);
+    expect(sendIceSpy).toHaveBeenCalledWith("3", {
+      candidate: "candidate:late",
+    });
   });
 });
 

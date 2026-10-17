@@ -133,6 +133,18 @@ func (mr *MockHubMockRecorder) SendAnswerToPeer(toPeerId, answerPeerId, answerSd
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendAnswerToPeer", reflect.TypeOf((*MockHub)(nil).SendAnswerToPeer), toPeerId, answerPeerId, answerSdp)
 }
 
+// SendIceCandidateToPeer mocks base method.
+func (m *MockHub) SendIceCandidateToPeer(toPeerId, icePeerId, candidate string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SendIceCandidateToPeer", toPeerId, icePeerId, candidate)
+}
+
+// SendIceCandidateToPeer indicates an expected call of SendIceCandidateToPeer.
+func (mr *MockHubMockRecorder) SendIceCandidateToPeer(toPeerId, icePeerId, candidate any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendIceCandidateToPeer", reflect.TypeOf((*MockHub)(nil).SendIceCandidateToPeer), toPeerId, icePeerId, candidate)
+}
+
 // SendOfferToPeer mocks base method.
 func (m *MockHub) SendOfferToPeer(toPeerId, offerPeerId, offerSdp string) {
 	m.ctrl.T.Helper()

@@ -25,7 +25,7 @@ export interface SendAnswerMessage {
   answerSdp: string;
 }
 
-/** Send ICE candidate message is not using yet */
+/** Send ICE candidate message is sent to the target peer with a trickled ICE candidate */
 export interface SendIceCandidateMessage {
   /** ID of the peer */
   peerId: string;

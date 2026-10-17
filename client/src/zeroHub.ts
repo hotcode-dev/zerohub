@@ -497,6 +497,25 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
           this.onAnswer(peer, answerSdp);
         }
       }
+    } else if (serverMessage.iceCandidateMessage) {
+      const peerId = serverMessage.iceCandidateMessage.peerId;
+      const peer = this.peers[peerId];
+      if (!peer) {
+        this.logger.error(
+          `add ice candidate error: peer id ${peerId} not found`
+        );
+        return;
+      }
+
+      // The candidate arrives as a JSON string (the `RTCIceCandidate` shape the
+      // sender serialized); parse it back so `addIceCandidate` receives the
+      // `RTCIceCandidateInit` object it expects.
+      const candidate = JSON.parse(
+        serverMessage.iceCandidateMessage.candidate
+      ) as RTCIceCandidateInit;
+      peer.rtcConn.addIceCandidate(candidate).catch((err) => {
+        this.logger.error("Failed to add ice candidate to peer", peerId, err);
+      });
     } else if (serverMessage.peerJoinedMessage) {
       const peer = serverMessage.peerJoinedMessage.peer;
       if (!peer || !this.hubInfo || peer.id in this.peers) {
@@ -809,6 +828,28 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
+   * Trickle an ICE candidate to a peer over the signaling channel.
+   *
+   * Candidates are forwarded as their JSON representation (the
+   * `RTCIceCandidate` shape), which the remote applies via
+   * `addIceCandidate`.
+   *
+   * @param peerId - The peer to send the candidate to
+   * @param candidate - The trickled ICE candidate
+   */
+  public sendIceCandidateToWebsocket(
+    peerId: string,
+    candidate: RTCIceCandidate
+  ) {
+    this.sendZeroHubMessage({
+      sendIceCandidateMessage: {
+        peerId,
+        candidate: JSON.stringify(candidate),
+      },
+    });
+  }
+
+  /**
    * Send an offer to the specified peer using WebRTC.
    *
    * @param peerId - The ID of the peer to send the offer to
@@ -937,12 +978,25 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     rtcConn.onicecandidate = (event: {
       candidate?: RTCIceCandidate | null;
     }) => {
-      if (!rtcConn.localDescription || isSent || event.candidate) {
+      // The candidate-less event is the gathering-complete marker: it fires
+      // the SDP send exactly once.
+      if (!event.candidate) {
+        if (rtcConn.localDescription && !isSent) {
+          isSent = true;
+          sendOnce();
+        }
         return;
       }
 
-      isSent = true;
-      sendOnce();
+      // Trickle ICE: forward every candidate the connection trickles in. The
+      // first candidate (ready at the moment the SDP went out) also rides the
+      // signaling channel — the remote applies it via `addIceCandidate`, so
+      // it is never silently dropped.
+      if (!isSent) {
+        isSent = true;
+        sendOnce();
+      }
+      this.sendIceCandidateToWebsocket(peerId, event.candidate);
     };
 
     // stop waiting for ice candidates if longer than timeout

@@ -74,6 +74,9 @@ func TestSendBinaryMessageNilConn(t *testing.T) {
 	if err := p.SendAnswer("1", "sdp"); err == nil {
 		t.Fatal("expected error from SendAnswer on nil conn, got nil")
 	}
+	if err := p.SendIceCandidate("1", "candidate:1"); err == nil {
+		t.Fatal("expected error from SendIceCandidate on nil conn, got nil")
+	}
 }
 
 func TestGetWSConnNilConn(t *testing.T) {
@@ -118,6 +121,9 @@ func TestSendMessageSuccess(t *testing.T) {
 	}
 	if err := p.SendAnswer("1", "answer-sdp"); err != nil {
 		t.Fatalf("SendAnswer: %v", err)
+	}
+	if err := p.SendIceCandidate("1", "candidate:1 1 udp 2122252543 1.2.3.4 5678 typ host"); err != nil {
+		t.Fatalf("SendIceCandidate: %v", err)
 	}
 }
 

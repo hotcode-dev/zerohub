@@ -64,7 +64,7 @@ export interface AnswerMessage {
   answerSdp: string;
 }
 
-/** IceCandidateMessage is not using yet */
+/** IceCandidateMessage relays a trickled ICE candidate from one peer to another */
 export interface IceCandidateMessage {
   /** ID of the peer */
   peerId: string;
