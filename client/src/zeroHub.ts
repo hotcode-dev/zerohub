@@ -525,12 +525,14 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
-   * Tears down a peer that is no longer in the hub: closes the underlying
-   * WebRTC connection (releasing its ICE agents, sockets, and timers), nulls
-   * the state handlers so a stale `oniceconnectionstatechange` cannot call
-   * `restartIce()` on a closing connection (InvalidStateError), and removes
-   * the peer from the map. Safe to call for a peer already gone from the
-   * map: it is a no-op.
+   * Tears down a peer that is no longer in the hub: clears its pending
+   * ICE-candidate fallback timer (so a stale handle cannot fire later and
+   * attempt to send SDP for a peer that is already gone), closes the
+   * underlying WebRTC connection (releasing its ICE agents, sockets, and
+   * timers), nulls the state handlers so a stale `oniceconnectionstatechange`
+   * cannot call `restartIce()` on a closing connection (InvalidStateError),
+   * and removes the peer from the map. Safe to call for a peer already gone
+   * from the map: it is a no-op.
    *
    * Shared by the `peerDisconnectedMessage` broadcast path, the
    * `hubInfoMessage` roster-reconciliation path (pruning peers absent from
@@ -545,6 +547,13 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     const peer = this.peers[peerId];
     if (!peer) {
       return;
+    }
+    // Clear any pending ICE-candidate fallback timer so it cannot fire later
+    // and attempt to send SDP for a peer that is already gone.
+    const pendingIce = this.iceTimeouts[peerId];
+    if (pendingIce) {
+      clearTimeout(pendingIce);
+      delete this.iceTimeouts[peerId];
     }
     peer.close();
     peer.rtcConn.onconnectionstatechange = null;

@@ -189,6 +189,10 @@ class MockRTCPeerConnection {
     }
     return Promise.resolve();
   }
+
+  setConfiguration(_config?: RTCConfiguration): void {
+    // no-op
+  }
 }
 
 // Install the mock *before* any client-driven `new RTCPeerConnection(...)`
@@ -438,6 +442,36 @@ const ZeroHubUnitHarness = {
         peer: { id: peerId, metadata: "", joinTime: undefined },
       },
     } as never);
+  },
+
+  /**
+   * Feed a `peerDisconnectedMessage` (peer-left path) for one peer, so
+   * specs can drive the shared `removePeer` teardown without a server.
+   */
+  sendPeerDisconnected(id: number, peerId: string): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    entry.client.handleZeroHubMessage({
+      peerDisconnectedMessage: { peerId },
+    } as never);
+  },
+
+  /**
+   * The peer IDs that currently have a pending ICE-candidate fallback
+   * timer recorded in the client's private `iceTimeouts` map (read through
+   * a type cast — `private` is erased at bundle time).
+   */
+  iceTimeoutEntries(id: number): string[] {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const client = entry.client as unknown as {
+      iceTimeouts: { [peerId: string]: unknown };
+    };
+    return Object.keys(client.iceTimeouts);
   },
 
   /**
