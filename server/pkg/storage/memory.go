@@ -30,12 +30,21 @@ func (s *memoryStorage[T]) Add(id string, data T) {
 }
 
 // GetAll returns all items in the storage.
+// The roster is snapshotted into a slice under the read lock and then
+// yielded without holding it (read-copy-on-write, matching gache's
+// RangeIterValue), so blocking side effects inside the iteration (e.g. the
+// WebSocket writes in hub.AddPeer/RemovePeerById's broadcasts) never pin the
+// storage read-lock and do not serialize concurrent Get/Add/Delete/IsEmpty.
 func (s *memoryStorage[T]) GetAll() iter.Seq[T] {
-	return func(yield func(T) bool) {
-		s.mu.RLock()
-		defer s.mu.RUnlock()
+	s.mu.RLock()
+	snapshot := make([]T, 0, len(s.data))
+	for _, v := range s.data {
+		snapshot = append(snapshot, v)
+	}
+	s.mu.RUnlock()
 
-		for _, v := range s.data {
+	return func(yield func(T) bool) {
+		for _, v := range snapshot {
 			if !yield(v) {
 				break
 			}
