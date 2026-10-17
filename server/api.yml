@@ -12,6 +12,9 @@ info:
       - proto/zerohub/v1/client_message.proto
       - proto/zerohub/v1/server_message.proto
     - Channel address determines hub behavior (create/join/join-or-create).
+    - The admin endpoint `/v1/permanent-hubs/create` (channel
+      `permanentHubsCreate`) is plain HTTP, not WebSocket: it uses the
+      `admin-local`/`admin-production` servers declared on that channel.
 
 defaultContentType: application/protobuf
 
@@ -29,6 +32,25 @@ servers:
     pathname: /
     protocol: wss
     description: Production server
+    variables:
+      host:
+        default: api.example.com
+  # Plain-HTTP admin API. The server serves /v1/permanent-hubs/create over
+  # the same host/port as the WebSocket endpoints, but that endpoint never
+  # upgrades, so it is scoped to these HTTP servers instead of the ws ones.
+  admin-local:
+    host: localhost:{port}
+    pathname: /v1
+    protocol: http
+    description: Local development server (plain-HTTP admin endpoints)
+    variables:
+      port:
+        default: '8080'
+  admin-production:
+    host: '{host}'
+    pathname: /v1
+    protocol: https
+    description: Production server (plain-HTTP admin endpoints)
     variables:
       host:
         default: api.example.com
@@ -208,13 +230,25 @@ channels:
       this endpoint returns 409 Conflict with the body
       `{"error": "hub id collides with another hub type"}` instead of
       creating a shadow hub under the same id.
+
+      Response: HTTP 200 with the `PermanentHubCreated` JSON body; error
+      responses are 401 (missing/invalid Authorization header, body
+      `{"error": "invalid authorization code"}`), 400 (empty `id` or
+      malformed `hubMetadata` JSON, body `{"error": ...}`), 409
+      (duplicate or cross-mode colliding hub id, body `{"error": ...}`)
+      and 500 (internal error, body `{"error": "create hub error"}`).
+      While the server is migrating it returns 301 with body
+      `{"status": "migrating", "backupHost": "..."}`.
+    servers:
+      - $ref: '#/servers/admin-local'
+      - $ref: '#/servers/admin-production'
     messages:
+      createRequest:
+        $ref: '#/components/messages/PermanentHubCreateRequest'
       createdHub:
         $ref: '#/components/messages/PermanentHubCreated'
     bindings:
-      http:
-        method: GET
-        type: request
+      http: {}
 
 operations:
   clientSendOnHubsCreate:
@@ -318,13 +352,14 @@ operations:
   # Plain-HTTP admin endpoint (not a WebSocket channel): the admin tool
   # issues the request (the query params `id`/`hubMetadata` and the
   # `Authorization` header are carried by the HTTP request itself) and
-  # receives a single JSON `createdHub` response.
+  # receives a single JSON `createdHub` response. The GET method is fixed
+  # by the server routing (fasthttp: `GET /v1/permanent-hubs/create`).
   adminSendOnPermanentHubsCreate:
     action: send
     channel:
       $ref: '#/channels/permanentHubsCreate'
     messages:
-      - $ref: '#/channels/permanentHubsCreate/messages/createdHub'
+      - $ref: '#/channels/permanentHubsCreate/messages/createRequest'
 
   adminReceiveOnPermanentHubsCreate:
     action: receive
@@ -389,6 +424,20 @@ components:
           - $ref: '#/components/schemas/ServerIceCandidateVariant'
       x-protobuf-message: proto.zerohub.v1.ServerMessage
 
+    PermanentHubCreateRequest:
+      name: PermanentHubCreateRequest
+      title: Permanent hub creation request
+      summary: HTTP GET request to the admin-gated permanent-hub create endpoint
+      description: |
+        Carried by `GET /v1/permanent-hubs/create` on the plain-HTTP admin
+        server. The payload is empty: the request is entirely described by
+        its URL and headers.
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/PermanentHubCreateRequestHeaders'
+      payload:
+        type: 'null'
+
     PermanentHubCreated:
       name: PermanentHubCreated
       title: Permanent hub creation response
@@ -398,6 +447,41 @@ components:
         $ref: '#/components/schemas/PermanentHubCreated'
 
   schemas:
+    PermanentHubCreateRequestHeaders:
+      type: object
+      required: [Authorization]
+      description: >
+        Headers of the GET request to /v1/permanent-hubs/create. The query
+        parameters `id` (required, hub id) and `hubMetadata` (optional,
+        stringified hub metadata) ride on the URL and are documented on
+        the channel.
+      properties:
+        Authorization:
+          type: string
+          description: >
+            Base64 (StdEncoding) of the server's APP_CLIENT_SECRET;
+            requests without a valid header get 401.
+      additionalProperties: false
+
+    PermanentHubCreateError:
+      type: object
+      required: [error]
+      description: >
+        JSON body of the error responses (400/401/409/500) returned by
+        /v1/permanent-hubs/create.
+      properties:
+        error:
+          type: string
+          description: |
+            One of, depending on the status code:
+            - 401: "invalid authorization code"
+            - 400: "id query parameter is required" or
+              "invalid hubMetadata query parameter: must be JSON"
+            - 409: "hub id already exists" or
+              "hub id collides with another hub type"
+            - 500: "create hub error"
+      additionalProperties: false
+
     PermanentHubCreated:
       type: object
       required: [id, createdAt, metadata, isPermanent]
