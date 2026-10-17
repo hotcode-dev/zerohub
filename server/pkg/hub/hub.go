@@ -89,8 +89,8 @@ func (h *hub) AddPeer(newPeer peer.Peer) {
 			if err := peer.SendBinaryMessage(joinedSignalProto); err != nil {
 				log.Error().Err(err).Str("peer_id", peer.GetId()).Msg("error sending joined signal")
 			}
+			peersProtobuf = append(peersProtobuf, peer.ToProtobuf())
 		}
-		peersProtobuf = append(peersProtobuf, peer.ToProtobuf())
 	}
 
 	// send hub info to the new peer

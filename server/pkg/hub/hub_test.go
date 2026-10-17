@@ -30,6 +30,8 @@ type fakePeer struct {
 	answerSdp  string
 	// sentHubInfo reports whether SendHubInfo was called.
 	sentHubInfo bool
+	// hubInfo captures the HubInfoMessage payload sent to the peer.
+	hubInfo *pb.HubInfoMessage
 	// protoOverride, if non-nil, is returned by ToProtobuf and lets a test
 	// force the join-signal marshal path to fail (an invalid-UTF-8 Id makes
 	// proto.Marshal of the resulting PeerJoinedMessage return an error).
@@ -43,6 +45,7 @@ func (p *fakePeer) SendBinaryMessage(data []byte) error {
 
 func (p *fakePeer) SendHubInfo(hubInfoPb *pb.HubInfoMessage) error {
 	p.sentHubInfo = true
+	p.hubInfo = hubInfoPb
 	return nil
 }
 
@@ -305,8 +308,54 @@ func TestAddPeerSuccessRegistersAndNotifies(t *testing.T) {
 	if existing.received != 1 {
 		t.Fatalf("existing peer received %d join signals; want 1", existing.received)
 	}
-	if !newPeer.sentHubInfo {
+	if !newPeer.sentHubInfo || newPeer.hubInfo == nil {
 		t.Fatal("new peer did not receive its HubInfo after a successful add")
+	}
+}
+
+// TestAddPeerHubInfoRosterExcludesNewPeer is a regression test for the
+// new peer's own entry leaking into the roster of the HubInfoMessage it
+// receives: PeerStorage.Add runs before the GetAll loop, so the joiner
+// used to observe itself in the authoritative roster. The roster must
+// contain only the OTHER peers in the hub.
+func TestAddPeerHubInfoRosterExcludesNewPeer(t *testing.T) {
+	t.Parallel()
+
+	h := &hub{
+		Id:          "id",
+		CreatedAt:   time.Now(),
+		Metadata:    "metadata",
+		IsPermanent: true,
+		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	}
+
+	existing := &fakePeer{id: "5"}
+	h.PeerStorage.Add("5", existing)
+
+	newPeer := &fakePeer{}
+	h.AddPeer(newPeer)
+
+	if !newPeer.sentHubInfo || newPeer.hubInfo == nil {
+		t.Fatal("new peer did not receive its HubInfo")
+	}
+	if newPeer.hubInfo.MyPeerId != newPeer.GetId() {
+		t.Fatalf("HubInfoMessage.MyPeerId = %q; want %q", newPeer.hubInfo.MyPeerId, newPeer.GetId())
+	}
+	if len(newPeer.hubInfo.Peers) != 1 {
+		t.Fatalf("HubInfoMessage.Peers has %d entries; want 1 (only the pre-existing peer)", len(newPeer.hubInfo.Peers))
+	}
+	for _, p := range newPeer.hubInfo.Peers {
+		if p.Id == newPeer.GetId() {
+			t.Fatalf("HubInfoMessage.Peers contains the new peer's own entry (%q)", newPeer.GetId())
+		}
+	}
+	if newPeer.hubInfo.Peers[0].Id != "5" {
+		t.Fatalf("HubInfoMessage.Peers[0].Id = %q; want pre-existing peer 5", newPeer.hubInfo.Peers[0].Id)
+	}
+
+	// The existing peer still receives exactly one join signal.
+	if existing.received != 1 {
+		t.Fatalf("existing peer received %d join signals; want 1", existing.received)
 	}
 }
 
