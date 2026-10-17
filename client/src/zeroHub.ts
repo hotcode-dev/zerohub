@@ -65,16 +65,6 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    */
   public config: Config<PeerMetadata>;
   /**
-   * The metadata for the hub.
-   * @public
-   */
-  public hubMetadata: HubMetadata | undefined;
-  /**
-   * The metadata for the peer.
-   * @public
-   */
-  public peerMetadata: PeerMetadata | undefined;
-  /**
    * The ID of the current peer.
    * @public
    */
@@ -1100,9 +1090,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Opens a WebSocket connection to a ZeroHub hub endpoint.
    *
-   * Shared by all public hub entry points: assigns metadata, builds the
-   * connection URL (with id/hubMetadata/peerMetadata query params as
-   * applicable), and connects.
+   * Shared by all public hub entry points: builds the connection URL (with
+   * id/hubMetadata/peerMetadata query params as applicable), and connects.
    *
    * @param path - The endpoint path (e.g. "/v1/hubs/create")
    * @param hubId - Optional hub id to send as the "id" query param
@@ -1115,13 +1104,6 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     peerMetadata?: PeerMetadata,
     hubMetadata?: HubMetadata
   ) {
-    if (peerMetadata) {
-      this.peerMetadata = peerMetadata;
-    }
-    if (hubMetadata) {
-      this.hubMetadata = hubMetadata;
-    }
-
     const url = new URL(path, getWS(this.host, this.config.tls));
     if (hubId !== undefined) {
       url.searchParams.set("id", hubId);
