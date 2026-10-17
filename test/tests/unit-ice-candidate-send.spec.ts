@@ -342,4 +342,82 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
       expect(sends.filter((s) => s.kind !== "iceCandidate")).toHaveLength(2);
     });
   });
+
+  test("candidates are serialized via toJSON so sdpMid/sdpMLineIndex are preserved", async ({
+    page,
+  }) => {
+    // `RTCIceCandidateInit.sdpMid`/`sdpMLineIndex` are optional and the remote
+    // peer's `addIceCandidate` rejects a candidate that lacks them. The client
+    // must therefore emit the full `RTCIceCandidateInit` on the wire. We model
+    // a real `RTCIceCandidate` in-page: `sdpMid`/`sdpMLineIndex` as prototype
+    // accessors (NOT own enumerable properties — plain object serialization
+    // drops them) and a `toJSON()` returning the spec-correct init. The object
+    // must be built in-page (a `page.evaluate` arg would be JSON-serialized and
+    // lose its accessors/toJSON on the way in).
+    const LEGACY_CANDIDATE = "candidate:legacy 1 udp 2130 9.9.9.9 777 typ host";
+
+    await prepareUnitHarnessPage(page);
+    const h = driver(page);
+    const id = await h.createClient();
+
+    await h.setWaitIceTimeout(id, FALLBACK_TIMEOUT_MS);
+    await h.sendHubInfo(id, "1", ["2"]);
+    h.stubSocket(id);
+    await h.invokeSendOffer(id, "2");
+
+    await test.step("a candidate whose init fields live on toJSON reaches the wire complete", async () => {
+      await page.evaluate(([id, peerId, legacyCandidate]) => {
+        const proto = {
+          get sdpMid() {
+            return "0";
+          },
+          get sdpMLineIndex() {
+            return 0;
+          },
+          toJSON() {
+            return {
+              candidate: this.candidate,
+              sdpMid: this.sdpMid,
+              sdpMLineIndex: this.sdpMLineIndex,
+            };
+          },
+        };
+        const legacy = Object.create(proto);
+        legacy.candidate = legacyCandidate;
+        // Own-enumerable view only: `candidate` — the init fields are reachable
+        // through toJSON() alone.
+        ZeroHubUnitHarness.fireIceCandidate(id, peerId, legacy);
+      }, [id, "2", LEGACY_CANDIDATE]);
+      await page.waitForTimeout(30);
+
+      const sends = (await h.getSends(id)) as Send[];
+      const candidates = sends.filter((s) => s.kind === "iceCandidate");
+      expect(candidates).toHaveLength(1);
+      const parsed = JSON.parse(candidates[0].candidate as string);
+      // The full init, not just the own-enumerable `candidate` property.
+      expect(parsed).toEqual({
+        candidate: LEGACY_CANDIDATE,
+        sdpMid: "0",
+        sdpMLineIndex: 0,
+      });
+    });
+
+    await test.step("a candidate without toJSON is forwarded verbatim (own init fields survive)", async () => {
+      // The fallback branch (`typeof candidate.toJSON !== "function"`): a plain
+      // init-shaped object must reach the wire with its own fields intact.
+      const plain = {
+        candidate: "candidate:p 1 udp 1 8.8.8.8 55 typ host",
+        sdpMid: "0",
+        sdpMLineIndex: 0,
+      };
+      await h.fireIceCandidate(id, "2", plain);
+      await page.waitForTimeout(30);
+
+      const sends = (await h.getSends(id)) as Send[];
+      const candidates = sends.filter((s) => s.kind === "iceCandidate");
+      expect(candidates).toHaveLength(2);
+      const parsed = JSON.parse(candidates[1].candidate as string);
+      expect(parsed).toEqual(plain);
+    });
+  });
 });

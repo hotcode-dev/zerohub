@@ -787,9 +787,10 @@ const ZeroHubUnitHarness = {
   /**
    * Fires the peer's `onicecandidate` handler with a given candidate value,
    * simulating an ICE event from the mock `RTCPeerConnection`. Passing a
-   * truthy candidate models an in-flight candidate (the handler must ignore
-   * it); passing `null` models the "gathering complete" marker that triggers
-   * the SDP send.
+   * truthy candidate models an in-flight candidate (the first one also fires
+   * the SDP send; every candidate-bearing event is trickled to the remote
+   * peer); passing `null` models the "gathering complete" marker, which fires
+   * the SDP send if it has not gone out yet.
    */
   fireIceCandidate(id: number, peerId: string, candidate: unknown): void {
     const entry = clients.get(id);

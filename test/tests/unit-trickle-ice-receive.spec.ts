@@ -13,6 +13,14 @@ import { fileURLToPath } from "node:url";
  * covered in `unit-ice-candidate-send.spec.ts`; here we verify the receiver
  * actually consumes them instead of ignoring the message.
  *
+ * Also a regression test (P1 robustness): the candidate string is relayed
+ * verbatim by the server from ANY in-hub peer, so it must go through
+ * `safeParseJson` — a malformed value must not throw inside
+ * `handleZeroHubMessage` (which would wedge the whole message dispatcher,
+ * the same class of bug as the poisoned-metadata crash in
+ * `unit-malformed-metadata.spec.ts`); it is simply skipped, and the
+ * dispatcher keeps routing subsequent candidates.
+ *
  * Driven through the unit harness (mocked `RTCPeerConnection`, no-op
  * topology, no server, no real WebRTC stack).
  */
@@ -141,6 +149,32 @@ test.describe("ZeroHubClient incoming IceCandidateMessage (trickle ICE receive)"
     });
 
     await test.step("the dispatcher survives and still routes subsequent candidates", async () => {
+      await h.sendIceCandidateMessage(id, "2", POST_SDP_CANDIDATE);
+      const added = await h.getAddedIceCandidates(id, "2");
+      expect(added).toHaveLength(1);
+      expect(added[0]).toBe(POST_SDP_CANDIDATE);
+    });
+  });
+
+  test("a malformed candidate string does not crash the dispatcher and is skipped", async ({
+    page,
+  }) => {
+    await prepareUnitHarnessPage(page);
+    const h = driver(page);
+    const id = await h.createClient();
+
+    await h.sendHubInfo(id, "1", ["2"]);
+
+    await test.step("non-JSON / empty candidate strings do not throw and are not applied", async () => {
+      // The old code did a raw `JSON.parse` here: both values threw a
+      // SyntaxError/empty-input error inside `handleZeroHubMessage`, wedging
+      // the dispatcher.
+      await h.sendIceCandidateMessage(id, "2", "not-json");
+      await h.sendIceCandidateMessage(id, "2", "");
+      expect(await h.getAddedIceCandidates(id, "2")).toHaveLength(0);
+    });
+
+    await test.step("the dispatcher survives and still applies subsequent valid candidates", async () => {
       await h.sendIceCandidateMessage(id, "2", POST_SDP_CANDIDATE);
       const added = await h.getAddedIceCandidates(id, "2");
       expect(added).toHaveLength(1);

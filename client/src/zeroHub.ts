@@ -509,13 +509,19 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
 
       // The candidate arrives as a JSON string (the `RTCIceCandidate` shape the
       // sender serialized); parse it back so `addIceCandidate` receives the
-      // `RTCIceCandidateInit` object it expects.
-      const candidate = JSON.parse(
-        serverMessage.iceCandidateMessage.candidate
-      ) as RTCIceCandidateInit;
-      peer.rtcConn.addIceCandidate(candidate).catch((err) => {
-        this.logger.error("Failed to add ice candidate to peer", peerId, err);
-      });
+      // `RTCIceCandidateInit` object it expects. The string is relayed verbatim
+      // from any in-hub peer, so it goes through `safeParseJson`: a candidate is
+      // disposable (the connection still converges via re-gathering/re-trickle),
+      // and a poisoned value must never take down the message dispatcher.
+      const candidate = this.safeParseJson(
+        serverMessage.iceCandidateMessage.candidate,
+        undefined
+      ) as RTCIceCandidateInit | undefined;
+      if (candidate) {
+        peer.rtcConn.addIceCandidate(candidate).catch((err) => {
+          this.logger.error("Failed to add ice candidate to peer", peerId, err);
+        });
+      }
     } else if (serverMessage.peerJoinedMessage) {
       const peer = serverMessage.peerJoinedMessage.peer;
       if (!peer || !this.hubInfo || peer.id in this.peers) {
@@ -844,7 +850,15 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     this.sendZeroHubMessage({
       sendIceCandidateMessage: {
         peerId,
-        candidate: JSON.stringify(candidate),
+        // `toJSON()` is the spec-correct `RTCIceCandidateInit` serialization
+        // (plain `JSON.stringify` omits `sdpMid`/`sdpMLineIndex` when
+        // undefined, and the remote's `addIceCandidate` rejects such a
+        // candidate).
+        candidate: JSON.stringify(
+          typeof candidate.toJSON === "function"
+            ? candidate.toJSON()
+            : candidate
+        ),
       },
     });
   }
@@ -952,11 +966,14 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * `waitIceCandidatesTimeout` fallback so `sendOnce` is invoked exactly
    * once, as soon as the local description is ready:
    *
-   * - `onicecandidate` fires the send on the first event that carries no
-   *   candidate (the ICE candidate gathering complete marker), skipping any
-   *   event that still carries a candidate.
-   * - The timer fires the send if no such event arrives within
-   *   `waitIceCandidatesTimeout` milliseconds.
+   * - The first candidate-bearing event (or the candidate-less gathering-
+   *   complete marker) fires the SDP send exactly once; every candidate-
+   *   bearing event is also trickled to the remote peer via
+   *   `sendIceCandidateToWebsocket`, including all candidates that arrive
+   *   AFTER the SDP has gone out.
+   * - The timer fires the send if no candidate event arrives within
+   *   `waitIceCandidatesTimeout` milliseconds (candidates trickling in after
+   *   the timeout are still forwarded).
    *
    * The two paths share a single `isSent` guard, so re-negotiation (or a
    * late candidate after the timeout) can never send the SDP a second time.
