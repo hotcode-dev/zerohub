@@ -22,6 +22,8 @@ type Peer interface {
 	SendOffer(offerPeerId string, offerSdp string) error
 	// SendAnswer sends an answer to the peer.
 	SendAnswer(answerPeerId string, answerSdp string) error
+	// SendIceCandidate sends a trickled ICE candidate to the peer.
+	SendIceCandidate(icePeerId string, candidate string) error
 	// GetId returns the ID of the peer.
 	GetId() string
 	// SetId sets the ID of the peer.
@@ -147,6 +149,27 @@ func (p *peer) SendAnswer(answerPeerId string, answerSdp string) error {
 
 	if err := p.SendBinaryMessage(data); err != nil {
 		return fmt.Errorf("error sending answer: %w", err)
+	}
+	return nil
+}
+
+func (p *peer) SendIceCandidate(icePeerId string, candidate string) error {
+	msg := &pb.ServerMessage{
+		Message: &pb.ServerMessage_IceCandidateMessage{
+			IceCandidateMessage: &pb.IceCandidateMessage{
+				PeerId:    icePeerId,
+				Candidate: candidate,
+			},
+		},
+	}
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		log.Error().Err(fmt.Errorf("error to marshal ice candidate message: %v", err))
+		return err
+	}
+
+	if err := p.SendBinaryMessage(data); err != nil {
+		return fmt.Errorf("error sending ice candidate: %w", err)
 	}
 	return nil
 }

@@ -4,15 +4,13 @@ import { fileURLToPath } from "node:url";
 
 /**
  * Unit tests for the shared `armSendOnIceReady` helper extracted out of
- * `ZeroHubClient.sendOffer` / `sendAnswer` (the "wait for ICE candidates or
- * time out, then send the local SDP exactly once" block).
+ * `ZeroHubClient.sendOffer` / `sendAnswer` (the "send the local SDP exactly
+ * once, then keep trickling ICE candidates" block).
  *
  * Both methods previously carried a near-identical ~30-line copy of this
  * concurrency-critical logic (an `isSent` guard, an `onicecandidate` wiring
- * with the `event.candidate` trailing-candidate check, a clear of the prior
- * `this.iceTimeouts[peerId]` handle, and a `waitIceCandidatesTimeout`
- * fallback). The refactor collapses it into one private helper so the two
- * paths can no longer silently drift.
+ * with a `waitIceCandidatesTimeout` fallback). The refactor collapses it into
+ * one private helper so the two paths can no longer silently drift.
  *
  * These tests drive the helper end-to-end through the real `sendOffer` /
  * `sendAnswer` methods using the unit harness (mocked `RTCPeerConnection`,
@@ -20,19 +18,26 @@ import { fileURLToPath } from "node:url";
  * stack.
  *
  * Covers:
- *  (a) the offer/answer is sent EXACTLY ONCE when ICE candidates arrive after
- *      the offer/answer is created — in-flight candidates (carrying a
- *      `candidate`) are ignored, only the candidate-less "gathering complete"
- *      event fires the send, and a second candidate event does not re-send.
- *  (b) when no candidates arrive within `waitIceCandidatesTimeout`, the send
- *      fires exactly once from the timeout (not twice from both
- *      onicecandidate and the timer), and the late candidate then does not
- *      re-send.
- *  (c) the two call sites (sendOffer vs. sendAnswer) both funnel through the
- *      same helper: same send-once semantics, same trailing-candidate guard.
+ *  (a) the offer/answer is sent EXACTLY ONCE: the first event that carries a
+ *      candidate (or the gathering-complete marker) fires the send, and no
+ *      later event re-sends it.
+ *  (b) trickle ICE: every candidate that trickles in AFTER the SDP has been
+ *      sent is forwarded to the remote peer via `sendIceCandidateMessage`
+ *      (one `SendIceCandidateMessage` per candidate, with the candidate
+ *      verbatim) instead of being silently dropped.
+ *  (c) when no candidates arrive within `waitIceCandidatesTimeout`, the send
+ *      fires exactly once from the timeout, and candidates trickling in after
+ *      the timeout are still forwarded (not re-sending the SDP).
+ *  (d) the two call sites (sendOffer vs. sendAnswer) both funnel through the
+ *      same helper: same send-once semantics, same trickle forwarding.
  */
 
-type Send = { kind: "offer" | "answer"; peerId: string; sdp: string };
+type Send = {
+  kind: "offer" | "answer" | "iceCandidate";
+  peerId: string;
+  sdp?: string;
+  candidate?: string;
+};
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
 type Harness = {
@@ -125,17 +130,21 @@ function driver(page: Page) {
   };
 }
 
-/** A short fallback, but comfortably above the accumulated latency of the
- * several `page.evaluate` round-trips (invoke + fire) that precede each
- * assertion, so the fallback timer can't race in and send before we assert
- * that in-flight candidates were ignored. */
+/** Short fallback window used by the no-candidate tests. */
 const FALLBACK_TIMEOUT_MS = 300;
 /** Long enough that, by the time we check after this wait, the fallback
  * timer has definitely fired for the no-candidate tests. */
 const WAIT_AFTER_SEND_MS = 500;
 
-test.describe("ZeroHubClient armSendOnIceReady (send-once ICE-candidate wait)", () => {
-  test("sendOffer sends exactly once when candidates arrive after offer creation", async ({
+/** The host candidate a real browser trickles in first. */
+const HOST_CANDIDATE =
+  "candidate:1 1 udp 2122252543 1.2.3.4 5678 typ host";
+/** A second, later candidate (e.g. a STUN reflexive one). */
+const SRFLX_CANDIDATE =
+  "candidate:2 1 udp 184549489 5.6.7.8 9010 typ srflx raddr 0.0.0.0 rport 0";
+
+test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () => {
+  test("sendOffer sends exactly once and trickles post-SDP candidates", async ({
     page,
   }) => {
     await prepareUnitHarnessPage(page);
@@ -148,31 +157,48 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once ICE-candidate wait)", 
     h.stubSocket(id);
     await h.invokeSendOffer(id, "2");
 
-    await test.step("in-flight ICE candidates (carrying a candidate) are ignored", async () => {
-      await h.fireIceCandidate(id, "2", {
-        candidate: "candidate:1 1 udp 2122252543 1.2.3.4 5678 typ host",
-      });
+    await test.step("the first in-flight candidate fires the SDP send exactly once", async () => {
+      await h.fireIceCandidate(id, "2", { candidate: HOST_CANDIDATE });
       await page.waitForTimeout(30);
-      expect(await h.getSends(id)).toHaveLength(0);
+      const sends = (await h.getSends(id)) as Send[];
+      const sdpSends = sends.filter((s) => s.kind !== "iceCandidate");
+      expect(sdpSends).toHaveLength(1);
+      expect(sdpSends[0].kind).toBe("offer");
+      expect(sdpSends[0].peerId).toBe("2");
+      expect(sdpSends[0].sdp).toBe("offer-sdp");
+      // and the same candidate is trickled to the remote peer
+      const candidates = sends.filter((s) => s.kind === "iceCandidate");
+      expect(candidates).toHaveLength(1);
+      expect(candidates[0].peerId).toBe("2");
+      expect(candidates[0].candidate).toContain(HOST_CANDIDATE);
     });
 
-    await test.step("the candidate-less 'gathering complete' event fires the send", async () => {
-      await h.fireIceCandidate(id, "2", null);
+    await test.step("candidates trickled in AFTER the SDP are forwarded, not re-sent", async () => {
+      await h.fireIceCandidate(id, "2", { candidate: SRFLX_CANDIDATE });
+      await page.waitForTimeout(30);
       const sends = (await h.getSends(id)) as Send[];
-      expect(sends).toHaveLength(1);
-      expect(sends[0].kind).toBe("offer");
-      expect(sends[0].peerId).toBe("2");
-      expect(sends[0].sdp).toBe("offer-sdp");
+      // still exactly ONE SDP send
+      expect(sends.filter((s) => s.kind !== "iceCandidate")).toHaveLength(1);
+      // both candidates were forwarded
+      const candidates = sends.filter((s) => s.kind === "iceCandidate");
+      expect(candidates).toHaveLength(2);
+      expect(candidates[0].candidate).toContain(HOST_CANDIDATE);
+      expect(candidates[1].candidate).toContain(SRFLX_CANDIDATE);
     });
 
     await test.step("a further candidate event does not re-send", async () => {
       await h.fireIceCandidate(id, "2", null);
       await page.waitForTimeout(20);
-      expect((await h.getSends(id)) as Send[]).toHaveLength(1);
+      expect(
+        ((await h.getSends(id)) as Send[]).filter((s) => s.kind !== "iceCandidate"),
+      ).toHaveLength(1);
+      expect(
+        ((await h.getSends(id)) as Send[]).filter((s) => s.kind === "iceCandidate"),
+      ).toHaveLength(2);
     });
   });
 
-  test("sendAnswer sends exactly once when candidates arrive after answer creation", async ({
+  test("sendAnswer sends exactly once and trickles post-SDP candidates", async ({
     page,
   }) => {
     await prepareUnitHarnessPage(page);
@@ -184,25 +210,29 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once ICE-candidate wait)", 
     h.stubSocket(id);
     await h.invokeSendAnswer(id, "2", "v=0\n");
 
-    await test.step("an in-flight ICE candidate is ignored", async () => {
-      await h.fireIceCandidate(id, "2", {
-        candidate: "candidate:2 1 udp 184549489 5.6.7.8 9010 typ host",
-      });
+    await test.step("the first in-flight candidate fires the answer send exactly once", async () => {
+      await h.fireIceCandidate(id, "2", { candidate: HOST_CANDIDATE });
       await page.waitForTimeout(30);
-      expect(await h.getSends(id)).toHaveLength(0);
-    });
-
-    await test.step("the gathering-complete event fires the answer send exactly once", async () => {
-      await h.fireIceCandidate(id, "2", null);
       const sends = (await h.getSends(id)) as Send[];
-      expect(sends).toHaveLength(1);
+      expect(sends.filter((s) => s.kind !== "iceCandidate")).toHaveLength(1);
       expect(sends[0].kind).toBe("answer");
       expect(sends[0].peerId).toBe("2");
       expect(sends[0].sdp).toBe("answer-sdp");
     });
+
+    await test.step("a candidate trickled in AFTER the SDP is forwarded", async () => {
+      await h.fireIceCandidate(id, "2", { candidate: SRFLX_CANDIDATE });
+      await page.waitForTimeout(30);
+      const sends = (await h.getSends(id)) as Send[];
+      expect(sends.filter((s) => s.kind !== "iceCandidate")).toHaveLength(1);
+      const candidates = sends.filter((s) => s.kind === "iceCandidate");
+      expect(candidates).toHaveLength(2);
+      expect(candidates[0].candidate).toContain(HOST_CANDIDATE);
+      expect(candidates[1].candidate).toContain(SRFLX_CANDIDATE);
+    });
   });
 
-  test("sendOffer fires exactly once from the timeout when no candidates arrive", async ({
+  test("sendOffer fires exactly once from the timeout, then trickles late candidates", async ({
     page,
   }) => {
     await prepareUnitHarnessPage(page);
@@ -227,10 +257,15 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once ICE-candidate wait)", 
       expect(sends[0].sdp).toBe("offer-sdp");
     });
 
-    await test.step("a late candidate arriving after the timeout does not re-send", async () => {
-      await h.fireIceCandidate(id, "2", null);
-      await page.waitForTimeout(20);
-      expect((await h.getSends(id)) as Send[]).toHaveLength(1);
+    await test.step("a candidate trickled in after the timeout is forwarded, not re-sent", async () => {
+      await h.fireIceCandidate(id, "2", { candidate: HOST_CANDIDATE });
+      await page.waitForTimeout(30);
+      const sends = (await h.getSends(id)) as Send[];
+      expect(sends.filter((s) => s.kind !== "iceCandidate")).toHaveLength(1);
+      const candidates = sends.filter((s) => s.kind === "iceCandidate");
+      expect(candidates).toHaveLength(1);
+      expect(candidates[0].peerId).toBe("2");
+      expect(candidates[0].candidate).toContain(HOST_CANDIDATE);
     });
   });
 
@@ -255,7 +290,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once ICE-candidate wait)", 
     });
   });
 
-  test("sendOffer and sendAnswer share the same send-once contract (no drift)", async ({
+  test("sendOffer and sendAnswer share the same send-once + trickle contract (no drift)", async ({
     page,
   }) => {
     await prepareUnitHarnessPage(page);
@@ -266,18 +301,12 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once ICE-candidate wait)", 
     await h.sendHubInfo(id, "1", ["2", "3"]);
     h.stubSocket(id);
 
-    await test.step("both paths ignore in-flight candidates", async () => {
+    await test.step("each path sends the SDP exactly once on the first candidate", async () => {
       await h.invokeSendOffer(id, "2");
       await h.invokeSendAnswer(id, "3", "v=0\n");
       await h.fireIceCandidate(id, "2", { candidate: "cand-a" });
       await h.fireIceCandidate(id, "3", { candidate: "cand-b" });
       await page.waitForTimeout(30);
-      expect(await h.getSends(id)).toHaveLength(0);
-    });
-
-    await test.step("each path sends exactly once on gathering-complete", async () => {
-      await h.fireIceCandidate(id, "2", null);
-      await h.fireIceCandidate(id, "3", null);
       const sends = (await h.getSends(id)) as Send[];
       const offers = sends.filter((s) => s.kind === "offer");
       const answers = sends.filter((s) => s.kind === "answer");
@@ -287,10 +316,108 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once ICE-candidate wait)", 
       expect(answers[0].peerId).toBe("3");
     });
 
-    await test.step("re-firing the same events does not add more sends", async () => {
+    await test.step("each path trickles a later candidate without re-sending", async () => {
+      await h.fireIceCandidate(id, "2", { candidate: "cand-a-2" });
+      await h.fireIceCandidate(id, "3", { candidate: "cand-b-2" });
+      await page.waitForTimeout(30);
+      const sends = (await h.getSends(id)) as Send[];
+      expect(sends.filter((s) => s.kind === "offer")).toHaveLength(1);
+      expect(sends.filter((s) => s.kind === "answer")).toHaveLength(1);
+      expect(
+        sends.filter(
+          (s) => s.kind === "iceCandidate" && s.peerId === "2",
+        ),
+      ).toHaveLength(2);
+      expect(
+        sends.filter(
+          (s) => s.kind === "iceCandidate" && s.peerId === "3",
+        ),
+      ).toHaveLength(2);
+    });
+
+    await test.step("re-firing the gathering-complete event does not add more SDP sends", async () => {
       await h.fireIceCandidate(id, "2", null);
       await h.fireIceCandidate(id, "3", null);
-      expect((await h.getSends(id)) as Send[]).toHaveLength(2);
+      const sends = (await h.getSends(id)) as Send[];
+      expect(sends.filter((s) => s.kind !== "iceCandidate")).toHaveLength(2);
+    });
+  });
+
+  test("candidates are serialized via toJSON so sdpMid/sdpMLineIndex are preserved", async ({
+    page,
+  }) => {
+    // `RTCIceCandidateInit.sdpMid`/`sdpMLineIndex` are optional and the remote
+    // peer's `addIceCandidate` rejects a candidate that lacks them. The client
+    // must therefore emit the full `RTCIceCandidateInit` on the wire. We model
+    // a real `RTCIceCandidate` in-page: `sdpMid`/`sdpMLineIndex` as prototype
+    // accessors (NOT own enumerable properties — plain object serialization
+    // drops them) and a `toJSON()` returning the spec-correct init. The object
+    // must be built in-page (a `page.evaluate` arg would be JSON-serialized and
+    // lose its accessors/toJSON on the way in).
+    const LEGACY_CANDIDATE = "candidate:legacy 1 udp 2130 9.9.9.9 777 typ host";
+
+    await prepareUnitHarnessPage(page);
+    const h = driver(page);
+    const id = await h.createClient();
+
+    await h.setWaitIceTimeout(id, FALLBACK_TIMEOUT_MS);
+    await h.sendHubInfo(id, "1", ["2"]);
+    h.stubSocket(id);
+    await h.invokeSendOffer(id, "2");
+
+    await test.step("a candidate whose init fields live on toJSON reaches the wire complete", async () => {
+      await page.evaluate(([id, peerId, legacyCandidate]) => {
+        const proto = {
+          get sdpMid() {
+            return "0";
+          },
+          get sdpMLineIndex() {
+            return 0;
+          },
+          toJSON() {
+            return {
+              candidate: this.candidate,
+              sdpMid: this.sdpMid,
+              sdpMLineIndex: this.sdpMLineIndex,
+            };
+          },
+        };
+        const legacy = Object.create(proto);
+        legacy.candidate = legacyCandidate;
+        // Own-enumerable view only: `candidate` — the init fields are reachable
+        // through toJSON() alone.
+        ZeroHubUnitHarness.fireIceCandidate(id, peerId, legacy);
+      }, [id, "2", LEGACY_CANDIDATE]);
+      await page.waitForTimeout(30);
+
+      const sends = (await h.getSends(id)) as Send[];
+      const candidates = sends.filter((s) => s.kind === "iceCandidate");
+      expect(candidates).toHaveLength(1);
+      const parsed = JSON.parse(candidates[0].candidate as string);
+      // The full init, not just the own-enumerable `candidate` property.
+      expect(parsed).toEqual({
+        candidate: LEGACY_CANDIDATE,
+        sdpMid: "0",
+        sdpMLineIndex: 0,
+      });
+    });
+
+    await test.step("a candidate without toJSON is forwarded verbatim (own init fields survive)", async () => {
+      // The fallback branch (`typeof candidate.toJSON !== "function"`): a plain
+      // init-shaped object must reach the wire with its own fields intact.
+      const plain = {
+        candidate: "candidate:p 1 udp 1 8.8.8.8 55 typ host",
+        sdpMid: "0",
+        sdpMLineIndex: 0,
+      };
+      await h.fireIceCandidate(id, "2", plain);
+      await page.waitForTimeout(30);
+
+      const sends = (await h.getSends(id)) as Send[];
+      const candidates = sends.filter((s) => s.kind === "iceCandidate");
+      expect(candidates).toHaveLength(2);
+      const parsed = JSON.parse(candidates[1].candidate as string);
+      expect(parsed).toEqual(plain);
     });
   });
 });

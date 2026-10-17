@@ -33,6 +33,8 @@ type Hub interface {
 	SendOfferToPeer(toPeerId string, offerPeerId string, offerSdp string)
 	// SendAnswerToPeer sends an answer to a peer.
 	SendAnswerToPeer(toPeerId string, answerPeerId string, answerSdp string)
+	// SendIceCandidateToPeer sends a trickled ICE candidate to a peer.
+	SendIceCandidateToPeer(toPeerId string, icePeerId string, candidate string)
 	// AddPeer adds a peer to the hub.
 	AddPeer(p peer.Peer)
 }
@@ -174,6 +176,17 @@ func (h *hub) SendAnswerToPeer(toPeerId string, answerPeerId string, answerSdp s
 	}
 }
 
+// (h *hub) SendIceCandidateToPeer send trickled ice candidate to other peer.
+func (h *hub) SendIceCandidateToPeer(toPeerId string, icePeerId string, candidate string) {
+	if peer, err := h.PeerStorage.Get(toPeerId); peer != nil && peer.GetWSConn() != nil && err == nil {
+		if err := peer.SendIceCandidate(icePeerId, candidate); err != nil {
+			log.Error().Err(err).Str("peer_id", toPeerId).Msg("error sending ice candidate")
+		}
+	} else {
+		log.Error().Msg("error to send ice candidate to peer: peer not found")
+	}
+}
+
 func (h *hub) HandleMessage(p peer.Peer) {
 	var exitErr error
 	for {
@@ -208,6 +221,13 @@ func (h *hub) HandleMessage(p peer.Peer) {
 				h.SendAnswerToPeer(m.OfferPeerId, p.GetId(), m.AnswerSdp)
 			} else {
 				log.Warn().Msgf("ignoring self-targeted send-answer from peer %s", p.GetId())
+			}
+		case clientMessage.GetSendIceCandidateMessage() != nil:
+			m := clientMessage.GetSendIceCandidateMessage()
+			if m.PeerId != p.GetId() {
+				h.SendIceCandidateToPeer(m.PeerId, p.GetId(), m.Candidate)
+			} else {
+				log.Warn().Msgf("ignoring self-targeted send-ice-candidate from peer %s", p.GetId())
 			}
 		default:
 			log.Error().Msg("invalid client message type")

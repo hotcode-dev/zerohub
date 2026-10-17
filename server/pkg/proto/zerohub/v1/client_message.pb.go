@@ -130,7 +130,7 @@ func (x *SendAnswerMessage) GetAnswerSdp() string {
 	return ""
 }
 
-// Send ICE candidate message is not using yet
+// Send ICE candidate message is sent to the target peer with a trickled ICE candidate
 type SendIceCandidateMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// ID of the peer

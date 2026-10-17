@@ -41,6 +41,18 @@ func (m *MockPeer) EXPECT() *MockPeerMockRecorder {
 	return m.recorder
 }
 
+// Close mocks base method.
+func (m *MockPeer) Close() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Close")
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockPeerMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockPeer)(nil).Close))
+}
+
 // GetId mocks base method.
 func (m *MockPeer) GetId() string {
 	m.ctrl.T.Helper()
@@ -111,6 +123,20 @@ func (mr *MockPeerMockRecorder) SendHubInfo(hubInfoPb any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHubInfo", reflect.TypeOf((*MockPeer)(nil).SendHubInfo), hubInfoPb)
 }
 
+// SendIceCandidate mocks base method.
+func (m *MockPeer) SendIceCandidate(icePeerId, candidate string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendIceCandidate", icePeerId, candidate)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendIceCandidate indicates an expected call of SendIceCandidate.
+func (mr *MockPeerMockRecorder) SendIceCandidate(icePeerId, candidate any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendIceCandidate", reflect.TypeOf((*MockPeer)(nil).SendIceCandidate), icePeerId, candidate)
+}
+
 // SendOffer mocks base method.
 func (m *MockPeer) SendOffer(offerPeerId, offerSdp string) error {
 	m.ctrl.T.Helper()
@@ -123,18 +149,6 @@ func (m *MockPeer) SendOffer(offerPeerId, offerSdp string) error {
 func (mr *MockPeerMockRecorder) SendOffer(offerPeerId, offerSdp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendOffer", reflect.TypeOf((*MockPeer)(nil).SendOffer), offerPeerId, offerSdp)
-}
-
-// Close mocks base method.
-func (m *MockPeer) Close() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Close")
-}
-
-// Close indicates an expected call of Close.
-func (mr *MockPeerMockRecorder) Close() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockPeer)(nil).Close))
 }
 
 // SetId mocks base method.

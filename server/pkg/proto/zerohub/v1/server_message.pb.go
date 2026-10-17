@@ -369,7 +369,7 @@ func (x *AnswerMessage) GetAnswerSdp() string {
 	return ""
 }
 
-// IceCandidateMessage is not using yet
+// IceCandidateMessage relays a trickled ICE candidate from one peer to another
 type IceCandidateMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// ID of the peer

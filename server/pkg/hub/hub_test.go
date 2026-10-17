@@ -28,6 +28,9 @@ type fakePeer struct {
 	// answerPeer/answerSdp capture the SDP answer the peer received.
 	answerPeer string
 	answerSdp  string
+	// icePeer/iceCandidate capture the trickled ICE candidate the peer received.
+	icePeer      string
+	iceCandidate string
 	// sentHubInfo reports whether SendHubInfo was called.
 	sentHubInfo bool
 	// hubInfo captures the HubInfoMessage payload sent to the peer.
@@ -57,6 +60,11 @@ func (p *fakePeer) SendOffer(offerPeerId string, offerSdp string) error {
 func (p *fakePeer) SendAnswer(answerPeerId string, answerSdp string) error {
 	p.answerPeer = answerPeerId
 	p.answerSdp = answerSdp
+	return nil
+}
+func (p *fakePeer) SendIceCandidate(icePeerId string, candidate string) error {
+	p.icePeer = icePeerId
+	p.iceCandidate = candidate
 	return nil
 }
 func (p *fakePeer) GetId() string              { return p.id }
@@ -511,6 +519,37 @@ func TestSendAnswerToPeer(t *testing.T) {
 	}
 }
 
+// TestSendIceCandidateToPeer routes a trickled ICE candidate to the target peer,
+// passing the sender's peer id and the candidate verbatim.
+func TestSendIceCandidateToPeer(t *testing.T) {
+	t.Parallel()
+
+	h := &hub{
+		Id:          "id",
+		CreatedAt:   time.Now(),
+		Metadata:    "metadata",
+		IsPermanent: true,
+		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	}
+
+	target := &fakePeer{id: "2", conn: &websocket.Conn{}}
+	other := &fakePeer{id: "3"}
+	h.PeerStorage.Add("2", target)
+	h.PeerStorage.Add("3", other)
+
+	h.SendIceCandidateToPeer("2", "1", "candidate:1")
+
+	if target.icePeer != "1" {
+		t.Fatalf("target icePeer: want %q, got %q", "1", target.icePeer)
+	}
+	if target.iceCandidate != "candidate:1" {
+		t.Fatalf("target candidate: want %q, got %q", "candidate:1", target.iceCandidate)
+	}
+	if other.icePeer != "" || other.iceCandidate != "" {
+		t.Fatalf("non-target peer got a candidate: peer=%q cand=%q", other.icePeer, other.iceCandidate)
+	}
+}
+
 // TestSendRelayToMissingPeer covers the peer-not-found / nil-WSConn guard: a
 // missing target must not error the call, nor send to any other peer.
 func TestSendRelayToMissingPeer(t *testing.T) {
@@ -531,14 +570,18 @@ func TestSendRelayToMissingPeer(t *testing.T) {
 	// Unknown peer: must be a no-op.
 	h.SendOfferToPeer("99", "1", "offer-sdp")
 	h.SendAnswerToPeer("99", "1", "answer-sdp")
+	h.SendIceCandidateToPeer("99", "1", "candidate:1")
 
 	// Known peer with nil conn: must also be a no-op, not fall through to it.
 	h.SendOfferToPeer("3", "1", "offer-sdp")
 	h.SendAnswerToPeer("3", "1", "answer-sdp")
+	h.SendIceCandidateToPeer("3", "1", "candidate:1")
 
-	if noConn.offerPeer != "" || noConn.offerSdp != "" || noConn.answerPeer != "" || noConn.answerSdp != "" {
-		t.Fatalf("peer without conn received relay: offer=%q/%q answer=%q/%q",
-			noConn.offerPeer, noConn.offerSdp, noConn.answerPeer, noConn.answerSdp)
+	if noConn.offerPeer != "" || noConn.offerSdp != "" || noConn.answerPeer != "" || noConn.answerSdp != "" ||
+		noConn.icePeer != "" || noConn.iceCandidate != "" {
+		t.Fatalf("peer without conn received relay: offer=%q/%q answer=%q/%q ice=%q/%q",
+			noConn.offerPeer, noConn.offerSdp, noConn.answerPeer, noConn.answerSdp,
+			noConn.icePeer, noConn.iceCandidate)
 	}
 }
 
@@ -586,6 +629,20 @@ func TestHandleMessageRelay(t *testing.T) {
 		t.Fatalf("write answer: %v", err)
 	}
 
+	// A trickled ICE candidate frame must reach the target peer's
+	// SendIceCandidate with the local peer's id and the candidate verbatim.
+	iceCandidate := &pb.ClientMessage{Message: &pb.ClientMessage_SendIceCandidateMessage{SendIceCandidateMessage: &pb.SendIceCandidateMessage{
+		PeerId:    "2",
+		Candidate: "candidate:1 1 udp 2122252543 1.2.3.4 5678 typ host",
+	}}}
+	iceCandidateData, err := proto.Marshal(iceCandidate)
+	if err != nil {
+		t.Fatalf("marshal ice candidate: %v", err)
+	}
+	if err := clientConn.WriteMessage(websocket.BinaryMessage, iceCandidateData); err != nil {
+		t.Fatalf("write ice candidate: %v", err)
+	}
+
 	// HandleMessage relays both frames, then blocks on the next read until
 	// we close the conn from the client side.
 	done := make(chan struct{})
@@ -612,11 +669,17 @@ func TestHandleMessageRelay(t *testing.T) {
 	if target.answerSdp != "answer-sdp" {
 		t.Fatalf("answer sdp: want %q, got %q", "answer-sdp", target.answerSdp)
 	}
+	if target.icePeer != "1" {
+		t.Fatalf("ice candidate routed with wrong icePeerId: want %q, got %q", "1", target.icePeer)
+	}
+	if target.iceCandidate != "candidate:1 1 udp 2122252543 1.2.3.4 5678 typ host" {
+		t.Fatalf("ice candidate: want host candidate verbatim, got %q", target.iceCandidate)
+	}
 }
 
 // TestHandleMessageSelfTargetRelay verifies that a SendOfferMessage /
-// SendAnswerMessage whose target equals the sender's own peer ID is dropped:
-// the sender must not receive its own SDP back.
+// SendAnswerMessage / SendIceCandidateMessage whose target equals the sender's
+// own peer ID is dropped: the sender must not receive its own SDP back.
 func TestHandleMessageSelfTargetRelay(t *testing.T) {
 	t.Parallel()
 
@@ -656,6 +719,18 @@ func TestHandleMessageSelfTargetRelay(t *testing.T) {
 		t.Fatalf("write answer: %v", err)
 	}
 
+	iceCandidate := &pb.ClientMessage{Message: &pb.ClientMessage_SendIceCandidateMessage{SendIceCandidateMessage: &pb.SendIceCandidateMessage{
+		PeerId:    "1", // self-target
+		Candidate: "candidate:1 1 udp 2122252543 1.2.3.4 5678 typ host",
+	}}}
+	iceCandidateData, err := proto.Marshal(iceCandidate)
+	if err != nil {
+		t.Fatalf("marshal ice candidate: %v", err)
+	}
+	if err := clientConn.WriteMessage(websocket.BinaryMessage, iceCandidateData); err != nil {
+		t.Fatalf("write ice candidate: %v", err)
+	}
+
 	// HandleMessage processes both frames, then blocks on the next read until
 	// we close the conn from the client side.
 	done := make(chan struct{})
@@ -670,8 +745,10 @@ func TestHandleMessageSelfTargetRelay(t *testing.T) {
 		t.Fatal("HandleMessage did not return after conn close")
 	}
 
-	if sender.offerPeer != "" || sender.offerSdp != "" || sender.answerPeer != "" || sender.answerSdp != "" {
-		t.Fatalf("sender received its own SDP: offer=%q/%q answer=%q/%q",
-			sender.offerPeer, sender.offerSdp, sender.answerPeer, sender.answerSdp)
+	if sender.offerPeer != "" || sender.offerSdp != "" || sender.answerPeer != "" || sender.answerSdp != "" ||
+		sender.icePeer != "" || sender.iceCandidate != "" {
+		t.Fatalf("sender received its own SDP: offer=%q/%q answer=%q/%q ice=%q/%q",
+			sender.offerPeer, sender.offerSdp, sender.answerPeer, sender.answerSdp,
+			sender.icePeer, sender.iceCandidate)
 	}
 }

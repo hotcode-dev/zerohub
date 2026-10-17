@@ -61,7 +61,7 @@ message AnswerMessage {
   string answer_sdp = 2;
 }
 
-// IceCandidateMessage is not using yet
+// IceCandidateMessage relays a trickled ICE candidate from one peer to another
 message IceCandidateMessage {
   // ID of the peer
   string peer_id = 1;

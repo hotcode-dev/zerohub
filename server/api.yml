@@ -407,6 +407,7 @@ components:
         oneOf:
           - $ref: '#/components/schemas/ClientSendOfferVariant'
           - $ref: '#/components/schemas/ClientSendAnswerVariant'
+          - $ref: '#/components/schemas/ClientSendIceCandidateVariant'
       x-protobuf-message: proto.zerohub.v1.ClientMessage
 
     ServerMessage:
@@ -513,6 +514,14 @@ components:
           $ref: '#/components/schemas/SendAnswerMessage'
       additionalProperties: false
 
+    ClientSendIceCandidateVariant:
+      type: object
+      required: [send_ice_candidate_message]
+      properties:
+        send_ice_candidate_message:
+          $ref: '#/components/schemas/SendIceCandidateMessage'
+      additionalProperties: false
+
     SendOfferMessage:
       type: object
       required: [answer_peer_id, offer_sdp]
@@ -530,6 +539,16 @@ components:
         offer_peer_id:
           type: string
         answer_sdp:
+          type: string
+      additionalProperties: false
+
+    SendIceCandidateMessage:
+      type: object
+      required: [peer_id, candidate]
+      properties:
+        peer_id:
+          type: string
+        candidate:
           type: string
       additionalProperties: false
 
