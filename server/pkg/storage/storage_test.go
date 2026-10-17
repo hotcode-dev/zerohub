@@ -2,6 +2,7 @@ package storage
 
 import (
 	"testing"
+	"time"
 )
 
 // backends is the list of storage backends under test.
@@ -179,5 +180,60 @@ func TestGacheStorageNoTTL(t *testing.T) {
 	}
 	if expire > 0 {
 		t.Fatalf("entry has TTL expiry; want no expiration (NoTTL) so hub/peer lifecycle is app-managed")
+	}
+}
+
+// TestGetAllYieldDoesNotHoldLock is a regression test for zf-z-c4cc6a7a:
+// the memory backend used to hold its RLock across the entire yield loop,
+// so a yield that performs a blocking side effect (e.g. a network write in
+// hub.AddPeer/RemovePeerById's broadcast) pinned the storage read-lock and
+// serialized every concurrent Get/Add/Delete/IsEmpty on the same hub. The
+// storage lock must be released before yield is called (snapshot-then-yield,
+// matching gache's read-copy-on-write semantics), so a mutating operation
+// issued while yield is in flight must complete without deadlocking.
+func TestGetAllYieldDoesNotHoldLock(t *testing.T) {
+	t.Parallel()
+
+	for _, b := range backends {
+		newStorage := b.Factory()
+
+		t.Run(b.Name, func(t *testing.T) {
+			t.Parallel()
+
+			newStorage.Add("a", 1)
+
+			// Park the test inside yield, then Add on the same storage. If
+			// the read-lock is held across yield (the pre-fix memory
+			// behavior) the Add deadlocks on the RLock held by this
+			// goroutine and times out.
+			addDone := make(chan struct{})
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				for v := range newStorage.GetAll() {
+					if v != 1 {
+						continue
+					}
+					go func() {
+						defer close(addDone)
+						newStorage.Add("b", 2)
+					}()
+					// Wait until the Add has completed while still inside
+					// yield: with the lock released the Add proceeds, with
+					// the lock held it never does.
+					<-addDone
+				}
+			}()
+
+			select {
+			case <-done:
+			case <-time.After(2 * time.Second):
+				t.Fatal("GetAll's yield held the storage lock: in-yield Add deadlocked")
+			}
+
+			if _, err := newStorage.Get("b"); err != nil {
+				t.Fatalf("Get(b) after in-yield Add: %v; want nil", err)
+			}
+		})
 	}
 }

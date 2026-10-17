@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -39,10 +40,22 @@ type fakePeer struct {
 	// force the join-signal marshal path to fail (an invalid-UTF-8 Id makes
 	// proto.Marshal of the resulting PeerJoinedMessage return an error).
 	protoOverride *pb.Peer
+	// stallFirst, when non-nil, makes the peer's first SendBinaryMessage
+	// block until the test closes stallFirst (simulating a stalled
+	// WebSocket write); parkedSig is closed when that first send has
+	// parked, so the test can time the stall deterministically. Every
+	// later send is immediate.
+	stallFirst chan struct{}
+	parkedSig  chan struct{}
+	stalled    atomic.Bool
 }
 
 func (p *fakePeer) SendBinaryMessage(data []byte) error {
 	p.received++
+	if p.stallFirst != nil && !p.stalled.Swap(true) {
+		close(p.parkedSig)
+		<-p.stallFirst
+	}
 	return nil
 }
 
@@ -750,5 +763,178 @@ func TestHandleMessageSelfTargetRelay(t *testing.T) {
 		t.Fatalf("sender received its own SDP: offer=%q/%q answer=%q/%q ice=%q/%q",
 			sender.offerPeer, sender.offerSdp, sender.answerPeer, sender.answerSdp,
 			sender.icePeer, sender.iceCandidate)
+	}
+}
+
+// TestAddPeerStalledBroadcastDoesNotBlockConcurrentRemovePeerById is a
+// regression test for zf-z-c4cc6a7a: with the memory backend,
+// memoryStorage.GetAll used to hold the peer-storage RLock across the whole
+// yield loop, so a stalled SendBinaryMessage inside AddPeer's broadcast
+// pinned the read-lock and blocked every concurrent storage operation
+// (RemovePeerById's Get/Delete, and a concurrent AddPeer's Add/GetAll) on
+// the same hub. memoryStorage.GetAll now snapshots the roster under the
+// read-lock and yields after releasing it (matching gache's
+// read-copy-on-write RangeIterValue), so the concurrent op must complete
+// while the first broadcast is stalled.
+//
+// Design: slowPeer's FIRST SendBinaryMessage parks (stallFirst), so
+// AddPeer's broadcast blocks on it while AddPeer's RLock is held pre-fix.
+// The test observes the stall via slowPeer.parkedSig, then a concurrent
+// RemovePeerById must complete: its Get/Delete and its own broadcast (the
+// new peer's join signal reaches slowPeer, whose stall was already
+// consumed, so that send is immediate) must not wait on the stalled
+// iteration.
+func TestAddPeerStalledBroadcastDoesNotBlockConcurrentRemovePeerById(t *testing.T) {
+	t.Parallel()
+
+	h := &hub{
+		Id:          "id",
+		CreatedAt:   time.Now(),
+		Metadata:    "metadata",
+		IsPermanent: false,
+		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	}
+
+	// slowPeer parks on its first send; leaver is the peer RemovePeerById
+	// removes. Both are present when AddPeer starts.
+	slowPeer := &fakePeer{id: "5", stallFirst: make(chan struct{}), parkedSig: make(chan struct{})}
+	leaver := &fakePeer{id: "6"}
+	h.PeerStorage.Add("5", slowPeer)
+	h.PeerStorage.Add("6", leaver)
+
+	addDone := make(chan struct{})
+	go func() {
+		defer close(addDone)
+		h.AddPeer(&fakePeer{})
+	}()
+
+	// Deterministic barrier: wait until AddPeer's join-signal broadcast has
+	// reached slowPeer's stalled first send. From here on AddPeer is parked
+	// in slowPeer's SendBinaryMessage, and (pre-fix) the storage RLock is
+	// held for as long as the iteration runs.
+	select {
+	case <-slowPeer.parkedSig:
+	case <-time.After(5 * time.Second):
+		t.Fatal("AddPeer's broadcast did not reach the stalled peer's send")
+	}
+
+	// Must complete even with the broadcast stalled: RemovePeerById's
+	// storage operations (Get/Delete/IsEmpty) and its own disconnect
+	// broadcast must not wait on the stalled network I/O. Pre-fix its
+	// Get("6") deadlocked on the RLock held by AddPeer's iteration.
+	empty := h.RemovePeerById("6")
+	// leaver is gone; the new peer (added by AddPeer before its broadcast)
+	// and slowPeer remain, so the hub must not report empty.
+	if empty {
+		t.Fatal("RemovePeerById reported hub empty while other peers are present")
+	}
+
+	// Resolve the stalled send and let AddPeer finish.
+	close(slowPeer.stallFirst)
+	select {
+	case <-addDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("AddPeer did not complete after the stalled send was resolved")
+	}
+
+	// slowPeer got the join signal (AddPeer) and the disconnect signal
+	// (RemovePeerById); leaver got the join signal only (it was removed
+	// before the disconnect broadcast).
+	if slowPeer.received != 2 {
+		t.Fatalf("slow peer received %d signals; want 2 (join + disconnect)", slowPeer.received)
+	}
+	if leaver.received != 1 {
+		t.Fatalf("leaver received %d signals; want 1 (join only)", leaver.received)
+	}
+}
+
+// TestRemovePeerStalledBroadcastDoesNotBlockConcurrentAddPeer is the mirror
+// for RemovePeerById's disconnect broadcast: a peer whose WebSocket write is
+// stalled on the first send must not pin the peer-storage read-lock and block
+// a concurrent AddPeer's storage write and iteration.
+//
+// Design: slowPeer's first SendBinaryMessage parks, so RemovePeerById's
+// disconnect broadcast blocks on it while its RLock is held pre-fix. The
+// test observes the stall via slowPeer.parkedSig, then a concurrent AddPeer
+// must complete: its storage Add + roster GetAll + the new peer's
+// SendHubInfo must not wait on the stalled iteration.
+func TestRemovePeerStalledBroadcastDoesNotBlockConcurrentAddPeer(t *testing.T) {
+	t.Parallel()
+
+	h := &hub{
+		Id:          "id",
+		CreatedAt:   time.Now(),
+		Metadata:    "metadata",
+		IsPermanent: false,
+		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	}
+
+	slowPeer := &fakePeer{id: "5", stallFirst: make(chan struct{}), parkedSig: make(chan struct{})}
+	leaver := &fakePeer{id: "2"}
+	other := &fakePeer{id: "3"}
+	h.PeerStorage.Add("5", slowPeer)
+	h.PeerStorage.Add("2", leaver)
+	h.PeerStorage.Add("3", other)
+
+	removeDone := make(chan struct{})
+	go func() {
+		defer close(removeDone)
+		_ = h.RemovePeerById("2")
+	}()
+
+	// Deterministic barrier: wait until RemovePeerById's disconnect
+	// broadcast has reached slowPeer's stalled first send. From here on
+	// RemovePeerById is parked in slowPeer's SendBinaryMessage, and
+	// (pre-fix) the storage RLock is held for as long as the iteration runs.
+	select {
+	case <-slowPeer.parkedSig:
+	case <-time.After(5 * time.Second):
+		t.Fatal("RemovePeerById's broadcast did not reach the stalled peer's send")
+	}
+
+	// A concurrent AddPeer must complete even with the disconnect broadcast
+	// stalled: its storage Add and its own join broadcast (which reaches
+	// slowPeer's now-immutable stall state, so its send is immediate) must
+	// not wait on the stalled iteration. Pre-fix its storage.Add / GetAll
+	// deadlocked on the RLock held by RemovePeerById's iteration.
+	newPeer := &fakePeer{}
+	h.AddPeer(newPeer)
+
+	// Resolve the stalled send and let RemovePeerById finish.
+	close(slowPeer.stallFirst)
+	select {
+	case <-removeDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("RemovePeerById did not complete after the stalled send was resolved")
+	}
+
+	// slowPeer got the disconnect signal (RemovePeerById) and the join
+	// signal (AddPeer). other got both as well; leaver got none — it was
+	// removed by RemovePeerById before AddPeer's join snapshot, so it is in
+	// neither broadcast.
+	if slowPeer.received != 2 {
+		t.Fatalf("slow peer received %d signals; want 2 (disconnect + join)", slowPeer.received)
+	}
+	if other.received != 2 {
+		t.Fatalf("other peer received %d signals; want 2 (disconnect + join)", other.received)
+	}
+	if leaver.received != 0 {
+		t.Fatalf("leaver received %d signals; want 0 (removed before both broadcasts)", leaver.received)
+	}
+	// The new peer's HubInfo roster is a point-in-time snapshot: leaver was
+	// already removed by RemovePeerById, so the roster holds exactly the
+	// remaining peers (other + slowPeer) and not leaver.
+	if newPeer.hubInfo == nil {
+		t.Fatal("new peer did not receive a HubInfoMessage")
+	}
+	ids := map[string]bool{}
+	for _, p := range newPeer.hubInfo.Peers {
+		ids[p.Id] = true
+	}
+	if len(newPeer.hubInfo.Peers) != 2 {
+		t.Fatalf("new peer's HubInfo roster has %d peers; want 2 (peers 3 and 5)", len(newPeer.hubInfo.Peers))
+	}
+	if !ids["3"] || !ids["5"] || ids["2"] {
+		t.Fatalf("new peer's HubInfo roster: want peers 3 and 5, not 2; got %v", ids)
 	}
 }
