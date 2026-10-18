@@ -64,6 +64,13 @@ channels:
       - id (required): hub id
       - peerMetadata (optional): stringified peer metadata
       - hubMetadata (optional): stringified hub metadata
+
+      Hub ids are not globally unique across modes: each hub type (static,
+      random, IP, permanent) keeps its own storage. If a hub with the same
+      id already exists in the permanent or random namespace on this
+      server, this endpoint answers 409 Conflict with the body
+      `{"error": "hub id collides with another hub type"}` instead of
+      creating a shadow hub under the same id.
     messages:
       clientMessage:
         $ref: '#/components/messages/ClientMessage'
@@ -97,6 +104,13 @@ channels:
       - id (required): hub id
       - peerMetadata (optional): stringified peer metadata
       - hubMetadata (optional): stringified hub metadata (used only on create)
+
+      If the id is already held by the permanent or random namespace,
+      this endpoint answers 409 Conflict with the body
+      `{"error": "hub id collides with another hub type"}` instead of
+      creating a parallel static hub under the same id — joining a
+      permanent hub with the same id reaches that hub, so a shadow static
+      hub would fragment the room under one public id.
     messages:
       clientMessage:
         $ref: '#/components/messages/ClientMessage'

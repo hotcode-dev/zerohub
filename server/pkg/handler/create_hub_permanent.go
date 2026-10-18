@@ -49,11 +49,9 @@ func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
 	// fragmenting the room under one public id. IP hubs are excluded:
 	// their ids are derived from the client IP and cannot collide with a
 	// user-chosen id.
-	if h.zeroHub.GetHubById(hubId) != nil || h.zeroHubRandom.GetHubById(hubId) != nil {
-		log.Error().Err(fmt.Errorf("hub with id %s already exists in another hub type", hubId)).Send()
-		return h.Response(ctx, fasthttp.StatusConflict, map[string]string{"error": "hub id collides with another hub type"})
+	if h.rejectHubIdCollidesWithOtherModes(ctx, hubId, h.zeroHub, h.zeroHubRandom) {
+		return nil
 	}
-
 	newHub, err := h.zeroHubPermanent.CreateHubIfAbsent(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), true)
 	if err != nil {
 		if errors.Is(err, zerohub.ErrHubAlreadyExists) {

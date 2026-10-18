@@ -47,6 +47,14 @@ func TestCreateHubStaticConcurrent(t *testing.T) {
 		MaxTimes(workers)
 
 	h := newTestHandler()
+	// The cross-mode collision guard probes the permanent and random
+	// instances before touching the static one; both are empty here.
+	permanentMock := zerohub.NewMockZeroHub(ctrl)
+	permanentMock.EXPECT().GetHubById(gomock.Any()).Return(nil).MaxTimes(workers)
+	randomMock := zerohub.NewMockZeroHub(ctrl)
+	randomMock.EXPECT().GetHubById(gomock.Any()).Return(nil).MaxTimes(workers)
+	h.zeroHubPermanent = permanentMock
+	h.zeroHubRandom = randomMock
 
 	var wg sync.WaitGroup
 	for i := 0; i < workers; i++ {
@@ -87,6 +95,14 @@ func TestCreateHubStaticAlreadyExists(t *testing.T) {
 		MaxTimes(1)
 
 	h := newTestHandler()
+	// The cross-mode collision guard probes the permanent and random
+	// instances before touching the static one; both are empty here.
+	permanentMock := zerohub.NewMockZeroHub(ctrl)
+	permanentMock.EXPECT().GetHubById(gomock.Any()).Return(nil).MaxTimes(1)
+	randomMock := zerohub.NewMockZeroHub(ctrl)
+	randomMock.EXPECT().GetHubById(gomock.Any()).Return(nil).MaxTimes(1)
+	h.zeroHubPermanent = permanentMock
+	h.zeroHubRandom = randomMock
 
 	ctx := &fasthttp.RequestCtx{}
 	ctx.Request.SetRequestURI("http://127.0.0.1/v1/hubs/create?id=" + hubId)
@@ -239,6 +255,122 @@ func TestCreateHubPermanentCollidesWithOtherMode(t *testing.T) {
 
 			if err := h.CreateHubPermanent(ctx); err != nil {
 				t.Fatalf("CreateHubPermanent returned unexpected error: %v", err)
+			}
+			if code := ctx.Response.StatusCode(); code != fasthttp.StatusConflict {
+				t.Errorf("status = %d, want %d", code, fasthttp.StatusConflict)
+			}
+			if body := string(ctx.Response.Body()); !strings.Contains(body, "hub id collides with another hub type") {
+				t.Errorf("body = %q, want it to contain the collision error", body)
+			}
+		})
+	}
+}
+
+// TestCreateHubStaticCollidesWithOtherMode pins the inverse of
+// TestCreateHubPermanentCollidesWithOtherMode: when the permanent or random
+// instance already holds a hub with the requested id, the unauthenticated
+// static create must answer 409 with the collision error instead of
+// silently minting a shadow hub in the static namespace.
+func TestCreateHubStaticCollidesWithOtherMode(t *testing.T) {
+	const hubId = "hot-hub"
+
+	colliding, err := hub.NewHub(hubId, `{"name":"test"}`, nil, true)
+	if err != nil {
+		t.Fatalf("NewHub: %v", err)
+	}
+
+	tests := []struct {
+		name          string
+		seedPermanent bool
+		seedRandom    bool
+	}{
+		{"permanent", true, false},
+		{"random", false, true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			staticMock := zerohub.NewMockZeroHub(ctrl)
+			permanentMock := zerohub.NewMockZeroHub(ctrl)
+			randomMock := zerohub.NewMockZeroHub(ctrl)
+
+			if tc.seedPermanent {
+				permanentMock.EXPECT().GetHubById(hubId).Return(colliding)
+				// The permanent probe hits: the random probe never runs.
+			} else {
+				permanentMock.EXPECT().GetHubById(hubId).Return(nil)
+				randomMock.EXPECT().GetHubById(hubId).Return(colliding)
+			}
+			// No CreateHubIfAbsent expectation: the collision must be
+			// rejected before the static instance is touched.
+
+			h := newTestHandler()
+			h.zeroHub = staticMock
+			h.zeroHubPermanent = permanentMock
+			h.zeroHubRandom = randomMock
+
+			ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create?id=" + hubId)
+
+			if err := h.CreateHubStatic(ctx, staticMock); err != nil {
+				t.Fatalf("CreateHubStatic returned unexpected error: %v", err)
+			}
+			if code := ctx.Response.StatusCode(); code != fasthttp.StatusConflict {
+				t.Errorf("status = %d, want %d", code, fasthttp.StatusConflict)
+			}
+			if body := string(ctx.Response.Body()); !strings.Contains(body, "hub id collides with another hub type") {
+				t.Errorf("body = %q, want it to contain the collision error", body)
+			}
+		})
+	}
+}
+
+// TestJoinOrCreateHubStaticCollidesWithOtherMode covers the static
+// join-or-create path, the most surprising half of the asymmetry: a
+// join-or-create for an ID that already exists as a permanent hub must
+// answer 409 instead of silently creating a parallel static hub under the
+// same id.
+func TestJoinOrCreateHubStaticCollidesWithOtherMode(t *testing.T) {
+	const hubId = "hot-hub"
+
+	colliding, err := hub.NewHub(hubId, `{"name":"test"}`, nil, true)
+	if err != nil {
+		t.Fatalf("NewHub: %v", err)
+	}
+
+	tests := []struct {
+		name          string
+		seedPermanent bool
+		seedRandom    bool
+	}{
+		{"permanent", true, false},
+		{"random", false, true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			staticMock := zerohub.NewMockZeroHub(ctrl)
+			permanentMock := zerohub.NewMockZeroHub(ctrl)
+			randomMock := zerohub.NewMockZeroHub(ctrl)
+
+			if tc.seedPermanent {
+				permanentMock.EXPECT().GetHubById(hubId).Return(colliding)
+				// The permanent probe hits: the random probe never runs.
+			} else {
+				permanentMock.EXPECT().GetHubById(hubId).Return(nil)
+				randomMock.EXPECT().GetHubById(hubId).Return(colliding)
+			}
+			// No GetOrCreateHub expectation: the collision must be
+			// rejected before the static instance is touched.
+
+			h := newTestHandler()
+			h.zeroHub = staticMock
+			h.zeroHubPermanent = permanentMock
+			h.zeroHubRandom = randomMock
+
+			ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join-or-create?id=" + hubId)
+
+			if err := h.JoinOrCreateHubStatic(ctx, staticMock); err != nil {
+				t.Fatalf("JoinOrCreateHubStatic returned unexpected error: %v", err)
 			}
 			if code := ctx.Response.StatusCode(); code != fasthttp.StatusConflict {
 				t.Errorf("status = %d, want %d", code, fasthttp.StatusConflict)

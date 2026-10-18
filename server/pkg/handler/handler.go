@@ -19,9 +19,9 @@
 //	Path                                       Method     Hub Type    Description
 //	/v1/status                                 GET        -           Health / version endpoint
 //	/v1/admin/migrate                          GET        -           Trigger zero-downtime migration
-//	/v1/hubs/create                            GET        Static      Create a new static hub
+//	/v1/hubs/create                            GET        Static      Create a new static hub (cross-mode collision-checked against permanent/random: 409 if the id exists in another mode's storage)
 //	/v1/hubs/join                              GET        Static      Join an existing static hub
-//	/v1/hubs/join-or-create                    GET        Static      Join or create a static hub
+//	/v1/hubs/join-or-create                    GET        Static      Join or create a static hub (cross-mode collision-checked against permanent/random: 409 if the id exists in another mode's storage)
 //	/v1/hubs/get                               GET        Static      Get hub metadata
 //	/v1/random-hubs/create                     GET        Random      Create a random-hub
 //	/v1/random-hubs/join                       GET        Random      Join an existing random-hub
