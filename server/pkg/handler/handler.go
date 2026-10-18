@@ -134,6 +134,12 @@ type handler struct {
 	zeroHubIP zerohub.ZeroHub
 	// zeroHubPermanent is the ZeroHub instance for permanent hubs.
 	zeroHubPermanent zerohub.ZeroHub
+	// allowedOrigins is the parsed APP_ALLOWED_ORIGINS allow-list used by the
+	// WebSocket upgrader's CheckOrigin (see sameOriginOrAllowed). Requests
+	// without an Origin or whose Origin host matches the request Host are
+	// always allowed; this list only widens the gate for explicitly listed
+	// origins.
+	allowedOrigins []string
 }
 
 // NewHandler create a new handler
@@ -149,6 +155,7 @@ func NewHandler(cfg *config.Config, zeroHub zerohub.ZeroHub, zeroHubRandom zeroh
 		zeroHubRandom:    zeroHubRandom,
 		zeroHubIP:        zeroHubIP,
 		zeroHubPermanent: zerohubPermanent,
+		allowedOrigins:   parseAllowedOrigins(cfg.App.AllowedOrigins),
 	}, nil
 }
 
