@@ -56,10 +56,25 @@ class MockWebSocket {
   public onerror: ((event: unknown) => void) | null;
   public onclose: ((event: { code: number; reason: string }) => void) | null;
   public onopen: (() => void) | null;
+  /**
+   * Mirrors the browser `readyState`: `1` (OPEN) by default — the mock
+   * models the handshake as already complete, matching how the rest of
+   * the suite drives sockets. `0` (CONNECTING) is set explicitly by
+   * `markSocketConnecting` (the reconnect CONNECTING-window specs);
+   * `3` (CLOSED) after `close()`. The client's `sendZeroHubMessage`
+   * checks this against `WebSocket.OPEN` (a static on this mock, below),
+   * and `send()` throws an `InvalidStateError` (like a real browser) when
+   * called in any state other than OPEN.
+   */
+  public readyState: 0 | 1 | 3;
   /** Close codes passed to `close()` (inspectable by specs). */
   public readonly __closeCalls: number[];
   /** Whether `close()` has been called. */
   public __closed: boolean;
+  /** Encoded payloads successfully delivered via `send()` while OPEN. */
+  public readonly __sends: unknown[];
+  /** Payloads `send()` refused (non-OPEN state; the throw is recorded). */
+  public readonly __rejectedSends: unknown[];
 
   constructor(url: string | URL) {
     this.__instanceId = ++wsInstanceSeq;
@@ -70,17 +85,31 @@ class MockWebSocket {
     this.onerror = null;
     this.onclose = null;
     this.onopen = null;
+    this.readyState = 1;
     this.__closeCalls = [];
     this.__closed = false;
+    this.__sends = [];
+    this.__rejectedSends = [];
   }
 
   close(code?: number): void {
     this.__closed = true;
     this.__closeCalls.push(code ?? 1000);
+    this.readyState = 3;
   }
 
-  send(_data: unknown): void {
-    // no-op
+  send(data: unknown): void {
+    if (this.readyState !== 1) {
+      this.__rejectedSends.push(data);
+      // Match the browser: `send()` on a CONNECTING/CLOSING socket throws
+      // a DOMException (InvalidStateError). (The mock has no CLOSING state,
+      // so only CONNECTING/CLOSED reach this branch.)
+      throw new DOMException(
+        "Failed to send because the WebSocket was closed.",
+        "InvalidStateError"
+      );
+    }
+    this.__sends.push(data);
   }
 }
 
@@ -91,6 +120,15 @@ const wsInstances: MockWebSocket[] = [];
 // client only opens sockets at runtime (inside `connectToZeroHub`), so this
 // assignment is in time.
 (globalThis as { WebSocket: unknown }).WebSocket = MockWebSocket;
+
+// Browser `WebSocket` statics — the client's `sendZeroHubMessage` compares
+// `ws.readyState` against `WebSocket.OPEN`, so the mock must expose the
+// constants (the real browser does).
+const mockWebSocketStatics = MockWebSocket as unknown as Record<string, number>;
+mockWebSocketStatics.CONNECTING = 0;
+mockWebSocketStatics.OPEN = 1;
+mockWebSocketStatics.CLOSING = 2;
+mockWebSocketStatics.CLOSED = 3;
 
 /**
  * A minimal stand-in for the browser `RTCPeerConnection`.
@@ -777,6 +815,10 @@ const ZeroHubUnitHarness = {
       entry.sends = [];
     }
     entry.client.ws = {
+      // Model an OPEN socket so the client's `readyState !== OPEN` guard in
+      // `sendZeroHubMessage` passes for the stub (a plain object has no real
+      // `readyState`; `undefined !== 1` would refuse every send).
+      readyState: 1,
       close() {},
       send(data: unknown) {
         const msg = ClientMessage.decode(data as Uint8Array);
@@ -1019,6 +1061,13 @@ const ZeroHubUnitHarness = {
     if (!ws || typeof ws.send !== "function") {
       throw new Error(`client ${id} has no live socket to capture`);
     }
+    // Model the handshake as completed BEFORE wrapping `send`: the client's
+    // `sendZeroHubMessage` refuses to send on a CONNECTING socket, so a
+    // still-CONNECTING live socket would swallow the very SDP this spec is
+    // about to capture. Flipping OPEN first also ensures the replacement
+    // below is what actually runs (a CONNECTING socket would still route
+    // through the original mock `send` and throw before reaching this).
+    ws.readyState = 1;
     ws.send = function (data: unknown) {
       const msg = ClientMessage.decode(data as Uint8Array);
       if (msg.sendOfferMessage) {
@@ -1069,6 +1118,44 @@ const ZeroHubUnitHarness = {
     }
     const mine = wsInstances.filter((ws) => ws.__instanceId > entry.createdAtWsSeq);
     return mine.length > 0 ? mine[mine.length - 1].url : null;
+  },
+
+  /**
+   * Flips the live socket to CONNECTING (browser `readyState === 0`),
+   * modeling the reconnection handshake still in flight. Use right after a
+   * reconnect (e.g. following `simulateAbnormalClose`) when the spec needs
+   * signaling sends to be REFUSED while the new socket is not yet OPEN.
+   * (The mock models the handshake as complete by default; this is the
+   * opt-in for the CONNECTING-window regression specs.)
+   */
+  markSocketConnecting(id: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const ws = entry.client.ws as unknown as MockWebSocket | undefined;
+    if (!ws) {
+      throw new Error(`client ${id} has no live socket to mark connecting`);
+    }
+    ws.readyState = 0;
+  },
+
+  /**
+   * Flips the live socket back to OPEN (browser `readyState === 1`),
+   * modeling the reconnection handshake completing. The mirror of
+   * `markSocketConnecting`: after the failed-CONNECTING-window spec step,
+   * the next signaling send must reach the socket and be captured.
+   */
+  openSocket(id: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const ws = entry.client.ws as unknown as MockWebSocket | undefined;
+    if (!ws) {
+      throw new Error(`client ${id} has no live socket to open`);
+    }
+    ws.readyState = 1;
   },
 
   /**
