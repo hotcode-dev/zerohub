@@ -326,3 +326,149 @@ function invokeArmSend(
     }
   ).armSendOnIceReady(peerId, rtc as unknown as RTCPeerConnection, sendOnce);
 }
+
+/**
+ * A fake signaling socket that stands in for `client.ws`: it exposes the
+ * `readyState` the client's `sendZeroHubMessage` checks, and `send()`
+ * throws an `InvalidStateError` like a real browser when the socket is not
+ * OPEN. Lets specs deterministically simulate the CONNECTING/CLOSING window
+ * without a live WebSocket.
+ */
+class FakeWebSocket {
+  public readyState = 0; // CONNECTING
+  public sent: unknown[] = [];
+
+  send(data: unknown) {
+    if (this.readyState !== WebSocket.OPEN) {
+      throw new DOMException("not open", "InvalidStateError");
+    }
+    this.sent.push(data);
+  }
+}
+
+describe("sendZeroHubMessage — socket readyState guard", () => {
+  it("throws a clean error for a CONNECTING socket instead of a raw InvalidStateError from ws.send()", () => {
+    const client = makeClient();
+    const ws = new FakeWebSocket(); // readyState: CONNECTING
+    client.ws = ws as unknown as WebSocket;
+
+    expect(() => client.sendZeroHubMessage({})).toThrowError(/not open/i);
+    expect(() => client.sendZeroHubMessage({})).not.toThrow(DOMException);
+    expect(ws.sent).toHaveLength(0);
+  });
+
+  it("throws a clean error for a CLOSING/CLOSED socket", () => {
+    const client = makeClient();
+    const ws = new FakeWebSocket();
+    ws.readyState = 2; // CLOSING
+    client.ws = ws as unknown as WebSocket;
+
+    expect(() => client.sendZeroHubMessage({})).toThrowError(/not open/i);
+
+    ws.readyState = 3; // CLOSED
+    expect(() => client.sendZeroHubMessage({})).toThrowError(/not open/i);
+    expect(ws.sent).toHaveLength(0);
+  });
+
+  it("delivers on an OPEN socket", () => {
+    const client = makeClient();
+    const ws = new FakeWebSocket();
+    ws.readyState = WebSocket.OPEN;
+    client.ws = ws as unknown as WebSocket;
+
+    expect(() => client.sendZeroHubMessage({})).not.toThrow();
+    expect(ws.sent).toHaveLength(1);
+  });
+});
+
+describe("armSendOnIceReady — SDP send across a non-OPEN signaling socket", () => {
+  let client: ZeroHubClient;
+  let sendIceSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    client = makeClient();
+    sendIceSpy = vi.fn();
+    client.sendIceCandidateToWebsocket = sendIceSpy as never;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("a failed SDP send on a CONNECTING socket does not throw and does not consume the single-send guard", () => {
+    client.config = { ...client.config, waitIceCandidatesTimeout: 50 };
+    const sendOnce = vi.fn(() => {
+      throw new Error(
+        "ZeroHub WebSocket is not open (reconnecting?); message not sent"
+      );
+    });
+    const rtc = new FakeRTCPeerConnection();
+    rtc.localDescription = {
+      type: "offer",
+      sdp: "v=0",
+    } as RTCSessionDescription;
+
+    invokeArmSend(client, "2", rtc, sendOnce);
+
+    // The first candidate hits a non-OPEN socket: the event handler must
+    // NOT throw (no uncaught InvalidStateError out of onicecandidate), the
+    // candidate itself is still trickled, and the guard must stay open.
+    expect(() =>
+      rtc.onicecandidate?.({ candidate: { candidate: "candidate:1" } })
+    ).not.toThrow();
+    expect(sendOnce).toHaveBeenCalledTimes(1);
+    expect(sendIceSpy).toHaveBeenCalledTimes(1);
+
+    // A later candidate still attempts delivery exactly once more...
+    rtc.onicecandidate?.({ candidate: { candidate: "candidate:2" } });
+    expect(sendOnce).toHaveBeenCalledTimes(2);
+    expect(sendIceSpy).toHaveBeenCalledTimes(2);
+    // ...and the ICE-timeout fallback also retries, because the SDP has
+    // still never been delivered — the guard stays open until success.
+    vi.advanceTimersByTime(50);
+    expect(sendOnce).toHaveBeenCalledTimes(3);
+  });
+
+  it("a failed ICE-timeout SDP send on a non-OPEN socket still delivers exactly once on a later candidate", () => {
+    client.config = { ...client.config, waitIceCandidatesTimeout: 50 };
+    // Socket is CONNECTING when the timer fires, OPEN by the time the next
+    // candidate arrives (the reconnect handshake completed in between).
+    const sendOnce = vi.fn(() => {
+      if (!client.ws || client.ws.readyState !== WebSocket.OPEN) {
+        throw new Error(
+          "ZeroHub WebSocket is not open (reconnecting?); message not sent"
+        );
+      }
+    });
+    const rtc = new FakeRTCPeerConnection();
+    rtc.localDescription = {
+      type: "offer",
+      sdp: "v=0",
+    } as RTCSessionDescription;
+    const ws = new FakeWebSocket(); // CONNECTING
+    client.ws = ws as unknown as WebSocket;
+
+    invokeArmSend(client, "3", rtc, sendOnce);
+
+    // No candidate arrives: the timer fires on a CONNECTING socket. The
+    // throw must not escape the timer callback and must not consume the
+    // single-send guard — the peer must not be stuck in Pending forever.
+    expect(() => vi.advanceTimersByTime(50)).not.toThrow();
+    expect(sendOnce).toHaveBeenCalledTimes(1);
+
+    // The reconnect completes; a late candidate delivers the SDP exactly
+    // once on the now-OPEN socket.
+    ws.readyState = WebSocket.OPEN;
+    expect(() =>
+      rtc.onicecandidate?.({ candidate: { candidate: "candidate:late" } })
+    ).not.toThrow();
+    expect(sendOnce).toHaveBeenCalledTimes(2);
+    expect((client.logger as unknown as FakeLogger).warn).toHaveBeenCalled();
+
+    // And the guard is now closed: no further attempts, ever.
+    rtc.onicecandidate?.({ candidate: { candidate: "candidate:later" } });
+    rtc.onicecandidate?.({ candidate: null });
+    expect(sendOnce).toHaveBeenCalledTimes(2);
+  });
+});

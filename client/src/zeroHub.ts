@@ -774,6 +774,13 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Sends a message to ZeroHub.
    *
+   * @throws When the client is manually disconnected, when no socket exists,
+   *   or when the socket is present but not yet OPEN (a CONNECTING or
+   *   CLOSING socket). Without this last guard, `ws.send()` throws a raw
+   *   `InvalidStateError` — and in a `CONNECTING` window (the reconnection
+   *   handshake is in flight) that escape can tear down the calling event
+   *   handler while the message is silently lost.
+   *
    * @param msg - the message to be sent to ZeroHub
    */
   public sendZeroHubMessage(msg: ClientMessage) {
@@ -785,6 +792,11 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     if (!this.ws) {
       throw Error(
         "ZeroHub not connected, please connect to ZeroHub by `createHub` or `joinHub`"
+      );
+    }
+    if (this.ws.readyState !== WebSocket.OPEN) {
+      throw new Error(
+        "ZeroHub WebSocket is not open (reconnecting?); message not sent"
       );
     }
 
@@ -991,15 +1003,42 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   ) {
     let isSent = false;
 
+    // The SDP send is best-effort: it can throw while the signaling socket
+    // is CONNECTING (the reconnection handshake is in flight) — a window in
+    // which `sendZeroHubMessage` rejects with a clean error instead of a raw
+    // `InvalidStateError`. Swallowing the throw here serves two purposes:
+    // no exception escapes out of the onicecandidate/timer event handlers,
+    // and `isSent` is only set AFTER `sendOnce` completed, so a failed
+    // attempt does not consume the single-send guard: a later candidate
+    // (or the ICE-timeout fallback) still delivers the SDP exactly once
+    // instead of the peer stalling in Pending/Offering forever.
+    const trySendOnce = () => {
+      if (isSent) {
+        return;
+      }
+      try {
+        sendOnce();
+      } catch (err) {
+        // A non-OPEN socket (or the manual-disconnect throw) consumed this
+        // attempt without delivering the SDP; keep the guard open so a
+        // later event on an open socket can still deliver it.
+        this.logger.warn(
+          `failed to send SDP for peer ${peerId}, will retry on a later event`,
+          err
+        );
+        return;
+      }
+      isSent = true;
+    };
+
     rtcConn.onicecandidate = (event: {
       candidate?: RTCIceCandidate | null;
     }) => {
       // The candidate-less event is the gathering-complete marker: it fires
       // the SDP send exactly once.
       if (!event.candidate) {
-        if (rtcConn.localDescription && !isSent) {
-          isSent = true;
-          sendOnce();
+        if (rtcConn.localDescription) {
+          trySendOnce();
         }
         return;
       }
@@ -1008,11 +1047,20 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       // first candidate (ready at the moment the SDP went out) also rides the
       // signaling channel — the remote applies it via `addIceCandidate`, so
       // it is never silently dropped.
-      if (!isSent) {
-        isSent = true;
-        sendOnce();
+      trySendOnce();
+      try {
+        this.sendIceCandidateToWebsocket(peerId, event.candidate);
+      } catch (err) {
+        // The signaling socket is not OPEN (e.g. the reconnection
+        // handshake is in flight): this candidate is dropped rather than
+        // retry-queued, but the error must never escape the onicecandidate
+        // event handler — log the loss instead of tearing down the
+        // event loop's dispatch.
+        this.logger.warn(
+          `dropping ICE candidate for peer ${peerId}: signaling socket not open`,
+          err
+        );
       }
-      this.sendIceCandidateToWebsocket(peerId, event.candidate);
     };
 
     // stop waiting for ice candidates if longer than timeout
@@ -1024,12 +1072,11 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     this.iceTimeouts[peerId] = setTimeout(() => {
       delete this.iceTimeouts[peerId];
       this.logger.warn("timeout waiting ICE candidates");
-      if (!rtcConn.localDescription || isSent) {
+      if (!rtcConn.localDescription) {
         return;
       }
 
-      isSent = true;
-      sendOnce();
+      trySendOnce();
     }, this.config.waitIceCandidatesTimeout);
   }
 
