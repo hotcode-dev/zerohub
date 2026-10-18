@@ -2,6 +2,9 @@ package handler
 
 import (
 	"fmt"
+	"net/url"
+	"slices"
+	"strings"
 
 	"github.com/fasthttp/websocket"
 	"github.com/hotcode-dev/zerohub/pkg/config"
@@ -11,11 +14,57 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-var upgrader = websocket.FastHTTPUpgrader{
-	HandshakeTimeout: config.WSHandshakeTimeout,
-	ReadBufferSize:   config.WSReadBufferSize,
-	WriteBufferSize:  config.WSWriteBufferSize,
-	CheckOrigin:      func(ctx *fasthttp.RequestCtx) bool { return true },
+// parseAllowedOrigins splits the comma-separated APP_ALLOWED_ORIGINS value
+// into a trimmed list. Empty entries (e.g. trailing commas) are dropped.
+func parseAllowedOrigins(raw string) []string {
+	var allowed []string
+	for _, origin := range strings.Split(raw, ",") {
+		if o := strings.TrimSpace(origin); o != "" {
+			allowed = append(allowed, o)
+		}
+	}
+	return allowed
+}
+
+// sameOriginOrAllowed is the upgrader's CheckOrigin. A request carrying an
+// Origin header is accepted only when the origin host equals the request
+// Host — case-insensitively, matching the fasthttp/websocket library's
+// default, fastHTTPcheckSameOrigin (equalASCIIFold) — or the full origin
+// value appears in the explicit APP_ALLOWED_ORIGINS allow-list. Requests
+// without an Origin header (non-browser / tooling clients) are accepted,
+// mirroring the library default. A request with an unparseable Origin is
+// rejected.
+//
+// SECURITY: this gate blocks cross-site WebSocket hijacking — without it a
+// malicious page in a victim's browser could open the signaling socket from
+// any origin and observe the peer roster and signaling stream of a known
+// hub. Do not re-open it with a blanket "return true".
+func sameOriginOrAllowed(ctx *fasthttp.RequestCtx, allowedOrigins []string) bool {
+	origin := string(ctx.Request.Header.Peek("Origin"))
+	if origin == "" {
+		return true
+	}
+	if slices.Contains(allowedOrigins, origin) {
+		return true
+	}
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	return strings.EqualFold(u.Host, string(ctx.Host()))
+}
+
+// newWSUpgrader builds the shared WebSocket upgrader with origin validation
+// wired to the configured APP_ALLOWED_ORIGINS allow-list.
+func (h *handler) newWSUpgrader() *websocket.FastHTTPUpgrader {
+	return &websocket.FastHTTPUpgrader{
+		HandshakeTimeout: config.WSHandshakeTimeout,
+		ReadBufferSize:   config.WSReadBufferSize,
+		WriteBufferSize:  config.WSWriteBufferSize,
+		CheckOrigin: func(ctx *fasthttp.RequestCtx) bool {
+			return sameOriginOrAllowed(ctx, h.allowedOrigins)
+		},
+	}
 }
 
 // Upgrade upgrades the connection to a websocket connection. A malformed
@@ -37,7 +86,7 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 		return nil, true
 	}
 
-	upgradeErr := upgrader.Upgrade(ctx, func(ws *websocket.Conn) {
+	upgradeErr := h.newWSUpgrader().Upgrade(ctx, func(ws *websocket.Conn) {
 		peer := peer.NewPeer(ws, string(ctx.QueryArgs().Peek("peerMetadata")))
 		hub.AddPeer(peer)
 

@@ -38,6 +38,12 @@ type AppConfig struct {
 	// headers; the rate limiter then keys by the proxy-provided client
 	// IP instead of the unspoofable socket peer address.
 	TrustProxy bool `env:"APP_TRUST_PROXY,default=false"`
+	// AllowedOrigins is an optional comma-separated list of additional
+	// origins permitted to open the signaling WebSockets. Requests with no
+	// Origin header (non-browser clients) or an Origin matching the request
+	// Host are always accepted; this list only widens the gate for web UIs
+	// served from a different origin. Leave empty for strict same-origin.
+	AllowedOrigins string `env:"APP_ALLOWED_ORIGINS"`
 }
 
 // LoadConfig loads a configuration.

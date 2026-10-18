@@ -70,7 +70,10 @@ func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
 	if backupHost == "" {
 		return fmt.Errorf("backup host not found, please call /admin/migrate?host=localhost:8080")
 	}
-	err := upgrader.Upgrade(ctx, func(ws *websocket.Conn) {
+	// Same origin validation as the signaling endpoints (ForwardMigrate
+	// upgrades an existing signaling client, whose Origin was already
+	// checked, but re-checking keeps the gate consistent across upgrades).
+	err := h.newWSUpgrader().Upgrade(ctx, func(ws *websocket.Conn) {
 		closeErr := ws.WriteMessage(websocket.CloseMessage,
 			websocket.FormatCloseMessage(websocket.CloseGoingAway, backupHost))
 		if closeErr != nil {
