@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 
+	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
@@ -15,6 +16,12 @@ func (h *handler) GetHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 	// other hub endpoints.
 	if !validHubId(hubId) {
 		return h.rejectInvalidHubIdParam(ctx)
+	}
+	// A user-chosen id over the size cap would have been rejected at
+	// creation; rejecting it here keeps the read path consistent with the
+	// write path.
+	if !validMetadataSize(hubId, config.MaxMetadataSize) {
+		return h.rejectOversizedParam(ctx, "id", config.MaxMetadataSize)
 	}
 
 	hub := zh.GetHubById(hubId)

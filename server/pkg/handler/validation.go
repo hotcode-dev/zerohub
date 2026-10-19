@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
@@ -28,6 +29,26 @@ func validHubId(hubId string) bool {
 func (h *handler) rejectInvalidHubIdParam(ctx *fasthttp.RequestCtx) error {
 	return h.Response(ctx, fasthttp.StatusBadRequest,
 		map[string]string{"error": "id query parameter is required"})
+}
+
+// validMetadataSize reports whether a raw `id`/`hubMetadata`/`peerMetadata`
+// query parameter value is within the application's size cap (config.
+// MaxMetadataSize). These values are stored in hub/peer state and
+// re-broadcast to every peer in the hub, so the cap must be enforced before
+// any state is touched: an oversized value would otherwise be amplified
+// O(N) across the hub. fasthttp's MaxHeaderBytes bounds the whole request
+// head, not individual parameters, and is a transport default rather than
+// an intentional application guard.
+func validMetadataSize(raw string, max int) bool {
+	return len(raw) <= max
+}
+
+// rejectOversizedParam writes the 413 for a query parameter that exceeds
+// the size cap. It reuses Response (which returns nil on success) so the
+// caller's 503 error fallback in Serve cannot overwrite the 413 body.
+func (h *handler) rejectOversizedParam(ctx *fasthttp.RequestCtx, param string, max int) error {
+	return h.Response(ctx, fasthttp.StatusRequestEntityTooLarge,
+		map[string]string{"error": param + " query parameter exceeds the maximum size of " + strconv.Itoa(max) + " bytes"})
 }
 
 // rejectHubIdCollidesWithOtherModes applies the cross-mode collision guard
