@@ -541,13 +541,13 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
 
   /**
    * Tears down a peer that is no longer in the hub: clears its pending
-   * ICE-candidate fallback timer (so a stale handle cannot fire later and
-   * attempt to send SDP for a peer that is already gone), closes the
-   * underlying WebRTC connection (releasing its ICE agents, sockets, and
-   * timers), nulls the state handlers so a stale `oniceconnectionstatechange`
-   * cannot call `restartIce()` on a closing connection (InvalidStateError),
-   * and removes the peer from the map. Safe to call for a peer already gone
-   * from the map: it is a no-op.
+   * ICE-candidate fallback timer and its pending P2P-drop recovery timer
+   * (so a stale handle cannot fire later and attempt to send SDP or trigger
+   * a recovery for a peer that is already gone), closes the underlying
+   * WebRTC connection (releasing its ICE agents, sockets, and timers), nulls
+   * the state handlers so a stale event cannot call back into the client on
+   * a closing connection, and removes the peer from the map. Safe to call
+   * for a peer already gone from the map: it is a no-op.
    *
    * Shared by the `peerDisconnectedMessage` broadcast path, the
    * `hubInfoMessage` roster-reconciliation path (pruning peers absent from
@@ -570,10 +570,111 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       clearTimeout(pendingIce);
       delete this.iceTimeouts[peerId];
     }
+    // Clear any pending P2P-drop recovery timer for the same reason: a
+    // recovery fired after the peer is gone would call updatePeerStatus on
+    // a removed peer and log a spurious "peer not found" error.
+    const pendingRecovery = this.webRtcRecoveryTimeouts[peerId];
+    if (pendingRecovery) {
+      clearTimeout(pendingRecovery);
+      delete this.webRtcRecoveryTimeouts[peerId];
+    }
     peer.close();
     peer.rtcConn.onconnectionstatechange = null;
     peer.rtcConn.oniceconnectionstatechange = null;
     delete this.peers[peerId];
+  }
+
+  /**
+   * Default delay before a P2P-drop recovery re-negotiation is started after
+   * the peer's `RTCPeerConnection` reports `disconnected` / ICE `failed`.
+   *
+   * Browsers often recover from short-lived network blips (a wifi↔cellular
+   * handover mid-negotiation, a laptop sleep/resume) by re-connecting the
+   * existing ICE connection a few hundred milliseconds later — no new
+   * candidate pair is needed. Deferring the recovery a beat lets that
+   * natural recovery win and avoids two offer/answer pairs racing each
+   * other when the connection state flaps quickly. The recovery is still
+   * idempotent if it does run while the connection has already recovered
+   * (re-negotiating a healthy connection is a harmless no-op for the data
+   * path, and the status transitions are driven off live connection state,
+   * not the stale event that queued this timer).
+   */
+  private static readonly WEBRTC_RECOVERY_DELAY_MS = 500;
+
+  /**
+   * Pending P2P-drop recovery timers, keyed by peer ID. A peer already has at
+   * most one queued — `disconnected` and ICE `failed` both funnel through
+   * `scheduleWebrtcRecovery`, so rapid flaps coalesce into a single
+   * re-negotiation instead of racing.
+   */
+  private webRtcRecoveryTimeouts: {
+    [peerId: string]: ReturnType<typeof setTimeout>;
+  } = {};
+
+  /**
+   * Queues a P2P-drop recovery for `peerId`: after the fixed recovery delay
+   * ({@link ZeroHubClient.WEBRTC_RECOVERY_DELAY_MS}), the peer is
+   * transitioned to
+   * `PeerStatus.WebRTCDisconnected` if it has not already recovered, which
+   * triggers the topology's recovery path (a fresh offer/answer exchange over
+   * the still-alive signaling socket). The peer must still be registered —
+   * a peer the server told us to tear down (`ZeroHubDisconnected`) is gone
+   * from the map, and there is nothing to recover.
+   *
+   * The status is read from the live connection at timer-fire time (not from
+   * the stale `disconnected`/`failed` event that queued it), so a connection
+   * that already recovered in the meantime is never marked disconnected.
+   *
+   * Shared by the `onconnectionstatechange` (`disconnected`) and
+   * `oniceconnectionstatechange` (`failed`) handlers so the two signals can
+   * never double-trigger a recovery. The `closed` state is the peer's own
+   * teardown (`removePeer` / `close()`): no recovery can happen on a closed
+   * connection, and the timer is cleared there so a late fire cannot call
+   * `updatePeerStatus` on a removed peer.
+   *
+   * @param peerId - The peer whose P2P connection dropped.
+   */
+  private scheduleWebrtcRecovery(peerId: string) {
+    const peer = this.peers[peerId];
+    if (!peer) {
+      return;
+    }
+    // A connection that is closed or closing has no recovery path: the
+    // teardown already nulls both state handlers, so guard the timer too.
+    if (peer.rtcConn.connectionState === "closed") {
+      return;
+    }
+    // A connection that has not completed its initial offer/answer exchange
+    // has no established P2P link to recover: `remoteDescription` stays
+    // null until the first exchange lands (the offer on the answerer's side,
+    // the answer on the offerer's side). A pre-negotiation
+    // `disconnected`/`failed` is a first-time negotiation failure, not a
+    // drop, and re-offering here would race the in-flight initial
+    // negotiation.
+    if (!peer.rtcConn.remoteDescription) {
+      return;
+    }
+    const existing = this.webRtcRecoveryTimeouts[peerId];
+    if (existing) {
+      clearTimeout(existing);
+    }
+    this.webRtcRecoveryTimeouts[peerId] = setTimeout(() => {
+      delete this.webRtcRecoveryTimeouts[peerId];
+      const current = this.peers[peerId];
+      if (!current) {
+        return;
+      }
+      // Re-read the live state: the connection may have recovered (or been
+      // closed) while this timer was pending.
+      const state = current.rtcConn.connectionState;
+      if (state === "connected" || state === "closed") {
+        return;
+      }
+      this.logger.warn(
+        `P2P connection to peer ${peerId} is ${state}, recovering via re-negotiation`
+      );
+      this.updatePeerStatus(peerId, PeerStatus.WebRTCDisconnected);
+    }, ZeroHubClient.WEBRTC_RECOVERY_DELAY_MS);
   }
 
   /**
@@ -584,10 +685,19 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * (`peerJoinedMessage`) paths funnel through this helper so the wiring can
    * never diverge again:
    *
-   * 1. `onconnectionstatechange` transitions the peer to `Connected` or
-   *    `WebRTCDisconnected` as the underlying WebRTC connection state changes.
-   * 2. `oniceconnectionstatechange` calls `restartIce()` when ICE reaches the
-   *    `failed` state, recovering from NAT rebinding and candidate expiry.
+   * 1. `onconnectionstatechange` transitions the peer to `Connected` when the
+   *    underlying WebRTC connection recovers/connects, and queues a P2P-drop
+   *    recovery (`scheduleWebrtcRecovery`) when it reports
+   *    `disconnected` — the topology's `WebRTCDisconnected` handling then
+   *    re-negotiates over the still-alive signaling socket.
+   * 2. `oniceconnectionstatechange` queues the same recovery when ICE reaches
+   *    the `failed` state (NAT rebinding, candidate expiry). The local
+   *    `restartIce()` from the
+   *    [Perfect negotiation](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation#explicit_restartice_method_added)
+   *    pattern is NOT sufficient on its own: it only changes the local ICE
+   *    ufrag, and the remote peer can only learn the new ufrag through a
+   *    re-negotiation (a new offer/answer carrying the new ICE ufrag in the
+   *    SDP) — which is exactly what the recovery path issues.
    *
    * The caller is responsible for dedup guards (i.e. only invoking this when
    * the peer does not already exist) so an established peer is never
@@ -609,19 +719,20 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       joinTime || new Date(),
       new RTCPeerConnection(this.config.rtcConfig)
     );
-    newPeer.rtcConn.onconnectionstatechange = (ev) => {
-      this.logger.log("onconnectionstatechange", ev);
-      if (newPeer.rtcConn.connectionState === "connected") {
+    newPeer.rtcConn.onconnectionstatechange = () => {
+      const state = newPeer.rtcConn.connectionState;
+      this.logger.log("onconnectionstatechange", state);
+      if (state === "connected") {
         this.updatePeerStatus(peerId, PeerStatus.Connected);
-      } else if (newPeer.rtcConn.connectionState === "disconnected") {
-        this.updatePeerStatus(peerId, PeerStatus.WebRTCDisconnected);
+      } else if (state === "disconnected") {
+        this.scheduleWebrtcRecovery(peerId);
       }
     };
-    newPeer.rtcConn.oniceconnectionstatechange = (ev) => {
-      // https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation#explicit_restartice_method_added
-      this.logger.log("onconnectionstatechange", ev);
-      if (newPeer.rtcConn.iceConnectionState === "failed") {
-        newPeer.rtcConn.restartIce();
+    newPeer.rtcConn.oniceconnectionstatechange = () => {
+      const state = newPeer.rtcConn.iceConnectionState;
+      this.logger.log("oniceconnectionstatechange", state);
+      if (state === "failed") {
+        this.scheduleWebrtcRecovery(peerId);
       }
     };
 
@@ -758,6 +869,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       clearTimeout(timeout);
     });
     this.iceTimeouts = {};
+
+    // clear pending P2P-drop recovery timers for the same reason
+    Object.values(this.webRtcRecoveryTimeouts).forEach((timeout) => {
+      clearTimeout(timeout);
+    });
+    this.webRtcRecoveryTimeouts = {};
 
     // close the WebSocket without triggering the auto-reconnect onclose handler
     this.closeActiveSocket();

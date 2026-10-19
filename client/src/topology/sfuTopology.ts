@@ -162,6 +162,33 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
       case PeerStatus.Disconnected:
         // local client has torn down all peer connections; nothing to do
         break;
+
+      case PeerStatus.WebRTCDisconnected:
+        // P2P drop recovery over the still-alive signaling socket. In SFU
+        // topology the SFU is always the offerer to a client and the client is
+        // always the answerer (two non-SFU peers never hold a direct
+        // connection), so only the SFU side re-negotiates: it re-sends an
+        // offer for this peer, and the client recovers when that offer
+        // arrives and is auto-answered through the existing
+        // `offerMessage`/`sendAnswer` path.
+        //
+        // Do NOT re-run `setupSFUConnection`: it re-creates data channels and
+        // re-adds media tracks, which would hand the connection duplicate
+        // channels (same labels) and duplicate transceivers. The renegotiation
+        // refreshes the ICE/DTLS transport on the existing RTCPeerConnection
+        // while the established channels and transceivers persist.
+        if (iAmSFU) {
+          this.zeroHub
+            .sendOffer(peer.id, this.zeroHub.config.rtcOfferOptions)
+            .catch((err) => {
+              this.zeroHub?.logger.error(
+                "SFU: failed to re-send offer to dropped client",
+                peer.id,
+                err
+              );
+            });
+        }
+        break;
     }
   }
 
