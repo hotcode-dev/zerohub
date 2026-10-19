@@ -12,8 +12,9 @@ const (
 	// exhaust server memory/bandwidth. It matches HTTPMaxRequestBodySize in
 	// size and intent: the client SDK sends metadata in the URI query
 	// string, so the 4kb request-body limit never applies to it, and
-	// fasthttp's MaxHeaderBytes bounds the entire request head (URL plus
-	// all headers), not a single parameter.
+	// fasthttp only bounds the whole request head (URL plus all headers)
+	// via ReadBufferSize (default 4kb, 431 on overflow) — a transport
+	// default, not a guard on any single parameter.
 	MaxMetadataSize    = 4096            // 4kb
 	WSHandshakeTimeout = 5 * time.Second // 5s
 	WSReadBufferSize   = 4096            // 4kb

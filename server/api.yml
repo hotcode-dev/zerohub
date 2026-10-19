@@ -482,7 +482,7 @@ components:
       type: object
       required: [error]
       description: >
-        JSON body of the error responses (400/401/409/500) returned by
+        JSON body of the error responses (400/401/409/413/500) returned by
         /v1/permanent-hubs/create.
       properties:
         error:
@@ -494,6 +494,9 @@ components:
               "invalid hubMetadata query parameter: must be JSON"
             - 409: "hub id already exists" or
               "hub id collides with another hub type"
+            - 413: "id query parameter exceeds the maximum size of 4096 bytes"
+              or "hubMetadata query parameter exceeds the maximum size of
+              4096 bytes"
             - 500: "create hub error"
       additionalProperties: false
 

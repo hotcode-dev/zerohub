@@ -16,7 +16,7 @@ import (
 // oversizedValue is exactly one byte past the application-level metadata cap
 // (config.MaxMetadataSize): the value the size guard has to reject. In tests
 // the request is built in-process via RequestCtx.SetRequestURI, so
-// fasthttp's 4kb request-head limit (MaxHeaderBytes) is not in play — these
+// fasthttp's 4kb request-head limit (ReadBufferSize) is not in play — these
 // tests pin the application guard, not the transport default.
 var oversizedValue = strings.Repeat("a", config.MaxMetadataSize+1)
 

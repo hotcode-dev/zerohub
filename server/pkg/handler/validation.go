@@ -36,9 +36,10 @@ func (h *handler) rejectInvalidHubIdParam(ctx *fasthttp.RequestCtx) error {
 // MaxMetadataSize). These values are stored in hub/peer state and
 // re-broadcast to every peer in the hub, so the cap must be enforced before
 // any state is touched: an oversized value would otherwise be amplified
-// O(N) across the hub. fasthttp's MaxHeaderBytes bounds the whole request
-// head, not individual parameters, and is a transport default rather than
-// an intentional application guard.
+// O(N) across the hub. fasthttp bounds the whole request head (URL plus
+// all headers) via ReadBufferSize — default 4kb, 431 on overflow — not
+// individual parameters, and that is a transport default rather than an
+// intentional application guard.
 func validMetadataSize(raw string, max int) bool {
 	return len(raw) <= max
 }
