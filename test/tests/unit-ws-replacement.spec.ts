@@ -32,18 +32,6 @@ type SocketSnapshot = {
 };
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClient(): number;
-  createHub(id: number, hubId: string): void;
-  joinHub(id: number, hubId: string): void;
-  snapshotSockets(id: number): SocketSnapshot[];
-  getHostIndex(id: number): number;
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness into a page. */
 async function prepareUnitHarnessPage(page: Page) {

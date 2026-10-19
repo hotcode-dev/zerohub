@@ -165,8 +165,9 @@ test("multi hosts", async ({ page }, testInfo) => {
         // connection must fail (network error -> code 1006) before failover
         // advances to the good host. DNS resolution failure can take several
         // seconds, so give this assertion a generous expect-timeout.
-        await expect(hubIdLoc, { timeout: 30_000 }).toHaveText(
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+        await expect(hubIdLoc).toHaveText(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+          { timeout: 30_000 }
         );
         const info = await getClientInfo(page, terminalComponentId);
         expect(info.hostIndex).toBe(1);

@@ -55,30 +55,6 @@ type Send = {
 };
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClientWithHosts(hosts: string[]): number;
-  createHub(id: number, hubId: string): void;
-  sendHubInfo(id: number, myPeerId: string, peerIds: string[]): void;
-  setWaitIceTimeout(id: number, ms: number): void;
-  invokeSendOffer(
-    id: number,
-    peerId: string,
-    options?: { offerToReceiveAudio?: boolean; offerToReceiveVideo?: boolean },
-  ): Promise<{ configOptions: string; sentOptions: string }>;
-  captureSocket(id: number): void;
-  getSocketCount(id: number): number;
-  getLastSocketUrl(id: number): string | null;
-  simulateAbnormalClose(id: number): void;
-  markSocketConnecting(id: number): void;
-  openSocket(id: number): void;
-  fireIceCandidate(id: number, peerId: string, candidate: unknown): void;
-  getSends(id: number): Send[];
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness into a page. */
 async function prepareUnitHarnessPage(page: Page) {

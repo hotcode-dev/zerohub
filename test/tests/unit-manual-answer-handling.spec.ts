@@ -29,24 +29,6 @@ import { fileURLToPath } from "node:url";
  */
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClient(): number;
-  sendHubInfo(id: number, myPeerId: string, peerIds: string[]): void;
-  setAutoAcceptAnswer(id: number, autoAcceptAnswer: boolean): void;
-  recordAnswers(id: number): void;
-  getAnswers(id: number): Array<{ peerId: string; answerSdp: string }>;
-  sendAnswerMessage(id: number, answerPeerId: string, answerSdp: string): void;
-  getPeerStatus(id: number, peerId: string): string | null;
-  invokeAcceptAnswer(id: number, peerId: string, answerSdp: string): Promise<void>;
-  getRemoteDescriptions(
-    id: number,
-  ): Array<{ peerId: string; type: string; sdp: string }>;
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness (mocked RTCPeerConnection + driver) into a page. */
 async function prepareUnitHarnessPage(page: Page) {

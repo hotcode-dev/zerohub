@@ -25,23 +25,6 @@ import { fileURLToPath } from "node:url";
  */
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClientWithHosts(hosts: string[]): number;
-  createHub(id: number, hubId: string): void;
-  joinHub(id: number, hubId: string): void;
-  getHost(id: number): string;
-  getHostIndex(id: number): number;
-  getLastSocketUrl(id: number): string | null;
-  simulateMigrationClose(id: number, reason: string): void;
-  simulateAbnormalClose(id: number): void;
-  recordZeroHubErrors(id: number): void;
-  getZeroHubErrors(id: number): string[];
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness into a page. */
 async function prepareUnitHarnessPage(page: Page) {

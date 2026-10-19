@@ -125,10 +125,10 @@ const wsInstances: MockWebSocket[] = [];
 // `ws.readyState` against `WebSocket.OPEN`, so the mock must expose the
 // constants (the real browser does).
 const mockWebSocketStatics = MockWebSocket as unknown as Record<string, number>;
-mockWebSocketStatics.CONNECTING = 0;
-mockWebSocketStatics.OPEN = 1;
-mockWebSocketStatics.CLOSING = 2;
-mockWebSocketStatics.CLOSED = 3;
+mockWebSocketStatics["CONNECTING"] = 0;
+mockWebSocketStatics["OPEN"] = 1;
+mockWebSocketStatics["CLOSING"] = 2;
+mockWebSocketStatics["CLOSED"] = 3;
 
 /**
  * A minimal stand-in for the browser `RTCPeerConnection`.
@@ -1479,9 +1479,13 @@ const ZeroHubUnitHarness = {
   },
 };
 
+type UnitHarnessShape = typeof ZeroHubUnitHarness;
+
 declare global {
+  // eslint-disable-next-line no-var
+  var ZeroHubUnitHarness: UnitHarnessShape;
   interface Window {
-    ZeroHubUnitHarness: typeof ZeroHubUnitHarness;
+    ZeroHubUnitHarness: UnitHarnessShape;
   }
 }
 

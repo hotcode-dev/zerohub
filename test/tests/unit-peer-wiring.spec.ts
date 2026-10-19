@@ -38,21 +38,6 @@ type PeerSnapshot = {
 };
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClient(): number;
-  sendHubInfo(id: number, myPeerId: string, peerIds: string[]): void;
-  sendPeerJoined(id: number, peerId: string): void;
-  setConnectionState(id: number, peerId: string, state: string): PeerSnapshot;
-  setIceState(id: number, peerId: string, state: string): PeerSnapshot;
-  getPeer(id: number, peerId: string): PeerSnapshot;
-  connectionsCreated(id: number): number;
-  referencedConnectionIds(id: number): number[];
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness (mocked RTCPeerConnection + driver) into a page. */
 async function prepareUnitHarnessPage(page: Page) {

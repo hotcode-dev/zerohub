@@ -29,29 +29,6 @@ import { fileURLToPath } from "node:url";
 type Send = { kind: "offer" | "answer"; peerId: string; sdp: string };
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClient(): number;
-  sendHubInfo(id: number, myPeerId: string, peerIds: string[]): void;
-  setAutoAnswer(id: number, autoAnswer: boolean): void;
-  recordOffers(id: number): void;
-  getOffers(id: number): Array<{ peerId: string; offerSdp: string }>;
-  sendOfferMessage(id: number, offerPeerId: string, offerSdp: string): void;
-  getPeerStatus(id: number, peerId: string): string | null;
-  stubSocket(id: number): void;
-  invokeSendAnswer(
-    id: number,
-    peerId: string,
-    offerSdp: string,
-    options?: { offerToReceiveAudio?: boolean; offerToReceiveVideo?: boolean },
-  ): Promise<{ configOptions: string; sentOptions: string }>;
-  fireIceCandidate(id: number, peerId: string, candidate: unknown): void;
-  getSends(id: number): Send[];
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness (mocked RTCPeerConnection + driver) into a page. */
 async function prepareUnitHarnessPage(page: Page) {

@@ -49,26 +49,6 @@ import { fileURLToPath } from "node:url";
 type Send = { kind: "offer" | "answer"; peerId: string; sdp: string };
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClient(): number;
-  stubSocket(id: number): void;
-  sendHubInfo(id: number, myPeerId: string, peerIds: string[]): void;
-  sendPeerDisconnected(id: number, peerId: string): void;
-  setWaitIceTimeout(id: number, ms: number): void;
-  invokeSendOffer(
-    id: number,
-    peerId: string,
-    options?: { offerToReceiveAudio?: boolean; offerToReceiveVideo?: boolean },
-  ): Promise<{ configOptions: string; sentOptions: string }>;
-  iceTimeoutEntries(id: number): string[];
-  getSends(id: number): Send[];
-  getPeerStatus(id: number, peerId: string): string | null;
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness into a page. */
 async function prepareUnitHarnessPage(page: Page) {

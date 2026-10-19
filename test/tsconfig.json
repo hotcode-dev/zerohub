@@ -1,8 +1,8 @@
 {
     "compilerOptions": {
         "target": "ES2022",
-        "module": "CommonJS",
-        "moduleResolution": "Node",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
         "strict": true,
         "noImplicitAny": true,
         "exactOptionalPropertyTypes": true,
@@ -10,11 +10,13 @@
         "allowJs": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
+        "noEmit": true,
         "types": ["@types/node", "playwright"]
     },
     "include": [
         "tests/**/*.ts",
         "harness/**/*.ts",
+        "unit-harness/**/*.ts",
         "scripts/**/*.mjs"
     ]
 }

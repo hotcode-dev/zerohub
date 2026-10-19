@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "build:harness": "node ./scripts/build-harness.mjs",
-    "pretest": "npm run build:harness && node ./scripts/build-unit-harness.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "pretest": "npm run typecheck && npm run build:harness && node ./scripts/build-unit-harness.mjs",
     "test": "playwright test"
   },
   "license": "MIT",
