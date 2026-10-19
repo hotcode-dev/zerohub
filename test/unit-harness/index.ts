@@ -19,6 +19,7 @@ import {
   ZeroHubClient,
   LogLevel,
   Topology,
+  MeshTopology,
   SFUTopology,
   Peer,
   PeerStatus,
@@ -148,6 +149,13 @@ class MockRTCPeerConnection {
   /** Read as `iceConnectionState`; mutated by specs then the handler is fired. */
   public iceConnectionState: string;
   public localDescription: { type: string; sdp: string } | null;
+  /**
+   * Last remote description applied via `setRemoteDescription` (the mock
+   * stores it so specs can tell whether the initial offer/answer exchange has
+   * completed: `null` until the first exchange lands, mirroring real
+   * `RTCPeerConnection` behaviour).
+   */
+  public remoteDescription: { type: string; sdp: string } | null;
   /** Set by the client; invoked by specs to simulate a connection-state change. */
   public onconnectionstatechange: ((ev: Event) => void) | null;
   /** Set by the client; invoked by specs to simulate an ICE-state change. */
@@ -166,6 +174,7 @@ class MockRTCPeerConnection {
     this.connectionState = "new";
     this.iceConnectionState = "new";
     this.localDescription = null;
+    this.remoteDescription = null;
     this.onconnectionstatechange = null;
     this.oniceconnectionstatechange = null;
     this.ondatachannel = null;
@@ -234,6 +243,7 @@ class MockRTCPeerConnection {
   ): Promise<void> {
     if (desc) {
       this.__remoteDescriptions.push({ type: desc.type, sdp: desc.sdp });
+      this.remoteDescription = { type: desc.type, sdp: desc.sdp };
     }
     return Promise.resolve();
   }
@@ -269,6 +279,8 @@ interface PeerSnapshot {
   connClosed: boolean;
   connectionState: string;
   iceConnectionState: string;
+  /** The topology class name in use on this client (mesh vs sfu specs). */
+  topology: string;
   metadata: string;
   joinTimeMs: number;
 }
@@ -313,6 +325,7 @@ function snapshotPeer(client: ZeroHubClient, peerId: string): PeerSnapshot {
       connClosed: false,
       connectionState: "",
       iceConnectionState: "",
+      topology: "",
       metadata: "",
       joinTimeMs: 0,
     };
@@ -327,6 +340,7 @@ function snapshotPeer(client: ZeroHubClient, peerId: string): PeerSnapshot {
     connClosed: conn ? conn.__closed : false,
     connectionState: conn ? conn.connectionState : "",
     iceConnectionState: conn ? conn.iceConnectionState : "",
+    topology: client.topology.constructor.name,
     metadata: JSON.stringify(peer.metadata),
     joinTimeMs: peer.joinTime.getTime(),
   };
@@ -463,6 +477,28 @@ const ZeroHubUnitHarness = {
     };
   },
 
+  /**
+   * Create a client with a real topology (default mesh; pass `"sfu"` for
+   * `SFUTopology`) so specs can drive the topology's
+   * `onPeerStatusChange` recovery paths without a server. No data channel /
+   * media channel config is set, so the `Pending` setup hooks stay inert.
+   * Returns an opaque numeric id.
+   */
+  createClientWithTopology(topology: "mesh" | "sfu"): number {
+    const id = ++nextClientId;
+    const topologyInstance: Topology =
+      topology === "sfu"
+        ? new SFUTopology()
+        : new MeshTopology();
+    const client = new ZeroHubClient(["localhost:1"], { logLevel: LogLevel.None }, topologyInstance);
+    clients.set(id, {
+      client,
+      createdAtConnSeq: createdInstances.length,
+      createdAtWsSeq: wsInstances.length,
+    });
+    return id;
+  },
+
   /** Feed a `hubInfoMessage` (initial-join path) with the given peer ids. */
   sendHubInfo(id: number, myPeerId: string, peerIds: string[]): void {
     const entry = clients.get(id);
@@ -482,6 +518,24 @@ const ZeroHubUnitHarness = {
         })),
       },
     } as never);
+  },
+
+  /**
+   * The peer IDs that currently have a pending P2P-drop recovery timer
+   * recorded in the client's private `webRtcRecoveryTimeouts` map (read
+   * through a type cast — `private` is erased at bundle time). Lets specs
+   * assert a disconnected/ICE-failed event queued exactly one deferred
+   * recovery and that teardown clears it.
+   */
+  webrtcRecoveryEntries(id: number): string[] {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const client = entry.client as unknown as {
+      webRtcRecoveryTimeouts: { [peerId: string]: unknown };
+    };
+    return Object.keys(client.webRtcRecoveryTimeouts);
   },
 
   /** Feed a `peerJoinedMessage` (mid-session-join path) for one peer. */
@@ -707,6 +761,25 @@ const ZeroHubUnitHarness = {
       conn.oniceconnectionstatechange({} as Event);
     }
     return snapshotPeer(entry.client, peerId);
+  },
+
+  /**
+   * Marks the peer's live connection as having completed its initial
+   * offer/answer exchange by setting the mock's `remoteDescription` directly
+   * (the client's P2P-drop recovery gate requires this to be present: a
+   * connection that has never negotiated has no established link to recover).
+   * No handler is fired — it is a state poke, like `setConnectionState`'s.
+   */
+  setPeerRemoteDescription(id: number, peerId: string, type: string): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const conn = asMock(entry.client.peers[peerId]?.rtcConn);
+    if (!conn) {
+      throw new Error(`no peer ${peerId} on client ${id}`);
+    }
+    conn.remoteDescription = { type, sdp: "sdp" };
   },
 
   /** Snapshot a single peer (or `__absent__` markers if not present). */
@@ -1191,6 +1264,16 @@ const ZeroHubUnitHarness = {
       throw new Error(`client ${id} has no live socket with a close handler`);
     }
     ws.onclose({ code: 1006, reason: "" });
+  },
+
+  /**
+   * Real-time in-page wait. Lets specs outlast the client's P2P-drop recovery
+   * delay (private `WEBRTC_RECOVERY_DELAY_MS`) and its 2s
+   * `waitIceCandidatesTimeout` fallback without `page.waitForTimeout` on the
+   * Node side (a `page.evaluate` that never resolves would hang the test).
+   */
+  async wait(ms: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, ms));
   },
 
   /**

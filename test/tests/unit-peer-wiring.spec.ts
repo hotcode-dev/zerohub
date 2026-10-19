@@ -19,7 +19,9 @@ import { fileURLToPath } from "node:url";
  *  1. A `peerJoinedMessage` for an already-present peer does NOT overwrite the
  *     existing Peer / leak its RTCPeerConnection and does NOT reset its status.
  *  2. `oniceconnectionstatechange` is wired on mid-session joiners and a
- *     simulated `iceConnectionState === "failed"` triggers `restartIce()`.
+ *     simulated `iceConnectionState === "failed"` on an already-negotiated
+ *     connection queues the P2P-drop recovery (deferred
+ *     `WebRTCDisconnected` re-negotiation) instead of a bare `restartIce()`.
  *  3. The `hubInfoMessage` and `peerJoinedMessage` paths produce equivalent
  *     `Peer` wiring (both connection-state handlers present) — regression.
  */
@@ -47,6 +49,12 @@ type Harness = {
   getPeer(id: number, peerId: string): PeerSnapshot;
   connectionsCreated(id: number): number;
   referencedConnectionIds(id: number): number[];
+  /** Marks the peer's connection as already-negotiated (recovery gate). */
+  setPeerRemoteDescription(id: number, peerId: string, type: string): void;
+  /** Peer ids with a pending P2P-drop recovery timer. */
+  webrtcRecoveryEntries(id: number): string[];
+  /** Real-time in-page wait (outlasts the private recovery delay). */
+  wait(ms: number): Promise<void>;
 };
 
 declare global {
@@ -109,6 +117,19 @@ function driver(page: Page) {
       page.evaluate((id) => ZeroHubUnitHarness.connectionsCreated(id), id),
     referencedConnectionIds: (id: number) =>
       page.evaluate((id) => ZeroHubUnitHarness.referencedConnectionIds(id), id),
+    setPeerRemoteDescription: (
+      id: number,
+      peerId: string,
+      type: string,
+    ) =>
+      page.evaluate(
+        ([id, peerId, type]) =>
+          ZeroHubUnitHarness.setPeerRemoteDescription(id, peerId, type),
+        [id, peerId, type] as const,
+      ),
+    webrtcRecoveryEntries: (id: number) =>
+      page.evaluate((id) => ZeroHubUnitHarness.webrtcRecoveryEntries(id), id),
+    wait: (ms: number) => page.evaluate((ms) => ZeroHubUnitHarness.wait(ms), ms),
   };
 }
 
@@ -139,12 +160,19 @@ test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
       expect(joined.restartIceCount).toBe(0);
     });
 
-    await test.step("simulating iceConnectionState === 'failed' triggers restartIce()", async () => {
+    await test.step("simulating iceConnectionState === 'failed' queues the P2P-drop recovery", async () => {
+      // The connection must look already-negotiated (it has a remote
+      // description) for the recovery to arm; a never-negotiated connection
+      // has no established link to recover.
+      await h.setPeerRemoteDescription(id, "3", "offer");
       const after = (await h.setIceState(id, "3", "failed")) as PeerSnapshot;
-      expect(after.restartIceCount).toBe(1);
-      // Non-failed ICE states must not restart.
-      const idle = (await h.setIceState(id, "3", "checking")) as PeerSnapshot;
-      expect(idle.restartIceCount).toBe(1);
+      // The recovery is deferred (debounced), not fired synchronously.
+      expect(after.status).toBe("pending");
+      expect((await h.webrtcRecoveryEntries(id))).toEqual(["3"]);
+      // Non-failed ICE states must not queue a recovery.
+      await h.setIceState(id, "3", "checking");
+      // The original timer survives: coalescing re-arms rather than stacks.
+      expect((await h.webrtcRecoveryEntries(id))).toEqual(["3"]);
     });
 
     await test.step("simulating connectionState 'connected' transitions the peer", async () => {
@@ -243,12 +271,14 @@ test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
       expect(wiring(viaJoined)).toEqual(wiring(viaHub));
     });
 
-    await test.step("both paths trigger restartIce() identically on ICE failure", async () => {
-      const a = (await h.setIceState(aId, "2", "failed")) as PeerSnapshot;
-      const b = (await h.setIceState(bId, "2", "failed")) as PeerSnapshot;
-      expect(a.restartIceCount).toBe(1);
-      expect(b.restartIceCount).toBe(1);
-      expect(a.restartIceCount).toBe(b.restartIceCount);
+    await test.step("both paths queue the P2P-drop recovery identically on ICE failure", async () => {
+      // Mark both connections as already-negotiated so the recovery arms.
+      await h.setPeerRemoteDescription(aId, "2", "offer");
+      await h.setPeerRemoteDescription(bId, "2", "offer");
+      await h.setIceState(aId, "2", "failed");
+      await h.setIceState(bId, "2", "failed");
+      expect((await h.webrtcRecoveryEntries(aId))).toEqual(["2"]);
+      expect((await h.webrtcRecoveryEntries(bId))).toEqual(["2"]);
     });
   });
 });

@@ -61,6 +61,34 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
       case PeerStatus.Disconnected:
         // local client has torn down all peer connections; nothing to do
         break;
+      case PeerStatus.WebRTCDisconnected:
+        // P2P drop recovery: the signaling socket is still alive, so
+        // re-negotiate the WebRTC connection for this peer. The
+        // collision-free offer role (higher peer id offers) is the same as
+        // the initial negotiation, so both peers converge on the same
+        // offerer.
+        //
+        // Do NOT re-create data channels or re-add media tracks: the
+        // renegotiation refreshes the ICE/DTLS transport on the existing
+        // RTCPeerConnection while the established channels and transceivers
+        // (with their `ondatachannel`/`ontrack` handlers) persist, and
+        // creating duplicate channels with the same labels would hand the
+        // application two channels named "0".
+        if (isOfferer) {
+          this.zeroHub
+            .sendOffer(peer.id, this.zeroHub.config.rtcOfferOptions)
+            .catch((err) => {
+              this.zeroHub?.logger.error(
+                "failed to re-send offer to dropped peer",
+                peer.id,
+                err
+              );
+            });
+        }
+        // The answerer does nothing here: it recovers when the offerer's
+        // new offer arrives and is auto-answered through the existing
+        // `offerMessage`/`sendAnswer` path.
+        break;
     }
   }
 }
