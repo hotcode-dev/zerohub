@@ -24,49 +24,6 @@ import { fileURLToPath } from "node:url";
  */
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClient(): number;
-  createClientWithLogger(): number;
-  getWarnings(id: number): string[];
-  clearWarnings(id: number): void;
-  invokeSafeParse(id: number, raw: string | undefined, fallback: string): string;
-  feedHubInfoWithMetadata(
-    id: number,
-    myPeerId: string,
-    peerIds: string[],
-    hubMetadata: string,
-    peerMetadata: string
-  ): {
-    threw: boolean;
-    errorMessage: string;
-    parsedHubMetadata: string;
-    parsedPeerMetadata: string;
-  };
-  feedPeerJoinedWithMetadata(
-    id: number,
-    peerId: string,
-    peerMetadata: string
-  ): {
-    threw: boolean;
-    errorMessage: string;
-    parsedPeerMetadata: string | null;
-    peerStatus: string | null;
-  };
-  survivesPoisonedHubInfo(
-    id: number,
-    myPeerId: string,
-    followUpPeerId: string
-  ): {
-    firstThrew: boolean;
-    followUpThrew: boolean;
-    peerRegistered: boolean;
-  };
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness into a page. */
 async function prepareUnitHarnessPage(page: Page) {

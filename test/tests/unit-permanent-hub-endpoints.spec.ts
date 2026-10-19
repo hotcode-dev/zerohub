@@ -30,16 +30,6 @@ import { fileURLToPath } from "node:url";
  */
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClient(): number;
-  joinPermanentHub(id: number, hubId: string, peerMetadata?: object): void;
-  getLastSocketUrl(id: number): string | null;
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness into a page. */
 async function prepareUnitHarnessPage(page: Page) {

@@ -40,30 +40,6 @@ type Send = {
 };
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClient(): number;
-  sendHubInfo(id: number, myPeerId: string, peerIds: string[]): void;
-  stubSocket(id: number): void;
-  setWaitIceTimeout(id: number, ms: number): void;
-  invokeSendOffer(
-    id: number,
-    peerId: string,
-    options?: { offerToReceiveAudio?: boolean; offerToReceiveVideo?: boolean },
-  ): Promise<{ configOptions: string; sentOptions: string }>;
-  invokeSendAnswer(
-    id: number,
-    peerId: string,
-    offerSdp: string,
-    options?: { offerToReceiveAudio?: boolean; offerToReceiveVideo?: boolean },
-  ): Promise<{ configOptions: string; sentOptions: string }>;
-  fireIceCandidate(id: number, peerId: string, candidate: unknown): void;
-  getSends(id: number): Send[];
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness (mocked RTCPeerConnection + driver) into a page. */
 async function prepareUnitHarnessPage(page: Page) {
@@ -366,7 +342,8 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
     await h.invokeSendOffer(id, "2");
 
     await test.step("a candidate whose init fields live on toJSON reaches the wire complete", async () => {
-      await page.evaluate(([id, peerId, legacyCandidate]) => {
+      await page.evaluate(
+        ({ clientId, peerId, legacyCandidate }) => {
         const proto = {
           get sdpMid() {
             return "0";
@@ -374,9 +351,15 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
           get sdpMLineIndex() {
             return 0;
           },
-          toJSON() {
+          // `this` gains `candidate` only at runtime (own property added
+          // after `Object.create`), which the structural type can't model.
+          toJSON(this: {
+            candidate?: string;
+            sdpMid: string;
+            sdpMLineIndex: number;
+          }): { candidate: string; sdpMid: string; sdpMLineIndex: number } {
             return {
-              candidate: this.candidate,
+              candidate: this.candidate ?? "",
               sdpMid: this.sdpMid,
               sdpMLineIndex: this.sdpMLineIndex,
             };
@@ -386,8 +369,8 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
         legacy.candidate = legacyCandidate;
         // Own-enumerable view only: `candidate` — the init fields are reachable
         // through toJSON() alone.
-        ZeroHubUnitHarness.fireIceCandidate(id, peerId, legacy);
-      }, [id, "2", LEGACY_CANDIDATE]);
+        ZeroHubUnitHarness.fireIceCandidate(clientId, peerId, legacy);
+      }, { clientId: id, peerId: "2", legacyCandidate: LEGACY_CANDIDATE });
       await page.waitForTimeout(30);
 
       const sends = (await h.getSends(id)) as Send[];

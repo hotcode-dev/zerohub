@@ -40,27 +40,6 @@ type PeerSnapshot = {
 };
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClient(): number;
-  sendHubInfo(id: number, myPeerId: string, peerIds: string[]): void;
-  sendPeerJoined(id: number, peerId: string): void;
-  setConnectionState(id: number, peerId: string, state: string): PeerSnapshot;
-  setIceState(id: number, peerId: string, state: string): PeerSnapshot;
-  getPeer(id: number, peerId: string): PeerSnapshot;
-  connectionsCreated(id: number): number;
-  referencedConnectionIds(id: number): number[];
-  /** Marks the peer's connection as already-negotiated (recovery gate). */
-  setPeerRemoteDescription(id: number, peerId: string, type: string): void;
-  /** Peer ids with a pending P2P-drop recovery timer. */
-  webrtcRecoveryEntries(id: number): string[];
-  /** Real-time in-page wait (outlasts the private recovery delay). */
-  wait(ms: number): Promise<void>;
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness (mocked RTCPeerConnection + driver) into a page. */
 async function prepareUnitHarnessPage(page: Page) {

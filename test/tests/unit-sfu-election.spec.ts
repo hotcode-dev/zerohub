@@ -19,17 +19,6 @@ import { fileURLToPath } from "node:url";
  */
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  sfuElection(myPeerId: string, peerIds: string[]): {
-    sfuPeerId: string | undefined;
-    iAmSFU: boolean;
-  };
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness (mocked RTCPeerConnection + driver) into a page. */
 async function prepareUnitHarnessPage(page: Page) {

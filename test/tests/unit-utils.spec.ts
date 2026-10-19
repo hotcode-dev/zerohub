@@ -11,12 +11,6 @@ import { fileURLToPath } from "node:url";
  * unit specs (see `test/tests/unit-peer-wiring.spec.ts`).
  */
 
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: {
-    wsUrl(host: string, tls: boolean): string;
-  };
-}
 
 /** Inject the unit harness into a page. */
 async function prepareUnitHarnessPage(page: Page) {

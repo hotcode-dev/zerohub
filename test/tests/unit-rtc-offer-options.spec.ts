@@ -30,27 +30,6 @@ type InvokeResult = {
 };
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClient(): number;
-  sendHubInfo(id: number, myPeerId: string, peerIds: string[]): void;
-  stubSocket(id: number): void;
-  invokeSendOffer(
-    id: number,
-    peerId: string,
-    options?: { offerToReceiveAudio?: boolean; offerToReceiveVideo?: boolean },
-  ): Promise<InvokeResult>;
-  invokeSendAnswer(
-    id: number,
-    peerId: string,
-    offerSdp: string,
-    options?: { offerToReceiveAudio?: boolean; offerToReceiveVideo?: boolean },
-  ): Promise<InvokeResult>;
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness (mocked RTCPeerConnection + driver) into a page. */
 async function prepareUnitHarnessPage(page: Page) {

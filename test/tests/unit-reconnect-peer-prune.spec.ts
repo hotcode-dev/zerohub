@@ -52,23 +52,6 @@ type StatusChange = {
 };
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClient(): number;
-  sendHubInfo(id: number, myPeerId: string, peerIds: string[]): void;
-  setConnectionState(id: number, peerId: string, state: string): PeerSnapshot;
-  getPeer(id: number, peerId: string): PeerSnapshot;
-  peerIds(id: number): string[];
-  getMyPeerId(id: number): string | null;
-  getConnection(id: number, connId: number): ConnSnapshot;
-  recordStatusChanges(id: number): void;
-  drainStatusChanges(id: number): StatusChange[];
-  connectionsCreated(id: number): number;
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness into a page. */
 async function prepareUnitHarnessPage(page: Page) {

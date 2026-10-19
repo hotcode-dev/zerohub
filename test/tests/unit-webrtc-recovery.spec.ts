@@ -37,31 +37,6 @@ type Send = {
 };
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-type Harness = {
-  createClientWithTopology(topology: "mesh" | "sfu"): number;
-  sendHubInfo(id: number, myPeerId: string, peerIds: string[]): void;
-  setConnectionState(id: number, peerId: string, state: string): unknown;
-  setIceState(id: number, peerId: string, state: string): unknown;
-  setPeerRemoteDescription(id: number, peerId: string, type: string): void;
-  webrtcRecoveryEntries(id: number): string[];
-  recordStatusChanges(id: number): void;
-  drainStatusChanges(
-    id: number,
-  ): Array<{ peerId: string; status: string }>;
-  stubSocket(id: number): void;
-  setWaitIceTimeout(id: number, ms: number): void;
-  drainSends(id: number): Send[];
-  getPeerStatus(id: number, peerId: string): string | null;
-  sendOfferMessage(id: number, offerPeerId: string, offerSdp: string): void;
-  sendAnswerMessage(id: number, answerPeerId: string, answerSdp: string): void;
-  sendPeerDisconnected(id: number, peerId: string): void;
-  wait(ms: number): Promise<void>;
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var ZeroHubUnitHarness: Harness;
-}
 
 /** Inject the unit harness (mocked RTCPeerConnection + driver) into a page. */
 async function prepareUnitHarnessPage(page: Page) {
