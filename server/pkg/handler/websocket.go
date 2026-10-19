@@ -67,11 +67,24 @@ func (h *handler) newWSUpgrader() *websocket.FastHTTPUpgrader {
 	}
 }
 
-// Upgrade upgrades the connection to a websocket connection. A malformed
-// `peerMetadata` is rejected up front with a 400 (returned as a nil error
-// with responseWritten=true); any other failure is a handshake error.
-// When responseWritten is true the caller must not write another response.
+// Upgrade upgrades the connection to a websocket connection. An oversized
+// or malformed `peerMetadata` is rejected up front with a 413/400
+// (returned as a nil error with responseWritten=true); any other failure is
+// a handshake error. When responseWritten is true the caller must not write
+// another response.
 func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.Hub) (error, bool) {
+	// Reject an oversized `peerMetadata` before the handshake: it would
+	// otherwise be stored on the peer and re-broadcast to every existing
+	// peer, amplifying a single value O(N) across the hub. Once upgraded,
+	// the connection is a websocket and no HTTP status can be sent.
+	if !validMetadataSize(string(ctx.QueryArgs().Peek("peerMetadata")), config.MaxMetadataSize) {
+		// rejectOversizedParam writes the 413 via Response (which returns
+		// nil on success); it returns an error only if the body itself
+		// fails to marshal, in which case it has set 500.
+		_ = h.rejectOversizedParam(ctx, "peerMetadata", config.MaxMetadataSize)
+		return nil, true
+	}
+
 	// Reject a malformed `peerMetadata` before the handshake: once upgraded,
 	// the connection is a websocket and no HTTP status can be sent.
 	if !validJSONQueryParam(ctx, "peerMetadata") {

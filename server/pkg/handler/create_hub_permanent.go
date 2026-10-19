@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
@@ -38,6 +39,18 @@ func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
 	// the ID is validated before any hub-state access.
 	if !validHubId(hubId) {
 		return h.rejectInvalidHubIdParam(ctx)
+	}
+	// An oversized id is rejected before the hub id is used as a storage
+	// key or probed against the cross-mode collision guard.
+	if !validMetadataSize(hubId, config.MaxMetadataSize) {
+		return h.rejectOversizedParam(ctx, "id", config.MaxMetadataSize)
+	}
+	// The hub metadata is stored and re-sent to every joiner, so it must be
+	// size-capped before it reaches hub state. Size runs before the JSON
+	// shape check so an oversized value is answered 413 without running
+	// json.Valid on a large blob — the cheaper path, and the real DoS guard.
+	if !validMetadataSize(string(ctx.QueryArgs().Peek("hubMetadata")), config.MaxMetadataSize) {
+		return h.rejectOversizedParam(ctx, "hubMetadata", config.MaxMetadataSize)
 	}
 	if !validJSONQueryParam(ctx, "hubMetadata") {
 		return h.rejectInvalidJSONParam(ctx, "hubMetadata")
