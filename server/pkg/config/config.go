@@ -29,7 +29,6 @@ type AppConfig struct {
 	Environment  Environment `env:"APP_ENVIRONMENT,default=dev"`
 	Host         string      `env:"APP_HOST,default=0.0.0.0"`
 	Port         string      `env:"APP_PORT,default=8080"`
-	Domain       string      `env:"APP_DOMAIN,default=localhost"`
 	ClientSecret string      `env:"APP_CLIENT_SECRET"`
 	HubStorage   string      `env:"APP_HUB_STORAGE,default=memory"`
 	PeerStorage  string      `env:"APP_PEER_STORAGE,default=memory"`
