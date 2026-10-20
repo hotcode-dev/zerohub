@@ -51,6 +51,28 @@ class FakeRTCPeerConnection {
   restartIce() {
     /* no-op */
   }
+
+  setConfiguration(_config: RTCConfiguration) {
+    /* no-op */
+  }
+
+  createOffer(_options?: RTCOfferOptions): Promise<RTCSessionDescription> {
+    return Promise.reject(new Error("createOffer not implemented in fake"));
+  }
+
+  setRemoteDescription(_description: RTCSessionDescriptionInit): Promise<void> {
+    return Promise.reject(
+      new Error("setRemoteDescription not implemented in fake")
+    );
+  }
+
+  setLocalDescription(_description: RTCSessionDescriptionInit): Promise<void> {
+    return Promise.resolve();
+  }
+
+  createAnswer(_options?: RTCOfferOptions): Promise<RTCSessionDescription> {
+    return Promise.reject(new Error("createAnswer not implemented in fake"));
+  }
 }
 
 /** Build a `Peer` wrapped around a fake `RTCPeerConnection`. */
@@ -470,5 +492,177 @@ describe("armSendOnIceReady — SDP send across a non-OPEN signaling socket", ()
     rtc.onicecandidate?.({ candidate: { candidate: "candidate:later" } });
     rtc.onicecandidate?.({ candidate: null });
     expect(sendOnce).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("onPeerError — per-peer WebRTC signaling failures", () => {
+  let client: ZeroHubClient;
+  let peerErrorSpy: import("vitest").Mock<(peer: Peer, error: Error) => void>;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    client = makeClient();
+    // sendOffer/sendAnswer guard on `this.ws` before reaching the RTC code;
+    // give them an OPEN signaling socket so the failure happens in the
+    // WebRTC exchange, not the socket guard.
+    const ws = new FakeWebSocket();
+    ws.readyState = WebSocket.OPEN;
+    client.ws = ws as unknown as WebSocket;
+    peerErrorSpy = vi.fn();
+    client.onPeerError = peerErrorSpy;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("sendOffer: fires onPeerError when createOffer rejects, and the promise still rejects", async () => {
+    const { peer } = makePeer("5");
+    client.peers = { "5": peer };
+    // Default fake createOffer rejects with an Error.
+
+    await expect(client.sendOffer("5")).rejects.toThrow(
+      "createOffer not implemented in fake"
+    );
+
+    expect(peerErrorSpy).toHaveBeenCalledTimes(1);
+    const [reportedPeer, error] = peerErrorSpy.mock.calls[0];
+    expect(reportedPeer).toBe(peer);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toBe("createOffer not implemented in fake");
+    // The logger error path was also exercised.
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalled();
+  });
+
+  it("sendOffer: fires onPeerError when setLocalDescription rejects", async () => {
+    const { peer, rtc } = makePeer("6");
+    client.peers = { "6": peer };
+    rtc.createOffer = () =>
+      Promise.resolve({ type: "offer", sdp: "v=0" } as RTCSessionDescription);
+    rtc.setLocalDescription = () =>
+      Promise.reject(new Error("local desc boom"));
+
+    await expect(client.sendOffer("6")).rejects.toThrow("local desc boom");
+
+    expect(peerErrorSpy).toHaveBeenCalledTimes(1);
+    expect(peerErrorSpy.mock.calls[0][0]).toBe(peer);
+    expect(peerErrorSpy.mock.calls[0][1].message).toBe("local desc boom");
+  });
+
+  it("sendAnswer: fires onPeerError when setRemoteDescription rejects", async () => {
+    const { peer } = makePeer("7");
+    client.peers = { "7": peer };
+
+    await expect(client.sendAnswer("7", "v=0-offer")).rejects.toThrow(
+      "setRemoteDescription not implemented in fake"
+    );
+
+    expect(peerErrorSpy).toHaveBeenCalledTimes(1);
+    expect(peerErrorSpy.mock.calls[0][0]).toBe(peer);
+  });
+
+  it("sendAnswer: fires onPeerError when createAnswer rejects", async () => {
+    const { peer, rtc } = makePeer("8");
+    client.peers = { "8": peer };
+    rtc.setRemoteDescription = () => Promise.resolve();
+
+    await expect(client.sendAnswer("8", "v=0-offer")).rejects.toThrow(
+      "createAnswer not implemented in fake"
+    );
+
+    expect(peerErrorSpy).toHaveBeenCalledTimes(1);
+    expect(peerErrorSpy.mock.calls[0][0]).toBe(peer);
+  });
+
+  it("acceptAnswer: fires onPeerError when setRemoteDescription rejects", async () => {
+    const { peer } = makePeer("9");
+    client.peers = { "9": peer };
+
+    await expect(client.acceptAnswer("9", "v=0-answer")).rejects.toThrow(
+      "setRemoteDescription not implemented in fake"
+    );
+
+    expect(peerErrorSpy).toHaveBeenCalledTimes(1);
+    expect(peerErrorSpy.mock.calls[0][0]).toBe(peer);
+  });
+
+  it("wraps non-Error rejections (e.g. a plain string) in an Error", async () => {
+    const { peer, rtc } = makePeer("10");
+    client.peers = { "10": peer };
+    // Reject with a plain string (non-Error) to verify the client wraps
+    // non-Error rejections; cast so the fake's declared
+    // Promise<RTCSessionDescription> return type accepts it.
+    /* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
+    rtc.createOffer = (() =>
+      Promise.reject(
+        "boom-string"
+      )) as unknown as () => Promise<RTCSessionDescription>;
+    /* eslint-enable @typescript-eslint/prefer-promise-reject-errors */
+
+    await expect(client.sendOffer("10")).rejects.toThrow("boom-string");
+
+    expect(peerErrorSpy).toHaveBeenCalledTimes(1);
+    const error = peerErrorSpy.mock.calls[0][1];
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toBe("boom-string");
+  });
+
+  it("does not call onPeerError on a successful sendOffer exchange", async () => {
+    const { peer, rtc } = makePeer("11");
+    client.peers = { "11": peer };
+    rtc.createOffer = () =>
+      Promise.resolve({ type: "offer", sdp: "v=0" } as RTCSessionDescription);
+
+    await expect(client.sendOffer("11")).resolves.toBeUndefined();
+
+    // Flush the ICE-timeout fallback so any queued side effects are settled
+    // before asserting (the fake never trickles a candidate).
+    vi.advanceTimersByTime(client.config.waitIceCandidatesTimeout + 10);
+    expect(peerErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it("a throwing onPeerError handler is contained: error still re-thrown, logger records it", async () => {
+    const { peer } = makePeer("12");
+    client.peers = { "12": peer };
+    client.onPeerError = () => {
+      throw new Error("user handler boom");
+    };
+
+    // The user handler must not mask the original signaling failure: the
+    // promise still rejects with the RTC error, not "user handler boom".
+    await expect(client.acceptAnswer("12", "v=0-answer")).rejects.toThrow(
+      "setRemoteDescription not implemented in fake"
+    );
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalledWith(
+      "onPeerError handler threw",
+      expect.anything()
+    );
+  });
+
+  it("does not call onPeerError for an unknown peer (acceptAnswer early-returns)", async () => {
+    await expect(client.acceptAnswer("missing", "v=0-answer")).resolves.toBe(
+      undefined
+    );
+    expect(peerErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not call onPeerError when no handler is registered", async () => {
+    const { peer } = makePeer("13");
+    client.peers = { "13": peer };
+    delete client.onPeerError;
+
+    await expect(client.acceptAnswer("13", "v=0-answer")).rejects.toThrow();
+
+    // No handler registered: no call, no crash.
+    expect(peerErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it("reports exactly once for a single failure (no double-firing)", async () => {
+    const { peer } = makePeer("14");
+    client.peers = { "14": peer };
+
+    await expect(client.acceptAnswer("14", "v=0-answer")).rejects.toThrow();
+
+    expect(peerErrorSpy).toHaveBeenCalledTimes(1);
   });
 });
