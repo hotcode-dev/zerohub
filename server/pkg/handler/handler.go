@@ -44,6 +44,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/hub"
@@ -140,6 +141,36 @@ type handler struct {
 	// always allowed; this list only widens the gate for explicitly listed
 	// origins.
 	allowedOrigins []string
+
+	// wsIdleTimeout bounds a signaling connection with no inbound frames
+	// (pong or data) before it is closed as dead; wsPingInterval is how
+	// often the keepalive pings. Both default to the config values and are
+	// only overridden by tests, which shrink them to keep liveness
+	// assertions fast.
+	wsIdleTimeout  time.Duration
+	wsPingInterval time.Duration
+}
+
+// idleTimeout / pingInterval return the effective probe timings, falling
+// back to the config defaults when the handler was built by NewHandler
+// (which leaves the fields at zero).
+func (h *handler) idleTimeout() time.Duration {
+	if h.wsIdleTimeout > 0 {
+		return h.wsIdleTimeout
+	}
+	return config.WSIdleTimeout
+}
+
+func (h *handler) pingInterval() time.Duration {
+	if h.wsPingInterval > 0 {
+		return h.wsPingInterval
+	}
+	// One quarter of the idle window: pings only keep intermediates' idle
+	// mappings alive, so a shorter interval is harmless (the library's
+	// auto-pong replies are invisible to the read path), while a longer
+	// one would let a half-open peer sit one whole idle window with no
+	// probe in flight before the next tick can close it.
+	return config.WSIdleTimeout / 4
 }
 
 // NewHandler create a new handler
