@@ -19,7 +19,7 @@ import { getWS, isWellFormedHost } from "./utils";
  *
  * 1. **Constructor** — `new ZeroHubClient(hosts, config, topology)` initializes the client with server addresses, configuration (including TLS, logging, and WebRTC settings), and a topology strategy (default: MeshTopology). No network connection is made yet.
  *
- * 2. **Connect** — Call `client.connect()` (or the convenience methods `createHub()`, `joinHub()`, `joinOrCreate()`) to establish a WebSocket connection. The client automatically handles reconnection with failover across multiple hosts.
+ * 2. **Connect** — Call one of the hub entry points (`createHub()`, `joinHub()`, `joinOrCreateHub()`, `joinPermanentHub()`, `createRandomHub()`, `joinRandomHub()`, `joinOrCreateIPHub()`) to establish a WebSocket connection. The client automatically handles reconnection with failover across multiple hosts.
  *
  * 3. **Hub Establishment** — The server responds with a `HubInfoMessage` containing the hub's metadata, the client's own peer ID, and the list of existing peers. New peers are created in the `peers` map with `PeerStatus.Pending`.
  *
@@ -134,6 +134,19 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   public onPeerStatusChange?: (peer: Peer<PeerMetadata>) => void;
   /**
    * A callback function that is called when a peer error occurs.
+   *
+   * Fired when a per-peer WebRTC signaling exchange fails on the peer's
+   * `RTCPeerConnection`: creating/setting the offer SDP (`sendOffer`),
+   * creating/setting the answer SDP (`sendAnswer`), or applying the remote
+   * answer SDP (`acceptAnswer`) — e.g. an incompatible/invalid SDP or a
+   * media-track failure. Transient signaling-socket delivery failures are
+   * retried automatically and are not reported here. It is NOT a
+   * peer-status notification (use `onPeerStatusChange` for lifecycle,
+   * including P2P drops via `PeerStatus.WebRTCDisconnected`) and it is not
+   * fired for connection-level errors (use `onZeroHubError`).
+   *
+   * @param peer - The peer the error occurred on
+   * @param error - The error that occurred
    * @public
    */
   public onPeerError?: (peer: Peer<PeerMetadata>, error: Error) => void;
@@ -264,6 +277,33 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     }
     if (this.onPeerStatusChange) {
       this.onPeerStatusChange(peer);
+    }
+  }
+
+  /**
+   * Surfaces a per-peer error to the `onPeerError` callback.
+   *
+   * The peer must still be registered (a peer torn down by
+   * `removePeer` has no meaningful error channel — the status transition
+   * to `ZeroHubDisconnected`/`Disconnected` via `onPeerStatusChange` is the
+   * application's signal for those). A user-supplied handler that throws is
+   * isolated from the rest of the signaling flow: it must not take down the
+   * call stack that detected the error.
+   *
+   * @param peerId - The ID of the peer the error occurred on.
+   * @param error - The error to surface.
+   */
+  private reportPeerError(peerId: string, error: Error): void {
+    const peer = this.peers[peerId];
+    if (!peer) {
+      return;
+    }
+    if (this.onPeerError) {
+      try {
+        this.onPeerError(peer, error);
+      } catch (err) {
+        this.logger.error("onPeerError handler threw", err);
+      }
     }
   }
 
@@ -1024,8 +1064,17 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       peer.rtcConn.setConfiguration(rtcConfig);
     }
 
-    const offer = await peer.rtcConn.createOffer(rtcOfferOptions);
-    await peer.rtcConn.setLocalDescription(offer);
+    try {
+      const offer = await peer.rtcConn.createOffer(rtcOfferOptions);
+      await peer.rtcConn.setLocalDescription(offer);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      this.logger.error("Failed to create offer for peer", peerId, error);
+      this.reportPeerError(peerId, error);
+      // Re-throw: callers (topology, user code) still observe the failed
+      // exchange via the rejected promise; onPeerError is additive.
+      throw error;
+    }
 
     this.armSendOnIceReady(peerId, peer.rtcConn, () => {
       const localDescription = peer.rtcConn.localDescription;
@@ -1072,13 +1121,22 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       peer.rtcConn.setConfiguration(rtcConfig);
     }
 
-    await peer.rtcConn.setRemoteDescription({
-      type: "offer",
-      sdp: offerSdp,
-    });
+    try {
+      await peer.rtcConn.setRemoteDescription({
+        type: "offer",
+        sdp: offerSdp,
+      });
 
-    const offer = await peer.rtcConn.createAnswer(rtcOfferOptions);
-    await peer.rtcConn.setLocalDescription(offer);
+      const offer = await peer.rtcConn.createAnswer(rtcOfferOptions);
+      await peer.rtcConn.setLocalDescription(offer);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      this.logger.error("Failed to create answer for peer", peerId, error);
+      this.reportPeerError(peerId, error);
+      // Re-throw: callers (topology, user code) still observe the failed
+      // exchange via the rejected promise; onPeerError is additive.
+      throw error;
+    }
 
     this.armSendOnIceReady(peerId, peer.rtcConn, () => {
       const localDescription = peer.rtcConn.localDescription;
@@ -1210,10 +1268,20 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       return;
     }
 
-    await peer.rtcConn.setRemoteDescription({
-      type: "answer",
-      sdp: answerSdp,
-    });
+    try {
+      await peer.rtcConn.setRemoteDescription({
+        type: "answer",
+        sdp: answerSdp,
+      });
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      this.logger.error("Failed to accept answer from peer", peerId, error);
+      this.reportPeerError(peerId, error);
+      // Re-throw: callers (the auto-accept path, user code) still observe
+      // the failed exchange via the rejected promise; onPeerError is
+      // additive.
+      throw error;
+    }
   }
 
   /**
