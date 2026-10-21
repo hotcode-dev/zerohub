@@ -13,6 +13,7 @@ import (
 	reflect "reflect"
 
 	hub "github.com/hotcode-dev/zerohub/pkg/hub"
+	storage "github.com/hotcode-dev/zerohub/pkg/storage"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -83,6 +84,20 @@ func (m *MockZeroHub) GetOrCreateHub(hubId, metadata string, isPermanent bool) (
 func (mr *MockZeroHubMockRecorder) GetOrCreateHub(hubId, metadata, isPermanent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrCreateHub", reflect.TypeOf((*MockZeroHub)(nil).GetOrCreateHub), hubId, metadata, isPermanent)
+}
+
+// HubStore mocks base method.
+func (m *MockZeroHub) HubStore() storage.Storage[hub.Hub] {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HubStore")
+	ret0, _ := ret[0].(storage.Storage[hub.Hub])
+	return ret0
+}
+
+// HubStore indicates an expected call of HubStore.
+func (mr *MockZeroHubMockRecorder) HubStore() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HubStore", reflect.TypeOf((*MockZeroHub)(nil).HubStore))
 }
 
 // RemoveHubById mocks base method.

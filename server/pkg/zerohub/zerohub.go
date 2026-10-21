@@ -45,6 +45,12 @@ type ZeroHub interface {
 	GetOrCreateHub(hubId string, metadata string, isPermanent bool) (hub.Hub, bool, error)
 	// RemoveHubById removes a hub by its ID.
 	RemoveHubById(id string)
+	// HubStore returns the storage that holds all hubs. It is exposed so the
+	// WebSocket teardown path can hand the hub its own storage to
+	// RemovePeerIfLast, which deletes the hub from the store atomically with
+	// removing the last peer. Named HubStore (not HubStorage) to avoid
+	// shadowing the zeroHub.HubStorage field.
+	HubStore() storage.Storage[hub.Hub]
 }
 
 // zeroHub implements the ZeroHub interface.
@@ -156,4 +162,9 @@ func (z *zeroHub) GetHubById(id string) hub.Hub {
 
 func (z *zeroHub) RemoveHubById(id string) {
 	z.HubStorage.Delete(id)
+}
+
+// HubStore returns the storage that holds all hubs.
+func (z *zeroHub) HubStore() storage.Storage[hub.Hub] {
+	return z.HubStorage
 }

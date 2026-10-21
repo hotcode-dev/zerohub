@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -468,6 +469,293 @@ func TestRemovePeerByIdUnknownPeer(t *testing.T) {
 	if other.received != 0 {
 		t.Fatalf("remaining peer received %d disconnect signals for unknown peer removal; want 0", other.received)
 	}
+}
+
+// TestRemovePeerIfLastDeletesHubWhenLastPeerLeaves is the happy path for the
+// new atomic primitive: when the disconnecting peer was the last member of a
+// non-permanent hub, the hub is removed from hubStorage.
+func TestRemovePeerIfLastDeletesHubWhenLastPeerLeaves(t *testing.T) {
+	t.Parallel()
+
+	hubStore := storage.NewMemoryStorage[Hub]()
+	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
+	if err != nil {
+		t.Fatalf("NewHub: %v", err)
+	}
+	hubStore.Add("id", h)
+
+	leaver := &fakePeer{id: "2"}
+	h.(*hub).PeerStorage.Add("2", leaver)
+
+	h.RemovePeerIfLast("2", hubStore)
+
+	// The hub must be gone from storage and hold no peers.
+	if _, err := hubStore.Get("id"); err == nil {
+		t.Fatal("hub still present in hubStore after last peer removed")
+	}
+	if !h.(*hub).PeerStorage.IsEmpty() {
+		t.Fatal("hub PeerStorage not empty after last peer removed")
+	}
+}
+
+// TestRemovePeerIfLastKeepsHubWhenPeersRemain is the inverse happy path:
+// removing a peer that is NOT the last member must not delete the hub.
+func TestRemovePeerIfLastKeepsHubWhenPeersRemain(t *testing.T) {
+	t.Parallel()
+
+	hubStore := storage.NewMemoryStorage[Hub]()
+	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
+	if err != nil {
+		t.Fatalf("NewHub: %v", err)
+	}
+	hubStore.Add("id", h)
+
+	leaver := &fakePeer{id: "2"}
+	other := &fakePeer{id: "3"}
+	h.(*hub).PeerStorage.Add("2", leaver)
+	h.(*hub).PeerStorage.Add("3", other)
+
+	h.RemovePeerIfLast("2", hubStore)
+
+	// The hub must still be present and hold the surviving peer.
+	if _, err := hubStore.Get("id"); err != nil {
+		t.Fatalf("hub deleted while a peer remained: %v", err)
+	}
+	if _, err := h.(*hub).PeerStorage.Get("3"); err != nil {
+		t.Fatal("surviving peer was removed from the hub")
+	}
+}
+
+// TestRemovePeerIfLastNeverDeletesPermanentHub covers the permanent-hub
+// guarantee: a permanent hub is never removed from hubStorage, even when the
+// last peer leaves.
+func TestRemovePeerIfLastNeverDeletesPermanentHub(t *testing.T) {
+	t.Parallel()
+
+	hubStore := storage.NewMemoryStorage[Hub]()
+	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), true)
+	if err != nil {
+		t.Fatalf("NewHub: %v", err)
+	}
+	hubStore.Add("id", h)
+
+	leaver := &fakePeer{id: "2"}
+	h.(*hub).PeerStorage.Add("2", leaver)
+
+	h.RemovePeerIfLast("2", hubStore)
+
+	// The permanent hub must remain in storage (though empty).
+	if _, err := hubStore.Get("id"); err != nil {
+		t.Fatalf("permanent hub deleted on last peer leave: %v", err)
+	}
+}
+
+// TestRemovePeerIfLastUnknownPeerIsNoOp: removing a peer that was never in
+// the hub must be a no-op — no peer removed, no broadcast, no hub deletion.
+func TestRemovePeerIfLastUnknownPeerIsNoOp(t *testing.T) {
+	t.Parallel()
+
+	hubStore := storage.NewMemoryStorage[Hub]()
+	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
+	if err != nil {
+		t.Fatalf("NewHub: %v", err)
+	}
+	hubStore.Add("id", h)
+
+	other := &fakePeer{id: "3"}
+	h.(*hub).PeerStorage.Add("3", other)
+
+	h.RemovePeerIfLast("99", hubStore)
+
+	if _, err := hubStore.Get("id"); err != nil {
+		t.Fatalf("hub deleted for an unknown peer: %v", err)
+	}
+	if _, err := h.(*hub).PeerStorage.Get("3"); err != nil {
+		t.Fatal("unrelated peer was removed by an unknown-id removal")
+	}
+	if other.received != 0 {
+		t.Fatalf("remaining peer received %d signals for unknown-peer removal; want 0", other.received)
+	}
+}
+
+// TestAddPeerRejectedAfterRemovePeerIfLastLast is the deterministic
+// regression test for the orphaned-room race. It exercises the
+// delete-then-add window that the emptiness re-check alone leaves open:
+// the hub is deleted from hubStore while it is still reachable (closing is
+// set under the same lock as the delete), and a subsequent join to that same
+// hub object must be rejected instead of registering a peer into a hub that
+// is no longer reachable via GetHubById.
+func TestAddPeerRejectedAfterRemovePeerIfLastLast(t *testing.T) {
+	t.Parallel()
+
+	hubStore := storage.NewMemoryStorage[Hub]()
+	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
+	if err != nil {
+		t.Fatalf("NewHub: %v", err)
+	}
+	hubStore.Add("id", h)
+
+	leaver := &fakePeer{id: "2"}
+	h.(*hub).PeerStorage.Add("2", leaver)
+
+	// Last peer departs and the hub is deleted from storage.
+	h.RemovePeerIfLast("2", hubStore)
+	if _, err := hubStore.Get("id"); err == nil {
+		t.Fatalf("precondition: hub still in store after last peer left")
+	}
+
+	// A join that still holds the (now detached) hub object must NOT
+	// register a peer: that would be the orphaned state — a live peer in a
+	// hub that GetHubById no longer returns.
+	joiner := &fakePeer{}
+	h.AddPeer(joiner)
+
+	// The joiner must not be registered, must not have received its
+	// HubInfo, and the hub must remain empty in storage.
+	if _, err := h.(*hub).PeerStorage.Get(joiner.GetId()); err == nil {
+		t.Fatalf("joiner %q registered into a hub already deleted from storage (orphaned)", joiner.GetId())
+	}
+	if joiner.sentHubInfo {
+		t.Fatal("joiner received a HubInfo even though the hub was deleted from storage")
+	}
+	if !h.(*hub).PeerStorage.IsEmpty() {
+		t.Fatalf("deleted hub holds %d peers; want empty", peerCount(h))
+	}
+	if _, err := hubStore.Get("id"); err == nil {
+		t.Fatal("hub reappeared in hubStore")
+	}
+}
+
+// TestAddPeerWhileRemovePeerIfLastRunning is the concurrency regression test
+// mandated by the task: race RemovePeerIfLast (last peer) against AddPeer for
+// the same hub under -race and assert that the resulting state is always one
+// of the two safe outcomes —
+//
+//	(a) the hub is still present and the joiner is a reachable member, OR
+//	(b) the hub is fully removed and the joiner was not accepted
+//
+// never the orphaned state where hubStore no longer returns the hub but a
+// peer remains registered on it.
+func TestAddPeerWhileRemovePeerIfLastRunning(t *testing.T) {
+	const iterations = 200
+
+	for i := 0; i < iterations; i++ {
+		t.Run(fmt.Sprintf("iter_%d", i), func(t *testing.T) {
+			hubStore := storage.NewMemoryStorage[Hub]()
+			h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
+			if err != nil {
+				t.Fatalf("NewHub: %v", err)
+			}
+			hubStore.Add("id", h)
+
+			leaver := &fakePeer{id: "1"}
+			h.(*hub).PeerStorage.Add("1", leaver)
+
+			joiner := &fakePeer{}
+			var wg sync.WaitGroup
+			wg.Add(2)
+			go func() {
+				defer wg.Done()
+				h.AddPeer(joiner)
+			}()
+			go func() {
+				defer wg.Done()
+				h.RemovePeerIfLast("1", hubStore)
+			}()
+			wg.Wait()
+
+			_, storeErr := hubStore.Get("id")
+			present := storeErr == nil
+			_, joinerErr := h.(*hub).PeerStorage.Get(joiner.GetId())
+			joinerIn := joinerErr == nil
+
+			switch {
+			case present && joinerIn:
+				// Outcome (a): hub still present and the joiner is a
+				// reachable member.
+			case !present && !joinerIn:
+				// Outcome (b): hub fully removed and the joiner was not
+				// accepted.
+			default:
+				// The orphaned state the bug produces.
+				t.Fatalf("orphaned state: hub present=%v joiner registered=%v joiner gotHubInfo=%v (want not (present && !joinerIn) and not (!present && joinerIn))", present, joinerIn, joiner.sentHubInfo)
+			}
+		})
+	}
+}
+
+// TestRemovePeerIfLastDoesNotDeadlockWhenBroadcastStalls guards the
+// lock-not-held-across-WS-sends property: a peer whose send blocks in the
+// disconnect broadcast must not pin the hub lock and stall a concurrent
+// join's registration. (Mirrors the existing
+// TestRemovePeerStalledBroadcastDoesNotBlockConcurrentAddPeer at the
+// RemovePeerIfLast level.)
+func TestRemovePeerIfLastDoesNotDeadlockWhenBroadcastStalls(t *testing.T) {
+	t.Parallel()
+
+	hubStore := storage.NewMemoryStorage[Hub]()
+	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
+	if err != nil {
+		t.Fatalf("NewHub: %v", err)
+	}
+	hubStore.Add("id", h)
+
+	// The leaver's removal must broadcast the disconnect signal to the
+	// still-present peer, whose first send parks.
+	stalled := &fakePeer{
+		id:         "3",
+		stallFirst: make(chan struct{}),
+		parkedSig:  make(chan struct{}),
+	}
+	leaver := &fakePeer{id: "2"}
+	h.(*hub).PeerStorage.Add("2", leaver)
+	h.(*hub).PeerStorage.Add("3", stalled)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		h.RemovePeerIfLast("2", hubStore)
+	}()
+
+	// Wait until the disconnect broadcast has parked on the stalled send:
+	// from here RemovePeerIfLast is blocked inside SendBinaryMessage, and
+	// (if the lock were held across the send) a concurrent AddPeer would
+	// deadlock on it.
+	select {
+	case <-stalled.parkedSig:
+	case <-time.After(5 * time.Second):
+		t.Fatal("disconnect broadcast did not reach the stalled peer's send")
+	}
+
+	// A concurrent join must complete even with the broadcast stalled.
+	joiner := &fakePeer{}
+	h.AddPeer(joiner)
+
+	// Release the stalled send and let RemovePeerIfLast finish.
+	close(stalled.stallFirst)
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("RemovePeerIfLast did not complete after the stalled send was resolved")
+	}
+
+	// The joiner was registered and the hub still holds it: the last peer
+	// (leaver) left but the hub was not deleted because the joiner arrived.
+	if _, err := h.(*hub).PeerStorage.Get(joiner.GetId()); err != nil {
+		t.Fatalf("joiner %q not registered after removal of the last original peer", joiner.GetId())
+	}
+	if _, err := hubStore.Get("id"); err != nil {
+		t.Fatalf("hub deleted while the joiner was still in it: %v", err)
+	}
+}
+
+// peerCount is a small helper for test assertions.
+func peerCount(h Hub) int {
+	n := 0
+	for range h.(*hub).PeerStorage.GetAll() {
+		n++
+	}
+	return n
 }
 
 // TestSendOfferToPeer routes an offer to the target peer, passing the local
