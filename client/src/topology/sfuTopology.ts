@@ -38,6 +38,16 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
   private sfuPeerId: string | undefined;
 
   /**
+   * The id of the departed SFU that this topology already re-elected from.
+   * A duplicate/delayed `peerDisconnectedMessage` (or a reconnect
+   * roster-prune) for the same departed peer must not re-run the election —
+   * after the first re-election the star is already around the new SFU, so a
+   * second event for the same departed id must be a no-op rather than open a
+   * second set of connections.
+   */
+  private lastElectingSfuId: string | undefined;
+
+  /**
    * Creates a new SFU topology instance.
    *
    * @param sfuPeerId - Optional: explicitly set which peer should act as the SFU.
@@ -154,8 +164,27 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
 
       case PeerStatus.ZeroHubDisconnected:
         if (peerIsSFU) {
-          this.zeroHub.logger.warn("SFU peer disconnected - topology may fail");
-          // In a production scenario, you might want to elect a new SFU here
+          if (this.sfuPeerId) {
+            // The SFU is explicitly configured; re-electing would ignore that
+            // designation, so keep the original warn-and-wait behavior.
+            this.zeroHub.logger.warn(
+              "SFU peer disconnected - topology may fail"
+            );
+          } else {
+            // The implicitly elected SFU has left the hub. Re-elect and
+            // re-establish the star around the new SFU. `lastElectingSfuId`
+            // dedups a duplicate/delayed departure broadcast (or a reconnect
+            // roster-prune) for the same departed peer: after the first
+            // re-election the star is already around the new SFU, so a second
+            // event for the same id is a no-op rather than a second
+            // offer/answer cycle or a second set of data channels.
+            if (this.lastElectingSfuId !== peer.id) {
+              this.zeroHub.logger.log(
+                `SFU peer ${peer.id} disconnected - re-electing a new SFU`
+              );
+              this.reElectSfu(peer.id);
+            }
+          }
         }
         break;
 
@@ -189,6 +218,59 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
             });
         }
         break;
+    }
+  }
+
+  /**
+   * Re-elects the SFU after the current (implicitly elected) SFU peer has
+   * left the hub, and re-establishes the star around the winner:
+   *
+   * - This peer becomes the SFU: it opens a data + media connection to every
+   *   remaining live client (the SFU offers; the clients auto-answer).
+   * - This peer is a client: it points its SFU connection at the new SFU,
+   *   which offers for this connection (the client waits for it).
+   *
+   * The new SFU is the numerically lowest *remaining* peer id. The departed
+   * peer must be excluded explicitly: `removePeer` runs after this handler
+   * (see `updatePeerStatus`/`handleZeroHubMessage`), so the departed id is
+   * still in `zeroHub.peers` here and a plain `getSFUPeerId()` would elect the
+   * dead peer again. No new `RTCPeerConnection` is created for a surviving
+   * peer: it already holds a live connection to the departing SFU, and
+   * re-setting up on that same peer object would hand it duplicate data
+   * channels and transceivers.
+   *
+   * @param departedSfuId - The id of the SFU peer that left the hub.
+   */
+  private reElectSfu(departedSfuId: string): void {
+    const zh = this.zeroHub;
+    if (!zh || !zh.myPeerId) {
+      return;
+    }
+
+    // Remember which departure this election was triggered by, so a duplicate
+    // or delayed event for the same peer cannot run the election twice.
+    this.lastElectingSfuId = departedSfuId;
+
+    const remainingIds = Object.keys(zh.peers).filter(
+      (id) => id !== departedSfuId
+    );
+    const newSfuPeerId = this.lowestPeerId([zh.myPeerId, ...remainingIds]);
+    if (newSfuPeerId === departedSfuId || !newSfuPeerId) {
+      return;
+    }
+
+    if (newSfuPeerId === zh.myPeerId) {
+      // The numerically lowest remaining peer is us: we become the SFU and
+      // connect out to every remaining client.
+      for (const id of remainingIds) {
+        if (id === zh.myPeerId) {
+          continue;
+        }
+        this.setupSFUConnection(zh.peers[id]);
+      }
+    } else {
+      // We are a client: point the SFU connection at the new SFU.
+      this.setupClientToSFUConnection(zh.peers[newSfuPeerId]);
     }
   }
 

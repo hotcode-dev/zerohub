@@ -863,6 +863,23 @@ const ZeroHubUnitHarness = {
     return entry.client.myPeerId ?? null;
   },
 
+  /**
+   * Introspect the client's `SFUTopology` private state (type cast — `private`
+   * is erased at bundle time) so the SFU re-election spec can assert
+   * idempotency directly: which departed SFU id the topology last re-elected
+   * from (`lastElectingSfuId`). `null` when no re-election has run yet.
+   */
+  getSfuLastElectingPeerId(id: number): string | null {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const sfu = entry.client.topology as unknown as {
+      lastElectingSfuId: string | undefined;
+    };
+    return sfu.lastElectingSfuId ?? null;
+  },
+
   /** Number of mock RTCPeerConnection instances created for this client. */
   connectionsCreated(id: number): number {
     const entry = clients.get(id);
