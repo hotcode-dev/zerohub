@@ -14,6 +14,7 @@ import (
 	time "time"
 
 	peer "github.com/hotcode-dev/zerohub/pkg/peer"
+	storage "github.com/hotcode-dev/zerohub/pkg/storage"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -119,6 +120,18 @@ func (m *MockHub) RemovePeerById(id string) bool {
 func (mr *MockHubMockRecorder) RemovePeerById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemovePeerById", reflect.TypeOf((*MockHub)(nil).RemovePeerById), id)
+}
+
+// RemovePeerIfLast mocks base method.
+func (m *MockHub) RemovePeerIfLast(id string, hubStorage storage.Storage[Hub]) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "RemovePeerIfLast", id, hubStorage)
+}
+
+// RemovePeerIfLast indicates an expected call of RemovePeerIfLast.
+func (mr *MockHubMockRecorder) RemovePeerIfLast(id, hubStorage any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemovePeerIfLast", reflect.TypeOf((*MockHub)(nil).RemovePeerIfLast), id, hubStorage)
 }
 
 // SendAnswerToPeer mocks base method.

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -27,6 +28,15 @@ type Hub interface {
 	// RemovePeerById removes a peer from the hub by its ID.
 	// It returns true if the hub is empty after the peer is removed.
 	RemovePeerById(id string) (emptyPeer bool)
+	// RemovePeerIfLast atomically removes the peer and, only when that peer
+	// was the hub's last member, also deletes the hub from HubStorage. The
+	// roster mutation and the hub deletion happen under the hub's
+	// peer-mutation lock, so a concurrent join cannot register a new peer
+	// in between — without it the hub object could be removed from storage
+	// while it still holds a just-joined peer, orphaning that peer and
+	// making a live static/permanent room permanently unjoinable.
+	// Permanent hubs are never deleted.
+	RemovePeerIfLast(id string, hubStorage storage.Storage[Hub])
 	// HandleMessage handles a message from a peer.
 	HandleMessage(p peer.Peer)
 	// SendOfferToPeer sends an offer to a peer.
@@ -53,6 +63,24 @@ type hub struct {
 	CurrentPeerId atomic.Uint64 `json:"-"`
 	// PeerStorage is the storage for the peers.
 	PeerStorage storage.Storage[peer.Peer] `json:"-"`
+	// mu serializes peer-roster mutations on this hub. AddPeer and
+	// RemovePeerById/RemovePeerIfLast take the write lock around their
+	// storage mutations, so the last peer's removal and a concurrent
+	// join's registration can never interleave; the relay helpers take
+	// the read lock so a broadcast can never overlap a roster mutation.
+	// The lock is NOT held across the WebSocket writes in the
+	// join/disconnect broadcasts: storage iteration snapshots the roster
+	// and yields after releasing its own lock, so a stalled send cannot
+	// pin mu and serialize the whole hub.
+	mu sync.RWMutex `json:"-"`
+	// closing is set (under mu) by RemovePeerIfLast at the moment the hub
+	// begins deletion from HubStorage. AddPeer checks it under mu so that
+	// a join racing the last peer's departure — which may have already
+	// fetched this hub object before it left storage — is rejected instead
+	// of registering a peer into a hub that is (about to be) gone. This
+	// closes the delete-then-add window that the re-check alone leaves
+	// open.
+	closing atomic.Bool `json:"-"`
 }
 
 // NewHub creates a new hub.
@@ -72,26 +100,64 @@ func NewHub(hubId string, metadata string, peerStorage storage.Storage[peer.Peer
 // is a no-op: no peer ID side effect, no storage entry, no broadcast, and the
 // new peer is never left half-registered without its HubInfo.
 func (h *hub) AddPeer(newPeer peer.Peer) {
+	h.mu.Lock()
+	// The peer ID is assigned and the join signal is validated under the
+	// peer-mutation lock; the registration + broadcast follow without it
+	// (see the note on mu).
+	//
+	// closing is checked in the same lock section so a join that already
+	// fetched this hub object before it was removed from HubStorage cannot
+	// still register here: RemovePeerIfLast sets closing under the same
+	// lock before the hub's storage entry disappears, and the check above
+	// is the only interleaving that survives the Add-before-Delete
+	// ordering (the delete-then-add window the emptiness re-check alone
+	// does not cover).
+	if h.closing.Load() {
+		h.mu.Unlock()
+		log.Warn().Str("hub_id", h.Id).Msg("rejecting join: hub is closing")
+		return
+	}
 	newPeer.SetId(strconv.FormatUint(h.CurrentPeerId.Add(1), 10))
 
 	// build the join signal before mutating any state
 	joinedSignalProto, err := CreateJoinedSignalProtobuf(newPeer.ToProtobuf())
+	h.mu.Unlock()
 	if err != nil {
 		log.Error().Msg(err.Error())
 		return
 	}
 
-	peersProtobuf := []*pb.Peer{}
-
+	h.mu.Lock()
+	// Register the peer under the peer-mutation lock: a concurrent
+	// RemovePeerIfLast cannot observe a half-empty hub and delete it from
+	// HubStorage while this peer is being registered. The broadcast
+	// snapshot (this peer plus every peer present after the Add) is taken
+	// under the same lock.
+	//
+	// Re-check closing here, in the authoritative registration section,
+	// not just in the first lock section: between that earlier check and
+	// this lock section the hub can be deleted from storage by a racing
+	// RemovePeerIfLast (the delete-then-add window). If it was, reject
+	// instead of registering a peer into a hub that is no longer
+	// reachable via GetHubById.
+	if h.closing.Load() {
+		h.mu.Unlock()
+		log.Warn().Str("hub_id", h.Id).Msg("rejecting join: hub is closing")
+		return
+	}
 	h.PeerStorage.Add(newPeer.GetId(), newPeer)
-
-	// broadcast peer joined for all peers
-	for peer := range h.PeerStorage.GetAll() {
-		if peer.GetId() != newPeer.GetId() {
-			if err := peer.SendBinaryMessage(joinedSignalProto); err != nil {
-				log.Error().Err(err).Str("peer_id", peer.GetId()).Msg("error sending joined signal")
+	peers := make([]peer.Peer, 0, 1)
+	for p := range h.PeerStorage.GetAll() {
+		peers = append(peers, p)
+	}
+	h.mu.Unlock()
+	peersProtobuf := []*pb.Peer{}
+	for _, p := range peers {
+		if p.GetId() != newPeer.GetId() {
+			if err := p.SendBinaryMessage(joinedSignalProto); err != nil {
+				log.Error().Err(err).Str("peer_id", p.GetId()).Msg("error sending joined signal")
 			}
-			peersProtobuf = append(peersProtobuf, peer.ToProtobuf())
+			peersProtobuf = append(peersProtobuf, p.ToProtobuf())
 		}
 	}
 
@@ -112,34 +178,85 @@ func (h *hub) AddPeer(newPeer peer.Peer) {
 // so a duplicate removal (e.g. close handler plus post-HandleMessage fallback) cannot double-send
 // the disconnect signal or double-trigger hub removal.
 func (h *hub) RemovePeerById(id string) (removeThisHub bool) {
+	return h.removePeer(id)
+}
+
+// RemovePeerIfLast atomically removes the peer and, when that peer was the
+// hub's last member, deletes the hub from hubStorage. The removal, the
+// emptiness check, and the hub deletion all happen under the hub's
+// peer-mutation lock: a concurrent join's AddPeer cannot register a peer in
+// between, so a live static/permanent room can never be deleted from storage
+// while still holding a just-joined peer (which would orphan that peer and
+// make the room permanently unjoinable). Permanent hubs are never deleted
+// from storage.
+func (h *hub) RemovePeerIfLast(id string, hubStorage storage.Storage[Hub]) {
+	if !h.removePeer(id) {
+		// Either the peer was not in the hub (no-op) or the hub still has
+		// members / is permanent: nothing to delete.
+		return
+	}
+
+	h.mu.Lock()
+	// Re-check under the lock: a concurrent AddPeer cannot have registered
+	// a peer since the check inside removePeer (its write-locked section
+	// overlaps with this one), but the re-check makes the primitive
+	// self-contained.
+	if !h.PeerStorage.IsEmpty() {
+		h.mu.Unlock()
+		return
+	}
+	// Mark the hub closing in the same lock section as the delete: a join
+	// that already fetched this hub object before it left storage is
+	// rejected in AddPeer's registration section (see closing), so the
+	// delete-then-add window cannot register a peer into a hub that is
+	// going away.
+	h.closing.Store(true)
+	hubStorage.Delete(h.Id)
+	h.mu.Unlock()
+}
+
+// removePeer performs the peer removal: storage lookup, delete, and the
+// disconnect broadcast. It returns whether the hub is empty afterwards; the
+// emptiness check is taken under the peer-mutation lock together with the
+// delete, so a concurrent AddPeer's registration is never missed. The
+// broadcast runs without holding mu — see the note on mu. If the peer was
+// not in the hub the result is false (no removal, no broadcast).
+func (h *hub) removePeer(id string) (empty bool) {
+	h.mu.Lock()
 	if _, err := h.PeerStorage.Get(id); err != nil {
+		h.mu.Unlock()
 		return false
 	}
+
+	// Delete the peer, take the emptiness decision, and snapshot the
+	// remaining roster in one critical section: the emptiness check cannot
+	// miss a concurrent AddPeer's registration (its write-locked section
+	// overlaps with this one).
+	h.PeerStorage.Delete(id)
+	empty = !h.IsPermanent && h.PeerStorage.IsEmpty()
+	peers := make([]peer.Peer, 0)
+	for p := range h.PeerStorage.GetAll() {
+		peers = append(peers, p)
+	}
+	h.mu.Unlock()
 
 	dcSignalProto, err := CreateDisconnectSignalProtobuf(id)
 	if err != nil {
 		log.Error().Msg(err.Error())
 	}
 
-	h.PeerStorage.Delete(id)
-
 	// broadcast peer disconnected
 	if err == nil {
-		for peer := range h.PeerStorage.GetAll() {
-			if peer.GetId() != id {
-				if sendErr := peer.SendBinaryMessage(dcSignalProto); sendErr != nil {
-					log.Error().Err(sendErr).Str("peer_id", peer.GetId()).Msg("error sending disconnected signal")
+		for _, p := range peers {
+			if p.GetId() != id {
+				if sendErr := p.SendBinaryMessage(dcSignalProto); sendErr != nil {
+					log.Error().Err(sendErr).Str("peer_id", p.GetId()).Msg("error sending disconnected signal")
 				}
 			}
 		}
 	}
 
-	if h.IsPermanent {
-		return false
-	}
-
-	// return true it has no peers left
-	return h.PeerStorage.IsEmpty()
+	return empty
 }
 
 func (h *hub) GetId() string {
@@ -156,7 +273,11 @@ func (h *hub) GetCreatedAt() time.Time {
 
 // (h *hub) SendOfferToPeer send offer sdp to other peer.
 func (h *hub) SendOfferToPeer(toPeerId string, offerPeerId string, offerSdp string) {
-	if peer, err := h.PeerStorage.Get(toPeerId); peer != nil && peer.GetWSConn() != nil && err == nil {
+	h.mu.RLock()
+	peer, err := h.PeerStorage.Get(toPeerId)
+	h.mu.RUnlock()
+
+	if peer != nil && peer.GetWSConn() != nil && err == nil {
 		if err := peer.SendOffer(offerPeerId, offerSdp); err != nil {
 			log.Error().Err(err).Str("peer_id", toPeerId).Msg("error sending offer")
 		}
@@ -167,9 +288,13 @@ func (h *hub) SendOfferToPeer(toPeerId string, offerPeerId string, offerSdp stri
 
 // (h *hub) SendAnswerToPeer send answer sdp to other peer.
 func (h *hub) SendAnswerToPeer(toPeerId string, answerPeerId string, answerSdp string) {
-	if peer, err := h.PeerStorage.Get(toPeerId); peer != nil && peer.GetWSConn() != nil && err == nil {
+	h.mu.RLock()
+	peer, err := h.PeerStorage.Get(toPeerId)
+	h.mu.RUnlock()
+
+	if peer != nil && peer.GetWSConn() != nil && err == nil {
 		if err := peer.SendAnswer(answerPeerId, answerSdp); err != nil {
-			log.Error().Err(err).Str("peer_id", toPeerId).Msg("error sending answer")
+			log.Error().Err(err).Str("peer_id", toPeerId).Msg("error sending answer to peer")
 		}
 	} else {
 		log.Error().Msg("error to send answer to peer: peer not found")
@@ -178,9 +303,13 @@ func (h *hub) SendAnswerToPeer(toPeerId string, answerPeerId string, answerSdp s
 
 // (h *hub) SendIceCandidateToPeer send trickled ice candidate to other peer.
 func (h *hub) SendIceCandidateToPeer(toPeerId string, icePeerId string, candidate string) {
-	if peer, err := h.PeerStorage.Get(toPeerId); peer != nil && peer.GetWSConn() != nil && err == nil {
+	h.mu.RLock()
+	peer, err := h.PeerStorage.Get(toPeerId)
+	h.mu.RUnlock()
+
+	if peer != nil && peer.GetWSConn() != nil && err == nil {
 		if err := peer.SendIceCandidate(icePeerId, candidate); err != nil {
-			log.Error().Err(err).Str("peer_id", toPeerId).Msg("error sending ice candidate")
+			log.Error().Err(err).Str("peer_id", toPeerId).Msg("error sending ice candidate to peer")
 		}
 	} else {
 		log.Error().Msg("error to send ice candidate to peer: peer not found")

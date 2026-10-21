@@ -123,7 +123,7 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 		// deadline; on a half-open socket the pings below go out, no frame
 		// ever comes back, and after idleTimeout the pending read returns a
 		// timeout error, exiting the loop into the post-loop cleanup
-		// (peer.Close + RemovePeerById + RemoveHubById). lastReadActivity
+		// (peer.Close + RemovePeerIfLast). lastReadActivity
 		// mirrors the deadline (the websocket library exposes no
 		// GetReadDeadline) so the keepalive goroutine can close the socket
 		// on expiry explicitly, without waiting for a blocked read to be
@@ -140,12 +140,18 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 			return nil
 		})
 
+		// RemovePeerIfLast removes the peer and, only when it was the
+		// last one, deletes the hub from storage — atomically with
+		// respect to a racing join, so a live room can never be orphaned
+		// (see the hub method for the locking details).
+		removeLastPeer := func() {
+			hub.RemovePeerIfLast(peer.GetId(), zh.HubStore())
+		}
+
 		ws.SetCloseHandler(func(code int, text string) error {
 			// https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close
 			peer.Close()
-			if hub.RemovePeerById(peer.GetId()) {
-				zh.RemoveHubById(hub.GetId())
-			}
+			removeLastPeer()
 
 			return nil
 		})
@@ -158,7 +164,7 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 		// loop (the websocket library serializes writes). The idle close and
 		// the post-loop cleanup may both observe the dead connection; that
 		// is safe — peer.Close is idempotent (second call sees a nil conn)
-		// and RemovePeerById is idempotent (returns false for a missing
+		// and RemovePeerIfLast is idempotent (no-op for a missing
 		// peer), so neither path double-broadcasts or double-removes.
 		//
 		// The goroutine MUST have exited before this callback returns:
@@ -222,10 +228,8 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 			peer.Close()
 		}
 		// Safe when the close handler already removed the peer:
-		// RemovePeerById is idempotent and returns false for a missing peer.
-		if hub.RemovePeerById(peer.GetId()) {
-			zh.RemoveHubById(hub.GetId())
-		}
+		// RemovePeerIfLast is idempotent and is a no-op for a missing peer.
+		removeLastPeer()
 	})
 
 	if upgradeErr != nil {
