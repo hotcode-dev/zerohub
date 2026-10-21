@@ -228,6 +228,55 @@ describe("reconnect — 1001 close reason host validation", () => {
     expect(connectCalls).toHaveLength(1);
     expect(connectCalls[0].host).toBe("new-host");
   });
+
+  it("redirects (not failover) on non-canonical-but-valid 1001 reasons the server accepts", () => {
+    // Regression for the isWellFormedHost divergence: these are valid
+    // migration targets the server's validateBackupHost accepts and emits,
+    // but whose raw spelling differs from the WHATWG-canonical form
+    // (uppercase host, zero-padded port, zero-padded octal IPv4, uppercase
+    // IPv6). The old raw-string round-trip rejected them and fell back to
+    // host-failover instead of connecting to the redirected host.
+    const reasons = [
+      "NEW.example.com:8443", // uppercase hostname
+      "a.com:00080", // zero-padded port
+      "10.001.001.001", // zero-padded (octal) IPv4 octets
+      "[A:1:2:3:4:5:6:7]:80", // uppercase IPv6 literal
+    ];
+    for (const reason of reasons) {
+      const client = makeClient(["first-host"]);
+      const connectCalls = stubConnectToZeroHub(client);
+
+      client.reconnect(new URL("ws://first-host/hub"), reason);
+
+      // The redirect is honored: host state is updated verbatim and the
+      // client connects to the redirected target — NOT the failover path.
+      // `currentURL.host` is set via the WHATWG URL setter, so the connect
+      // target is the canonical form (lowercased / port-normalized) of
+      // `reason` — the same target the server emits, per the docblock.
+      expect(client.host, `host for ${JSON.stringify(reason)}`).toBe(reason);
+      expect(client.hostIndex, `hostIndex for ${JSON.stringify(reason)}`).toBe(
+        0
+      );
+      expect(
+        connectCalls,
+        `connects for ${JSON.stringify(reason)}`
+      ).toHaveLength(1);
+      expect(
+        connectCalls[0].host,
+        `canonical target for ${JSON.stringify(reason)}`
+      ).toBe(new URL(`http://${reason}`).host);
+      // The "falling back to host failover" warning must NOT have fired.
+      const logger = client.logger as unknown as FakeLogger;
+      expect(
+        logger.warn.mock.calls.some(
+          (c) =>
+            typeof c[0] === "string" &&
+            c[0].includes("falling back to host failover")
+        ),
+        `failover warning for ${JSON.stringify(reason)}`
+      ).toBe(false);
+    }
+  });
 });
 
 describe("armSendOnIceReady — single-send guard + trickle ICE", () => {

@@ -293,6 +293,43 @@ func TestMigrateValidHostVariants(t *testing.T) {
 	}
 }
 
+// TestMigrateNonCanonicalValidHosts pins the acceptance of the
+// non-canonical-but-valid host spellings that the client's isWellFormedHost
+// must mirror: uppercase hostnames, uppercase IPv6 literals, zero-padded
+// ports, and zero-padded (octal) IPv4 octets. These differ from their
+// canonical form (Go's url.Parse lowercases / strips leading zeros), but the
+// value is stored and emitted verbatim as the 1001 close reason, and both the
+// Go and the WHATWG parsers connect to the same target from ws(s)://<host>.
+// The acceptance set here must stay in lockstep with the client's
+// "accepts non-canonical-but-valid forms" test in client/src/utils.test.ts.
+func TestMigrateNonCanonicalValidHosts(t *testing.T) {
+	valid := []string{
+		"NEW.example.com",      // uppercase hostname
+		"[A:1:2:3:4:5:6:7]:80", // uppercase IPv6 literal
+		"a.com:00080",          // zero-padded port
+		"a.com:01",             // zero-padded port
+		"[::1]:08080",          // zero-padded port on a bracketed IPv6
+		"10.001.001.001",       // zero-padded IPv4 octets
+		"010.001.001.001",      // zero-padded IPv4 octets (octal-leading)
+	}
+	withAuth := map[string]string{"Authorization": adminAuthHeader()}
+
+	for i, host := range valid {
+		h := newTestHandler()
+		addr := startTestServer(t, h)
+		client := newTestClient(addr)
+
+		status, body, err := doRequest(t, client, "/v1/admin/migrate?host="+host, withAuth)
+		if err != nil || status != fasthttp.StatusOK {
+			t.Fatalf("[%d] migrate host=%q = (%d, %q, %v), want 200", i, host, status, body, err)
+		}
+		if !h.isMigrating.Load() || h.getBackupHost() != host {
+			t.Fatalf("[%d] migration state = (migrating:%v, backupHost:%q), want (true, %q)",
+				i, h.isMigrating.Load(), h.getBackupHost(), host)
+		}
+	}
+}
+
 // TestMigrateEmptyAuthorizationHeader verifies that a request carrying an
 // empty Authorization header (which decodes to an empty string with no base64
 // error) is still rejected with 401 and mutates no state.
