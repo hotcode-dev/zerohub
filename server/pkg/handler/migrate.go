@@ -124,6 +124,11 @@ func (h *handler) getBackupHost() string {
 // URL, "evil.com//8080", or any other malformed target would break the
 // connection or redirect clients to an arbitrary host.
 func validateBackupHost(host string) error {
+	// An empty host has no target at all; url.Parse("http://") succeeds with
+	// an empty Host, which would slip past the round-trip check below.
+	if host == "" {
+		return fmt.Errorf("invalid host %q: must be a bare host or host:port", host)
+	}
 	u, err := url.Parse("http://" + host)
 	if err != nil {
 		return fmt.Errorf("invalid host %q: %w", host, err)

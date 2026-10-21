@@ -3,7 +3,7 @@
  *
  * @param host - The host for the WebSocket connection.
  * @param tls - A flag indicating whether to use TLS.
- * @returns The WebSocket URL with or without TLS based on the flag.
+ * @returns The WebSocket URL with or without the TLS scheme based on the flag.
  */
 export function getWS(host: string, tls: boolean) {
   if (tls) {
@@ -15,11 +15,30 @@ export function getWS(host: string, tls: boolean) {
 /**
  * Checks whether `host` is a well-formed ZeroHub host: a bare hostname or
  * `host:port` (bracketed IPv6 literals allowed), with no scheme, no
- * path/query/fragment, no userinfo, no whitespace or control characters,
- * and a port in 0..65535. Mirrors the server's `validateBackupHost`
+ * path/query/fragment, no userinfo, no whitespace or control characters, and
+ * a port in 0..65535.
+ *
+ * Mirrors the server's `validateBackupHost`
  * (`server/pkg/handler/migrate.go`), which enforces the same shape for the
  * host emitted as the reason of a `1001` ("going away") close on
- * `/admin/migrate`.
+ * `/admin/migrate`. The check delegates the shape to the WHATWG host parser
+ * and compares component-wise rather than raw-string round-tripping the
+ * input, so every non-canonical-but-valid form the server accepts and emits
+ * is accepted here too: uppercase hostnames, uppercase IPv6 literals,
+ * zero-padded ports, and zero-padded (octal) IPv4 octets. The server stores
+ * the value verbatim and emits it as the close reason; the client embeds it
+ * in `ws(s)://<host>`, and both parsers connect to the same target.
+ *
+ * Two intentional divergences where this guard is *stricter* than the server
+ * (both safe: the client refuses and falls back to host-failover rather than
+ * building an invalid `ws://` URL):
+ *   - Percent-encoded host spellings (`a%C3%BC.com`). Go's parser accepts
+ *     them, but WHATWG percent-*decodes* the host — `new WebSocket("ws://…")`
+ *     would resolve to a different target than the server emitted. The server
+ *     stores the URL-*decoded* value (fasthttp decodes the query arg), so the
+ *     raw percent form never reaches the client via the close reason.
+ *   - A bare empty hostname with a port (`:80`). Go's round-trip accepts it,
+ *     but `ws://:80` is an invalid URL and would throw on connect.
  *
  * Close code `1001` is generic, though: any intermediate hop (reverse
  * proxy, load balancer, edge device) may close with `1001` and a
@@ -27,35 +46,47 @@ export function getWS(host: string, tls: boolean) {
  * reason as a redirect host.
  *
  * @param host - Candidate host string, e.g. `a.zerohub.dev` or `localhost:8080`.
- * @returns `true` when `host` can be used verbatim in `ws(s)://<host>`.
+ * @returns `true` when `host` can be used in `ws(s)://<host>`.
  */
 export function isWellFormedHost(host: string): boolean {
   if (typeof host !== "string" || host === "") {
     return false;
   }
-  try {
-    const url = new URL(`http://${host}`);
-    // Anything besides the host makes this not a bare host: userinfo, a
-    // path/query/fragment, or a scheme/`//` prefix that changes how the
-    // string parses. `pathname === "/"` is the no-path form; the
-    // round-trip check below rejects a trailing slash.
-    if (
-      url.username !== "" ||
-      url.password !== "" ||
-      (url.pathname !== "" && url.pathname !== "/") ||
-      url.search !== "" ||
-      url.hash !== ""
-    ) {
+  // ASCII-printable-only, no percent-encoding. Raw control characters /
+  // DEL (Go's parser rejects) and `%` (WHATWG percent-decodes the host, so
+  // `ws://new%41example.com` would throw — see docblock) are the two
+  // spellings the URL parser cannot catch alone.
+  for (const ch of host) {
+    const code = ch.charCodeAt(0);
+    if (ch === "%" || code <= 0x20 || code === 0x7f) {
       return false;
     }
-    // `url.host` echoes the host but strips an explicit default port, so
-    // `evil.com:80` round-trips to `evil.com`; accept that form too (the
-    // server's validator does).
-    return (
-      url.host === host ||
-      (host.endsWith(":80") && url.host === host.slice(0, -3))
-    );
-  } catch {
+  }
+  // A leading `/` makes `http://<host>` parse as a network-path URL with an
+  // empty host (`//evil.com` -> hostname "", pathname "//evil.com"), a
+  // trailing `/` as a path, and a trailing `:` as a bare empty port — all
+  // rejected by Go's `validateBackupHost` round-trip. A leading `:` alone
+  // (`:80`) is caught by the character loop above.
+  if (host.startsWith("/") || host.endsWith("/") || host.endsWith(":")) {
     return false;
   }
+  let url: URL;
+  try {
+    url = new URL(`http://${host}`);
+  } catch {
+    // Forms the host parser rejects outright: bare (unbracketed) IPv6
+    // literals, whitespace inside the host, out-of-range ports, trailing
+    // port junk (`a.com:8080x`), ... — Go's validator rejects these too.
+    return false;
+  }
+  // Anything besides the host makes this not a bare host: userinfo, a
+  // path/query/fragment, or a scheme/`//` prefix that changes how the
+  // string parses. `pathname === "/"` is the no-path form.
+  return (
+    url.username === "" &&
+    url.password === "" &&
+    (url.pathname === "" || url.pathname === "/") &&
+    url.search === "" &&
+    url.hash === ""
+  );
 }
