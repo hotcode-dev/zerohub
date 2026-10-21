@@ -5,12 +5,15 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/fasthttp/websocket"
 	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/peer"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
+	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
 )
 
@@ -100,8 +103,42 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 	}
 
 	upgradeErr := h.newWSUpgrader().Upgrade(ctx, func(ws *websocket.Conn) {
+		// SECURITY: cap inbound message size. The connection is hijacked
+		// at the upgrade, so fasthttp's MaxRequestBodySize no longer
+		// applies; without SetReadLimit a single oversized binary frame
+		// would be buffered in memory before proto.Unmarshal runs (OOM
+		// DoS). Oversized frames are rejected with ErrReadLimit and a
+		// 1009 (message too big) close.
+		ws.SetReadLimit(config.WSMaxFrameSize)
+
 		peer := peer.NewPeer(ws, string(ctx.QueryArgs().Peek("peerMetadata")))
 		hub.AddPeer(peer)
+
+		// Liveness probe: the peer's pong extends the read deadline. A
+		// half-open connection (client crash, NAT idle timeout, idle proxy
+		// close, mobile disconnect with no FIN) otherwise blocks
+		// HandleMessage's ReadMessage forever, leaking its goroutine and its
+		// stale roster entry in every later joiner's HubInfo. Browsers
+		// answer pings automatically, so any live peer keeps extending the
+		// deadline; on a half-open socket the pings below go out, no frame
+		// ever comes back, and after idleTimeout the pending read returns a
+		// timeout error, exiting the loop into the post-loop cleanup
+		// (peer.Close + RemovePeerById + RemoveHubById). lastReadActivity
+		// mirrors the deadline (the websocket library exposes no
+		// GetReadDeadline) so the keepalive goroutine can close the socket
+		// on expiry explicitly, without waiting for a blocked read to be
+		// unblocked by the kernel.
+		var lastReadActivity atomic.Int64
+		lastReadActivity.Store(time.Now().UnixNano())
+		extendDeadline := func() {
+			lastReadActivity.Store(time.Now().UnixNano())
+			_ = ws.SetReadDeadline(time.Now().Add(h.idleTimeout()))
+		}
+		extendDeadline()
+		ws.SetPongHandler(func(string) error {
+			extendDeadline()
+			return nil
+		})
 
 		ws.SetCloseHandler(func(code int, text string) error {
 			// https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close
@@ -113,7 +150,71 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 			return nil
 		})
 
+		// Keepalive: periodic pings keep intermediates' idle mappings alive,
+		// and the activity check reaps a peer that stops replying to them.
+		// This MUST start before hub.HandleMessage, which blocks until the
+		// connection closes: anything scheduled after it would never run.
+		// WriteControl is safe to call concurrently with the HandleMessage
+		// loop (the websocket library serializes writes). The idle close and
+		// the post-loop cleanup may both observe the dead connection; that
+		// is safe — peer.Close is idempotent (second call sees a nil conn)
+		// and RemovePeerById is idempotent (returns false for a missing
+		// peer), so neither path double-broadcasts or double-removes.
+		//
+		// The goroutine MUST have exited before this callback returns:
+		// fasthttp recycles the hijacked connection wrapper into a pool as
+		// soon as the callback does, and a WriteControl on the recycled
+		// wrapper dereferences its (now nil) inner conn, panicking the
+		// whole server process. close(stopKeepalive) + <-keepaliveDone
+		// below — after HandleMessage returns — guarantee the goroutine
+		// has fully exited before the callback (and thus fasthttp's
+		// hijack-conn recycling) proceeds.
+		stopKeepalive := make(chan struct{})
+		keepaliveDone := make(chan struct{})
+		go func() {
+			defer close(keepaliveDone)
+			ticker := time.NewTicker(h.pingInterval())
+			defer ticker.Stop()
+			for {
+				select {
+				case <-stopKeepalive:
+					// The read path exited; the socket is being torn
+					// down. Stop before the next WriteControl.
+					return
+				case <-ticker.C:
+				}
+				if err := ws.WriteControl(websocket.PingMessage,
+					nil, time.Now().Add(10*time.Second)); err != nil {
+					// Peer already gone: the read path is exiting and the
+					// post-loop cleanup will finish the removal.
+					return
+				}
+				// A live peer's pong handler extends lastReadActivity on
+				// every ping reply; expiry means no frame arrived within
+				// the idle window, so the peer is half-open or dead.
+				if time.Since(time.Unix(0, lastReadActivity.Load())) >= h.idleTimeout() {
+					log.Warn().Msgf("closing idle signaling connection (no inbound frame for %s)",
+						h.idleTimeout())
+					_ = ws.Close()
+					return
+				}
+			}
+		}()
+
+		// Blocks in ReadMessage until the connection closes: a read-deadline
+		// expiry (half-open peer), a protocol error, or a close frame. On
+		// expiry the keepalive goroutine has already closed the socket, so
+		// this returns promptly and the post-loop cleanup below finishes
+		// the removal.
 		hub.HandleMessage(peer)
+
+		// Stop the keepalive goroutine and wait for it to fully exit
+		// before returning from this callback: fasthttp recycles the
+		// hijacked connection wrapper when the callback returns, and any
+		// later WriteControl on it would panic the server (nil inner
+		// conn).
+		close(stopKeepalive)
+		<-keepaliveDone
 
 		// Close may already have run in the close handler; GetWSConn is
 		// nil after Close, so this only fires if the loop exited first.

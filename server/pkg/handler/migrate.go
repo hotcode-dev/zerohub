@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/fasthttp/websocket"
+	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
 )
@@ -74,6 +75,10 @@ func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
 	// upgrades an existing signaling client, whose Origin was already
 	// checked, but re-checking keeps the gate consistent across upgrades).
 	err := h.newWSUpgrader().Upgrade(ctx, func(ws *websocket.Conn) {
+		// Same inbound frame cap as the signaling endpoints: the
+		// connection is hijacked at the upgrade, so fasthttp's
+		// MaxRequestBodySize no longer bounds it.
+		ws.SetReadLimit(config.WSMaxFrameSize)
 		closeErr := ws.WriteMessage(websocket.CloseMessage,
 			websocket.FormatCloseMessage(websocket.CloseGoingAway, backupHost))
 		if closeErr != nil {
