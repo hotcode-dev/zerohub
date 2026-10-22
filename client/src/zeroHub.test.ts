@@ -301,6 +301,201 @@ describe("reconnect — 1001 close reason host validation", () => {
   });
 });
 
+describe("reconnect — same-host retry-with-backoff on abnormal close", () => {
+  /** Read the private `reconnectAttempts` counter (private is erased at runtime). */
+  function attempts(client: ZeroHubClient): number {
+    return (client as unknown as { reconnectAttempts: number })
+      .reconnectAttempts;
+  }
+  const url = () => new URL("ws://only-host:8080/v1/hubs/join?id=hub");
+
+  it("single abnormal close on the last host retries the SAME host and does not surface onZeroHubError", async () => {
+    vi.useFakeTimers();
+    const client = makeClient(["only-host"]);
+    const connectCalls = stubConnectToZeroHub(client);
+
+    // The realistic trigger: the onclose 1006/1011 branch calls
+    // `reconnect(url)` with no new host. On the single (last) host this must
+    // schedule a same-host retry, not give up.
+    client.reconnect(url());
+
+    // No terminal error yet (the budget has 10 attempts left by default), and
+    // nothing dialed yet: the retry is deferred behind the backoff timer.
+    expect(client.onZeroHubError).toBeUndefined();
+    expect(connectCalls).toHaveLength(0);
+    expect(client.hostIndex).toBe(0);
+    expect(client.host).toBe("only-host");
+    // Exactly one same-host retry was queued.
+    expect(attempts(client)).toBe(1);
+
+    // The first retry dials the SAME host (backoff 250ms * ±20% < 400ms).
+    // `advanceTimersByTimeAsync` both fires the timer and flushes any
+    // microtasks, so the stubbed dial has landed by the time we assert.
+    await vi.advanceTimersByTimeAsync(400);
+    expect(connectCalls).toHaveLength(1);
+    expect(connectCalls[0].host).toBe("only-host:8080");
+    expect(attempts(client)).toBe(1);
+    expect(client.onZeroHubError).toBeUndefined();
+  });
+
+  it("falls through to the terminal onZeroHubError only after the retry budget is exhausted", async () => {
+    vi.useFakeTimers();
+    const client = makeClient(["only-host"]);
+    client.config.maxReconnectAttempts = 3;
+    const connectCalls = stubConnectToZeroHub(client);
+    const errors: Error[] = [];
+    client.onZeroHubError = (err) => {
+      errors.push(err);
+    };
+
+    // Three abnormal closes: each queues a same-host retry that dials the
+    // SAME host. The stubbed dial does not reset the budget, so all three
+    // stay within the budget of three.
+    for (let i = 1; i <= 3; i += 1) {
+      client.reconnect(url());
+      // Fire the just-queued retry (backoff ≤ 30s cap) so the next close has
+      // a (mock) socket to fire on, mirroring the real blip → retry → blip.
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(connectCalls).toHaveLength(i);
+      expect(connectCalls[i - 1].host).toBe("only-host:8080");
+    }
+    expect(attempts(client)).toBe(3);
+    expect(errors).toHaveLength(0);
+
+    // The 4th abnormal close: the budget is exhausted, so
+    // `getZeroHubBackupHost()` rejects and the terminal error surfaces
+    // (zf-z-6d960008 behavior, deferred until the budget is genuinely spent).
+    client.reconnect(url());
+    // The rejection settles through the `.then().catch()` microtask chain.
+    await vi.advanceTimersByTimeAsync(1);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toBe(
+      "all ZeroHub hosts are not working, please check the ZeroHub hosts"
+    );
+  });
+
+  it("a confirmed connection (hub info) resets the retry budget and any pending retry", async () => {
+    vi.useFakeTimers();
+    const client = makeClient(["only-host"]);
+    const connectCalls = stubConnectToZeroHub(client);
+    client.reconnect(url());
+    expect(attempts(client)).toBe(1);
+
+    // The server confirms the (re)connection with its hub info: the budget
+    // must reset to zero and any pending retry must be cancelled.
+    client.handleZeroHubMessage({
+      hubInfoMessage: {
+        id: "hub-1",
+        createTime: new Date(),
+        myPeerId: "1",
+        hubMetadata: "",
+        peers: [],
+      },
+    } as never);
+    expect(attempts(client)).toBe(0);
+
+    // The stale timer must abort: the state reset bumped the generation.
+    await vi.advanceTimersByTimeAsync(400);
+    expect(connectCalls).toHaveLength(0);
+
+    // The next abnormal close gets a FULL budget, not the remainder: with a
+    // budget of three, three further closes must all still retry the same
+    // host (a leftover budget of two would have made the third terminal).
+    const errors: Error[] = [];
+    client.onZeroHubError = (err) => {
+      errors.push(err);
+    };
+    client.config.maxReconnectAttempts = 3;
+    for (let i = 1; i <= 3; i += 1) {
+      client.reconnect(url());
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(connectCalls).toHaveLength(i);
+    }
+    expect(errors).toHaveLength(0);
+    expect(attempts(client)).toBe(3);
+  });
+
+  it("respects a custom maxReconnectAttempts / reconnectBaseBackoffMs", async () => {
+    vi.useFakeTimers();
+    const client = makeClient(["only-host"]);
+    client.config.maxReconnectAttempts = 1;
+    client.config.reconnectBaseBackoffMs = 100;
+    const connectCalls = stubConnectToZeroHub(client);
+
+    client.reconnect(url());
+    // Backoff for attempt 1 is 100ms * ±20% → strictly under 150ms.
+    await vi.advanceTimersByTimeAsync(150);
+    expect(connectCalls).toHaveLength(1);
+
+    // Budget of one is spent: the next abnormal close is terminal.
+    const errors: Error[] = [];
+    client.onZeroHubError = (err) => {
+      errors.push(err);
+    };
+    client.reconnect(url());
+    await vi.advanceTimersByTimeAsync(1);
+    expect(errors).toHaveLength(1);
+  });
+
+  it("a migration redirect (1001) clears a queued same-host retry", async () => {
+    vi.useFakeTimers();
+    const client = makeClient(["a", "b"]);
+    const connectCalls = stubConnectToZeroHub(client);
+
+    // Simulate: a previous same-host retry is pending (attempts = 1), then a
+    // 1001 redirect to host `b` lands. The redirect must hand `b` a full
+    // retry budget, not the leftover of `a`'s.
+    (client as unknown as { reconnectAttempts: number }).reconnectAttempts = 1;
+    client.reconnect(new URL("ws://a/hub"), "b");
+    expect(connectCalls).toHaveLength(1);
+    expect(connectCalls[0].host).toBe("b");
+    expect(attempts(client)).toBe(0);
+    // The stale retry timer (if any) must not dial host `a` behind the
+    // redirect.
+    await vi.advanceTimersByTimeAsync(400);
+    expect(connectCalls).toHaveLength(1);
+  });
+
+  it("multi-host: an abnormal close on a non-last host fails over IMMEDIATELY, not via a same-host retry", async () => {
+    vi.useFakeTimers();
+    const client = makeClient(["first-host", "second-host"]);
+    const connectCalls = stubConnectToZeroHub(client);
+    // The first host's initial dial failed: the onclose 1006 branch calls
+    // `reconnect(url)` with no new host while hostIndex is still 0.
+    client.reconnect(new URL("ws://first-host/hub"));
+
+    // Documented failover semantics (multihosts.spec.ts): a single failure
+    // advances hostIndex exactly once, IMMEDIATELY — no backoff timer in
+    // between, no same-host retry. The failover dial happens in a microtask
+    // (`getZeroHubBackupHost().then(...)`), so flush it before asserting.
+    await vi.advanceTimersByTimeAsync(0);
+    expect(connectCalls).toHaveLength(1);
+    expect(connectCalls[0].host).toBe("second-host");
+    expect(client.hostIndex).toBe(1);
+    expect(client.host).toBe("second-host");
+    expect(attempts(client)).toBe(0);
+  });
+
+  it("disconnect() cancels a queued same-host retry: no stray socket, no resurrection", async () => {
+    vi.useFakeTimers();
+    const client = makeClient(["only-host"]);
+    const connectCalls = stubConnectToZeroHub(client);
+    client.reconnect(url());
+    expect(attempts(client)).toBe(1);
+
+    client.disconnect();
+    expect(attempts(client)).toBe(0);
+
+    // The pending retry must not fire after teardown (generation bumped).
+    await vi.advanceTimersByTimeAsync(400);
+    expect(connectCalls).toHaveLength(0);
+
+    // And `reconnect()` itself must refuse while disconnected.
+    client.reconnect(url());
+    expect(connectCalls).toHaveLength(0);
+  });
+});
+
 describe("armSendOnIceReady — single-send guard + trickle ICE", () => {
   let client: ZeroHubClient;
   let sendIceSpy: ReturnType<typeof vi.fn>;

@@ -203,20 +203,29 @@ test("1001 close with a non-host reason does not corrupt host state and fails ov
   );
 });
 
-test("1001 close with a non-host reason on the last host surfaces a terminal error instead of wedging", async ({
+test("1001 close with a non-host reason on the last host retries the same host instead of wedging", async ({
   page,
 }) => {
   await prepareUnitHarnessPage(page);
 
-  // Single configured host: the automatic-failover fallback has no backup
-  // host to move to, so the client must surface a terminal error via
-  // `onZeroHubError` — not throw out of the close handler or leave the
-  // client wedged with corrupted host state.
+  // Single configured host: a 1001 close with a non-host reason falls back to
+  // the automatic-failover path, which has no backup host to move to. The
+  // client must NOT throw out of the close handler or leave the client
+  // wedged with corrupted host state — it retries the SAME host with
+  // backoff and, once that retry budget is spent, surfaces the terminal
+  // error via `onZeroHubError` (the pre-fix behavior rejected immediately on
+  // the first 1001: the single-host give-up bug this task fixes).
   const id = await page.evaluate(
     () => ZeroHubUnitHarness.createClientWithHosts(["a.zerohub.dev"])
   );
   await page.evaluate((clientId) => ZeroHubUnitHarness.recordZeroHubErrors(clientId), id);
   await page.evaluate((clientId) => ZeroHubUnitHarness.createHub(clientId, "room"), id);
+  // Shrink the retry budget so the terminal error is reachable in-test.
+  await page.evaluate(
+    (clientId) =>
+      ZeroHubUnitHarness.setConfig(clientId, { maxReconnectAttempts: 2 }),
+    id
+  );
   const originalUrl = await page.evaluate(
     (clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId),
     id
@@ -230,14 +239,15 @@ test("1001 close with a non-host reason on the last host surfaces a terminal err
       ZeroHubUnitHarness.simulateMigrationClose(clientId, "Maintenance in progress"),
     id
   );
-  // The failover rejection settles in microtasks; flush them.
-  await page.evaluate(async () => {
-    for (let i = 0; i < 5; i += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
-  });
 
-  // No socket was opened toward the reason string; host state is intact.
+  // The first 1001 must NOT surface a terminal error: the same-host retry
+  // dials the original URL after the backoff delay.
+  await page.waitForTimeout(400);
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getSocketCount(clientId), id)).toBe(
+    2
+  );
+  // No socket was opened toward the reason string; host state is intact and
+  // the retry re-dialed the SAME host.
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
     originalUrl
   );
@@ -247,9 +257,38 @@ test("1001 close with a non-host reason on the last host surfaces a terminal err
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHostIndex(clientId), id)).toBe(
     0
   );
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getZeroHubErrors(clientId), id)).toHaveLength(
+    0
+  );
 
-  // The terminal failure (all hosts exhausted) is surfaced to the
-  // application instead of being silently wedged.
+  // Blip #2: the second retry dials again (still within the budget of 2).
+  await page.evaluate(
+    (clientId) =>
+      ZeroHubUnitHarness.simulateMigrationClose(clientId, "Maintenance in progress"),
+    id
+  );
+  await page.waitForTimeout(700);
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getSocketCount(clientId), id)).toBe(
+    3
+  );
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getZeroHubErrors(clientId), id)).toHaveLength(
+    0
+  );
+
+  // Blip #3: the retry budget is genuinely spent — the terminal failure
+  // (all hosts exhausted) is surfaced to the application instead of the
+  // client staying wedged.
+  await page.evaluate(
+    (clientId) =>
+      ZeroHubUnitHarness.simulateMigrationClose(clientId, "Maintenance in progress"),
+    id
+  );
+  // The failover rejection settles in microtasks; flush them.
+  await page.evaluate(async () => {
+    for (let i = 0; i < 5; i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  });
   const errors = await page.evaluate(
     (clientId) => ZeroHubUnitHarness.getZeroHubErrors(clientId),
     id
