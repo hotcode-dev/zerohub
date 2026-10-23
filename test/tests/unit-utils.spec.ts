@@ -1,6 +1,5 @@
 import { test, expect, Page } from "@playwright/test";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Unit test for `getWS` (client/src/utils.ts) — the sole remaining export of
@@ -10,21 +9,6 @@ import { fileURLToPath } from "node:url";
  * in-page unit harness (`window.ZeroHubUnitHarness`) used by the peer-wiring
  * unit specs (see `test/tests/unit-peer-wiring.spec.ts`).
  */
-
-
-/** Inject the unit harness into a page. */
-async function prepareUnitHarnessPage(page: Page) {
-  await page.addInitScript({ path: unitHarnessPath() });
-  const html = "<html><head></head><body></body></html>";
-  await page.goto(`data:text/html,${encodeURIComponent(html)}`);
-}
-
-function unitHarnessPath(): string {
-  return path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    "../dist/unit-harness.js",
-  );
-}
 
 function wsUrl(page: Page, host: string, tls: boolean) {
   return page.evaluate(

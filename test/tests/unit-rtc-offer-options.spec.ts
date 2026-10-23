@@ -1,6 +1,5 @@
 import { test, expect, Page } from "@playwright/test";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Unit tests for the `rtcOfferOptions` merge in `ZeroHubClient.sendOffer` /
@@ -30,20 +29,6 @@ type InvokeResult = {
 };
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-/** Inject the unit harness (mocked RTCPeerConnection + driver) into a page. */
-async function prepareUnitHarnessPage(page: Page) {
-  await page.addInitScript({ path: unitHarnessPath() });
-  const html = "<html><head></head><body></body></html>";
-  await page.goto(`data:text/html,${encodeURIComponent(html)}`);
-}
-
-function unitHarnessPath(): string {
-  return path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    "../dist/unit-harness.js",
-  );
-}
 
 function driver(page: Page) {
   return {

@@ -1,6 +1,5 @@
-import { test, expect, Page } from "@playwright/test";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { test, expect } from "@playwright/test";
+import { prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Coverage for the `joinPermanentHub` entry point on `ZeroHubClient`.
@@ -30,20 +29,6 @@ import { fileURLToPath } from "node:url";
  */
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-/** Inject the unit harness into a page. */
-async function prepareUnitHarnessPage(page: Page) {
-  await page.addInitScript({ path: unitHarnessPath() });
-  const html = "<html><head></head><body></body></html>";
-  await page.goto(`data:text/html,${encodeURIComponent(html)}`);
-}
-
-function unitHarnessPath(): string {
-  return path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    "../dist/unit-harness.js",
-  );
-}
 
 /** `createClient` builds against `localhost:1` with the default `tls: true`. */
 const HOST = "localhost:1";

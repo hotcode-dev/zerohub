@@ -1,6 +1,5 @@
-import { test, expect, Page } from "@playwright/test";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { test, expect } from "@playwright/test";
+import { prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Regression test (P0): the message dispatcher must never crash on malformed
@@ -24,20 +23,6 @@ import { fileURLToPath } from "node:url";
  */
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-/** Inject the unit harness into a page. */
-async function prepareUnitHarnessPage(page: Page) {
-  await page.addInitScript({ path: unitHarnessPath() });
-  const html = "<html><head></head><body></body></html>";
-  await page.goto(`data:text/html,${encodeURIComponent(html)}`);
-}
-
-function unitHarnessPath(): string {
-  return path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    "../dist/unit-harness.js"
-  );
-}
 
 test("malformed hubMetadata in hubInfoMessage does not throw and falls back to {}", async ({
   page,
