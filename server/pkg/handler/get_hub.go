@@ -24,6 +24,15 @@ func (h *handler) GetHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 		return h.rejectOversizedParam(ctx, "id", config.MaxMetadataSize)
 	}
 
+	// This endpoint is plain HTTP (JSON), not a WebSocket signaling channel,
+	// so it forwards with the HTTP-level migration response — a 301 carrying
+	// the backup host. ForwardMigrate would attempt a websocket upgrade and
+	// surface a 503 "websocket handshake" to a plain-HTTP client. No hub
+	// state is read while migrating; clients must move to the backup host.
+	if h.isMigrating.Load() {
+		return h.migrateHTTPResponse(ctx)
+	}
+
 	hub := zh.GetHubById(hubId)
 	if hub == nil {
 		log.Error().Err(fmt.Errorf("hub with id %s not found", hubId)).Send()

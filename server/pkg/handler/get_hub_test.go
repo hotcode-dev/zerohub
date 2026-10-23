@@ -6,7 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/valyala/fasthttp"
+	"go.uber.org/mock/gomock"
 )
 
 // startGetHubTestServer serves the two plain-HTTP hub-metadata read
@@ -224,5 +226,61 @@ func TestGetHubNeverUpgradesWebSocket(t *testing.T) {
 				t.Fatalf("%s: body %q is not a JSON object: %v", target, got[bodyIdx+1:], err)
 			}
 		})
+	}
+}
+
+// TestGetHubMigratingForwardsHTTP pins the migration forward: while the
+// server is in migrate mode, /v1/hubs/get and /v1/random-hubs/get must
+// answer with the HTTP-level migration response — a 301 carrying the
+// backup host, the same JSON /v1/status and /v1/permanent-hubs/create
+// report — instead of reading local hub state and answering 200/404.
+// Pre-fix GetHub was the only hub endpoint missing the isMigrating gate,
+// defeating the "clients must move to the backup host" contract every
+// sibling endpoint honors. The mock carries no expectations, so any hub
+// storage read (GetHubById) would fail the test: no hub state may be
+// touched while migrating.
+func TestGetHubMigratingForwardsHTTP(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	// No expectations: a storage read during migration would error out.
+	zerohubMock := zerohub.NewMockZeroHub(ctrl)
+	h := newTestHandler()
+	// Single-threaded test: no concurrent access, so the field writes are
+	// race-free and need no lock.
+	h.backupHost = testBackupHost
+	h.isMigrating.Store(true)
+
+	for _, path := range []string{
+		"/v1/hubs/get?id=room",
+		"/v1/random-hubs/get?id=room",
+	} {
+		ctx := newRequestCtx("http://127.0.0.1" + path)
+		if err := h.GetHub(ctx, zerohubMock); err != nil {
+			t.Fatalf("GetHub %s: unexpected error %v", path, err)
+		}
+		if got := ctx.Response.StatusCode(); got != fasthttp.StatusMovedPermanently {
+			t.Fatalf("%s: status = %d (%q), want 301", path, got, ctx.Response.Body())
+		}
+		checkStatusBody(t, ctx.Response.Body(), "migrating", testBackupHost)
+	}
+}
+
+// TestGetHubMigratingStillRejectsInvalidHubId pins the ordering: the id
+// validation runs before the migration gate, so a request with a missing or
+// empty id gets the 400 even while migrating — mirroring CreateHubPermanent,
+// where auth and parameter rejection precede any hub-state access.
+func TestGetHubMigratingStillRejectsInvalidHubId(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	// No expectations: no hub lookup may happen for an invalid id.
+	zerohubMock := zerohub.NewMockZeroHub(ctrl)
+	h := newTestHandler()
+	h.backupHost = testBackupHost
+	h.isMigrating.Store(true)
+
+	for _, path := range []string{"/v1/hubs/get", "/v1/hubs/get?id="} {
+		ctx := newRequestCtx("http://127.0.0.1" + path)
+		if err := h.GetHub(ctx, zerohubMock); err != nil {
+			t.Fatalf("GetHub %s: unexpected error %v", path, err)
+		}
+		checkInvalidHubIdResponse(t, ctx, path)
 	}
 }
