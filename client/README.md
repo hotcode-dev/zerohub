@@ -60,6 +60,8 @@ client.createHub("demo-room", { name: "Alice" }, { roomName: "Demo" });
 | `rtcOfferOptions`                 | `{ offerToReceiveAudio: false, offerToReceiveVideo: false }` | Provide custom `RTCOfferOptions` when creating offers.                        |
 | `dataChannelConfig`               | `undefined`                                                  | Configure data channel count, init options, and callback.                     |
 | `mediaChannelConfig`              | `undefined`                                                  | Attach local media streams and handle remote tracks.                          |
+| `maxReconnectAttempts`            | `10`                                                         | Same-host retries after an abnormal close (1006/1011) on the last host before the terminal `onZeroHubError`. Resets when a connection is confirmed. |
+| `reconnectBaseBackoffMs`          | `250`                                                        | Base delay for the exponential backoff between same-host reconnect retries (doubles each attempt, ±20% jitter, capped at 30 s). |
 
 Partial configs are merged with `DEFAULT_CONFIG`, so you only set what you need.
 
@@ -162,8 +164,28 @@ const client = new ZeroHubClient(hosts, config, new MeshTopology());
 ## Reconnection & host failover
 
 - Provide multiple hosts: `['sg1.zerohub.dev', 'sg2.zerohub.dev']`.
-- When a WebSocket closes unexpectedly, the client invokes `getZeroHubBackupHost()` and reconnects automatically.
-- Listen to `onZeroHubError` to surface unrecoverable errors to the user interface.
+- When a WebSocket closes abnormally (code `1006` abnormal close or `1011`
+  internal error), the client reconnects automatically:
+  - If a **backup host** is still available, it fails over to the next host
+    in the list immediately (a single failure advances the host index
+    exactly once).
+  - When the client is already on the **last configured host** — including
+    the common single-host deployment — it instead retries the **same host**
+    with exponential backoff and jitter (250 ms, 500 ms, 1 s, 2 s, ...
+    capped at 30 s), up to `maxReconnectAttempts` attempts (default 10, base
+    delay `reconnectBaseBackoffMs`). A transient blip (NAT rebind, WiFi
+    reassociation, mobile-sleep wake, laptop suspend/resume) is recovered
+    this way without the application intervening.
+  - Only when the retry budget is genuinely exhausted does
+    `getZeroHubBackupHost()` reject, surfacing the terminal failure via
+    `onZeroHubError`.
+- The retry budget resets to zero whenever a connection is confirmed (the
+  server's hub info arrives) or a migration redirect (code `1001`) lands, so
+  a long-lived healthy session never accumulates backoff.
+- A manual `disconnect()` cancels any queued retry: the client never
+  re-dials on its own after an intentional teardown.
+- Listen to `onZeroHubError` to surface unrecoverable errors to the user
+  interface.
 
 ## Developing locally
 

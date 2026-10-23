@@ -26,6 +26,7 @@ import {
 } from "../../client/src/index";
 import { getWS } from "../../client/src/utils";
 import { ClientMessage } from "../../client/src/proto/zerohub/v1/client_message";
+import { ServerMessage } from "../../client/src/proto/zerohub/v1/server_message";
 
 let instanceSeq = 0;
 const createdInstances: MockRTCPeerConnection[] = [];
@@ -311,6 +312,8 @@ interface ClientState {
 
 const clients = new Map<number, ClientState>();
 let nextClientId = 0;
+/** `onZeroHubError` messages captured per client by `captureZeroHubErrors`. */
+const zeroHubErrorLogs = new Map<number, string[]>();
 
 /** Serialisable view of a single peer + its live connection. */
 function snapshotPeer(client: ZeroHubClient, peerId: string): PeerSnapshot {
@@ -1249,6 +1252,108 @@ const ZeroHubUnitHarness = {
   },
 
   /**
+   * The private `reconnectAttempts` counter of the client's same-host retry
+   * budget (private is erased at runtime). Exposed so retry specs can assert
+   * the counter was queued, reset by a confirmed connection, or spent.
+   */
+  getReconnectAttempts(id: number): number {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return (
+      entry.client as unknown as { reconnectAttempts: number }
+    ).reconnectAttempts;
+  },
+
+  /**
+   * The client's `config.maxReconnectAttempts` (the same-host retry budget
+   * for abnormal-close reconnection). Specs override it via `setConfig` to
+   * exhaust the budget fast instead of waiting out the default 10 retries.
+   */
+  getMaxReconnectAttempts(id: number): number {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return entry.client.config.maxReconnectAttempts;
+  },
+
+  /**
+   * Overwrites individual `config` fields on a live client (type cast; the
+   * config is a plain object the client reads at reconnect time), so specs
+   * can tune the same-host retry budget / backoff without recreating the
+   * client.
+   */
+  setConfig(
+    id: number,
+    overrides: Partial<ZeroHubClient["config"]>
+  ): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    Object.assign(entry.client.config, overrides);
+  },
+
+  /**
+   * Replaces the client's `onZeroHubError` with a spy that records every
+   * error message (readable via `getZeroHubErrorMessages`). Lets specs assert
+   * the terminal "all hosts exhausted" reconnect failure reaches the
+   * callback — and that it fires at most once.
+   */
+  captureZeroHubErrors(id: number): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const messages: string[] = [];
+    zeroHubErrorLogs.set(id, messages);
+    const previous = entry.client.onZeroHubError;
+    entry.client.onZeroHubError = (error: Error) => {
+      messages.push(error.message);
+      previous?.(error);
+    };
+  },
+
+  /** The `onZeroHubError` messages captured by `captureZeroHubErrors`. */
+  getZeroHubErrorMessages(id: number): string[] {
+    return zeroHubErrorLogs.get(id) ?? [];
+  },
+
+  /**
+   * Models the server confirming the (re)connection by delivering the hub
+   * info on the live socket. Drives the client's `hubInfoMessage` branch,
+   * which must reset the same-host retry budget and cancel any pending
+   * retry timer — so specs can assert a recovered session gets a full
+   * retry budget, not the remainder. Feeds the message through the live
+   * socket's `onmessage` (encoded `ServerMessage`, exactly what the real
+   * socket delivers) so the dispatch path is exercised end-to-end.
+   */
+  sendHubInfoOnSocket(id: number, hubId: string, myPeerId: string): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const ws = entry.client.ws as unknown as MockWebSocket;
+    if (!ws?.onmessage) {
+      throw new Error(`client ${id} has no live socket with a message handler`);
+    }
+    const encoded = ServerMessage.encode({
+      hubInfoMessage: {
+        id: hubId,
+        createTime: new Date(),
+        myPeerId,
+        hubMetadata: "",
+        peers: [],
+      },
+    })
+      .finish()
+      .buffer;
+    ws.onmessage({ data: encoded });
+  },
+
+  /**
    * Simulate the server's migration close (`ForwardMigrate`): fire the live
    * socket's `onclose` with code 1001 and the redirect host as the close
    * reason. The client's onclose handler calls `reconnect(url, reason)`
@@ -1374,9 +1479,16 @@ const ZeroHubUnitHarness = {
 
   /**
    * Triggers a terminal reconnect failure: the client's single host is
-   * already the last one, so `reconnect()` exhausts the host list and its
-   * rejection must surface through `onZeroHubError`. Returns the captured
-   * error messages after the promise rejection has settled.
+   * already the last one, so `reconnect()` retries the SAME host with
+   * backoff until the retry budget (`config.maxReconnectAttempts`) is
+   * exhausted; then `getZeroHubBackupHost()` rejects and the rejection
+   * must surface through `onZeroHubError`. To keep this deterministic and
+   * fast, the budget is first lowered to 3 (via the `setConfig` override),
+   * and each abnormal close is driven through the live socket's `onclose`
+   * handler (code 1006) exactly as a real network blip would. Pending
+   * same-host retry timers are flushed between closes so each retry dials
+   * before the next close is injected. Returns the captured error
+   * messages after the rejection has settled.
    */
   async triggerAllHostsExhausted(id: number): Promise<string[]> {
     const entry = clients.get(id);
@@ -1387,7 +1499,29 @@ const ZeroHubUnitHarness = {
     entry.client.onZeroHubError = (error) => {
       log.push(error.message);
     };
-    entry.client.reconnect(new URL("ws://localhost:1"));
+    // A client created via createClient() has no socket yet — open one so
+    // the simulated abnormal closes have a live socket to fire on.
+    if (!entry.client.ws) {
+      entry.client.createHub("room");
+    }
+    // Budget of 3 same-host retries keeps this fast; the terminal error
+    // must still fire after the budget is genuinely spent.
+    this.setConfig(id, { maxReconnectAttempts: 3 });
+    const budget = entry.client.config.maxReconnectAttempts;
+    // Close #1: the abnormal closure queues a same-host retry.
+    this.simulateAbnormalClose(id);
+    for (let i = 1; i <= budget; i += 1) {
+      // Let the pending retry timer fire and dial the (mock) socket back,
+      // so the NEXT simulated close has a live socket to fire on.
+      await this.wait(400 * 2 ** i);
+      if (i < budget) {
+        // Close #2..N: each queues the next same-host retry.
+        this.simulateAbnormalClose(id);
+      }
+    }
+    // The budget is now spent: one more abnormal close must fall through to
+    // `getZeroHubBackupHost()` and reject — the terminal error.
+    this.simulateAbnormalClose(id);
     // The `getZeroHubBackupHost()` rejection flows through the
     // `.then().catch()` chain in microtasks; flush them before reading.
     for (let i = 0; i < 5; i += 1) {

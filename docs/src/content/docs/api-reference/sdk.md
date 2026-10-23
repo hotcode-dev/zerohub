@@ -44,6 +44,19 @@ const client = new ZeroHubClient(
 - `rtcOfferOptions` (RTCOfferOptions) - Default offer options used when creating offers/answers. Example default: `{ offerToReceiveAudio: false, offerToReceiveVideo: false }`.
 - `dataChannelConfig` (optional) - Configure data channel creation and handler.
 - `mediaChannelConfig` (optional) - Configure local media stream and track handling.
+- `maxReconnectAttempts` (number) - Same-host retries after an abnormal close (1006/1011) on the last configured host before the terminal `onZeroHubError`. Default: `10`. The counter resets to zero when a connection is confirmed (the server's hub info arrives).
+- `reconnectBaseBackoffMs` (number) - Base delay (ms) for the exponential backoff between same-host reconnect retries; each retry doubles the previous delay with ±20% jitter, capped at 30 s. Default: `250`.
+
+### Automatic reconnection
+
+When a signaling WebSocket closes abnormally (code `1006` abnormal close or
+`1011` internal error), the client reconnects automatically: it fails over to
+the next configured host immediately when one is available (a single failure
+advances the host index exactly once), and retries the **same** last host with
+exponential backoff when it is already on the final host — including the
+common single-host deployment. The terminal `onZeroHubError` fires only after
+the retry budget is exhausted, or when a manual `disconnect()` leaves no
+recovery path.
 
 ## Topology: Mesh
 

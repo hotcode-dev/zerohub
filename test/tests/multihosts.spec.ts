@@ -25,14 +25,19 @@ async function getClientInfo(
 }
 
 test("multi hosts", async ({ page }, testInfo) => {
-  // Each client's first host (`this_is_bad_host`) fails with a DNS
-  // resolution error that takes several seconds, and three clients are
-  // created in sequence — the default 10s timeout is not enough.
+  // Each client's first host (`127.0.0.1:9` — nothing listens on the discard
+  // port) fails with a connection refusal, and three clients are created in
+  // sequence — the default 10s timeout is not enough.
   testInfo.setTimeout(60 * 1000);
   await prepareHarnessPage(page);
   let hubId: string = "";
   const componentId = uuidv4();
-  const zeroHubBadHost = "this_is_bad_host:8080";
+  // Nothing listens on 127.0.0.1:9 (the discard port — connection refused ->
+  // code 1006), so it is an unreachable first host in every environment.
+  // Do NOT use a name like `this_is_bad_host` here: it may be pinned to a
+  // reachable loopback IP (e.g. 127.0.0.2) in local `/etc/hosts`, which
+  // makes the "bad" host actually work.
+  const zeroHubBadHost = "127.0.0.1:9";
   const zeroHubGoodHost = "localhost:8080";
   const zeroHubSecondGoodHost = "localhost:8081";
 
@@ -133,19 +138,26 @@ test("multi hosts", async ({ page }, testInfo) => {
   });
 
   await test.step(
-    "terminal all-hosts-exhausted failure surfaces via onZeroHubError",
+    "abnormal close on the last host retries the SAME host and recovers without a terminal error",
     async () => {
       // A fresh client whose FIRST host is unreachable: the initial
       // connection fails and failover advances to the good last host, where
-      // hub creation succeeds. `reconnect()` now has no backup host left, so
-      // `getZeroHubBackupHost()` rejects and that terminal, unrecoverable
-      // failure must reach the public `onZeroHubError` callback
-      // (previously it was only logged and silently swallowed).
+      // hub creation succeeds. The client is now on its LAST configured
+      // host, so an abnormal close there used to reject immediately from
+      // `getZeroHubBackupHost()` and abandon reconnection forever — the
+      // single-host give-up bug. After the fix, `reconnect()` retries the
+      // SAME last host with exponential backoff instead: the server is
+      // healthy, the retry re-dials it, and the session recovers without the
+      // application intervening. The terminal "all hosts exhausted"
+      // `onZeroHubError` is reachable only when the last host is genuinely
+      // dead — which cannot be driven against this live server, so that path
+      // is asserted in `unit-reconnect-error.spec.ts` /
+      // `unit-reconnect-retry.spec.ts` against a mock socket.
       const terminalComponentId = uuidv4();
       await page.evaluate(
         ({ componentId: id, badHost, goodHost }) => {
           window.ZeroHubHarness.createHub({
-            testName: "multi hosts, all hosts exhausted",
+            testName: "multi hosts, last host blip",
             zeroHubHosts: [badHost, goodHost],
             componentId: id,
           });
@@ -161,10 +173,10 @@ test("multi hosts", async ({ page }, testInfo) => {
         const hubIdLoc = page
           .getByTestId(getCreateHubTestId(terminalComponentId))
           .first();
-        // The first host (`this_is_bad_host`) is unreachable, so the initial
-        // connection must fail (network error -> code 1006) before failover
-        // advances to the good host. DNS resolution failure can take several
-        // seconds, so give this assertion a generous expect-timeout.
+        // The first host (`127.0.0.1:9`) is unreachable, so the initial
+        // connection must fail (connection refusal -> code 1006) before
+        // failover advances to the good host. Give this assertion a
+        // generous expect-timeout.
         await expect(hubIdLoc).toHaveText(
           /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
           { timeout: 30_000 }
@@ -173,34 +185,44 @@ test("multi hosts", async ({ page }, testInfo) => {
         expect(info.hostIndex).toBe(1);
       });
 
-      // Spy on `onZeroHubError` while the connection is still healthy, so
-      // the only error that matters for the assertion is the terminal one.
+      // Spy on `onZeroHubError` while the connection is still healthy, so the
+      // only error that would matter for the assertion is a premature
+      // terminal one (the pre-fix give-up on the first blip).
       await page.evaluate(({ componentId: id }) => {
         window.ZeroHubHarness.captureZeroHubErrors(id);
       }, { componentId: terminalComponentId });
 
-      // Simulate an abnormal connection drop (code 1006), which triggers
-      // `reconnect()`: the client is already on its last host, so the
-      // terminal rejection must surface through `onZeroHubError`.
+      // Simulate a transient abnormal connection drop (code 1006) while the
+      // server is healthy: the client is on its last host, so the same-host
+      // retry must re-dial it and recover the signaling connection.
       await page.evaluate(({ componentId: id }) => {
         window.ZeroHubHarness.triggerAbnormalClose(id);
       }, { componentId: terminalComponentId });
 
-      await expect
-        .poll(
-          async () => {
-            const messages = await page.evaluate(
-              ({ componentId: id }) =>
-                window.ZeroHubHarness.getZeroHubErrorMessages(id),
-              { componentId: terminalComponentId }
-            );
-            return messages.length > 0 ? messages[messages.length - 1] : null;
-          },
-          { timeout: 10_000 }
-        )
-        .toBe(
-          "all ZeroHub hosts are not working, please check the ZeroHub hosts"
+      await test.step("the same-host retry re-dials the good host and the socket recovers", async () => {
+        await expect
+          .poll(
+            async () => (await getClientInfo(page, terminalComponentId))
+              .wsOpen,
+            { timeout: 10_000 }
+          )
+          .toBe(true);
+        // hostIndex is untouched by same-host retries: failover already
+        // advanced exactly once during the initial dial.
+        const info = await getClientInfo(page, terminalComponentId);
+        expect(info.hostIndex).toBe(1);
+      });
+
+      await test.step("no terminal onZeroHubError fired for the transient blip", async () => {
+        // Give any (incorrect) terminal rejection a chance to settle.
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        const messages = await page.evaluate(
+          ({ componentId: id }) =>
+            window.ZeroHubHarness.getZeroHubErrorMessages(id),
+          { componentId: terminalComponentId }
         );
+        expect(messages).toHaveLength(0);
+      });
     }
   );
 });

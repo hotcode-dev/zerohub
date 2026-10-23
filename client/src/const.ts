@@ -27,6 +27,13 @@ export const DEFAULT_RTC_OFFER_OPTIONS: RTCOfferOptions = {
 };
 
 /**
+ * The error message surfaced via `onZeroHubError` when every configured
+ * host has been exhausted by the automatic reconnection.
+ */
+export const ALL_HOSTS_EXHAUSTED_ERROR_MESSAGE =
+  "all ZeroHub hosts are not working, please check the ZeroHub hosts";
+
+/**
  * The default configuration for the ZeroHub client.
  */
 export const DEFAULT_CONFIG: Config = {
@@ -36,6 +43,8 @@ export const DEFAULT_CONFIG: Config = {
   waitIceCandidatesTimeout: 2000,
   autoAnswer: true,
   autoAcceptAnswer: true,
+  maxReconnectAttempts: 10,
+  reconnectBaseBackoffMs: 250,
   rtcConfig: DEFAULT_RTC_CONFIG,
   rtcOfferOptions: DEFAULT_RTC_OFFER_OPTIONS,
 };

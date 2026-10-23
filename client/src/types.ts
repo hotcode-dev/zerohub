@@ -228,6 +228,22 @@ export interface Config<PeerMetadata = object> {
    */
   autoAcceptAnswer: boolean;
   /**
+   * Maximum number of times the client retries re-dialing the CURRENT host
+   * after an abnormal WebSocket close (codes 1006/1011) before it gives up
+   * on that host and either fails over to the next configured host or
+   * surfaces the terminal `onZeroHubError` when no further host exists.
+   * The counter resets to zero once a connection to a host is confirmed (the
+   * server's hub info arrives). Default is 10.
+   */
+  maxReconnectAttempts: number;
+  /**
+   * Base delay in milliseconds for the exponential backoff between
+   * same-host reconnect retries after an abnormal WebSocket close. Each
+   * retry doubles the previous delay (with ±20% random jitter), capped at
+   * 30 seconds. Default is 250 ms.
+   */
+  reconnectBaseBackoffMs: number;
+  /**
    * RTC configuration for the RTCPeerConnection.
    * Default is a configuration with Google's public STUN servers.
    */

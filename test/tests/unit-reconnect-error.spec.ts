@@ -6,14 +6,19 @@ import { fileURLToPath } from "node:url";
  * Regression test: a terminal reconnect failure (all ZeroHub hosts
  * exhausted) must surface through the public `onZeroHubError` callback.
  *
- * `reconnect()` with no backup host left rejects from
- * `getZeroHubBackupHost()`; before the fix that rejection was only logged
- * and `onZeroHubError` never fired, violating the documented contract
- * ("Listen to `onZeroHubError` to surface unrecoverable errors").
+ * With the same-host retry-with-backoff behavior, an abnormal close on the
+ * LAST configured host no longer rejects immediately: the client first
+ * re-dials the same host (`config.maxReconnectAttempts` retries,
+ * exponential backoff with jitter). `getZeroHubBackupHost()` only rejects
+ * once that retry budget is genuinely spent; before the fix that rejection
+ * was only logged and `onZeroHubError` never fired, violating the documented
+ * contract ("Listen to `onZeroHubError` to surface unrecoverable errors").
  *
  * Runs without a server or real WebRTC: the client is bundled with the
  * unit harness (mocked `RTCPeerConnection`, no-op topology) and driven
- * through `window.ZeroHubUnitHarness`.
+ * through `window.ZeroHubUnitHarness`. The helper shrinks the retry budget
+ * to 3 and drives that many same-host retries plus one final abnormal
+ * close before the terminal rejection settles.
  */
 
 /** The in-page driver surface (window.ZeroHubUnitHarness). */

@@ -1,4 +1,5 @@
 import {
+  ALL_HOSTS_EXHAUSTED_ERROR_MESSAGE,
   DEFAULT_CONFIG,
   DEFAULT_RTC_CONFIG,
   DEFAULT_RTC_OFFER_OPTIONS,
@@ -107,6 +108,30 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * a clean, reusable connection.
    */
   private isDisconnected = false;
+  /**
+   * Number of same-host reconnect retries queued for the CURRENT host since
+   * the last confirmed connection. Abnormal WebSocket closures (1006/1011)
+   * schedule a retry to the SAME host with exponential backoff while this is
+   * below `config.maxReconnectAttempts`; only when the budget is exhausted
+   * does `reconnect()` fall through to host failover / the terminal
+   * `onZeroHubError`. Reset to zero when a connection is confirmed (the
+   * server's hub info arrives) or a migration redirect lands, so a
+   * long-lived healthy session never accumulates backoff.
+   */
+  private reconnectAttempts = 0;
+  /**
+   * The pending same-host reconnect retry timer, or `null` when none is
+   * queued. The timer callback carries the generation it was created with
+   * and aborts when it no longer matches, so a timer that fires after the
+   * state was reset (a confirmed connection) dials nowhere.
+   */
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  /**
+   * Generation counter bumped every time the retry state is reset or the
+   * timer fires; a stale timer compares its captured generation against this
+   * value and aborts when they differ.
+   */
+  private reconnectTimerGeneration = 0;
   /**
    * Pending ICE candidate timeout handles, keyed by peer ID.
    * These are cleared on disconnect so no offer/answer can be sent to a closed socket.
@@ -244,16 +269,87 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   getZeroHubBackupHost(): Promise<string> {
     return new Promise((resolve, reject) => {
       if (this.hostIndex >= this.hosts.length - 1) {
-        reject(
-          new Error(
-            "all ZeroHub hosts are not working, please check the ZeroHub hosts"
-          )
-        );
+        reject(new Error(ALL_HOSTS_EXHAUSTED_ERROR_MESSAGE));
         return;
       }
       this.hostIndex = this.hostIndex + 1;
       resolve(this.hosts[this.hostIndex]);
     });
+  }
+
+  /**
+   * Clears any queued same-host reconnect retry and resets the attempt
+   * counter. Called when a connection is confirmed (the server's hub info
+   * arrives), when a migration redirect lands, and on manual
+   * `disconnect()` — so backoff never accumulates across a healthy session,
+   * a redirected host gets its full retry budget, and a pending retry timer
+   * can never resurface after an intentional teardown.
+   */
+  private clearReconnectRetryState() {
+    this.cancelPendingReconnectRetry();
+    this.reconnectAttempts = 0;
+  }
+
+  /**
+   * Cancels any queued same-host reconnect retry timer. The generation bump
+   * makes a stale pending timer abort even if it fires after the cancel.
+   * `reconnectAttempts` is intentionally left untouched: the counter only
+   * resets through `clearReconnectRetryState()` on a confirmed connection
+   * (or a migration redirect), so a dial that will fail again keeps
+   * consuming the same-host retry budget.
+   */
+  private cancelPendingReconnectRetry() {
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.reconnectTimerGeneration += 1;
+  }
+
+  /**
+   * The backoff delay for the `reconnectAttempts`-th same-host retry:
+   * `reconnectBaseBackoffMs * 2^(attempts - 1)` with ±20% random jitter,
+   * capped at 30 seconds (a longer delay would just delay failover or the
+   * terminal error without improving the odds).
+   */
+  private reconnectBackoffDelayMs(attempts: number): number {
+    const base =
+      (this.config.reconnectBaseBackoffMs ?? 250) *
+      2 ** Math.max(attempts - 1, 0);
+    const jitter = 1 + (Math.random() * 2 - 1) * 0.2;
+    return Math.min(30_000, Math.max(1, Math.round(base * jitter)));
+  }
+
+  /**
+   * Queues a same-host reconnect retry `currentURL` after the current
+   * backoff delay. `reconnectAttempts` counts how many retries are queued
+   * (including this one); when it reaches `maxReconnectAttempts`, the next
+   * abnormal close falls through to host failover instead.
+   */
+  private scheduleSameHostReconnect(currentURL: URL, reason: string) {
+    const maxAttempts =
+      this.config.maxReconnectAttempts ?? DEFAULT_CONFIG.maxReconnectAttempts;
+    this.reconnectAttempts += 1;
+    const generation = this.reconnectTimerGeneration;
+    const delayMs = this.reconnectBackoffDelayMs(this.reconnectAttempts);
+    this.logger.warn(
+      `ZeroHub \`${this.host}\` reconnecting the same host (attempt ${this.reconnectAttempts}/${maxAttempts}) in ${delayMs}ms after ${reason}`
+    );
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      // The generation changed while the timer was pending: a connection was
+      // confirmed or a manual disconnect happened. The state was already
+      // reset, so dialing now would open a stray socket (and reset
+      // isDisconnected). Abort.
+      if (generation !== this.reconnectTimerGeneration) {
+        return;
+      }
+      if (this.isDisconnected) {
+        this.logger.log("ZeroHub was disconnected during reconnect, aborting");
+        return;
+      }
+      this.connectToZeroHub(currentURL);
+    }, delayMs);
   }
 
   /**
@@ -309,8 +405,14 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
 
   /**
    * Reconnects to ZeroHub with the current URL and an optional new host.
-   * If a new host is provided, it updates the current URL's host and reconnects.
-   * If no new host is provided, it fetches a backup host and reconnects to it.
+   * If a new host is provided, it updates the current URL's host and
+   * reconnects (the 1001 migration-redirect path).
+   * If no new host is provided: when a backup host is still available it
+   * fails over to it; when the client is already on the last configured
+   * host it schedules a same-host retry with exponential backoff instead —
+   * only once the retry budget (`config.maxReconnectAttempts`) is exhausted
+   * does `getZeroHubBackupHost()` reject and the terminal failure surface
+   * via `onZeroHubError`.
    *
    * @param currentURL - The current URL of the ZeroHub connection.
    * @param newHost - An optional new host to connect to.
@@ -371,7 +473,33 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         this.hostIndex = redirectedIndex;
       }
       currentURL.host = newHost;
+      // The redirect moved us to a fresh host: reset the same-host retry
+      // budget (and any queued retry timer) so a later abnormal close on
+      // the redirected host gets its full retry budget, not the remainder
+      // of the previous host's.
+      this.clearReconnectRetryState();
       this.connectToZeroHub(currentURL);
+      return;
+    }
+    // Abnormal close with no redirect host: if there is a backup host left,
+    // fail over to it IMMEDIATELY (preserving the documented failover
+    // semantics: a single failure advances `hostIndex` exactly once, asserted
+    // by `test/tests/multihosts.spec.ts`). Only when we are ALREADY on the
+    // last configured host do we retry the SAME host with backoff — the host
+    // may be a transient blip, not a dead host. When even that retry budget
+    // is exhausted, `getZeroHubBackupHost()` rejects and the terminal
+    // `onZeroHubError` fires. Same-host retries deliberately leave `hostIndex`
+    // untouched, so failover still advances it exactly once.
+    const maxAttempts =
+      this.config.maxReconnectAttempts ?? DEFAULT_CONFIG.maxReconnectAttempts;
+    if (
+      this.hostIndex >= this.hosts.length - 1 &&
+      this.reconnectAttempts < maxAttempts
+    ) {
+      this.scheduleSameHostReconnect(
+        currentURL,
+        "abnormal WebSocket close (1006/1011)"
+      );
       return;
     }
     this.getZeroHubBackupHost()
@@ -434,6 +562,11 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   handleZeroHubMessage(serverMessage: ServerMessage) {
     if (serverMessage.hubInfoMessage) {
       const hubInfoMsg = serverMessage.hubInfoMessage;
+
+      // The server confirmed this connection: the same-host retry budget is
+      // spent, reset it so the next abnormal close on a long-lived session
+      // gets a full retry budget instead of the accumulated remainder.
+      this.clearReconnectRetryState();
 
       this.myPeerId = hubInfoMsg.myPeerId;
       this.hubInfo = {
@@ -825,6 +958,16 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     // SDP already went out on the old socket.
     this.isDisconnected = false;
 
+    // A fresh dial supersedes any queued same-host retry timer: cancel it
+    // (and bump the generation so a stale pending timer aborts) so its
+    // callback can never dial a SECOND socket while this one is being
+    // established. This covers a manual re-entry — createHub()/joinHub()
+    // called while a retry is pending. The attempt COUNTER is deliberately
+    // NOT reset here: the budget only refills when a connection is
+    // CONFIRMED (the server's hub info arrives), so a dial that will fail
+    // again still consumes budget and the terminal error stays reachable.
+    this.cancelPendingReconnectRetry();
+
     // Tear down a socket left open by a previous connection (e.g. a second
     // entry-point call without disconnect()). Nulling the handlers before
     // close(1000) keeps the replaced socket from firing reconnect() — which
@@ -903,6 +1046,11 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    */
   public disconnect() {
     this.isDisconnected = true;
+
+    // Cancel any queued same-host reconnect retry: the timer would otherwise
+    // fire after teardown and dial a stray socket (connectToZeroHub resets
+    // isDisconnected, resurrecting a manually disconnected client).
+    this.clearReconnectRetryState();
 
     // clear pending ICE candidate timeouts so they cannot send to a closed socket
     Object.values(this.iceTimeouts).forEach((timeout) => {
