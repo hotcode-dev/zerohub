@@ -15,6 +15,11 @@ info:
     - The admin endpoint `/v1/permanent-hubs/create` (channel
       `permanentHubsCreate`) is plain HTTP, not WebSocket: it uses the
       `admin-local`/`admin-production` servers declared on that channel.
+    - The hub-metadata read endpoints `/v1/hubs/get` (channel `hubsGet`)
+      and `/v1/random-hubs/get` (channel `randomHubsGet`) are likewise
+      plain HTTP (GET, JSON response, no request payload), not WebSocket
+      signaling channels, and use the same `admin-local`/`admin-production`
+      servers.
 
 defaultContentType: application/protobuf
 
@@ -123,18 +128,36 @@ channels:
   hubsGet:
     address: /v1/hubs/get
     description: |
-      Get the metadata (peers, creation time, hub metadata) of an existing
-      static hub.
+      Get the metadata of an existing static hub.
+
+      Unlike the other /v1/hubs/* endpoints, this is a plain HTTP GET read
+      endpoint, NOT a WebSocket signaling channel: it never upgrades the
+      connection, carries no request payload (the hub id rides on the URL),
+      and answers a single JSON object describing the hub — `{id, createdAt,
+      metadata, isPermanent}`. It is unreachable from the SDK (the SDK only
+      dials WebSocket signaling endpoints) and is instead consumed
+      out-of-band with an HTTP client (curl, fetch from a Node.js process),
+      exactly like `/v1/permanent-hubs/create`.
+
       Query params:
       - id (required): hub id
+
+      Response: HTTP 200 with the `Hub` JSON body. Error responses are 400
+      (missing/empty `id`, body `{"error": "id query parameter is
+      required"}`), 413 (`id` exceeds the 4096-byte cap, body
+      `{"error": "id query parameter exceeds the maximum size of 4096
+      bytes"}`) and 404 (no hub with that id, body
+      `{"error": "hub not found"}`).
+    servers:
+      - $ref: '#/servers/admin-local'
+      - $ref: '#/servers/admin-production'
     messages:
-      clientMessage:
-        $ref: '#/components/messages/ClientMessage'
-      serverMessage:
-        $ref: '#/components/messages/ServerMessage'
+      getHubRequest:
+        $ref: '#/components/messages/HubGetRequest'
+      hub:
+        $ref: '#/components/messages/HubInfo'
     bindings:
-      ws:
-        method: GET
+      http: {}
 
   randomHubsCreate:
     address: /v1/random-hubs/create
@@ -171,18 +194,34 @@ channels:
   randomHubsGet:
     address: /v1/random-hubs/get
     description: |
-      Get the metadata (peers, creation time, hub metadata) of an existing
-      random hub.
+      Get the metadata of an existing random hub.
+
+      Like `/v1/hubs/get`, this is a plain HTTP GET read endpoint, NOT a
+      WebSocket signaling channel: it never upgrades the connection, carries
+      no request payload (the hub id rides on the URL), and answers a single
+      JSON object describing the hub — `{id, createdAt, metadata,
+      isPermanent}`. It is unreachable from the SDK and is instead consumed
+      out-of-band with an HTTP client (curl, fetch from a Node.js process).
+
       Query params:
       - id (required): hub id
+
+      Response: HTTP 200 with the `Hub` JSON body. Error responses are 400
+      (missing/empty `id`, body `{"error": "id query parameter is
+      required"}`), 413 (`id` exceeds the 4096-byte cap, body
+      `{"error": "id query parameter exceeds the maximum size of 4096
+      bytes"}`) and 404 (no hub with that id, body
+      `{"error": "hub not found"}`).
+    servers:
+      - $ref: '#/servers/admin-local'
+      - $ref: '#/servers/admin-production'
     messages:
-      clientMessage:
-        $ref: '#/components/messages/ClientMessage'
-      serverMessage:
-        $ref: '#/components/messages/ServerMessage'
+      getHubRequest:
+        $ref: '#/components/messages/HubGetRequest'
+      hub:
+        $ref: '#/components/messages/HubInfo'
     bindings:
-      ws:
-        method: GET
+      http: {}
 
   ipHubsJoinOrCreate:
     address: /v1/ip-hubs/join-or-create
@@ -293,19 +332,23 @@ operations:
     messages:
       - $ref: '#/channels/hubsJoin/messages/serverMessage'
 
-  clientSendOnHubsGet:
+  # Plain-HTTP read endpoint (not a WebSocket channel): an HTTP client
+  # issues a GET (the query param `id` rides on the URL; there is no
+  # request body) and receives a single JSON `hub` response. The GET
+  # method is fixed by the server routing (fasthttp: `GET /v1/hubs/get`).
+  adminSendOnHubsGet:
     action: send
     channel:
       $ref: '#/channels/hubsGet'
     messages:
-      - $ref: '#/channels/hubsGet/messages/clientMessage'
+      - $ref: '#/channels/hubsGet/messages/getHubRequest'
 
-  clientReceiveOnHubsGet:
+  adminReceiveOnHubsGet:
     action: receive
     channel:
       $ref: '#/channels/hubsGet'
     messages:
-      - $ref: '#/channels/hubsGet/messages/serverMessage'
+      - $ref: '#/channels/hubsGet/messages/hub'
 
   clientSendOnHubsJoinOrCreate:
     action: send
@@ -349,19 +392,23 @@ operations:
     messages:
       - $ref: '#/channels/randomHubsJoin/messages/serverMessage'
 
-  clientSendOnRandomHubsGet:
+  # Plain-HTTP read endpoint (not a WebSocket channel): same modeling as
+  # `/v1/hubs/get` — a GET with no request body, a single JSON `hub`
+  # response. The GET method is fixed by the server routing (fasthttp:
+  # `GET /v1/random-hubs/get`).
+  adminSendOnRandomHubsGet:
     action: send
     channel:
       $ref: '#/channels/randomHubsGet'
     messages:
-      - $ref: '#/channels/randomHubsGet/messages/clientMessage'
+      - $ref: '#/channels/randomHubsGet/messages/getHubRequest'
 
-  clientReceiveOnRandomHubsGet:
+  adminReceiveOnRandomHubsGet:
     action: receive
     channel:
       $ref: '#/channels/randomHubsGet'
     messages:
-      - $ref: '#/channels/randomHubsGet/messages/serverMessage'
+      - $ref: '#/channels/randomHubsGet/messages/hub'
 
   # Plain-HTTP admin endpoint (not a WebSocket channel): the admin tool
   # issues the request (the query params `id`/`hubMetadata` and the
@@ -461,6 +508,27 @@ components:
       payload:
         $ref: '#/components/schemas/PermanentHubCreated'
 
+    HubGetRequest:
+      name: HubGetRequest
+      title: Hub metadata read request
+      summary: HTTP GET request to /v1/hubs/get or /v1/random-hubs/get
+      description: |
+        Carried by `GET /v1/hubs/get` (static hubs) or `GET
+        /v1/random-hubs/get` (random hubs) on the plain-HTTP servers. The
+        payload is empty: the request is entirely described by the `id`
+        query parameter on the URL.
+      contentType: application/json
+      payload:
+        type: 'null'
+
+    HubInfo:
+      name: HubInfo
+      title: Hub metadata response
+      summary: JSON body returned by /v1/hubs/get and /v1/random-hubs/get
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/Hub'
+
   schemas:
     PermanentHubCreateRequestHeaders:
       type: object
@@ -504,6 +572,40 @@ components:
       type: object
       required: [id, createdAt, metadata, isPermanent]
       description: JSON body of the /v1/permanent-hubs/create response (the created hub).
+      properties:
+        id:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        metadata:
+          type: string
+        isPermanent:
+          type: boolean
+
+    HubGetError:
+      type: object
+      required: [error]
+      description: >
+        JSON body of the error responses (400/404/413) returned by
+        /v1/hubs/get and /v1/random-hubs/get.
+      properties:
+        error:
+          type: string
+          description: |
+            One of, depending on the status code:
+            - 400: "id query parameter is required"
+            - 413: "id query parameter exceeds the maximum size of 4096 bytes"
+            - 404: "hub not found"
+      additionalProperties: false
+
+    Hub:
+      type: object
+      required: [id, createdAt, metadata, isPermanent]
+      description: >
+        JSON body of the /v1/hubs/get and /v1/random-hubs/get response: the
+        looked-up hub. The peer roster is intentionally not included — the
+        read endpoint answers hub-level metadata only.
       properties:
         id:
           type: string
