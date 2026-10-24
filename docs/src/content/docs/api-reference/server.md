@@ -7,11 +7,20 @@ This page documents the server-facing HTTP/WebSocket endpoints and the protobuf 
 
 ## HTTP endpoints (management)
 
-- `POST /v1/hubs/create?id={hubId}` - create a fixed hub. Accepts optional `hubMetadata` and `peerMetadata` query params (JSON-encoded).
+The server routes these endpoints by path only and does not check the HTTP
+method, so any method reaches the handler; clients conventionally use `GET`,
+which is what the AsyncAPI spec (`server/api.yml`) models.
+
+- `GET /v1/hubs/create?id={hubId}` - create a fixed hub. Accepts optional `hubMetadata` and `peerMetadata` query params (JSON-encoded).
 - `GET /v1/hubs/join?id={hubId}` - join a fixed hub
-- `POST /v1/random-hubs/create` - create a random hub
+- `GET /v1/hubs/join-or-create?id={hubId}` - join an existing fixed hub or create it if it doesn't exist
+- `GET /v1/random-hubs/create` - create a random hub
 - `GET /v1/random-hubs/join?id={hubId}` - join a random hub
 - `GET /v1/ip-hubs/join-or-create` - join or create an IP hub (server derives hubId from request IP)
+- `GET /v1/permanent-hubs/join?id={hubId}` - join an existing permanent hub
+- `GET /v1/permanent-hubs/create?id={hubId}` - create a permanent (never-expires) hub; admin-gated, requires the `Authorization` header (base64 of the server's `APP_CLIENT_SECRET`); plain HTTP (no WebSocket upgrade)
+- `GET /v1/status` - health / version endpoint (public, read-only)
+- `GET /v1/admin/migrate?host={newHost}` - start a zero-downtime migration: new connections are routed to the backup host while existing ones drain; admin-gated, requires the `Authorization` header
 
 > Note: The docs repository contains `proto/` definitions describing the WebSocket messages used by the server and client for signaling.
 
