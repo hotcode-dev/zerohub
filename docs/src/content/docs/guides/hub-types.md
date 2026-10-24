@@ -1,9 +1,9 @@
 ---
 title: Hub Types
-description: Learn about different hub types in ZeroHub - Fixed Hub, Random Hub, and IP Hub
+description: Learn about different hub types in ZeroHub - Fixed Hub, Random Hub, IP Hub, and Permanent Hub
 ---
 
-ZeroHub provides three different hub types to accommodate various use cases for peer-to-peer communication. Each hub type offers different characteristics in terms of identification, persistence, and access patterns.
+ZeroHub provides four different hub types to accommodate various use cases for peer-to-peer communication. Each hub type offers different characteristics in terms of identification, persistence, and access patterns.
 
 ## Overview
 
@@ -12,6 +12,7 @@ ZeroHub provides three different hub types to accommodate various use cases for 
 | **Fixed Hub**  | User-defined      | Persistent rooms, organized spaces       | Manual        |
 | **Random Hub** | Server-generated  | One-time sessions, temporary connections | Temporary     |
 | **IP Hub**     | Client IP address | Location-based connections               | Session-based |
+| **Permanent Hub** | User-defined (admin-created) | Always-on collaboration rooms | Never expires |
 
 ## Fixed Hub
 
@@ -120,6 +121,44 @@ client.joinOrCreateIPHub(
 - **IoT device coordination**: Coordinate devices within the same network
 - **Office collaboration**: Connect colleagues on the same office network
 
+## Permanent Hub
+
+Permanent hubs use user-defined identifiers like fixed hubs, but they are created out-of-band by an admin and **never expire** — they are designed for always-on collaboration rooms that must stay available indefinitely.
+
+### Creating a Permanent Hub
+
+Permanent hubs are created out-of-band via the admin HTTP endpoint
+`GET /v1/permanent-hubs/create` (requires the `Authorization` header), since
+the browser WebSocket API cannot send custom headers. Use an HTTP client
+(curl, `fetch` from a Node.js process) to create a permanent hub, then connect
+to it with `joinPermanentHub`.
+
+The `Authorization` header value is the base64 encoding of the server's `APP_CLIENT_SECRET`:
+
+```bash
+# Plain HTTP endpoint (no WebSocket upgrade): create a permanent hub that never expires
+curl "http://localhost:8080/v1/permanent-hubs/create?id=my-collab-room" \
+  -H "Authorization: $(echo -n 'YOUR_APP_CLIENT_SECRET' | base64)"
+```
+
+The endpoint responds with the created hub as JSON (`{ id, createdAt, metadata, isPermanent }`).
+
+### Joining a Permanent Hub
+
+```typescript
+// Join an existing permanent hub
+client.joinPermanentHub(
+  "my-collab-room", // Hub ID created out-of-band
+  { username: "player1", level: 5 } // Peer metadata
+);
+```
+
+### Use Cases
+
+- **Always-on collaboration rooms**: persistent spaces that never expire
+- **Team workspaces**: dedicated rooms that stay available indefinitely
+- **Community lobbies**: stable, well-known room names users can rely on across sessions
+
 ## Hub Metadata vs Peer Metadata
 
 Understanding the difference between hub metadata and peer metadata is crucial for effective use:
@@ -201,6 +240,11 @@ client.onZeroHubError = (error) => {
    - Building location-aware applications
    - Coordinating devices on the same network
    - Automatic peer discovery is desired
+
+4. **Use Permanent Hubs when**:
+   - The room must never expire (always-on collaboration rooms)
+   - Hub creation must be admin-controlled and out-of-band
+   - Users repeatedly join the same long-lived room by its ID
 
 ### Metadata Design
 
