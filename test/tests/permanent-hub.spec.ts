@@ -17,8 +17,7 @@ import {
  * the hub from Node.js with `fetch`, then two SDK clients join it with
  * `joinPermanentHub`. Proving both joiners reach the "connected" signaling
  * state verifies the join endpoint upgrades to WebSocket and the two peers
- * establish a real WebRTC connection — the path `createPermanentHub` would
- * have taken had it existed on the SDK.
+ * establish a real WebRTC connection.
  *
  * Targets `localhost:8081` (the backup server from `migrate.spec.ts`): the
  * plain-HTTP create cannot use the SDK's migration failover, and
