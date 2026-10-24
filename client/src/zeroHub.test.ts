@@ -122,6 +122,70 @@ afterAll(() => {
   vi.unstubAllGlobals();
 });
 
+describe("hub entry points — fire-and-forget contract", () => {
+  // These entry points return `void` and open the connection asynchronously:
+  // completion is signalled via onHubInfo, never a Promise. This test pins
+  // that contract so a future change to an async/Promise return type — which
+  // would make the quickstart's `await client.createHub(...)` misleading in
+  // the opposite direction — is forced through a deliberate test update.
+  const HUB_ENTRY_POINTS: [
+    string,
+    (client: ZeroHubClient) => unknown,
+    string,
+  ][] = [
+    [
+      "createHub",
+      (c) => c.createHub("h", { p: 1 }, { m: 1 }),
+      "/v1/hubs/create",
+    ],
+    ["joinHub", (c) => c.joinHub("h", { p: 1 }), "/v1/hubs/join"],
+    [
+      "joinPermanentHub",
+      (c) => c.joinPermanentHub("h", { p: 1 }),
+      "/v1/permanent-hubs/join",
+    ],
+    [
+      "joinOrCreateHub",
+      (c) => c.joinOrCreateHub("h", { p: 1 }, { m: 1 }),
+      "/v1/hubs/join-or-create",
+    ],
+    [
+      "joinOrCreateIPHub",
+      (c) => c.joinOrCreateIPHub({ p: 1 }, { m: 1 }),
+      "/v1/ip-hubs/join-or-create",
+    ],
+    [
+      "createRandomHub",
+      (c) => c.createRandomHub({ p: 1 }, { m: 1 }),
+      "/v1/random-hubs/create",
+    ],
+    [
+      "joinRandomHub",
+      (c) => c.joinRandomHub("h", { p: 1 }),
+      "/v1/random-hubs/join",
+    ],
+  ];
+
+  it.each(HUB_ENTRY_POINTS)(
+    "%s returns void (no Promise) and dials the expected endpoint",
+    (_name, invoke, expectedPath) => {
+      const client = makeClient();
+      const calls = stubConnectToZeroHub(client);
+      const result = invoke(client);
+
+      // void, not a thenable: awaiting would resolve before the hub joins.
+      expect(result).toBeUndefined();
+      expect((result as { then?: unknown } | undefined)?.then).toBeUndefined();
+      // The connection is initiated synchronously by the call itself…
+      expect(calls).toHaveLength(1);
+      expect(calls[0].pathname).toBe(expectedPath);
+      // …so state is still unjoined right after the call.
+      expect(client.myPeerId).toBeUndefined();
+      expect(Object.keys(client.peers)).toHaveLength(0);
+    }
+  );
+});
+
 describe("handleZeroHubMessage — hubInfo roster reconciliation", () => {
   it("prunes a peer absent from the roster and tears down its RTC connection", () => {
     const client = makeClient();

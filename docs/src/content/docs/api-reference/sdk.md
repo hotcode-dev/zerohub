@@ -76,6 +76,11 @@ It handles:
 - `joinOrCreateIPHub(peerMetadata?, hubMetadata?)` - IP hub API (hub id is derived from the caller's IP)
 - `joinPermanentHub(hubId, peerMetadata?)` - join an existing permanent (never-expires) hub
 
+These entry points all return `void` — they open the WebSocket connection
+asynchronously. Hub join completion is delivered via the `onHubInfo` callback
+(and subsequent peer activity via `onPeerStatusChange`), never via a Promise,
+so do not `await` them or read `myPeerId`/`peers` immediately after the call.
+
 Permanent hubs are created out-of-band via the admin HTTP endpoint
 `GET /v1/permanent-hubs/create` (requires the `Authorization` header), since
 the browser WebSocket API cannot send custom headers. Use an HTTP client
@@ -111,7 +116,10 @@ client.config.dataChannelConfig = {
   },
 };
 
-await client.joinRandomHub({ displayName: "alice" }, { topic: "chat" });
+// Fire-and-forget: `joinRandomHub` returns `void` and the connection is
+// established asynchronously. The join completes when the `onHubInfo`
+// callback fires — do not read `myPeerId` or `peers` immediately after.
+client.joinRandomHub({ displayName: "alice" }, { topic: "chat" });
 ```
 
 ## Further reading
