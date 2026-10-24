@@ -56,7 +56,11 @@ import { getWS, isWellFormedHost } from "./utils";
  *   }
  * };
  *
- * await client.createHub('my-room', { name: 'Alice' });
+ * // Fire-and-forget: `createHub` returns `void` and the connection is
+ * // established asynchronously. The join completes when the `onHubInfo`
+ * // callback fires — do not read `myPeerId` or `peers` immediately after
+ * // the call.
+ * client.createHub('my-room', { name: 'Alice' });
  * ```
  */
 export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
