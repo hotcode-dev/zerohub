@@ -282,6 +282,195 @@ describe("updatePeerStatus", () => {
     expect(peer.status).toBe(PeerStatus.Connected);
     expect(topology.onPeerStatusChange).toHaveBeenCalledWith(peer);
   });
+
+  it("a throwing topology handler does not mask the user onPeerStatusChange", () => {
+    const client = makeClient();
+    const { peer } = makePeer("2");
+    client.peers = { "2": peer };
+    const topology = client.topology as unknown as FakeTopology;
+    topology.onPeerStatusChange.mockImplementation(() => {
+      throw new Error("topology boom");
+    });
+    const userHandler = vi.fn();
+    client.onPeerStatusChange = userHandler;
+
+    expect(() =>
+      client.updatePeerStatus("2", PeerStatus.Connected)
+    ).not.toThrow();
+
+    // The status is applied and the user callback still fires even though the
+    // topology handler threw first.
+    expect(peer.status).toBe(PeerStatus.Connected);
+    expect(userHandler).toHaveBeenCalledTimes(1);
+    expect(userHandler).toHaveBeenCalledWith(peer);
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalledWith(
+      "topology.onPeerStatusChange handler threw",
+      expect.anything()
+    );
+  });
+
+  it("a throwing onPeerStatusChange does not stop other peers' status updates", () => {
+    const client = makeClient();
+    const p1 = makePeer("1");
+    const p2 = makePeer("2");
+    client.peers = { "1": p1.peer, "2": p2.peer };
+    client.onPeerStatusChange = (peer) => {
+      if (peer.id === "1") {
+        throw new Error("user handler boom");
+      }
+    };
+
+    // Updating peer "1" must not throw out of the dispatcher…
+    expect(() =>
+      client.updatePeerStatus("1", PeerStatus.Connected)
+    ).not.toThrow();
+    expect(p1.peer.status).toBe(PeerStatus.Connected);
+
+    // …and peer "2" keeps receiving status updates afterwards.
+    client.updatePeerStatus("2", PeerStatus.Connected);
+    expect(p2.peer.status).toBe(PeerStatus.Connected);
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalledWith(
+      "onPeerStatusChange handler threw",
+      expect.anything()
+    );
+  });
+});
+
+describe("onmessage — corrupt frame isolation", () => {
+  // The onmessage handler is wired by the REAL connectToZeroHub (the
+  // connect stub is used by the reconnect specs only); a fake host name
+  // makes the underlying WebSocket dial fail harmlessly — the spec only
+  // invokes the onmessage handler synchronously.
+  let client: ZeroHubClient;
+
+  afterEach(() => {
+    client?.disconnect();
+  });
+
+  /** Get the onmessage handler the real connectToZeroHub registered. */
+  function onMessage(): () => unknown {
+    client.connectToZeroHub(
+      new URL("ws://fake-host-never-resolves/v1/hubs/join")
+    );
+    return (client.ws as unknown as { onmessage: () => unknown }).onmessage;
+  }
+
+  it("a frame that makes ServerMessage.decode throw does not break the socket or subsequent messages", () => {
+    client = makeClient();
+    const handler = onMessage();
+    const errors: Error[] = [];
+    client.onZeroHubError = (err) => errors.push(err);
+    const hubInfoCalls = vi.fn();
+    client.onHubInfo = hubInfoCalls;
+
+    // Frame 1: corrupt payload — decode throws. The handler must NOT throw
+    // (an uncaught throw out of a WebSocket onmessage aborts the signaling
+    // receive loop for every peer).
+    expect(() =>
+      handler({ data: new Uint8Array([0xff, 0xff, 0xff, 0xff]) } as never)
+    ).not.toThrow();
+    expect(hubInfoCalls).not.toHaveBeenCalled();
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toBeInstanceOf(Error);
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalledWith(
+      "failed to process ZeroHub message",
+      expect.anything()
+    );
+
+    // Frame 2: a valid hubInfoMessage still decodes and dispatches — the
+    // receive loop is not wedged.
+    const validFrame = ServerMessage.encode({
+      hubInfoMessage: {
+        id: "hub-1",
+        createTime: new Date(),
+        myPeerId: "1",
+        hubMetadata: "",
+        peers: [],
+      },
+    }).finish();
+    expect(() => handler({ data: validFrame } as never)).not.toThrow();
+    expect(hubInfoCalls).toHaveBeenCalledTimes(1);
+    expect(client.hubInfo?.id).toBe("hub-1");
+    expect(client.myPeerId).toBe("1");
+  });
+
+  it("a throwing onPeerStatusChange inside the dispatcher cannot escape the onmessage handler", () => {
+    client = makeClient();
+    const handler = onMessage();
+    const { peer } = makePeer("3");
+    client.peers = { "3": peer };
+    client.onPeerStatusChange = () => {
+      throw new Error("user handler boom");
+    };
+
+    // A join for a peer we do NOT already track: dispatches addPeer ->
+    // updatePeerStatus -> the throwing user handler. Nothing may escape the
+    // event handler.
+    client.myPeerId = "1";
+    client.hubInfo = { id: "hub-1", metadata: {}, createTime: new Date() };
+    const validFrame = ServerMessage.encode({
+      peerJoinedMessage: {
+        peer: { id: "4", metadata: "{}", joinTime: undefined },
+      },
+    }).finish();
+
+    expect(() => handler({ data: validFrame } as never)).not.toThrow();
+    // The new peer was registered (guard catches after the status apply)…
+    expect(client.peers["4"]).toBeDefined();
+    expect(client.peers["4"].status).toBe(PeerStatus.Pending);
+    // …and the pre-existing peer is untouched.
+    expect(peer.status).toBe(PeerStatus.Pending);
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalledWith(
+      "onPeerStatusChange handler threw",
+      expect.anything()
+    );
+  });
+
+  it("a throwing onHubInfo does not abort roster reconciliation for that hubInfoMessage", () => {
+    client = makeClient();
+    const handler = onMessage();
+    client.onHubInfo = () => {
+      throw new Error("hub info boom");
+    };
+    // A stale peer from a previous session that is NOT in the new roster:
+    // it must still be pruned below the throwing callback.
+    client.peers = { "9": makePeer("9").peer };
+
+    const validFrame = ServerMessage.encode({
+      hubInfoMessage: {
+        id: "hub-1",
+        createTime: new Date(),
+        myPeerId: "1",
+        hubMetadata: "",
+        peers: [{ id: "2", metadata: "{}", joinTime: undefined }],
+      },
+    }).finish();
+
+    // Nothing may escape the event handler — the failure is isolated inside
+    // `handleZeroHubMessage`, so the OUTER onmessage catch (and therefore
+    // `onZeroHubError`) must NOT fire.
+    expect(() => handler({ data: validFrame } as never)).not.toThrow();
+    const logger = client.logger as unknown as FakeLogger;
+    expect(logger.error).toHaveBeenCalledWith(
+      "onHubInfo handler threw",
+      expect.anything()
+    );
+    expect(logger.error).not.toHaveBeenCalledWith(
+      "failed to process ZeroHub message",
+      expect.anything()
+    );
+    expect(client.onZeroHubError).toBeUndefined();
+
+    // The hub info state was applied before the callback ran…
+    expect(client.myPeerId).toBe("1");
+    expect(client.hubInfo?.id).toBe("hub-1");
+    // …and the roster reconciliation continued past the throwing callback:
+    // the roster peer was added…
+    expect(client.peers["2"]).toBeDefined();
+    expect(client.peers["2"].status).toBe(PeerStatus.Pending);
+    // …and the stale peer was pruned (the reconciliation's prune pass ran).
+    expect(client.peers["9"]).toBeUndefined();
+  });
 });
 
 describe("reconnect — 1001 close reason host validation", () => {
