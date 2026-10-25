@@ -36,11 +36,11 @@ The client is a TypeScript/JavaScript SDK.
 
 1.  Install the client from npm:
     ```bash
-    npm install @zerohub/client
+    npm install @zero-hub/client
     ```
 2.  Use it in your project:
     ```typescript
-    import { ZeroHubClient } from '@zerohub/client';
+    import { ZeroHubClient } from '@zero-hub/client';
 
     // Create a new ZeroHub client
     const client = new ZeroHubClient(['localhost:8080'], { tls: false });
