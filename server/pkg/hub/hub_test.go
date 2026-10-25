@@ -1096,6 +1096,76 @@ func TestHandleMessageSelfTargetRelay(t *testing.T) {
 	}
 }
 
+// TestHandleMessageIgnoresRemovedUpdatePeerMetadataVariant is a wire-level
+// regression test: a legacy frame that carries a value in the removed
+// update_peer_metadata_message oneof field (field number 4 on
+// proto.zerohub.v1.ClientMessage) must be dropped by HandleMessage instead of
+// exiting the WebSocket read loop. It mirrors a frame produced by a client
+// built against the pre-removal wire format: the unknown field is skipped by
+// proto.Unmarshal, the dispatch falls into the default (invalid client
+// message) path, and the very next valid frame must still be relayed. The
+// frame is built as raw wire bytes so the test keeps guarding the behavior
+// even after the generated Go types no longer know the field name.
+func TestHandleMessageIgnoresRemovedUpdatePeerMetadataVariant(t *testing.T) {
+	t.Parallel()
+
+	h := &hub{
+		Id:          "id",
+		CreatedAt:   time.Now(),
+		Metadata:    "metadata",
+		IsPermanent: true,
+		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	}
+
+	serverConn, clientConn := newTestConnPair(t)
+	sender := &fakePeer{id: "1", conn: serverConn}
+	target := &fakePeer{id: "2", conn: &websocket.Conn{}}
+	h.PeerStorage.Add("1", sender)
+	h.PeerStorage.Add("2", target)
+
+	// Legacy frame: tag 0x22 is field 4, wire type 2 (length-delimited) —
+	// the oneof index that held update_peer_metadata_message; payload is a
+	// well-formed UpdatePeerMetadataMessage{peer_id:"2", metadata:"m"}.
+	legacy := []byte{0x22, 0x06, 0x0a, 0x01, '2', 0x12, 0x01, 'm'}
+	if err := clientConn.WriteMessage(websocket.BinaryMessage, legacy); err != nil {
+		t.Fatalf("write legacy frame: %v", err)
+	}
+
+	offer := &pb.ClientMessage{Message: &pb.ClientMessage_SendOfferMessage{SendOfferMessage: &pb.SendOfferMessage{
+		AnswerPeerId: "2",
+		OfferSdp:     "offer-sdp",
+	}}}
+	offerData, err := proto.Marshal(offer)
+	if err != nil {
+		t.Fatalf("marshal offer: %v", err)
+	}
+	if err := clientConn.WriteMessage(websocket.BinaryMessage, offerData); err != nil {
+		t.Fatalf("write offer: %v", err)
+	}
+
+	// HandleMessage processes both frames, then blocks on the next read until
+	// we close the conn from the client side.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		h.HandleMessage(sender)
+	}()
+	_ = clientConn.Close()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("HandleMessage did not return after conn close")
+	}
+
+	if target.offerPeer != "1" || target.offerSdp != "offer-sdp" {
+		t.Fatalf("offer after the removed-variant frame: want (%q, %q), got (%q, %q)",
+			"1", "offer-sdp", target.offerPeer, target.offerSdp)
+	}
+	if target.answerPeer != "" || target.icePeer != "" {
+		t.Fatalf("no relay expected besides the offer, but answer=%q ice=%q", target.answerPeer, target.icePeer)
+	}
+}
+
 // TestAddPeerStalledBroadcastDoesNotBlockConcurrentRemovePeerById is a
 // regression test for zf-z-c4cc6a7a: with the memory backend,
 // memoryStorage.GetAll used to hold the peer-storage RLock across the whole

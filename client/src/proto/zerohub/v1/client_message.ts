@@ -33,14 +33,6 @@ export interface SendIceCandidateMessage {
   candidate: string;
 }
 
-/** Update peer metadata message is for update peer metadata message */
-export interface UpdatePeerMetadataMessage {
-  /** ID of the peer */
-  peerId: string;
-  /** New metadata for the peer */
-  metadata: string;
-}
-
 /** ClientMessage is the message sent from client */
 export interface ClientMessage {
   /** Send offer message */
@@ -55,8 +47,6 @@ export interface ClientMessage {
   sendIceCandidateMessage?:
     | SendIceCandidateMessage
     | undefined;
-  /** Update peer metadata message */
-  updatePeerMetadataMessage?: UpdatePeerMetadataMessage | undefined;
 }
 
 function createBaseSendOfferMessage(): SendOfferMessage {
@@ -287,88 +277,11 @@ export const SendIceCandidateMessage: MessageFns<SendIceCandidateMessage> = {
   },
 };
 
-function createBaseUpdatePeerMetadataMessage(): UpdatePeerMetadataMessage {
-  return { peerId: "", metadata: "" };
-}
-
-export const UpdatePeerMetadataMessage: MessageFns<UpdatePeerMetadataMessage> = {
-  encode(message: UpdatePeerMetadataMessage, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.peerId !== "") {
-      writer.uint32(10).string(message.peerId);
-    }
-    if (message.metadata !== "") {
-      writer.uint32(18).string(message.metadata);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): UpdatePeerMetadataMessage {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdatePeerMetadataMessage();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.peerId = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.metadata = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UpdatePeerMetadataMessage {
-    return {
-      peerId: isSet(object.peerId) ? globalThis.String(object.peerId) : "",
-      metadata: isSet(object.metadata) ? globalThis.String(object.metadata) : "",
-    };
-  },
-
-  toJSON(message: UpdatePeerMetadataMessage): unknown {
-    const obj: any = {};
-    if (message.peerId !== "") {
-      obj.peerId = message.peerId;
-    }
-    if (message.metadata !== "") {
-      obj.metadata = message.metadata;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<UpdatePeerMetadataMessage>, I>>(base?: I): UpdatePeerMetadataMessage {
-    return UpdatePeerMetadataMessage.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<UpdatePeerMetadataMessage>, I>>(object: I): UpdatePeerMetadataMessage {
-    const message = createBaseUpdatePeerMetadataMessage();
-    message.peerId = object.peerId ?? "";
-    message.metadata = object.metadata ?? "";
-    return message;
-  },
-};
-
 function createBaseClientMessage(): ClientMessage {
   return {
     sendOfferMessage: undefined,
     sendAnswerMessage: undefined,
     sendIceCandidateMessage: undefined,
-    updatePeerMetadataMessage: undefined,
   };
 }
 
@@ -382,9 +295,6 @@ export const ClientMessage: MessageFns<ClientMessage> = {
     }
     if (message.sendIceCandidateMessage !== undefined) {
       SendIceCandidateMessage.encode(message.sendIceCandidateMessage, writer.uint32(26).fork()).join();
-    }
-    if (message.updatePeerMetadataMessage !== undefined) {
-      UpdatePeerMetadataMessage.encode(message.updatePeerMetadataMessage, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -420,14 +330,6 @@ export const ClientMessage: MessageFns<ClientMessage> = {
           message.sendIceCandidateMessage = SendIceCandidateMessage.decode(reader, reader.uint32());
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.updatePeerMetadataMessage = UpdatePeerMetadataMessage.decode(reader, reader.uint32());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -446,9 +348,6 @@ export const ClientMessage: MessageFns<ClientMessage> = {
       sendIceCandidateMessage: isSet(object.sendIceCandidateMessage)
         ? SendIceCandidateMessage.fromJSON(object.sendIceCandidateMessage)
         : undefined,
-      updatePeerMetadataMessage: isSet(object.updatePeerMetadataMessage)
-        ? UpdatePeerMetadataMessage.fromJSON(object.updatePeerMetadataMessage)
-        : undefined,
     };
   },
 
@@ -462,9 +361,6 @@ export const ClientMessage: MessageFns<ClientMessage> = {
     }
     if (message.sendIceCandidateMessage !== undefined) {
       obj.sendIceCandidateMessage = SendIceCandidateMessage.toJSON(message.sendIceCandidateMessage);
-    }
-    if (message.updatePeerMetadataMessage !== undefined) {
-      obj.updatePeerMetadataMessage = UpdatePeerMetadataMessage.toJSON(message.updatePeerMetadataMessage);
     }
     return obj;
   },
@@ -483,10 +379,6 @@ export const ClientMessage: MessageFns<ClientMessage> = {
     message.sendIceCandidateMessage =
       (object.sendIceCandidateMessage !== undefined && object.sendIceCandidateMessage !== null)
         ? SendIceCandidateMessage.fromPartial(object.sendIceCandidateMessage)
-        : undefined;
-    message.updatePeerMetadataMessage =
-      (object.updatePeerMetadataMessage !== undefined && object.updatePeerMetadataMessage !== null)
-        ? UpdatePeerMetadataMessage.fromPartial(object.updatePeerMetadataMessage)
         : undefined;
     return message;
   },
