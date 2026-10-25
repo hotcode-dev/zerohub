@@ -372,11 +372,25 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     }
 
     peer.status = status;
+    // User-supplied callbacks (topology handler, onPeerStatusChange) must not
+    // take down the signaling dispatch that is notifying them: a throwing
+    // handler must be isolated, consistent with reportPeerError. Without
+    // these guards a single throwing user callback would abort
+    // handleZeroHubMessage mid-stream and skip the remaining work for that
+    // message (e.g. roster pruning, status updates for other peers).
     if (this.topology?.onPeerStatusChange) {
-      this.topology.onPeerStatusChange(peer);
+      try {
+        this.topology.onPeerStatusChange(peer);
+      } catch (err) {
+        this.logger.error("topology.onPeerStatusChange handler threw", err);
+      }
     }
     if (this.onPeerStatusChange) {
-      this.onPeerStatusChange(peer);
+      try {
+        this.onPeerStatusChange(peer);
+      } catch (err) {
+        this.logger.error("onPeerStatusChange handler threw", err);
+      }
     }
   }
 
@@ -579,7 +593,13 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         createTime: hubInfoMsg.createTime || new Date(),
       };
       if (this.onHubInfo) {
-        this.onHubInfo(this.hubInfo);
+        try {
+          this.onHubInfo(this.hubInfo);
+        } catch (err) {
+          // A throwing user callback must not abort the dispatch: the peer
+          // roster reconciliation below still has to run for this message.
+          this.logger.error("onHubInfo handler threw", err);
+        }
       }
 
       // Reconcile the peer roster against the authoritative roster carried in
@@ -984,9 +1004,34 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     this.ws = new WebSocket(url);
     this.ws.binaryType = "arraybuffer";
     this.ws.onmessage = (event: MessageEvent<Iterable<number>>) => {
-      const serverMessage = ServerMessage.decode(new Uint8Array(event.data));
-      this.logger.log("received zerohub message", serverMessage);
-      this.handleZeroHubMessage(serverMessage);
+      try {
+        const serverMessage = ServerMessage.decode(new Uint8Array(event.data));
+        this.logger.log("received zerohub message", serverMessage);
+        this.handleZeroHubMessage(serverMessage);
+      } catch (err) {
+        // A corrupt/truncated frame (a `ServerMessage.decode` failure) or a
+        // failure inside the dispatcher must never escape the WebSocket
+        // `onmessage` handler: an uncaught throw here would take down the
+        // signaling receive loop for every peer in the hub. Isolate the
+        // failure — log it and surface a connection-level error (the
+        // signaling link is compromised) — and keep the socket able to
+        // process the next frame. The individual user-callback guards inside
+        // `handleZeroHubMessage`/`updatePeerStatus` already keep one bad
+        // callback from skipping the rest of the dispatch; this outer catch
+        // is the last line of defense for the decode path and anything else.
+        this.logger.error("failed to process ZeroHub message", err);
+        try {
+          if (this.onZeroHubError) {
+            this.onZeroHubError(
+              err instanceof Error ? err : new Error(String(err))
+            );
+          }
+        } catch (handlerErr) {
+          // The user's onZeroHubError handler throwing must not escape the
+          // event handler either (same isolation rule as reportPeerError).
+          this.logger.error("onZeroHubError handler threw", handlerErr);
+        }
+      }
     };
     // TODO: wait for error, close, or open to response promise result
     // Per RFC 6455, a network failure fires `error` and then `close` with
