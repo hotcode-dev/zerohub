@@ -425,6 +425,52 @@ describe("onmessage — corrupt frame isolation", () => {
       expect.anything()
     );
   });
+
+  it("a throwing onHubInfo does not abort roster reconciliation for that hubInfoMessage", () => {
+    client = makeClient();
+    const handler = onMessage();
+    client.onHubInfo = () => {
+      throw new Error("hub info boom");
+    };
+    // A stale peer from a previous session that is NOT in the new roster:
+    // it must still be pruned below the throwing callback.
+    client.peers = { "9": makePeer("9").peer };
+
+    const validFrame = ServerMessage.encode({
+      hubInfoMessage: {
+        id: "hub-1",
+        createTime: new Date(),
+        myPeerId: "1",
+        hubMetadata: "",
+        peers: [{ id: "2", metadata: "{}", joinTime: undefined }],
+      },
+    }).finish();
+
+    // Nothing may escape the event handler — the failure is isolated inside
+    // `handleZeroHubMessage`, so the OUTER onmessage catch (and therefore
+    // `onZeroHubError`) must NOT fire.
+    expect(() => handler({ data: validFrame } as never)).not.toThrow();
+    const logger = client.logger as unknown as FakeLogger;
+    expect(logger.error).toHaveBeenCalledWith(
+      "onHubInfo handler threw",
+      expect.anything()
+    );
+    expect(logger.error).not.toHaveBeenCalledWith(
+      "failed to process ZeroHub message",
+      expect.anything()
+    );
+    expect(client.onZeroHubError).toBeUndefined();
+
+    // The hub info state was applied before the callback ran…
+    expect(client.myPeerId).toBe("1");
+    expect(client.hubInfo?.id).toBe("hub-1");
+    // …and the roster reconciliation continued past the throwing callback:
+    // the roster peer was added…
+    expect(client.peers["2"]).toBeDefined();
+    expect(client.peers["2"].status).toBe(PeerStatus.Pending);
+    // …and the stale peer was pruned (the reconciliation's prune pass ran).
+    expect(client.peers["9"]).toBeUndefined();
+  });
 });
 
 describe("reconnect — 1001 close reason host validation", () => {
