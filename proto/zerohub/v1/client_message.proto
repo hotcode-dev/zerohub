@@ -31,14 +31,6 @@ message SendIceCandidateMessage {
   string candidate = 2;
 }
 
-// Update peer metadata message is for update peer metadata message
-message UpdatePeerMetadataMessage {
-  // ID of the peer
-  string peer_id = 1;
-  // New metadata for the peer
-  string metadata = 2;
-}
-
 // ClientMessage is the message sent from client
 message ClientMessage {
   oneof message {
@@ -48,7 +40,5 @@ message ClientMessage {
     SendAnswerMessage send_answer_message = 2;
     // Send ICE candidate message
     SendIceCandidateMessage send_ice_candidate_message = 3;
-    // Update peer metadata message
-    UpdatePeerMetadataMessage update_peer_metadata_message = 4;
   }
 }
