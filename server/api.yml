@@ -300,6 +300,8 @@ channels:
         $ref: '#/components/messages/PermanentHubCreateRequest'
       createdHub:
         $ref: '#/components/messages/PermanentHubCreated'
+      createError:
+        $ref: '#/components/messages/PermanentHubCreateError'
     bindings:
       http: {}
 
@@ -428,6 +430,25 @@ operations:
       $ref: '#/channels/permanentHubsCreate'
     messages:
       - $ref: '#/channels/permanentHubsCreate/messages/createdHub'
+      - $ref: '#/channels/permanentHubsCreate/messages/createError'
+    # AsyncAPI 3.1.0 has no `errors` keyword on operations; this extension
+    # surfaces the documented HTTP error responses on the receive operation
+    # for tooling that renders operations. The payload of every body is the
+    # `PermanentHubCreateError` schema, carried on the channel's
+    # `createError` message; the 301 migrating response is the only status
+    # whose body differs ({"status": "migrating", "backupHost": "..."}) and
+    # is described on the channel.
+    x-asyncapi-errors:
+      - status: 400
+        message: '#/channels/permanentHubsCreate/messages/createError'
+      - status: 401
+        message: '#/channels/permanentHubsCreate/messages/createError'
+      - status: 409
+        message: '#/channels/permanentHubsCreate/messages/createError'
+      - status: 413
+        message: '#/channels/permanentHubsCreate/messages/createError'
+      - status: 500
+        message: '#/channels/permanentHubsCreate/messages/createError'
 
   clientSendOnIpHubsJoinOrCreate:
     action: send
@@ -507,6 +528,21 @@ components:
       contentType: application/json
       payload:
         $ref: '#/components/schemas/PermanentHubCreated'
+
+    PermanentHubCreateError:
+      name: PermanentHubCreateError
+      title: Permanent hub creation error response
+      summary: JSON error body returned by the admin-gated permanent-hub create endpoint
+      description: >
+        Carried on the HTTP 400/401/409/413/500 responses of
+        `GET /v1/permanent-hubs/create`. The 401 answer wins over any 400
+        validation answer (auth runs first), and while the server is
+        migrating the 301 answer — with the distinct
+        `{"status": "migrating", "backupHost": "..."}` body described on
+        the channel — replaces every other response.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PermanentHubCreateError'
 
     HubGetRequest:
       name: HubGetRequest
