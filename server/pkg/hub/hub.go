@@ -271,49 +271,44 @@ func (h *hub) GetCreatedAt() time.Time {
 	return h.CreatedAt
 }
 
-// (h *hub) SendOfferToPeer send offer sdp to other peer.
-func (h *hub) SendOfferToPeer(toPeerId string, offerPeerId string, offerSdp string) {
+// sendToPeer is the shared lookup-and-send path for the relay methods
+// (SendOfferToPeer / SendAnswerToPeer / SendIceCandidateToPeer): it looks up
+// the target peer under the read lock and calls send only when the peer
+// exists, the lookup succeeded, and its WebSocket connection is still alive.
+// A lookup error, a missing peer, or a dead connection all fall into the
+// not-found log path (notFoundMsg). If send itself fails it is logged with
+// sendErrMsg. The two log strings are passed in so each caller keeps its
+// exact historical message.
+func (h *hub) sendToPeer(toPeerId string, send func(peer.Peer) error, notFoundMsg, sendErrMsg string) {
 	h.mu.RLock()
-	peer, err := h.PeerStorage.Get(toPeerId)
+	p, err := h.PeerStorage.Get(toPeerId)
 	h.mu.RUnlock()
 
-	if peer != nil && peer.GetWSConn() != nil && err == nil {
-		if err := peer.SendOffer(offerPeerId, offerSdp); err != nil {
-			log.Error().Err(err).Str("peer_id", toPeerId).Msg("error sending offer")
-		}
-	} else {
-		log.Error().Msg("error to send request answer: peer not found")
+	if err != nil || p == nil || p.GetWSConn() == nil {
+		log.Error().Msg(notFoundMsg)
+		return
 	}
+	if err := send(p); err != nil {
+		log.Error().Err(err).Str("peer_id", toPeerId).Msg(sendErrMsg)
+	}
+}
+
+// (h *hub) SendOfferToPeer send offer sdp to other peer.
+func (h *hub) SendOfferToPeer(toPeerId string, offerPeerId string, offerSdp string) {
+	h.sendToPeer(toPeerId, func(p peer.Peer) error { return p.SendOffer(offerPeerId, offerSdp) },
+		"error to send request answer: peer not found", "error sending offer")
 }
 
 // (h *hub) SendAnswerToPeer send answer sdp to other peer.
 func (h *hub) SendAnswerToPeer(toPeerId string, answerPeerId string, answerSdp string) {
-	h.mu.RLock()
-	peer, err := h.PeerStorage.Get(toPeerId)
-	h.mu.RUnlock()
-
-	if peer != nil && peer.GetWSConn() != nil && err == nil {
-		if err := peer.SendAnswer(answerPeerId, answerSdp); err != nil {
-			log.Error().Err(err).Str("peer_id", toPeerId).Msg("error sending answer to peer")
-		}
-	} else {
-		log.Error().Msg("error to send answer to peer: peer not found")
-	}
+	h.sendToPeer(toPeerId, func(p peer.Peer) error { return p.SendAnswer(answerPeerId, answerSdp) },
+		"error to send answer to peer: peer not found", "error sending answer to peer")
 }
 
 // (h *hub) SendIceCandidateToPeer send trickled ice candidate to other peer.
 func (h *hub) SendIceCandidateToPeer(toPeerId string, icePeerId string, candidate string) {
-	h.mu.RLock()
-	peer, err := h.PeerStorage.Get(toPeerId)
-	h.mu.RUnlock()
-
-	if peer != nil && peer.GetWSConn() != nil && err == nil {
-		if err := peer.SendIceCandidate(icePeerId, candidate); err != nil {
-			log.Error().Err(err).Str("peer_id", toPeerId).Msg("error sending ice candidate to peer")
-		}
-	} else {
-		log.Error().Msg("error to send ice candidate to peer: peer not found")
-	}
+	h.sendToPeer(toPeerId, func(p peer.Peer) error { return p.SendIceCandidate(icePeerId, candidate) },
+		"error to send ice candidate to peer: peer not found", "error sending ice candidate to peer")
 }
 
 func (h *hub) HandleMessage(p peer.Peer) {

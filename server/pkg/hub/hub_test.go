@@ -35,6 +35,10 @@ type fakePeer struct {
 	iceCandidate string
 	// sentHubInfo reports whether SendHubInfo was called.
 	sentHubInfo bool
+	// sendFail, when non-nil, is returned by SendOffer/SendAnswer/
+	// SendIceCandidate so a test can exercise the helper's send-error log
+	// path without a real WebSocket failure.
+	sendFail error
 	// hubInfo captures the HubInfoMessage payload sent to the peer.
 	hubInfo *pb.HubInfoMessage
 	// protoOverride, if non-nil, is returned by ToProtobuf and lets a test
@@ -69,17 +73,17 @@ func (p *fakePeer) SendHubInfo(hubInfoPb *pb.HubInfoMessage) error {
 func (p *fakePeer) SendOffer(offerPeerId string, offerSdp string) error {
 	p.offerPeer = offerPeerId
 	p.offerSdp = offerSdp
-	return nil
+	return p.sendFail
 }
 func (p *fakePeer) SendAnswer(answerPeerId string, answerSdp string) error {
 	p.answerPeer = answerPeerId
 	p.answerSdp = answerSdp
-	return nil
+	return p.sendFail
 }
 func (p *fakePeer) SendIceCandidate(icePeerId string, candidate string) error {
 	p.icePeer = icePeerId
 	p.iceCandidate = candidate
-	return nil
+	return p.sendFail
 }
 func (p *fakePeer) GetId() string              { return p.id }
 func (p *fakePeer) SetId(id string)            { p.id = id }
@@ -883,6 +887,44 @@ func TestSendRelayToMissingPeer(t *testing.T) {
 		t.Fatalf("peer without conn received relay: offer=%q/%q answer=%q/%q ice=%q/%q",
 			noConn.offerPeer, noConn.offerSdp, noConn.answerPeer, noConn.answerSdp,
 			noConn.icePeer, noConn.iceCandidate)
+	}
+}
+
+// TestSendRelaySendError covers the helper's send-error branch: when the
+// target peer's send fails, the failure must be logged (not panicked or
+// propagated), the payload must still have reached the peer, and no other
+// peer must be affected.
+func TestSendRelaySendError(t *testing.T) {
+	t.Parallel()
+
+	h := &hub{
+		Id:          "id",
+		CreatedAt:   time.Now(),
+		Metadata:    "metadata",
+		IsPermanent: true,
+		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	}
+
+	target := &fakePeer{id: "2", conn: &websocket.Conn{}, sendFail: fmt.Errorf("ws write failed")}
+	other := &fakePeer{id: "3", conn: &websocket.Conn{}}
+	h.PeerStorage.Add("2", target)
+	h.PeerStorage.Add("3", other)
+
+	// Must not panic or propagate: a send failure is only logged.
+	h.SendOfferToPeer("2", "1", "offer-sdp")
+	h.SendAnswerToPeer("2", "1", "answer-sdp")
+	h.SendIceCandidateToPeer("2", "1", "candidate:1")
+
+	if target.offerPeer != "1" || target.offerSdp != "offer-sdp" ||
+		target.answerPeer != "1" || target.answerSdp != "answer-sdp" ||
+		target.icePeer != "1" || target.iceCandidate != "candidate:1" {
+		t.Fatalf("failing peer did not receive relay: offer=%q/%q answer=%q/%q ice=%q/%q",
+			target.offerPeer, target.offerSdp, target.answerPeer, target.answerSdp,
+			target.icePeer, target.iceCandidate)
+	}
+	if other.offerPeer != "" || other.answerPeer != "" || other.icePeer != "" {
+		t.Fatalf("failure leaked to non-target peer: offer=%q answer=%q ice=%q",
+			other.offerPeer, other.answerPeer, other.icePeer)
 	}
 }
 
