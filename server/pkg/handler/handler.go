@@ -73,7 +73,9 @@ type Handler interface {
 	// JoinOrCreateHubIP is the IP-keyed variant of JoinOrCreateHubStatic.
 	// Corresponds to: GET /v1/ip-hubs/join-or-create
 	JoinOrCreateHubIP(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error
-	// GetHub returns hub metadata (peers, creation time, metadata).
+	// GetHub returns the hub (id, creation time, metadata, isPermanent flag).
+	// It is a plain HTTP GET read endpoint; it does not upgrade to WebSocket
+	// and does not expose the peer roster.
 	// Corresponds to: GET /v1/hubs/get
 	GetHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error
 
