@@ -50,9 +50,6 @@ import (
 	"github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
-	limiter "github.com/ulule/limiter/v3"
-	limiterFasthttp "github.com/ulule/limiter/v3/drivers/middleware/fasthttp"
-	limiterMemory "github.com/ulule/limiter/v3/drivers/store/memory"
 	"github.com/valyala/fasthttp"
 )
 
@@ -190,36 +187,6 @@ func NewHandler(cfg *config.Config, zeroHub zerohub.ZeroHub, zeroHubRandom zeroh
 		zeroHubPermanent: zerohubPermanent,
 		allowedOrigins:   parseAllowedOrigins(cfg.App.AllowedOrigins),
 	}, nil
-}
-
-// newRateLimitMiddleware builds the rate-limit middleware for Serve.
-//
-// By default the limiter is keyed by the TCP socket peer address, which a
-// client cannot spoof. When trustProxy is set (the server sits behind a
-// reverse proxy that strips or replaces the X-Forwarded-For and X-Real-IP
-// headers), the limiter additionally trusts those headers via
-// limiter.WithTrustForwardHeader. Never enable trustProxy in front of an
-// untrusted hop: any client could then forge a fresh "IP" per request and
-// defeat the per-client DoS throttle.
-// TODO: replace limiter with non library rate limiter
-func newRateLimitMiddleware(trustProxy bool) (*limiterFasthttp.Middleware, error) {
-	// 60 requests per minute.
-	rate, err := limiter.NewRateFromFormatted("60-M")
-	if err != nil {
-		return nil, fmt.Errorf("error to create rate: %w", err)
-	}
-	options := []limiter.Option{}
-	if trustProxy {
-		options = append(options, limiter.WithTrustForwardHeader(true))
-	}
-	limiterInstance := limiter.New(limiterMemory.NewStore(), rate, options...)
-	// Key by the socket peer by default; behind a trusted proxy the
-	// sanitized X-Forwarded-For header identifies the real client instead.
-	keyGetter := remoteAddrKey
-	if trustProxy {
-		keyGetter = forwardedIPKey
-	}
-	return limiterFasthttp.NewMiddleware(limiterInstance, limiterFasthttp.WithKeyGetter(keyGetter)), nil
 }
 
 // clientIP returns the client IP used for per-client identity: the
