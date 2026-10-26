@@ -20,7 +20,7 @@ import { getWS, isWellFormedHost } from "./utils";
  *
  * 1. **Constructor** — `new ZeroHubClient(hosts, config, topology)` initializes the client with server addresses, configuration (including TLS, logging, and WebRTC settings), and a topology strategy (default: MeshTopology). No network connection is made yet.
  *
- * 2. **Connect** — Call one of the hub entry points (`createHub()`, `joinHub()`, `joinOrCreateHub()`, `joinPermanentHub()`, `createRandomHub()`, `joinRandomHub()`, `joinOrCreateIPHub()`) to establish a WebSocket connection. The client automatically handles reconnection with failover across multiple hosts.
+ * 2. **Connect** — Call one of the hub entry points (`createHub()`, `joinHub()`, `joinOrCreateHub()`, `joinPermanentHub()`, `createRandomHub()`, `joinRandomHub()`, `joinOrCreateIPHub()`) to establish a WebSocket connection. Each entry point returns a Promise that resolves when the signaling socket opens and rejects when the connection attempt fails. The client automatically handles reconnection with failover across multiple hosts.
  *
  * 3. **Hub Establishment** — The server responds with a `HubInfoMessage` containing the hub's metadata, the client's own peer ID, and the list of existing peers. New peers are created in the `peers` map with `PeerStatus.Pending`.
  *
@@ -56,11 +56,12 @@ import { getWS, isWellFormedHost } from "./utils";
  *   }
  * };
  *
- * // Fire-and-forget: `createHub` returns `void` and the connection is
- * // established asynchronously. The join completes when the `onHubInfo`
- * // callback fires — do not read `myPeerId` or `peers` immediately after
- * // the call.
- * client.createHub('my-room', { name: 'Alice' });
+ * // Awaiting resolves when the signaling WebSocket opens (and rejects
+ * // when the connection attempt fails). The hub join itself — the
+ * // server's `HubInfoMessage` with `myPeerId` and the peer roster —
+ * // still completes when the `onHubInfo` callback fires, which happens
+ * // shortly after the socket opens.
+ * await client.createHub('my-room', { name: 'Alice' });
  * ```
  */
 export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
@@ -295,6 +296,22 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
+   * Re-dials `currentURL` on behalf of the auto-reconnect loop.
+   *
+   * `connectToZeroHub` returns a Promise that rejects when the dial fails.
+   * For these internal re-dials that rejection is EXPECTED and intentionally
+   * ignored: the socket's own `onerror` (surfaces `onZeroHubError`) and
+   * `onclose` (routes to `reconnect` for the next attempt / host) already
+   * drive the whole recovery, so there is nothing for a caller of this
+   * promise to do. Swallowing the rejection keeps it from becoming an
+   * unhandled promise rejection while preserving the existing reconnect
+   * behaviour exactly.
+   */
+  private redial(currentURL: URL) {
+    this.connectToZeroHub(currentURL).catch(() => {});
+  }
+
+  /**
    * Cancels any queued same-host reconnect retry timer. The generation bump
    * makes a stale pending timer abort even if it fires after the cancel.
    * `reconnectAttempts` is intentionally left untouched: the counter only
@@ -352,7 +369,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         this.logger.log("ZeroHub was disconnected during reconnect, aborting");
         return;
       }
-      this.connectToZeroHub(currentURL);
+      this.redial(currentURL);
     }, delayMs);
   }
 
@@ -496,7 +513,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       // the redirected host gets its full retry budget, not the remainder
       // of the previous host's.
       this.clearReconnectRetryState();
-      this.connectToZeroHub(currentURL);
+      this.redial(currentURL);
       return;
     }
     // Abnormal close with no redirect host: if there is a backup host left,
@@ -543,7 +560,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
 
         this.host = newHost;
         currentURL.host = newHost;
-        this.connectToZeroHub(currentURL);
+        this.redial(currentURL);
       })
       .catch((err) => {
         this.logger.error(`zero hub reconnecting failed: ${err}`);
@@ -963,9 +980,26 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   /**
    * Connects to the ZeroHub using the provided URL and sets up WebSocket event handlers for receiving messages, errors, and close events.
    *
+   * The returned Promise settles exactly once: it resolves when the
+   * WebSocket opens, and rejects on the first `error` event or a `close`
+   * event with a code other than 1000/1001/1006/1011. The 1006/1011
+   * branches of `onclose` do NOT settle the Promise: they are the
+   * auto-reconnect entry point (failover to the next host / same-host
+   * backoff retry), and the outcome of that recovery is already surfaced
+   * through `onZeroHubError` (terminal) or the follow-up connection's own
+   * events — settling here would make a caller await a connection the
+   * client is already in the middle of abandoning.
+   *
+   * `error` and `close` can both fire for a single failure (an aborted
+   * dial emits `error` and then `close` with code 1006 per RFC 6455); the
+   * one-shot `settle` guard keeps the Promise from settling twice.
+   *
    * @param url - The URL of the ZeroHub to connect to
+   * @returns A Promise that resolves when the WebSocket opens and rejects
+   *   on a connection `error` or an abnormal `close` (any code other than
+   *   1000, 1001, 1006, 1011).
    */
-  public connectToZeroHub(url: URL) {
+  public connectToZeroHub(url: URL): Promise<void> {
     // Starting a fresh connection resets the manual-disconnect flag, so a
     // client that previously called disconnect() can be reused: a new
     // createHub()/joinHub() (or any other connection entry point) begins a
@@ -1003,83 +1037,132 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
 
     this.ws = new WebSocket(url);
     this.ws.binaryType = "arraybuffer";
-    this.ws.onmessage = (event: MessageEvent<Iterable<number>>) => {
-      try {
-        const serverMessage = ServerMessage.decode(new Uint8Array(event.data));
-        this.logger.log("received zerohub message", serverMessage);
-        this.handleZeroHubMessage(serverMessage);
-      } catch (err) {
-        // A corrupt/truncated frame (a `ServerMessage.decode` failure) or a
-        // failure inside the dispatcher must never escape the WebSocket
-        // `onmessage` handler: an uncaught throw here would take down the
-        // signaling receive loop for every peer in the hub. Isolate the
-        // failure — log it and surface a connection-level error (the
-        // signaling link is compromised) — and keep the socket able to
-        // process the next frame. The individual user-callback guards inside
-        // `handleZeroHubMessage`/`updatePeerStatus` already keep one bad
-        // callback from skipping the rest of the dispatch; this outer catch
-        // is the last line of defense for the decode path and anything else.
-        this.logger.error("failed to process ZeroHub message", err);
-        try {
-          if (this.onZeroHubError) {
-            this.onZeroHubError(
-              err instanceof Error ? err : new Error(String(err))
-            );
-          }
-        } catch (handlerErr) {
-          // The user's onZeroHubError handler throwing must not escape the
-          // event handler either (same isolation rule as reportPeerError).
-          this.logger.error("onZeroHubError handler threw", handlerErr);
+
+    // The connect Promise: it resolves when the WebSocket opens and rejects
+    // on a connection `error` or an abnormal `close`. `error` and `close`
+    // can both fire for a single failure (an aborted dial emits `error` and
+    // then `close` with code 1006 per RFC 6455), and both map to a
+    // rejection, so `settle` is one-shot: the second event is a no-op on the
+    // already-settled Promise. The executor runs in a closure, so the
+    // handlers read the socket through `socket` (a local reference) instead
+    // of `this.ws`, which TypeScript cannot narrow across the boundary.
+    const socket = this.ws;
+    const connectPromise = new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const settle = (error?: Error) => {
+        if (settled) {
+          return;
         }
-      }
-    };
-    // TODO: wait for error, close, or open to response promise result
-    // Per RFC 6455, a network failure fires `error` and then `close` with
-    // code 1006. Reconnection is handled solely in `onclose`: calling
-    // `reconnect` here too would advance `hostIndex` twice for a single
-    // failure (skipping two hosts) and orphan the first reconnection's
-    // WebSocket while the client has already moved on.
-    this.ws.onerror = (event) => {
-      this.logger.error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`);
-      if (this.onZeroHubError) {
-        this.onZeroHubError(
-          Error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`)
-        );
-      }
-    };
-    this.ws.onclose = (event) => {
-      // See https://www.rfc-editor.org/rfc/rfc6455#section-7.4.1
-      switch (event.code) {
-        case 1000:
-          return;
-        case 1001:
-          // 1001 is going away
-          this.logger.warn(
-            `ZeroHub WebSocket closed: ${event.reason}, code: ${event.code}`,
-            event
+        settled = true;
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      };
+
+      socket.onmessage = (event: MessageEvent<Iterable<number>>) => {
+        try {
+          const serverMessage = ServerMessage.decode(
+            new Uint8Array(event.data)
           );
-          if (typeof event.reason === "string") {
-            this.reconnect(url, event.reason);
+          this.logger.log("received zerohub message", serverMessage);
+          this.handleZeroHubMessage(serverMessage);
+        } catch (err) {
+          // A corrupt/truncated frame (a `ServerMessage.decode` failure) or a
+          // failure inside the dispatcher must never escape the WebSocket
+          // `onmessage` handler: an uncaught throw here would take down the
+          // signaling receive loop for every peer in the hub. Isolate the
+          // failure — log it and surface a connection-level error (the
+          // signaling link is compromised) — and keep the socket able to
+          // process the next frame. The individual user-callback guards
+          // inside `handleZeroHubMessage`/`updatePeerStatus` already keep one
+          // bad callback from skipping the rest of the dispatch; this outer
+          // catch is the last line of defense for the decode path and
+          // anything else.
+          this.logger.error("failed to process ZeroHub message", err);
+          try {
+            if (this.onZeroHubError) {
+              this.onZeroHubError(
+                err instanceof Error ? err : new Error(String(err))
+              );
+            }
+          } catch (handlerErr) {
+            // The user's onZeroHubError handler throwing must not escape the
+            // event handler either (same isolation rule as reportPeerError).
+            this.logger.error("onZeroHubError handler threw", handlerErr);
           }
-          return;
-        case 1006:
-        case 1011:
-          // 1006 is abnormal closure
-          // 1011 is internal error
-          this.reconnect(url);
-          return;
-        default:
-          if (this.onZeroHubError) {
-            this.onZeroHubError(
-              Error(
+        }
+      };
+      // Per RFC 6455, a network failure fires `error` and then `close` with
+      // code 1006. Reconnection is handled solely in `onclose`: calling
+      // `reconnect` here too would advance `hostIndex` twice for a single
+      // failure (skipping two hosts) and orphan the first reconnection's
+      // WebSocket while the client has already moved on.
+      //
+      // The error also settles the connect Promise: a dial that fails before
+      // it ever opens (DNS failure, connection refused) must reject, not
+      // resolve. The one-shot `settle` guard makes the follow-up `close`
+      // (which routes to the auto-reconnect path below, not to `settle`)
+      // unable to settle the Promise a second time.
+      socket.onerror = (event) => {
+        this.logger.error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`);
+        if (this.onZeroHubError) {
+          this.onZeroHubError(
+            Error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`)
+          );
+        }
+        settle(new Error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`));
+      };
+      socket.onclose = (event) => {
+        // See https://www.rfc-editor.org/rfc/rfc6455#section-7.4.1
+        switch (event.code) {
+          case 1000:
+            // A clean close: the caller initiated it (or the server ended
+            // the session normally) — the connect Promise is already settled
+            // (or was never awaited for this socket), so nothing to do.
+            return;
+          case 1001:
+            // 1001 is going away
+            this.logger.warn(
+              `ZeroHub WebSocket closed: ${event.reason}, code: ${event.code}`,
+              event
+            );
+            if (typeof event.reason === "string") {
+              this.reconnect(url, event.reason);
+            }
+            return;
+          case 1006:
+          case 1011:
+            // 1006 is abnormal closure
+            // 1011 is internal error
+            this.reconnect(url);
+            return;
+          default:
+            // Any other close code is a protocol-level failure: reject the
+            // connect Promise (if it is still pending) in addition to the
+            // existing onZeroHubError surface.
+            if (this.onZeroHubError) {
+              this.onZeroHubError(
+                Error(
+                  `ZeroHub error code \`${event.code}\` reason \`${event.reason}\``
+                )
+              );
+            }
+            settle(
+              new Error(
                 `ZeroHub error code \`${event.code}\` reason \`${event.reason}\``
               )
             );
-          }
-          break;
-      }
-    };
-    this.ws.onopen = () => {};
+            break;
+        }
+      };
+      socket.onopen = () => {
+        settle();
+      };
+    });
+
+    return connectPromise;
   }
 
   /**
@@ -1488,13 +1571,22 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * @param hubId - The id of the hub to create
    * @param peerMetadata - Peer metadata will share to each peer in the Hub
    * @param hubMetadata - Hub metadata will share to each peer in the Hub
+   * @returns A Promise that resolves when the signaling WebSocket opens and
+   *   rejects when the connection attempt fails. Hub join state
+   *   (`myPeerId`, `peers`, `hubInfo`) is populated when the `onHubInfo`
+   *   callback fires.
    */
   public createHub(
     hubId: string,
     peerMetadata?: PeerMetadata,
     hubMetadata?: HubMetadata
-  ) {
-    this.openHubConnection("/v1/hubs/create", hubId, peerMetadata, hubMetadata);
+  ): Promise<void> {
+    return this.openHubConnection(
+      "/v1/hubs/create",
+      hubId,
+      peerMetadata,
+      hubMetadata
+    );
   }
 
   /**
@@ -1502,9 +1594,13 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    *
    * @param hubId - The id of the hub to join
    * @param peerMetadata - Peer metadata will share to each peer in the Hub
+   * @returns A Promise that resolves when the signaling WebSocket opens and
+   *   rejects when the connection attempt fails. Hub join state
+   *   (`myPeerId`, `peers`, `hubInfo`) is populated when the `onHubInfo`
+   *   callback fires.
    */
-  public joinHub(hubId: string, peerMetadata?: PeerMetadata) {
-    this.openHubConnection("/v1/hubs/join", hubId, peerMetadata);
+  public joinHub(hubId: string, peerMetadata?: PeerMetadata): Promise<void> {
+    return this.openHubConnection("/v1/hubs/join", hubId, peerMetadata);
   }
 
   /**
@@ -1521,9 +1617,20 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    *
    * @param hubId - The id of the hub to join
    * @param peerMetadata - Peer metadata will share to each peer in the Hub
+   * @returns A Promise that resolves when the signaling WebSocket opens and
+   *   rejects when the connection attempt fails. Hub join state
+   *   (`myPeerId`, `peers`, `hubInfo`) is populated when the `onHubInfo`
+   *   callback fires.
    */
-  public joinPermanentHub(hubId: string, peerMetadata?: PeerMetadata) {
-    this.openHubConnection("/v1/permanent-hubs/join", hubId, peerMetadata);
+  public joinPermanentHub(
+    hubId: string,
+    peerMetadata?: PeerMetadata
+  ): Promise<void> {
+    return this.openHubConnection(
+      "/v1/permanent-hubs/join",
+      hubId,
+      peerMetadata
+    );
   }
 
   /**
@@ -1533,13 +1640,17 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * @param peerMetadata - Peer metadata will share to each peer in the Hub
    * @param hubMetadata - (will only use if no hub exist) Hub metadata will share to each peer in the Hub
    *
+   * @returns A Promise that resolves when the signaling WebSocket opens and
+   *   rejects when the connection attempt fails. Hub join state
+   *   (`myPeerId`, `peers`, `hubInfo`) is populated when the `onHubInfo`
+   *   callback fires.
    */
   public joinOrCreateHub(
     hubId: string,
     peerMetadata?: PeerMetadata,
     hubMetadata?: HubMetadata
-  ) {
-    this.openHubConnection(
+  ): Promise<void> {
+    return this.openHubConnection(
       "/v1/hubs/join-or-create",
       hubId,
       peerMetadata,
@@ -1554,12 +1665,16 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * @param peerMetadata - Peer metadata will share to each peer in the Hub
    * @param hubMetadata - (will only use if no hub exist) Hub metadata will share to each peer in the Hub
    *
+   * @returns A Promise that resolves when the signaling WebSocket opens and
+   *   rejects when the connection attempt fails. Hub join state
+   *   (`myPeerId`, `peers`, `hubInfo`) is populated when the `onHubInfo`
+   *   callback fires.
    */
   public joinOrCreateIPHub(
     peerMetadata?: PeerMetadata,
     hubMetadata?: HubMetadata
-  ) {
-    this.openHubConnection(
+  ): Promise<void> {
+    return this.openHubConnection(
       "/v1/ip-hubs/join-or-create",
       undefined,
       peerMetadata,
@@ -1573,12 +1688,16 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    *
    * @param peerMetadata - Peer metadata will share to each peer in the Hub
    * @param hubMetadata - Hub metadata will share to each peer in the Hub
+   * @returns A Promise that resolves when the signaling WebSocket opens and
+   *   rejects when the connection attempt fails. Hub join state
+   *   (`myPeerId`, `peers`, `hubInfo`) is populated when the `onHubInfo`
+   *   callback fires.
    */
   public createRandomHub(
     peerMetadata?: PeerMetadata,
     hubMetadata?: HubMetadata
-  ) {
-    this.openHubConnection(
+  ): Promise<void> {
+    return this.openHubConnection(
       "/v1/random-hubs/create",
       undefined,
       peerMetadata,
@@ -1591,9 +1710,16 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    *
    * @param hubId - The id of the hub to join
    * @param peerMetadata - Peer metadata will share to each peer in the Hub
+   * @returns A Promise that resolves when the signaling WebSocket opens and
+   *   rejects when the connection attempt fails. Hub join state
+   *   (`myPeerId`, `peers`, `hubInfo`) is populated when the `onHubInfo`
+   *   callback fires.
    */
-  public joinRandomHub(hubId: string, peerMetadata?: PeerMetadata) {
-    this.openHubConnection("/v1/random-hubs/join", hubId, peerMetadata);
+  public joinRandomHub(
+    hubId: string,
+    peerMetadata?: PeerMetadata
+  ): Promise<void> {
+    return this.openHubConnection("/v1/random-hubs/join", hubId, peerMetadata);
   }
 
   /**
@@ -1606,13 +1732,14 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * @param hubId - Optional hub id to send as the "id" query param
    * @param peerMetadata - Optional peer metadata
    * @param hubMetadata - Optional hub metadata
+   * @returns The connection Promise from `connectToZeroHub`.
    */
   private openHubConnection(
     path: string,
     hubId?: string,
     peerMetadata?: PeerMetadata,
     hubMetadata?: HubMetadata
-  ) {
+  ): Promise<void> {
     const url = new URL(path, getWS(this.host, this.config.tls));
     if (hubId !== undefined) {
       url.searchParams.set("id", hubId);
@@ -1624,7 +1751,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       url.searchParams.set("peerMetadata", JSON.stringify(peerMetadata));
     }
 
-    this.connectToZeroHub(url);
+    return this.connectToZeroHub(url);
   }
 }
 

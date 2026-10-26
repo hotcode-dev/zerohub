@@ -8,6 +8,9 @@ import {
   it,
   vi,
 } from "vitest";
+import * as crypto from "node:crypto";
+import * as http from "node:http";
+import type { Duplex } from "node:stream";
 import { LogLevel, PeerStatus } from "./types";
 import { ZeroHubLogger } from "./logger";
 import { Peer } from "./peer";
@@ -108,6 +111,9 @@ function stubConnectToZeroHub(client: ZeroHubClient) {
   const calls: URL[] = [];
   client.connectToZeroHub = (url: URL) => {
     calls.push(url);
+    // The real method returns the connect Promise; the stub dials nowhere,
+    // so it reports a successful (no-op) connect.
+    return Promise.resolve();
   };
   return calls;
 }
@@ -122,15 +128,16 @@ afterAll(() => {
   vi.unstubAllGlobals();
 });
 
-describe("hub entry points — fire-and-forget contract", () => {
-  // These entry points return `void` and open the connection asynchronously:
-  // completion is signalled via onHubInfo, never a Promise. This test pins
-  // that contract so a future change to an async/Promise return type — which
-  // would make the quickstart's `await client.createHub(...)` misleading in
-  // the opposite direction — is forced through a deliberate test update.
+describe("hub entry points — awaitable connect contract", () => {
+  // These entry points return a Promise that resolves when the signaling
+  // WebSocket opens and rejects when the connection attempt fails (the
+  // hub join itself — myPeerId/peers — is still signalled via onHubInfo).
+  // The tests run against a REAL local WebSocket server so the returned
+  // Promise can be observed resolving; a rejecting dial is covered by the
+  // "connectToZeroHub — connect Promise settles once" suite below.
   const HUB_ENTRY_POINTS: [
     string,
-    (client: ZeroHubClient) => unknown,
+    (client: ZeroHubClient) => Promise<void>,
     string,
   ][] = [
     [
@@ -166,24 +173,248 @@ describe("hub entry points — fire-and-forget contract", () => {
     ],
   ];
 
-  it.each(HUB_ENTRY_POINTS)(
-    "%s returns void (no Promise) and dials the expected endpoint",
-    (_name, invoke, expectedPath) => {
-      const client = makeClient();
-      const calls = stubConnectToZeroHub(client);
-      const result = invoke(client);
+  let server: import("node:http").Server;
+  let wsPort: number;
+  let connectCalls: URL[];
 
-      // void, not a thenable: awaiting would resolve before the hub joins.
-      expect(result).toBeUndefined();
-      expect((result as { then?: unknown } | undefined)?.then).toBeUndefined();
-      // The connection is initiated synchronously by the call itself…
-      expect(calls).toHaveLength(1);
-      expect(calls[0].pathname).toBe(expectedPath);
-      // …so state is still unjoined right after the call.
-      expect(client.myPeerId).toBeUndefined();
-      expect(Object.keys(client.peers)).toHaveLength(0);
+  /**
+   * Track every upgraded socket so `afterEach` can close them cleanly.
+   */
+  let sockets: Set<Duplex> = new Set();
+
+  beforeEach(async () => {
+    server = http.createServer();
+    server.on("upgrade", (req, socket) => {
+      // Complete the RFC 6455 upgrade handshake: write the 101 with the
+      // accept key (base64(SHA1(key + GUID))). The client's global
+      // WebSocket then fires `open` — which is what the entry-point
+      // Promise resolves on. The socket must stay open after the 101.
+      const key = req.headers["sec-websocket-key"];
+      if (!key) {
+        socket.destroy();
+        return;
+      }
+      const accept = crypto
+        .createHash("sha1")
+        .update(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
+        .digest("base64");
+      socket.write(
+        `HTTP/1.1 101 Switching Protocols\r\n` +
+          `Upgrade: websocket\r\n` +
+          `Connection: Upgrade\r\n` +
+          `Sec-WebSocket-Accept: ${accept}\r\n` +
+          `\r\n`
+      );
+      sockets.add(socket);
+      socket.on("close", () => sockets.delete(socket));
+    });
+    await new Promise<void>((resolve) =>
+      server.listen(0, "127.0.0.1", () => resolve())
+    );
+    const address = server.address();
+    if (!address || typeof address === "string") {
+      throw new Error("test WebSocket server did not bind to a port");
+    }
+    wsPort = address.port;
+    connectCalls = [];
+  });
+
+  afterEach(async () => {
+    // Close any still-open socket (a test that disconnected the client
+    // early leaves none, but the entry-point tests close the hub socket
+    // with a 1000 close frame the server must drain).
+    sockets.forEach((socket) => {
+      socket.destroy();
+    });
+    sockets = new Set();
+    await new Promise<void>((resolve, reject) =>
+      server.close((err) => (err ? reject(err) : resolve()))
+    );
+  });
+
+  it.each(HUB_ENTRY_POINTS)(
+    "%s returns a Promise that resolves on socket open and dials the expected endpoint",
+    async (_name, invoke, expectedPath) => {
+      const client = makeClient([`127.0.0.1:${wsPort}`]);
+      client.config.tls = false;
+      const original = client.connectToZeroHub.bind(client);
+      client.connectToZeroHub = (url: URL) => {
+        connectCalls.push(url);
+        return original(url);
+      };
+
+      const promise = invoke(client);
+
+      // The call returns a live Promise (not void) that is still pending…
+      expect(promise).toBeInstanceOf(Promise);
+      // …and the connection is initiated synchronously by the call itself.
+      expect(connectCalls).toHaveLength(1);
+      expect(connectCalls[0].pathname).toBe(expectedPath);
+
+      await promise;
+      // The Promise resolved on the WebSocket open, and the socket is live.
+      expect(client.ws?.readyState).toBe(WebSocket.OPEN);
+
+      client.disconnect();
+      await new Promise((r) => setTimeout(r, 20));
     }
   );
+});
+
+describe("connectToZeroHub — connect Promise settles once", () => {
+  // Drives the REAL connectToZeroHub (no stub): a local WebSocket server
+  // completes the handshake (open); the fake-dial case (port 9) fails with
+  // an immediate error/close pair.
+  let server: import("node:http").Server;
+  let wsPort: number;
+  let sockets: Set<Duplex> = new Set();
+
+  beforeEach(async () => {
+    server = http.createServer();
+    server.on("upgrade", (req, socket) => {
+      // Complete the RFC 6455 upgrade handshake: write the 101 with the
+      // accept key (base64(SHA1(key + GUID))). The client's global
+      // WebSocket then fires `open`. The socket must stay open after the
+      // 101 (a close() on it would surface as an unexpected 1006).
+      const key = req.headers["sec-websocket-key"];
+      if (!key) {
+        socket.destroy();
+        return;
+      }
+      const accept = crypto
+        .createHash("sha1")
+        .update(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
+        .digest("base64");
+      socket.write(
+        `HTTP/1.1 101 Switching Protocols\r\n` +
+          `Upgrade: websocket\r\n` +
+          `Connection: Upgrade\r\n` +
+          `Sec-WebSocket-Accept: ${accept}\r\n` +
+          `\r\n`
+      );
+      sockets.add(socket);
+      socket.on("close", () => sockets.delete(socket));
+    });
+    await new Promise<void>((resolve) =>
+      server.listen(0, "127.0.0.1", () => resolve())
+    );
+    const address = server.address();
+    if (!address || typeof address === "string") {
+      throw new Error("test WebSocket server did not bind to a port");
+    }
+    wsPort = address.port;
+  });
+
+  afterEach(async () => {
+    sockets.forEach((socket) => {
+      socket.destroy();
+    });
+    sockets = new Set();
+    await new Promise<void>((resolve, reject) =>
+      server.close((err) => (err ? reject(err) : resolve()))
+    );
+  });
+
+  /**
+   * Fire the client socket's `onclose` handler with a scriptable close
+   * code. The handshake completes and `onopen` fires first (resolving the
+   * Promise), so by the time a close lands the one-shot `settle` guard is
+   * already consumed: this exercises that a late close cannot re-settle the
+   * Promise, and — for the reconnection codes — the `reconnect()` dispatch.
+   */
+  function fakeClose(code: number, reason = "") {
+    (
+      client.ws as unknown as {
+        onclose: (ev: { code: number; reason: string }) => void;
+      }
+    ).onclose({
+      code,
+      reason,
+    });
+  }
+
+  let client: ZeroHubClient;
+  let reconnectSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    client = makeClient([`127.0.0.1:${wsPort}`]);
+    client.config.tls = false;
+    reconnectSpy = vi.fn();
+    client.reconnect = reconnectSpy as never;
+  });
+
+  it("resolves on open", async () => {
+    const promise = client.connectToZeroHub(
+      new URL(`ws://127.0.0.1:${wsPort}/v1/hubs/join?id=h`)
+    );
+    expect(promise).toBeInstanceOf(Promise);
+    await promise;
+    expect(client.ws?.readyState).toBe(WebSocket.OPEN);
+    client.disconnect();
+    await new Promise((r) => setTimeout(r, 20));
+  });
+
+  it("rejects on error, and the follow-up close (1006) cannot double-settle", async () => {
+    // Port 9 (discard) is guaranteed to refuse the connection: the global
+    // WebSocket fires `error` and then `close` (1006) for the aborted dial.
+    const promise = client.connectToZeroHub(
+      new URL("ws://127.0.0.1:9/v1/hubs/join?id=h")
+    );
+    let rejected: Error | undefined;
+    const outcome = await promise.then(
+      () => "resolved" as const,
+      (err: Error) => {
+        rejected = err;
+        return "rejected" as const;
+      }
+    );
+    expect(outcome).toBe("rejected");
+    expect(rejected).toBeInstanceOf(Error);
+    expect(rejected?.message).toContain("ZeroHub WebSocket error");
+    // The one-shot settle guard means the Promise already settled; the
+    // follow-up `close` (1006) took the reconnect path, not a second settle.
+    expect(reconnectSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("a protocol-level close code after open surfaces onZeroHubError without re-settling", async () => {
+    const promise = client.connectToZeroHub(
+      new URL(`ws://127.0.0.1:${wsPort}/v1/hubs/join?id=h`)
+    );
+    await promise; // open resolved it
+
+    const errors: Error[] = [];
+    client.onZeroHubError = (e) => errors.push(e);
+    fakeClose(1002);
+    // The default branch fires onZeroHubError; the Promise itself is
+    // already settled (open consumed the one-shot guard).
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toContain("1002");
+    client.disconnect();
+    await new Promise((r) => setTimeout(r, 20));
+  });
+
+  it("routes 1001/1006/1011 closes to reconnect, not to the Promise", async () => {
+    const promise = client.connectToZeroHub(
+      new URL(`ws://127.0.0.1:${wsPort}/v1/hubs/join?id=h`)
+    );
+    await promise;
+
+    fakeClose(1001, "other-host");
+    expect(reconnectSpy).toHaveBeenCalledTimes(1);
+    expect(reconnectSpy.mock.calls[0][1]).toBe("other-host");
+
+    fakeClose(1006);
+    expect(reconnectSpy).toHaveBeenCalledTimes(2);
+    expect(reconnectSpy.mock.calls[1][1]).toBeUndefined();
+
+    fakeClose(1011);
+    expect(reconnectSpy).toHaveBeenCalledTimes(3);
+
+    fakeClose(1000);
+    expect(reconnectSpy).toHaveBeenCalledTimes(3);
+    client.disconnect();
+    await new Promise((r) => setTimeout(r, 20));
+  });
 });
 
 describe("handleZeroHubMessage — hubInfo roster reconciliation", () => {
@@ -349,9 +580,12 @@ describe("onmessage — corrupt frame isolation", () => {
 
   /** Get the onmessage handler the real connectToZeroHub registered. */
   function onMessage(): () => unknown {
-    client.connectToZeroHub(
-      new URL("ws://fake-host-never-resolves/v1/hubs/join")
-    );
+    // The fake host makes the underlying dial fail (error + close 1006 →
+    // a rejected connect Promise); swallow the rejection — the spec only
+    // invokes the onmessage handler synchronously.
+    client
+      .connectToZeroHub(new URL("ws://fake-host-never-resolves/v1/hubs/join"))
+      .catch(() => {});
     return (client.ws as unknown as { onmessage: () => unknown }).onmessage;
   }
 
