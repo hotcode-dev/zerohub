@@ -10,7 +10,6 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/ntsd/gache/v2 v2.0.0-20250101163922-c8d7e530ffbd
 	github.com/rs/zerolog v1.34.0
-	github.com/ulule/limiter/v3 v3.11.2
 	github.com/valyala/fasthttp v1.68.0
 	github.com/zeebo/xxh3 v1.0.2
 	go.uber.org/mock v0.6.0
