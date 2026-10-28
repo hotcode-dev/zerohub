@@ -163,7 +163,7 @@ func TestStorageIsEmpty(t *testing.T) {
 }
 
 // TestGacheStorageNoTTL guards against a default TTL leaking into gache
-// entries: hub/peer lifecycle is application-managed (RemovePeerById /
+// entries: hub/peer lifecycle is application-managed (RemovePeerIfLast /
 // RemoveHubById), so entries must never expire on their own.
 func TestGacheStorageNoTTL(t *testing.T) {
 	s := NewGacheStorage[int]()
@@ -186,7 +186,7 @@ func TestGacheStorageNoTTL(t *testing.T) {
 // TestGetAllYieldDoesNotHoldLock is a regression test for zf-z-c4cc6a7a:
 // the memory backend used to hold its RLock across the entire yield loop,
 // so a yield that performs a blocking side effect (e.g. a network write in
-// hub.AddPeer/RemovePeerById's broadcast) pinned the storage read-lock and
+// hub.AddPeer/RemovePeerIfLast's broadcast) pinned the storage read-lock and
 // serialized every concurrent Get/Add/Delete/IsEmpty on the same hub. The
 // storage lock must be released before yield is called (snapshot-then-yield,
 // matching gache's read-copy-on-write semantics), so a mutating operation

@@ -16,7 +16,7 @@ type GacheStorage[T any] struct {
 // NewGacheStorage creates a new gache storage.
 func NewGacheStorage[T any]() Storage[T] {
 	// gache.New applies a 30s default TTL to every Set. Hub/peer entries must
-	// live until the application removes them explicitly (RemovePeerById /
+	// live until the application removes them explicitly (RemovePeerIfLast /
 	// RemoveHubById), so override the default with NoTTL. Note that passing
 	// gache.NoTTL as a New() option would be a no-op (WithDefaultExpiration
 	// ignores dur <= 0); SetDefaultExpire writes unconditionally.

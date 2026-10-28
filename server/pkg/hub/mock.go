@@ -108,20 +108,6 @@ func (mr *MockHubMockRecorder) HandleMessage(p any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleMessage", reflect.TypeOf((*MockHub)(nil).HandleMessage), p)
 }
 
-// RemovePeerById mocks base method.
-func (m *MockHub) RemovePeerById(id string) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemovePeerById", id)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// RemovePeerById indicates an expected call of RemovePeerById.
-func (mr *MockHubMockRecorder) RemovePeerById(id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemovePeerById", reflect.TypeOf((*MockHub)(nil).RemovePeerById), id)
-}
-
 // RemovePeerIfLast mocks base method.
 func (m *MockHub) RemovePeerIfLast(id string, hubStorage storage.Storage[Hub]) {
 	m.ctrl.T.Helper()
