@@ -14,15 +14,11 @@ func (h *handler) CreateHubStatic(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) 
 	}
 
 	hubId := string(ctx.QueryArgs().Peek("id"))
-	// Same ordering as CreateHubPermanent: the 400 for a missing/empty id
-	// wins over the 409 for a colliding id, and no hub-state access may
-	// happen for an invalid id.
-	if !validHubId(hubId) {
-		return h.rejectInvalidHubIdParam(ctx)
-	}
 	// Cross-mode collision guard: reject an ID already held by the
 	// permanent (or random) instance with 409 instead of silently minting
-	// a second hub under the same id.
+	// a second hub under the same id. An empty/whitespace id is rejected
+	// with 400 by CreateHubByID's shared validation before the hub is
+	// created, so this guard never sees an invalid id.
 	if h.rejectHubIdCollidesWithOtherModes(ctx, hubId, h.zeroHubPermanent, h.zeroHubRandom) {
 		return nil
 	}

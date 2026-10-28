@@ -1,36 +1,13 @@
 package handler
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 
-	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
 )
-
-// validJSONQueryParam reports whether the given query parameter (when
-// present) is valid JSON. The client SDK only ever sends stringified JSON,
-// so anything else is rejected up front: malformed metadata would otherwise
-// be stored on the hub/peer and re-broadcast to every peer, where a naive
-// client that JSON.parses it would crash its message dispatcher.
-func validJSONQueryParam(ctx *fasthttp.RequestCtx, param string) bool {
-	raw := string(ctx.QueryArgs().Peek(param))
-	if raw == "" {
-		return true
-	}
-	return json.Valid([]byte(raw))
-}
-
-// rejectInvalidJSONParam writes the 400 for a malformed JSON query
-// parameter. It reuses Response (which returns nil on success) so the
-// caller's 503 error fallback cannot overwrite the 400 body.
-func (h *handler) rejectInvalidJSONParam(ctx *fasthttp.RequestCtx, param string) error {
-	return h.Response(ctx, fasthttp.StatusBadRequest,
-		map[string]string{"error": "invalid " + param + " query parameter: must be JSON"})
-}
 
 // CreateHubByID atomically creates a new hub with the given ID and upgrades
 // the connection. The create goes through the atomic CreateHubIfAbsent
@@ -39,28 +16,13 @@ func (h *handler) rejectInvalidJSONParam(ctx *fasthttp.RequestCtx, param string)
 // uuid that cannot collide, so the 409 branch is unreachable there — the
 // shared path just stays safe.
 func (h *handler) CreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string) error {
-	// Static callers pass the `id` param verbatim; an empty/whitespace ID
-	// would otherwise create a hub under the empty-string key. Random-hub
-	// callers pass a uuid, which is never empty, so this is a no-op there.
-	if !validHubId(hubId) {
-		return h.rejectInvalidHubIdParam(ctx)
-	}
-	// An oversized id is rejected before the hub id is used as a storage
-	// key: it would otherwise be stored and re-sent on every hub-info
-	// broadcast. Random-hub uuids (36 bytes) are far under the cap, so
-	// this is a no-op there.
-	if !validMetadataSize(hubId, config.MaxMetadataSize) {
-		return h.rejectOversizedParam(ctx, "id", config.MaxMetadataSize)
-	}
-	// The hub metadata is stored and re-sent to every joiner, so it must be
-	// size-capped before it reaches hub state. Size runs before the JSON
-	// shape check so an oversized value is answered 413 without running
-	// json.Valid on a large blob — the cheaper path, and the real DoS guard.
-	if !validMetadataSize(string(ctx.QueryArgs().Peek("hubMetadata")), config.MaxMetadataSize) {
-		return h.rejectOversizedParam(ctx, "hubMetadata", config.MaxMetadataSize)
-	}
-	if !validJSONQueryParam(ctx, "hubMetadata") {
-		return h.rejectInvalidJSONParam(ctx, "hubMetadata")
+	// Static callers pass the `id` param verbatim; random-hub callers pass
+	// a generated uuid. The shared validation helper rejects an
+	// empty/whitespace id and oversized params before any hub state is
+	// touched, and answers an oversized hubMetadata with 413 before its
+	// JSON shape is checked (the DoS guard).
+	if h.validateHubCreateParams(ctx, hubId) {
+		return nil
 	}
 
 	newHub, err := zh.CreateHubIfAbsent(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), false)

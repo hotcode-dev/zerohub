@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 
-	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
@@ -13,29 +12,13 @@ import (
 // The get-or-create is atomic at the ZeroHub layer, so concurrent join-or-create
 // calls for the same ID always land in the same hub.
 func (h *handler) JoinOrCreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string) error {
-	// Static callers pass the `id` param verbatim; an empty/whitespace ID
-	// would otherwise join-or-create a hub under the empty-string key.
-	// IP-hub callers pass an xxh3 hash, which is never empty, so this is a
-	// no-op there.
-	if !validHubId(hubId) {
-		return h.rejectInvalidHubIdParam(ctx)
-	}
-	// An oversized id is rejected before the hub id is used as a storage
-	// key: it would otherwise be stored and re-sent on every hub-info
-	// broadcast. IP-hub ids are 20-digit decimal hashes, far under the
-	// cap, so this is a no-op there.
-	if !validMetadataSize(hubId, config.MaxMetadataSize) {
-		return h.rejectOversizedParam(ctx, "id", config.MaxMetadataSize)
-	}
-	// The hub metadata is stored and re-sent to every joiner, so it must be
-	// size-capped before it reaches hub state. Size runs before the JSON
-	// shape check so an oversized value is answered 413 without running
-	// json.Valid on a large blob — the cheaper path, and the real DoS guard.
-	if !validMetadataSize(string(ctx.QueryArgs().Peek("hubMetadata")), config.MaxMetadataSize) {
-		return h.rejectOversizedParam(ctx, "hubMetadata", config.MaxMetadataSize)
-	}
-	if !validJSONQueryParam(ctx, "hubMetadata") {
-		return h.rejectInvalidJSONParam(ctx, "hubMetadata")
+	// Static callers pass the `id` param verbatim; IP-hub callers pass a
+	// generated xxh3 hash. The shared validation helper rejects an
+	// empty/whitespace id and oversized params before any hub state is
+	// touched, and answers an oversized hubMetadata with 413 before its
+	// JSON shape is checked (the DoS guard).
+	if h.validateHubCreateParams(ctx, hubId) {
+		return nil
 	}
 
 	newHub, created, err := zh.GetOrCreateHub(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), false)
