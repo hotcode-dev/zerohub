@@ -119,7 +119,10 @@ client.config.dataChannelConfig = {
 // Fire-and-forget: `joinRandomHub` returns `void` and the connection is
 // established asynchronously. The join completes when the `onHubInfo`
 // callback fires — do not read `myPeerId` or `peers` immediately after.
-client.joinRandomHub({ displayName: "alice" }, { topic: "chat" });
+client.joinRandomHub(
+  "my-random-hub-id", // random hub id returned to the creator via onHubInfo
+  { displayName: "alice" } // peer metadata shared with other peers
+);
 ```
 
 ## Further reading
