@@ -42,6 +42,13 @@ kill-server:
 	@PIDS=$$(lsof -ti:8081 -sTCP:LISTEN 2>/dev/null); \
 	if [ -n "$$PIDS" ]; then kill $$PIDS 2>/dev/null || true; fi
 
+# Note: the e2e suite must stay serial (playwright.config.ts pins
+# `workers: 1`) and the migrate spec must stay LAST (its file is named
+# zz-migrate.spec.ts so it sorts after every other spec): it permanently
+# latches the shared :8080 server into migrate mode (/v1/admin/migrate is a
+# one-way latch), and the two live servers spawned below are shared by every
+# spec — any spec that dials 8080 after the latch is set silently redirects
+# to 8081 and fails.
 e2e-test:
 	$(MAKE) kill-server >/dev/null 2>&1 || true; \
 	( make server-serve ) & \

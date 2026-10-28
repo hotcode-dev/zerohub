@@ -19,11 +19,15 @@ import {
  * state verifies the join endpoint upgrades to WebSocket and the two peers
  * establish a real WebRTC connection.
  *
- * Targets `localhost:8081` (the backup server from `migrate.spec.ts`): the
- * plain-HTTP create cannot use the SDK's migration failover, and
- * `migrate.spec.ts` leaves `localhost:8080` in migrate mode (503 + forward)
- * for every spec that runs after it in the same server session. 8081 is
- * never migrated, so the HTTP create there always sees the real handler.
+ * Targets `localhost:8081` (the backup server from `zz-migrate.spec.ts`): the
+ * plain-HTTP create cannot use the SDK's migration failover, so it must hit
+ * a host that is never put into migrate mode. `zz-migrate.spec.ts` latches
+ * `localhost:8080` into migrate mode permanently (301 forward for plain HTTP,
+ * 1001 close-forward for WebSocket signaling; see its docblock), while 8081
+ * is never migrated — so the HTTP create there always sees the real handler,
+ * regardless of execution order. (The suite runs serially — `workers: 1` in
+ * `playwright.config.ts` — and `zz-migrate.spec.ts` runs last via its file
+ * name.)
  */
 test("permanent hub create (HTTP) + join (WebSocket) connects", async ({
   page,

@@ -8,7 +8,24 @@ import {
   prepareHarnessPage,
 } from "./utils/harness";
 
-test("migrate", async ({ page }) => {
+/**
+ * Heads-up: this spec permanently mutates shared server state.
+ *
+ * The `/v1/admin/migrate` call below sets the server's `isMigrating` flag —
+ * a one-way latch (`Migrate()` in `server/pkg/handler/migrate.go`); there is
+ * no endpoint that clears it. From that point on, every signaling connection
+ * to `localhost:8080` receives a 1001 close redirecting to `localhost:8081`,
+ * and every hub create on 8080 is forwarded there (`ForwardMigrate`).
+ *
+ * Because the latch outlives the server session the whole suite shares, the
+ * Playwright config runs this suite with `workers: 1` and this file is named
+ * `zz-migrate.spec.ts` so that in the serial order it runs LAST: every spec
+ * that dials `localhost:8080` finishes before the latch is set. If the suite
+ * ever runs in parallel again, or this file is renamed out of last position,
+ * the specs that dial 8080 will silently reconnect to 8081 and their
+ * assertions will fail or pass against the wrong server.
+ */
+test("migrate (latches :8080 permanently; must stay last in the suite)", async ({ page }) => {
   await prepareHarnessPage(page);
   let hubId: string = "";
   let hubIdNew: string = "";
