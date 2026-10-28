@@ -43,12 +43,12 @@ func assertOversizedParamRejected(t *testing.T, ctx *fasthttp.RequestCtx, param 
 // TestUpgradeRejectsOversizedPeerMetadata verifies that a `peerMetadata`
 // value longer than the cap is rejected with 413 before the websocket
 // handshake, so it never enters hub state to be re-broadcast to every
-// existing peer in PeerJoinedMessage. The real hub + memory peer storage
-// proves no peer was registered: on an empty hub RemovePeerById("1") (the
-// id the first registered peer would get) returns false, whereas it would
-// return true if a peer had been added.
+// existing peer in PeerJoinedMessage. The real hub + test-owned memory peer
+// storage proves no peer was registered: a rejected upgrade leaves the
+// storage empty.
 func TestUpgradeRejectsOversizedPeerMetadata(t *testing.T) {
-	hubInstance, err := hub.NewHub("size-hub", `{}`, storage.NewMemoryStorage[peer.Peer](), false)
+	peerStore := storage.NewMemoryStorage[peer.Peer]()
+	hubInstance, err := hub.NewHub("size-hub", `{}`, peerStore, false)
 	if err != nil {
 		t.Fatalf("NewHub: %v", err)
 	}
@@ -67,8 +67,8 @@ func TestUpgradeRejectsOversizedPeerMetadata(t *testing.T) {
 	assertOversizedParamRejected(t, ctx, "peerMetadata")
 
 	// The peer must not have been registered: the first peer would carry
-	// id "1", and RemovePeerById returns true only for a present peer.
-	if hubInstance.RemovePeerById("1") {
+	// id "1", so the test-owned peer storage must still be empty.
+	if _, err := peerStore.Get("1"); err == nil {
 		t.Fatal("peer was registered despite oversized peerMetadata: hub state was mutated")
 	}
 }

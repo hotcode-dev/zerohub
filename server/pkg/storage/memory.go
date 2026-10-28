@@ -33,7 +33,7 @@ func (s *memoryStorage[T]) Add(id string, data T) {
 // The roster is snapshotted into a slice under the read lock and then
 // yielded without holding it (read-copy-on-write, matching gache's
 // RangeIterValue), so blocking side effects inside the iteration (e.g. the
-// WebSocket writes in hub.AddPeer/RemovePeerById's broadcasts) never pin the
+// WebSocket writes in hub.AddPeer/RemovePeerIfLast's broadcasts) never pin the
 // storage read-lock and do not serialize concurrent Get/Add/Delete/IsEmpty.
 func (s *memoryStorage[T]) GetAll() iter.Seq[T] {
 	s.mu.RLock()

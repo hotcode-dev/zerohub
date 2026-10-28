@@ -23,8 +23,8 @@ const (
 	// half-open without sending any frame. The server pings the peer
 	// periodically (see handler.Upgrade) and the peer's pong — or any
 	// other inbound frame — resets the deadline; on expiry the socket is
-	// closed so the existing close-handling path (RemovePeerById ->
-	// RemoveHubById) runs. Without this, a half-open connection (client
+	// closed so the existing close-handling path (RemovePeerIfLast) runs.
+	// Without this, a half-open connection (client
 	// crash, NAT idle timeout, idle proxy close, mobile disconnect with no
 	// FIN) blocks its ReadMessage goroutine forever, leaking one
 	// goroutine + WS buffer per dead peer, and its stale roster entry is

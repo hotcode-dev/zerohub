@@ -385,29 +385,30 @@ func TestAddPeerHubInfoRosterExcludesNewPeer(t *testing.T) {
 	}
 }
 
-// TestRemovePeerByIdIdempotent is a regression test for the duplicate
+// TestRemovePeerIfLastIdempotent is a regression test for the duplicate
 // teardown on clean close: the close handler and the post-HandleMessage
-// fallback both call RemovePeerById for the same peer. The second call
-// must not broadcast the disconnect signal again and must return false.
-func TestRemovePeerByIdIdempotent(t *testing.T) {
+// fallback both call RemovePeerIfLast for the same peer. The second call
+// must not broadcast the disconnect signal again nor re-delete the hub.
+func TestRemovePeerIfLastIdempotent(t *testing.T) {
 	t.Parallel()
 
-	h := &hub{
-		Id:          "id",
-		CreatedAt:   time.Now(),
-		Metadata:    "metadata",
-		IsPermanent: false,
-		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	hubStore := storage.NewMemoryStorage[Hub]()
+	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
+	if err != nil {
+		t.Fatalf("NewHub: %v", err)
 	}
+	hubStore.Add("id", h)
 
 	leaver := &fakePeer{id: "2"}
 	other := &fakePeer{id: "3"}
-	h.PeerStorage.Add("2", leaver)
-	h.PeerStorage.Add("3", other)
+	h.(*hub).PeerStorage.Add("2", leaver)
+	h.(*hub).PeerStorage.Add("3", other)
 
-	// First removal: peer present -> broadcast once; hub is not empty yet.
-	if got := h.RemovePeerById("2"); got {
-		t.Fatalf("first RemovePeerById: want false (peer 3 still in hub), got true")
+	// First removal: peer present -> broadcast once; the hub still holds
+	// peer 3, so it must remain in storage.
+	h.RemovePeerIfLast("2", hubStore)
+	if _, err := hubStore.Get("id"); err != nil {
+		t.Fatalf("hub deleted while peer 3 remained: %v", err)
 	}
 	if other.received != 1 {
 		t.Fatalf("remaining peer received %d disconnect signals after first removal; want 1", other.received)
@@ -415,63 +416,47 @@ func TestRemovePeerByIdIdempotent(t *testing.T) {
 
 	// Second removal (the duplicate teardown path): peer already gone ->
 	// no extra broadcast, no hub removal.
-	if got := h.RemovePeerById("2"); got {
-		t.Fatalf("second RemovePeerById: want false (peer not found), got true")
+	h.RemovePeerIfLast("2", hubStore)
+	if _, err := hubStore.Get("id"); err != nil {
+		t.Fatalf("hub deleted on duplicate removal: %v", err)
 	}
 	if other.received != 1 {
 		t.Fatalf("remaining peer received %d disconnect signals after duplicate removal; want 1", other.received)
 	}
 }
 
-// TestRemovePeerByIdLastPeerTwice covers the double RemoveHubById case:
+// TestRemovePeerIfLastLastPeerTwice covers the double hub-deletion case:
 // when the disconnecting peer was the last one, the first call already
-// returned true and triggered RemoveHubById; the duplicate second call
-// must return false instead of triggering it again.
-func TestRemovePeerByIdLastPeerTwice(t *testing.T) {
+// deleted the hub from hubStore; the duplicate second call must be a no-op
+// instead of re-triggering the deletion.
+func TestRemovePeerIfLastLastPeerTwice(t *testing.T) {
 	t.Parallel()
 
-	h := &hub{
-		Id:          "id",
-		CreatedAt:   time.Now(),
-		Metadata:    "metadata",
-		IsPermanent: false,
-		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	hubStore := storage.NewMemoryStorage[Hub]()
+	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
+	if err != nil {
+		t.Fatalf("NewHub: %v", err)
 	}
+	hubStore.Add("id", h)
 
 	leaver := &fakePeer{id: "2"}
-	h.PeerStorage.Add("2", leaver)
+	h.(*hub).PeerStorage.Add("2", leaver)
 
-	if got := h.RemovePeerById("2"); !got {
-		t.Fatalf("first RemovePeerById for last peer: want true (hub empty), got false")
-	}
-	if got := h.RemovePeerById("2"); got {
-		t.Fatalf("second RemovePeerById for last peer: want false, got true")
-	}
-}
-
-// TestRemovePeerByIdUnknownPeer is a regression test for the case where a
-// peer ID that was never added (or already removed) is passed to
-// RemovePeerById: it must be a no-op and return false.
-func TestRemovePeerByIdUnknownPeer(t *testing.T) {
-	t.Parallel()
-
-	h := &hub{
-		Id:          "id",
-		CreatedAt:   time.Now(),
-		Metadata:    "metadata",
-		IsPermanent: false,
-		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	// First removal: peer present -> the last peer left, so the hub is
+	// deleted from storage.
+	h.RemovePeerIfLast("2", hubStore)
+	if _, err := hubStore.Get("id"); err == nil {
+		t.Fatal("hub still in storage after the last peer left")
 	}
 
-	other := &fakePeer{id: "3"}
-	h.PeerStorage.Add("3", other)
-
-	// Removing a missing peer must not broadcast and must not report the hub as empty.
-	if got := h.RemovePeerById("99"); got {
-		t.Fatalf("RemovePeerById for unknown peer: want false, got true")
+	// Duplicate teardown path: the hub is already gone; the second call
+	// must complete as a no-op without panicking or mutating state.
+	h.RemovePeerIfLast("2", hubStore)
+	if _, err := hubStore.Get("id"); err == nil {
+		t.Fatal("duplicate removal re-added the hub to storage")
 	}
-	if other.received != 0 {
-		t.Fatalf("remaining peer received %d disconnect signals for unknown peer removal; want 0", other.received)
+	if !h.(*hub).PeerStorage.IsEmpty() {
+		t.Fatal("hub PeerStorage not empty after duplicate removal")
 	}
 }
 
@@ -692,8 +677,8 @@ func TestAddPeerWhileRemovePeerIfLastRunning(t *testing.T) {
 // lock-not-held-across-WS-sends property: a peer whose send blocks in the
 // disconnect broadcast must not pin the hub lock and stall a concurrent
 // join's registration. (Mirrors the existing
-// TestRemovePeerStalledBroadcastDoesNotBlockConcurrentAddPeer at the
-// RemovePeerIfLast level.)
+// TestRemovePeerIfLastStalledBroadcastDoesNotBlockConcurrentAddPeer at the
+// Add-vs-Remove direction.)
 func TestRemovePeerIfLastDoesNotDeadlockWhenBroadcastStalls(t *testing.T) {
 	t.Parallel()
 
@@ -1166,12 +1151,12 @@ func TestHandleMessageIgnoresRemovedUpdatePeerMetadataVariant(t *testing.T) {
 	}
 }
 
-// TestAddPeerStalledBroadcastDoesNotBlockConcurrentRemovePeerById is a
+// TestAddPeerStalledBroadcastDoesNotBlockConcurrentRemovePeerIfLast is a
 // regression test for zf-z-c4cc6a7a: with the memory backend,
 // memoryStorage.GetAll used to hold the peer-storage RLock across the whole
 // yield loop, so a stalled SendBinaryMessage inside AddPeer's broadcast
 // pinned the read-lock and blocked every concurrent storage operation
-// (RemovePeerById's Get/Delete, and a concurrent AddPeer's Add/GetAll) on
+// (RemovePeerIfLast's Get/Delete, and a concurrent AddPeer's Add/GetAll) on
 // the same hub. memoryStorage.GetAll now snapshots the roster under the
 // read-lock and yields after releasing it (matching gache's
 // read-copy-on-write RangeIterValue), so the concurrent op must complete
@@ -1180,27 +1165,26 @@ func TestHandleMessageIgnoresRemovedUpdatePeerMetadataVariant(t *testing.T) {
 // Design: slowPeer's FIRST SendBinaryMessage parks (stallFirst), so
 // AddPeer's broadcast blocks on it while AddPeer's RLock is held pre-fix.
 // The test observes the stall via slowPeer.parkedSig, then a concurrent
-// RemovePeerById must complete: its Get/Delete and its own broadcast (the
+// RemovePeerIfLast must complete: its Get/Delete and its own broadcast (the
 // new peer's join signal reaches slowPeer, whose stall was already
 // consumed, so that send is immediate) must not wait on the stalled
 // iteration.
-func TestAddPeerStalledBroadcastDoesNotBlockConcurrentRemovePeerById(t *testing.T) {
+func TestAddPeerStalledBroadcastDoesNotBlockConcurrentRemovePeerIfLast(t *testing.T) {
 	t.Parallel()
 
-	h := &hub{
-		Id:          "id",
-		CreatedAt:   time.Now(),
-		Metadata:    "metadata",
-		IsPermanent: false,
-		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	hubStore := storage.NewMemoryStorage[Hub]()
+	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
+	if err != nil {
+		t.Fatalf("NewHub: %v", err)
 	}
+	hubStore.Add("id", h)
 
-	// slowPeer parks on its first send; leaver is the peer RemovePeerById
-	// removes. Both are present when AddPeer starts.
+	// slowPeer parks on its first send; leaver is the peer
+	// RemovePeerIfLast removes. Both are present when AddPeer starts.
 	slowPeer := &fakePeer{id: "5", stallFirst: make(chan struct{}), parkedSig: make(chan struct{})}
 	leaver := &fakePeer{id: "6"}
-	h.PeerStorage.Add("5", slowPeer)
-	h.PeerStorage.Add("6", leaver)
+	h.(*hub).PeerStorage.Add("5", slowPeer)
+	h.(*hub).PeerStorage.Add("6", leaver)
 
 	addDone := make(chan struct{})
 	go func() {
@@ -1218,15 +1202,15 @@ func TestAddPeerStalledBroadcastDoesNotBlockConcurrentRemovePeerById(t *testing.
 		t.Fatal("AddPeer's broadcast did not reach the stalled peer's send")
 	}
 
-	// Must complete even with the broadcast stalled: RemovePeerById's
+	// Must complete even with the broadcast stalled: RemovePeerIfLast's
 	// storage operations (Get/Delete/IsEmpty) and its own disconnect
 	// broadcast must not wait on the stalled network I/O. Pre-fix its
 	// Get("6") deadlocked on the RLock held by AddPeer's iteration.
-	empty := h.RemovePeerById("6")
+	h.RemovePeerIfLast("6", hubStore)
 	// leaver is gone; the new peer (added by AddPeer before its broadcast)
-	// and slowPeer remain, so the hub must not report empty.
-	if empty {
-		t.Fatal("RemovePeerById reported hub empty while other peers are present")
+	// and slowPeer remain, so the hub must not be deleted from storage.
+	if _, err := hubStore.Get("id"); err != nil {
+		t.Fatalf("hub deleted while other peers are present: %v", err)
 	}
 
 	// Resolve the stalled send and let AddPeer finish.
@@ -1238,7 +1222,7 @@ func TestAddPeerStalledBroadcastDoesNotBlockConcurrentRemovePeerById(t *testing.
 	}
 
 	// slowPeer got the join signal (AddPeer) and the disconnect signal
-	// (RemovePeerById); leaver got the join signal only (it was removed
+	// (RemovePeerIfLast); leaver got the join signal only (it was removed
 	// before the disconnect broadcast).
 	if slowPeer.received != 2 {
 		t.Fatalf("slow peer received %d signals; want 2 (join + disconnect)", slowPeer.received)
@@ -1248,70 +1232,69 @@ func TestAddPeerStalledBroadcastDoesNotBlockConcurrentRemovePeerById(t *testing.
 	}
 }
 
-// TestRemovePeerStalledBroadcastDoesNotBlockConcurrentAddPeer is the mirror
-// for RemovePeerById's disconnect broadcast: a peer whose WebSocket write is
-// stalled on the first send must not pin the peer-storage read-lock and block
-// a concurrent AddPeer's storage write and iteration.
+// TestRemovePeerIfLastStalledBroadcastDoesNotBlockConcurrentAddPeer is the
+// mirror for RemovePeerIfLast's disconnect broadcast: a peer whose WebSocket
+// write is stalled on the first send must not pin the peer-storage
+// read-lock and block a concurrent AddPeer's storage write and iteration.
 //
-// Design: slowPeer's first SendBinaryMessage parks, so RemovePeerById's
+// Design: slowPeer's first SendBinaryMessage parks, so RemovePeerIfLast's
 // disconnect broadcast blocks on it while its RLock is held pre-fix. The
 // test observes the stall via slowPeer.parkedSig, then a concurrent AddPeer
 // must complete: its storage Add + roster GetAll + the new peer's
 // SendHubInfo must not wait on the stalled iteration.
-func TestRemovePeerStalledBroadcastDoesNotBlockConcurrentAddPeer(t *testing.T) {
+func TestRemovePeerIfLastStalledBroadcastDoesNotBlockConcurrentAddPeer(t *testing.T) {
 	t.Parallel()
 
-	h := &hub{
-		Id:          "id",
-		CreatedAt:   time.Now(),
-		Metadata:    "metadata",
-		IsPermanent: false,
-		PeerStorage: storage.NewMemoryStorage[peer.Peer](),
+	hubStore := storage.NewMemoryStorage[Hub]()
+	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
+	if err != nil {
+		t.Fatalf("NewHub: %v", err)
 	}
+	hubStore.Add("id", h)
 
 	slowPeer := &fakePeer{id: "5", stallFirst: make(chan struct{}), parkedSig: make(chan struct{})}
 	leaver := &fakePeer{id: "2"}
 	other := &fakePeer{id: "3"}
-	h.PeerStorage.Add("5", slowPeer)
-	h.PeerStorage.Add("2", leaver)
-	h.PeerStorage.Add("3", other)
+	h.(*hub).PeerStorage.Add("5", slowPeer)
+	h.(*hub).PeerStorage.Add("2", leaver)
+	h.(*hub).PeerStorage.Add("3", other)
 
 	removeDone := make(chan struct{})
 	go func() {
 		defer close(removeDone)
-		_ = h.RemovePeerById("2")
+		h.RemovePeerIfLast("2", hubStore)
 	}()
 
-	// Deterministic barrier: wait until RemovePeerById's disconnect
+	// Deterministic barrier: wait until RemovePeerIfLast's disconnect
 	// broadcast has reached slowPeer's stalled first send. From here on
-	// RemovePeerById is parked in slowPeer's SendBinaryMessage, and
+	// RemovePeerIfLast is parked in slowPeer's SendBinaryMessage, and
 	// (pre-fix) the storage RLock is held for as long as the iteration runs.
 	select {
 	case <-slowPeer.parkedSig:
 	case <-time.After(5 * time.Second):
-		t.Fatal("RemovePeerById's broadcast did not reach the stalled peer's send")
+		t.Fatal("RemovePeerIfLast's broadcast did not reach the stalled peer's send")
 	}
 
 	// A concurrent AddPeer must complete even with the disconnect broadcast
 	// stalled: its storage Add and its own join broadcast (which reaches
 	// slowPeer's now-immutable stall state, so its send is immediate) must
 	// not wait on the stalled iteration. Pre-fix its storage.Add / GetAll
-	// deadlocked on the RLock held by RemovePeerById's iteration.
+	// deadlocked on the RLock held by RemovePeerIfLast's iteration.
 	newPeer := &fakePeer{}
 	h.AddPeer(newPeer)
 
-	// Resolve the stalled send and let RemovePeerById finish.
+	// Resolve the stalled send and let RemovePeerIfLast finish.
 	close(slowPeer.stallFirst)
 	select {
 	case <-removeDone:
 	case <-time.After(5 * time.Second):
-		t.Fatal("RemovePeerById did not complete after the stalled send was resolved")
+		t.Fatal("RemovePeerIfLast did not complete after the stalled send was resolved")
 	}
 
-	// slowPeer got the disconnect signal (RemovePeerById) and the join
+	// slowPeer got the disconnect signal (RemovePeerIfLast) and the join
 	// signal (AddPeer). other got both as well; leaver got none — it was
-	// removed by RemovePeerById before AddPeer's join snapshot, so it is in
-	// neither broadcast.
+	// removed by RemovePeerIfLast before AddPeer's join snapshot, so it is
+	// in neither broadcast.
 	if slowPeer.received != 2 {
 		t.Fatalf("slow peer received %d signals; want 2 (disconnect + join)", slowPeer.received)
 	}
@@ -1322,7 +1305,7 @@ func TestRemovePeerStalledBroadcastDoesNotBlockConcurrentAddPeer(t *testing.T) {
 		t.Fatalf("leaver received %d signals; want 0 (removed before both broadcasts)", leaver.received)
 	}
 	// The new peer's HubInfo roster is a point-in-time snapshot: leaver was
-	// already removed by RemovePeerById, so the roster holds exactly the
+	// already removed by RemovePeerIfLast, so the roster holds exactly the
 	// remaining peers (other + slowPeer) and not leaver.
 	if newPeer.hubInfo == nil {
 		t.Fatal("new peer did not receive a HubInfoMessage")
@@ -1336,5 +1319,9 @@ func TestRemovePeerStalledBroadcastDoesNotBlockConcurrentAddPeer(t *testing.T) {
 	}
 	if !ids["3"] || !ids["5"] || ids["2"] {
 		t.Fatalf("new peer's HubInfo roster: want peers 3 and 5, not 2; got %v", ids)
+	}
+	// The hub must still be in storage: peers remain.
+	if _, err := hubStore.Get("id"); err != nil {
+		t.Fatalf("hub deleted while peers remain: %v", err)
 	}
 }

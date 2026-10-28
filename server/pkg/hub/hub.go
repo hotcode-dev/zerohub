@@ -25,9 +25,6 @@ type Hub interface {
 	GetMetadata() string
 	// GetCreatedAt returns the creation time of the hub.
 	GetCreatedAt() time.Time
-	// RemovePeerById removes a peer from the hub by its ID.
-	// It returns true if the hub is empty after the peer is removed.
-	RemovePeerById(id string) (emptyPeer bool)
 	// RemovePeerIfLast atomically removes the peer and, only when that peer
 	// was the hub's last member, also deletes the hub from HubStorage. The
 	// roster mutation and the hub deletion happen under the hub's
@@ -64,7 +61,7 @@ type hub struct {
 	// PeerStorage is the storage for the peers.
 	PeerStorage storage.Storage[peer.Peer] `json:"-"`
 	// mu serializes peer-roster mutations on this hub. AddPeer and
-	// RemovePeerById/RemovePeerIfLast take the write lock around their
+	// RemovePeerIfLast take the write lock around their
 	// storage mutations, so the last peer's removal and a concurrent
 	// join's registration can never interleave; the relay helpers take
 	// the read lock so a broadcast can never overlap a roster mutation.
@@ -96,7 +93,7 @@ func NewHub(hubId string, metadata string, peerStorage storage.Storage[peer.Peer
 
 // AddPeer adds a peer to the hub.
 // The join signal is marshaled BEFORE the peer is registered in PeerStorage
-// (same validate-then-mutate ordering as RemovePeerById), so a marshal failure
+// (same validate-then-mutate ordering as removePeer), so a marshal failure
 // is a no-op: no peer ID side effect, no storage entry, no broadcast, and the
 // new peer is never left half-registered without its HubInfo.
 func (h *hub) AddPeer(newPeer peer.Peer) {
@@ -171,14 +168,6 @@ func (h *hub) AddPeer(newPeer peer.Peer) {
 	}); err != nil {
 		log.Error().Err(err)
 	}
-}
-
-// RemovePeerById removes a peer from the mesh network and disconnects it from all other peers.
-// It is idempotent: if the peer is not in the hub, nothing is broadcast and false is returned,
-// so a duplicate removal (e.g. close handler plus post-HandleMessage fallback) cannot double-send
-// the disconnect signal or double-trigger hub removal.
-func (h *hub) RemovePeerById(id string) (removeThisHub bool) {
-	return h.removePeer(id)
 }
 
 // RemovePeerIfLast atomically removes the peer and, when that peer was the
