@@ -8,7 +8,7 @@ test-all: server-test e2e-test
 
 proto-gen:
 	api-linter ./proto/zerohub/v1/*.proto
-	rm -rf ./client/src/proto && rm -rf ./pkg/proto
+	rm -rf ./client/src/proto && rm -rf ./server/pkg/proto
 	protoc --plugin=./client/node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./client/src --go_out=./server/pkg --go_opt=paths=source_relative ./proto/zerohub/v1/*.proto
 
 server-serve:
