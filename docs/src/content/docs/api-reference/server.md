@@ -14,11 +14,13 @@ which is what the AsyncAPI spec (`server/api.yml`) models.
 - `GET /v1/hubs/create?id={hubId}` - create a fixed hub. Accepts optional `hubMetadata` and `peerMetadata` query params (JSON-encoded).
 - `GET /v1/hubs/join?id={hubId}` - join a fixed hub
 - `GET /v1/hubs/join-or-create?id={hubId}` - join an existing fixed hub or create it if it doesn't exist
+- `GET /v1/hubs/get?id={hubId}` - get an existing fixed hub's metadata as plain HTTP JSON (no WebSocket upgrade, no peer roster)
 - `GET /v1/random-hubs/create` - create a random hub
 - `GET /v1/random-hubs/join?id={hubId}` - join a random hub
+- `GET /v1/random-hubs/get?id={hubId}` - get an existing random hub's metadata as plain HTTP JSON (no WebSocket upgrade, no peer roster)
 - `GET /v1/ip-hubs/join-or-create` - join or create an IP hub (server derives hubId from request IP)
 - `GET /v1/permanent-hubs/join?id={hubId}` - join an existing permanent hub
-- `GET /v1/permanent-hubs/create?id={hubId}` - create a permanent (never-expires) hub; admin-gated, requires the `Authorization` header (base64 of the server's `APP_CLIENT_SECRET`); plain HTTP (no WebSocket upgrade)
+- `GET /v1/permanent-hubs/create?id={hubId}` - create a permanent (never-expires) hub. Admin-gated: requires the `Authorization` header (base64 of the server's `APP_CLIENT_SECRET`). Plain HTTP (no WebSocket upgrade). Creation is out-of-band from the browser WebSocket API — browsers cannot set custom headers on a WebSocket handshake, so issue this request with a plain HTTP client (curl, `fetch` from a Node.js process), then connect with `/v1/permanent-hubs/join`.
 - `GET /v1/status` - health / version endpoint (public, read-only)
 - `GET /v1/admin/migrate?host={newHost}` - start a zero-downtime migration: new connections are routed to the backup host while existing ones drain; admin-gated, requires the `Authorization` header
 
