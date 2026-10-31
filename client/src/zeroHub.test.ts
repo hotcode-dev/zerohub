@@ -892,6 +892,41 @@ describe("WebRTC event boundary — throwing user callbacks are isolated", () =>
       expect.anything()
     );
   });
+
+  it("a throwing onAnswer with autoAcceptAnswer:false is isolated and not surfaced as a signaling error", () => {
+    const client = makeClient();
+    const { peer } = makePeer("2");
+    client.peers = { "2": peer };
+    client.myPeerId = "1";
+    client.config.autoAcceptAnswer = false;
+    const signalingErrors: unknown[] = [];
+    client.onZeroHubError = (err) => signalingErrors.push(err);
+    client.onAnswer = () => {
+      throw new Error("manual answer boom");
+    };
+
+    const serverMessage: ServerMessage = {
+      answerMessage: { answerPeerId: "2", answerSdp: "v=0 fake-sdp" },
+    };
+
+    expect(() => client.handleZeroHubMessage(serverMessage)).not.toThrow();
+
+    // The status transition still applied before the callback ran…
+    expect(peer.status).toBe(PeerStatus.AcceptPending);
+    // …and the throw was isolated with the standard "handler threw" log…
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalledWith(
+      "onAnswer handler threw",
+      expect.anything()
+    );
+    // …but NOT misclassified as a connection-level/signaling failure.
+    expect(signalingErrors).toHaveLength(0);
+    expect(
+      (client.logger as unknown as FakeLogger).error
+    ).not.toHaveBeenCalledWith(
+      "failed to process ZeroHub message",
+      expect.anything()
+    );
+  });
 });
 
 describe("reconnect — 1001 close reason host validation", () => {
