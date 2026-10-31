@@ -868,7 +868,15 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         // `AcceptPending` status above fires before this callback.
         const peer = this.peers[answerPeerId];
         if (peer && this.onAnswer) {
-          this.onAnswer(peer, answerSdp);
+          // A throwing user callback must not escape the dispatch: isolate
+          // it and log it. (It must NOT be routed to `onZeroHubError` — a
+          // user-callback failure is not a signaling-link failure, and the
+          // outer onmessage catch would misclassify it as one.)
+          try {
+            this.onAnswer(peer, answerSdp);
+          } catch (err) {
+            this.logger.error("onAnswer handler threw", err);
+          }
         }
       }
     } else if (serverMessage.iceCandidateMessage) {
