@@ -143,9 +143,9 @@ test("multi hosts", async ({ page }, testInfo) => {
       // A fresh client whose FIRST host is unreachable: the initial
       // connection fails and failover advances to the good last host, where
       // hub creation succeeds. The client is now on its LAST configured
-      // host, so an abnormal close there used to reject immediately from
-      // `getZeroHubBackupHost()` and abandon reconnection forever — the
-      // single-host give-up bug. After the fix, `reconnect()` retries the
+      // host, so an abnormal close there used to reject immediately (no
+      // backup host left to fail over to) and abandon reconnection forever —
+      // the single-host give-up bug. After the fix, `reconnect()` retries the
       // SAME last host with exponential backoff instead: the server is
       // healthy, the retry re-dials it, and the session recovers without the
       // application intervening. The terminal "all hosts exhausted"

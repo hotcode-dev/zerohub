@@ -138,6 +138,59 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    */
   private reconnectTimerGeneration = 0;
   /**
+   * Whether the client is still establishing its initial connection. True
+   * for a new client (before the server's hub info has confirmed any
+   * connection) and after `disconnect()` (a fresh session). Set to false when
+   * the server's hub info confirms the first connection (the `onHubInfo`
+   * boundary in `handleZeroHubMessage`, alongside the `reconnectRound` reset
+   * there): hub info is the authoritative "the session is established"
+   * signal, not a bare socket `onopen` (a dial that opens and is
+   * immediately torn down is not a usable connection). Used by `reconnect()`
+   * to decide whether to do a same-host retry (reconnect) or fail over
+   * immediately (initial connection): the initial connection's failover is
+   * pinned by `test/tests/multihosts.spec.ts` ("single connection failure
+   * advances hostIndex exactly once"), so a dial that never confirmed a
+   * session must not burn its same-host retry budget before failing over.
+   */
+  private isInitialConnection = true;
+  /**
+   * The current round of the host sweep. Incremented when the last configured
+   * host's retry budget is exhausted and the client wraps back to the first
+   * host, or when a redirected (non-configured) host's budget is exhausted
+   * and the client wraps back to the configured list. Reset to zero when a
+   * connection is confirmed (hub info arrives), when a migration redirect
+   * lands on a fresh host, and on `disconnect()` — so the bounded wraparound
+   * sweep is only ever consumed by a genuine outage, and the terminal error
+   * stays reachable within the current sweep. The terminal
+   * `onZeroHubError` fires only after `config.maxReconnectRounds` full
+   * sweeps are exhausted, so a long-lived session survives transient outages
+   * on every host instead of giving up after one pass through the list.
+   */
+  private reconnectRound = 0;
+  /**
+   * Whether the current `this.host` is one of the configured `hosts` (as
+   * opposed to a migration-redirect target that is not in the list). True by
+   * default (the initial host is the first configured host) and kept in sync
+   * by `reconnect()`: set to the redirect target's list membership in the
+   * 1001-migration-redirect branch, and back to true on every automatic
+   * failover / wraparound hop (which always lands on a configured host).
+   * Used to decide whether the current host is "the last configured host"
+   * (eligible for the bounded wraparound sweep back to the start of the list)
+   * or a redirected host that should get its own same-host retry budget
+   * before the client wraps back to the configured list.
+   */
+  private inConfiguredHosts = true;
+  /**
+   * True once the terminal "all ZeroHub hosts are not working"
+   * `onZeroHubError` has fired: the whole sweep budget is spent and further
+   * abnormal closes on any leftover socket must be no-ops instead of
+   * re-firing the terminal error or re-dialing (the application has been
+   * told the session is dead; only a fresh entry-point call
+   * (`createHub`/`joinHub`/...) — which clears this in `connectToZeroHub` —
+   * may start a new session).
+   */
+  private reconnectAbandoned = false;
+  /**
    * Pending ICE candidate timeout handles, keyed by peer ID.
    * These are cleared on disconnect so no offer/answer can be sent to a closed socket.
    */
@@ -263,32 +316,18 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
-   * Gets the next ZeroHub backup host.
-   *
-   * If the current host is the last one in the list, it will reject with an error.
-   * If there are more hosts available, it increments the host index and resolves with the next host.
-   *
-   * @returns A promise that resolves with the next ZeroHub host or rejects with an error if no more hosts are available.
-   * @throws If all ZeroHub hosts are not working.
-   */
-  getZeroHubBackupHost(): Promise<string> {
-    return new Promise((resolve, reject) => {
-      if (this.hostIndex >= this.hosts.length - 1) {
-        reject(new Error(ALL_HOSTS_EXHAUSTED_ERROR_MESSAGE));
-        return;
-      }
-      this.hostIndex = this.hostIndex + 1;
-      resolve(this.hosts[this.hostIndex]);
-    });
-  }
-
-  /**
    * Clears any queued same-host reconnect retry and resets the attempt
    * counter. Called when a connection is confirmed (the server's hub info
-   * arrives), when a migration redirect lands, and on manual
+   * arrives), when a migration redirect lands, when the sweep wraps to the
+   * first host / fails over to the next host, and on manual
    * `disconnect()` — so backoff never accumulates across a healthy session,
    * a redirected host gets its full retry budget, and a pending retry timer
-   * can never resurface after an intentional teardown.
+   * can never resurface after an intentional teardown. `reconnectRound` is
+   * deliberately NOT reset here: it is only ever reset at a confirmed
+   * connection boundary (a hub info arriving, a migration redirect landing,
+   * or `disconnect()`), never by a failover/wrap hop, so the bounded
+   * wraparound sweep can't be restarted mid-outage and the terminal error
+   * stays reachable within the current sweep.
    */
   private clearReconnectRetryState() {
     this.cancelPendingReconnectRetry();
@@ -439,15 +478,35 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
-   * Reconnects to ZeroHub with the current URL and an optional new host.
-   * If a new host is provided, it updates the current URL's host and
-   * reconnects (the 1001 migration-redirect path).
-   * If no new host is provided: when a backup host is still available it
-   * fails over to it; when the client is already on the last configured
-   * host it schedules a same-host retry with exponential backoff instead —
-   * only once the retry budget (`config.maxReconnectAttempts`) is exhausted
-   * does `getZeroHubBackupHost()` reject and the terminal failure surface
-   * via `onZeroHubError`.
+   * Reconnects to ZeroHub after the active WebSocket closed.
+   *
+   * With a redirect host (`newHost`, the 1001 "going away" close reason):
+   * the target must be a well-formed host AND different from the current
+   * one (a self-redirect is an operator misconfiguration that would cycle
+   * forever). A genuine migration redirect moves the client's host state to
+   * the target and hands it a FULL same-host retry budget: a later abnormal
+   * close on the redirected host (even one that is not in the configured
+   * list) retries it with backoff instead of giving up immediately, and only
+   * after that budget is spent does the client wrap back to the configured
+   * host list.
+   *
+   * Without a redirect host (abnormal close, 1006/1011): the CURRENT host
+   * (any position in the configured list) keeps a bounded retry budget
+   * (`config.maxReconnectAttempts`) of same-host re-dials with exponential
+   * backoff — a close is often a transient blip on a healthy host, and
+   * long-lived sessions must survive it instead of failing over and
+   * potentially landing on a host down for the same outage. Only when that
+   * budget is spent does the client move on:
+   *
+   * - not on the last configured host → `hostIndex` advances to the next
+   *   host (one logical failure advances it exactly once — pinned by
+   *   `test/tests/multihosts.spec.ts`), and the new host gets a fresh
+   *   retry budget;
+   * - on the last configured host → the sweep wraps back to the FIRST
+   *   host (`reconnectRound` advances), bounded by
+   *   `config.maxReconnectRounds` full sweeps;
+   * - every host's budget spent on every allowed sweep → the terminal
+   *   failure surfaces via `onZeroHubError`.
    *
    * @param currentURL - The current URL of the ZeroHub connection.
    * @param newHost - An optional new host to connect to.
@@ -455,6 +514,17 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   public reconnect(currentURL: URL, newHost?: string) {
     if (this.isDisconnected) {
       this.logger.log("ZeroHub is disconnected, skipping reconnect");
+      return;
+    }
+    // The sweep budget is fully spent and the terminal `onZeroHubError` has
+    // already fired: a later abnormal close on a leftover socket must be a
+    // no-op instead of re-firing the terminal error or re-dialing. Only a
+    // fresh entry-point call may start a new session (it clears this flag in
+    // `connectToZeroHub`).
+    if (this.reconnectAbandoned) {
+      this.logger.log(
+        "ZeroHub reconnection is abandoned (all hosts exhausted), ignoring close"
+      );
       return;
     }
     if (newHost) {
@@ -504,6 +574,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       // here instead of the stale position; keep the previous index when it
       // is not.
       const redirectedIndex = this.hosts.indexOf(newHost);
+      this.inConfiguredHosts = redirectedIndex !== -1;
       if (redirectedIndex !== -1) {
         this.hostIndex = redirectedIndex;
       }
@@ -511,65 +582,145 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       // The redirect moved us to a fresh host: reset the same-host retry
       // budget (and any queued retry timer) so a later abnormal close on
       // the redirected host gets its full retry budget, not the remainder
-      // of the previous host's.
+      // of the previous host's. A migration redirect is a confirmed move to
+      // a new host, so the wraparound sweep round resets too — the redirected
+      // host (even one not in the configured list) gets its own retry
+      // budget and its own sweep back to the configured list. It also ends
+      // the initial-connection phase even when no hub info has ever
+      // arrived on a configured host: from here on, an abnormal close on
+      // the redirected host is a RECONNECT (same-host retry with backoff)
+      // — the very acceptance case of the out-of-list migration target
+      // flapping once — not the initial-connection failover, which would
+      // abandon the server-directed host for a stale configured one.
       this.clearReconnectRetryState();
+      this.reconnectRound = 0;
+      this.isInitialConnection = false;
       this.redial(currentURL);
       return;
     }
-    // Abnormal close with no redirect host: if there is a backup host left,
-    // fail over to it IMMEDIATELY (preserving the documented failover
-    // semantics: a single failure advances `hostIndex` exactly once, asserted
-    // by `test/tests/multihosts.spec.ts`). Only when we are ALREADY on the
-    // last configured host do we retry the SAME host with backoff — the host
-    // may be a transient blip, not a dead host. When even that retry budget
-    // is exhausted, `getZeroHubBackupHost()` rejects and the terminal
-    // `onZeroHubError` fires. Same-host retries deliberately leave `hostIndex`
-    // untouched, so failover still advances it exactly once.
+    // Abnormal close with no redirect host.
+    //
+    // 1. Same-host retry — EVERY host (any position in the configured list,
+    //    or a redirected out-of-list host) gets a bounded retry budget
+    //    (`config.maxReconnectAttempts`) of same-host re-dials with
+    //    exponential backoff before the client gives up on it: the close may
+    //    be a transient blip (Wi-Fi handover, NAT/proxy hiccup, laptop
+    //    sleep) on a host that is in fact healthy, and the SDK's long-lived
+    //    sessions must survive those instead of tearing down permanently.
+    //    Same-host retries leave `hostIndex` untouched, so the "a single
+    //    logical failure advances hostIndex exactly once" invariant (pinned
+    //    by `test/tests/multihosts.spec.ts`) still holds: only a
+    //    budget-exhausted failure advances the index. A redirected
+    //    out-of-list host retries ITSELF here instead of failing over to a
+    //    stale configured host.
+    //
+    // 2. Host failover / wraparound — when the current host's retry budget
+    //    is spent:
+    //    - on a NON-last configured host → `hostIndex` advances to the next
+    //      configured host, which gets a fresh retry budget;
+    //    - on the LAST configured host (more than one configured) or on a
+    //      redirected out-of-list host → the sweep wraps back to the FIRST
+    //      configured host (bounded by `config.maxReconnectRounds` full
+    //      sweeps) instead of giving up after one pass through the list.
+    //    - every host's budget spent on every allowed sweep → the terminal
+    //      `onZeroHubError` fires.
     const maxAttempts =
       this.config.maxReconnectAttempts ?? DEFAULT_CONFIG.maxReconnectAttempts;
-    if (
-      this.hostIndex >= this.hosts.length - 1 &&
-      this.reconnectAttempts < maxAttempts
-    ) {
+    // A same-host retry is only for reconnects (the client has a confirmed
+    // connection at some point); the initial connection fails over
+    // immediately to the next host (pinned by
+    // `test/tests/multihosts.spec.ts`). This means:
+    //  - Initial connection: always fail over to the next host.
+    //  - Reconnect: retry the same host if budget is available, otherwise
+    //    fail over.
+    if (!this.isInitialConnection && this.reconnectAttempts < maxAttempts) {
       this.scheduleSameHostReconnect(
         currentURL,
         "abnormal WebSocket close (1006/1011)"
       );
       return;
     }
-    this.getZeroHubBackupHost()
-      .then((newHost) => {
-        // Re-check the flag inside the async callback: a user calling
-        // disconnect() while this fetch is in flight would otherwise be
-        // silently resurrected (connectToZeroHub resets isDisconnected).
-        if (this.isDisconnected) {
-          this.logger.log(
-            "ZeroHub was disconnected during reconnect, aborting"
-          );
-          return;
-        }
-        if (this.host === newHost) {
-          this.logger.error("zero hub reconnecting failed: not retying");
-          return;
-        }
-
-        // reconnect to the new host
-        this.logger.warn(
-          `ZeroHub \`${this.host}\` is reconnecting the new host: \`${newHost}\``
-        );
-
-        this.host = newHost;
-        currentURL.host = newHost;
-        this.redial(currentURL);
-      })
-      .catch((err) => {
-        this.logger.error(`zero hub reconnecting failed: ${err}`);
-        if (this.onZeroHubError) {
-          this.onZeroHubError(
-            err instanceof Error ? err : new Error(String(err))
-          );
-        }
-      });
+    const maxRounds =
+      this.config.maxReconnectRounds ?? DEFAULT_CONFIG.maxReconnectRounds;
+    //
+    // 2. Host failover — when the current host's retry budget is spent and
+    //    it is NOT the last configured host, advance `hostIndex` to the next
+    //    configured host, which gets a fresh retry budget of its own. Only a
+    //    budget-exhausted failure advances the index; same-host retries leave
+    //    it untouched, so the "a single logical failure advances hostIndex
+    //    exactly once" invariant pinned by `test/tests/multihosts.spec.ts`
+    //    still holds.
+    const isLastConfigured = this.hostIndex >= this.hosts.length - 1;
+    if (this.inConfiguredHosts && !isLastConfigured) {
+      if (this.isDisconnected) {
+        this.logger.log("ZeroHub was disconnected during reconnect, aborting");
+        return;
+      }
+      this.hostIndex = this.hostIndex + 1;
+      const nextHost = this.hosts[this.hostIndex];
+      this.logger.warn(
+        `ZeroHub \`${this.host}\` retry budget exhausted, failing over to the next host \`${nextHost}\``
+      );
+      this.clearReconnectRetryState();
+      this.host = nextHost;
+      this.inConfiguredHosts = true;
+      currentURL.host = nextHost;
+      this.redial(currentURL);
+      return;
+    }
+    //
+    // 3. Wraparound — when the LAST configured host's (with more than one
+    //    configured) or a redirected out-of-list host's retry budget is
+    //    spent and at least one more sweep round is allowed
+    //    (`reconnectRound < maxRounds`), wrap back to the FIRST configured
+    //    host instead of giving up after one pass through the list: a
+    //    transient outage that partially clears mid-sweep recovers instead of
+    //    permanently killing the session. Each host in the next pass gets a
+    //    fresh retry budget; the round advances so the terminal error stays
+    //    reachable once the wrap is spent. The re-dial is immediate (no
+    //    backoff): the budget for the host we are leaving was just consumed.
+    //    A wraparound only happens when there is more than one configured
+    //    host: wrapping a single configured host to itself would just
+    //    re-extend its own budget with no new host to try, and a redirected
+    //    out-of-list host wraps back to the configured list, which is a
+    //    genuinely different host.
+    const isWrapCandidate =
+      !this.inConfiguredHosts || (isLastConfigured && this.hosts.length > 1);
+    if (isWrapCandidate && this.reconnectRound < maxRounds) {
+      if (this.isDisconnected) {
+        this.logger.log("ZeroHub was disconnected during reconnect, aborting");
+        return;
+      }
+      this.logger.warn(
+        `ZeroHub \`${this.host}\` retry budget exhausted, wrapping to the first host \`${this.hosts[0]}\` (round ${this.reconnectRound + 1}/${maxRounds})`
+      );
+      this.clearReconnectRetryState();
+      this.reconnectRound += 1;
+      this.hostIndex = 0;
+      this.host = this.hosts[0];
+      this.inConfiguredHosts = true;
+      currentURL.host = this.hosts[0];
+      this.redial(currentURL);
+      return;
+    }
+    //
+    // 4. Terminal — every host's budget is spent on every allowed sweep:
+    //    the whole sweep budget is exhausted. Surface the terminal failure
+    //    via `onZeroHubError`. This also covers the single-configured-host
+    //    case (no other host to advance to, and wrapping to itself would
+    //    just re-extend its own budget with no new host to try).
+    //
+    // Latch `reconnectAbandoned` so any later close on a leftover socket is
+    // a no-op instead of re-firing the terminal error or re-dialing: the
+    // application has been told the session is dead, and only a fresh
+    // entry-point call (which clears the latch in `connectToZeroHub`) may
+    // start a new one.
+    this.reconnectAbandoned = true;
+    const err = new Error(ALL_HOSTS_EXHAUSTED_ERROR_MESSAGE);
+    this.logger.error(`zero hub reconnecting failed: ${err.message}`);
+    if (this.onZeroHubError) {
+      this.onZeroHubError(err);
+    }
   }
 
   /**
@@ -600,8 +751,19 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
 
       // The server confirmed this connection: the same-host retry budget is
       // spent, reset it so the next abnormal close on a long-lived session
-      // gets a full retry budget instead of the accumulated remainder.
+      // gets a full retry budget instead of the accumulated remainder. The
+      // connection is confirmed, so the wraparound sweep budget resets too —
+      // the next outage (if any) gets a full sweep instead of the remainder.
+      // Hub info is also the moment the client leaves the initial-connection
+      // phase: from now on, an abnormal close on the active socket is a
+      // RECONNECT (same-host retry with backoff), not a first-dial failure
+      // (which fails over to the next host immediately, pinned by
+      // `test/tests/multihosts.spec.ts`). A bare socket `onopen` is not
+      // enough — a dial that opens and is immediately torn down is not a
+      // usable connection; the server's hub info is the confirmation.
       this.clearReconnectRetryState();
+      this.reconnectRound = 0;
+      this.isInitialConnection = false;
 
       this.myPeerId = hubInfoMsg.myPeerId;
       this.hubInfo = {
@@ -1024,7 +1186,13 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     // NOT reset here: the budget only refills when a connection is
     // CONFIRMED (the server's hub info arrives), so a dial that will fail
     // again still consumes budget and the terminal error stays reachable.
+    //
+    // The `reconnectAbandoned` latch clears here: a fresh entry-point call
+    // is the only thing that may start a new session after the terminal
+    // "all hosts exhausted" error fired — the application has explicitly
+    // chosen to (re)connect.
     this.cancelPendingReconnectRetry();
+    this.reconnectAbandoned = false;
 
     // Tear down a socket left open by a previous connection (e.g. a second
     // entry-point call without disconnect()). Nulling the handlers before
@@ -1181,8 +1349,15 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
 
     // Cancel any queued same-host reconnect retry: the timer would otherwise
     // fire after teardown and dial a stray socket (connectToZeroHub resets
-    // isDisconnected, resurrecting a manually disconnected client).
+    // isDisconnected, resurrecting a manually disconnected client). The
+    // sweep round resets too, so a client reused via a later entry-point call
+    // starts with a full wraparound budget, not the remainder of the torn-
+    // down session's. `isInitialConnection` is deliberately NOT reset: a
+    // reused client has already established a connection once, so a dial
+    // failure on a later entry point is a reconnect (same-host retry with
+    // backoff), not the initial-connection failover.
     this.clearReconnectRetryState();
+    this.reconnectRound = 0;
 
     // clear pending ICE candidate timeouts so they cannot send to a closed socket
     Object.values(this.iceTimeouts).forEach((timeout) => {

@@ -229,13 +229,29 @@ export interface Config<PeerMetadata = object> {
   autoAcceptAnswer: boolean;
   /**
    * Maximum number of times the client retries re-dialing the CURRENT host
-   * after an abnormal WebSocket close (codes 1006/1011) before it gives up
-   * on that host and either fails over to the next configured host or
-   * surfaces the terminal `onZeroHubError` when no further host exists.
-   * The counter resets to zero once a connection to a host is confirmed (the
-   * server's hub info arrives). Default is 10.
+   * (at any position in the configured list, or a migration-redirect target)
+   * after an abnormal WebSocket close (codes 1006/1011) before it moves on:
+   * fails over to the next configured host, or — on the last host — wraps
+   * back to the first host for another sweep (see
+   * `maxReconnectRounds`), or surfaces the terminal `onZeroHubError` when no
+   * further host or round exists. The counter resets to zero once a
+   * connection to a host is confirmed (the server's hub info arrives).
+   * Default is 10.
    */
   maxReconnectAttempts: number;
+  /**
+   * Maximum number of wraparound sweeps through the configured host list
+   * during reconnection: after the LAST host's retry budget
+   * (`maxReconnectAttempts`) is spent, the client wraps back to the FIRST
+   * host for an additional sweep instead of giving up — so a long outage
+   * that partially clears while the client is mid-sweep recovers instead of
+   * permanently killing the session. The counter resets to zero once a
+   * connection to any host is confirmed (the server's hub info arrives), a
+   * migration redirect lands, or on `disconnect()`. The terminal
+   * `onZeroHubError` fires only after every host's retry budget is spent on
+   * every allowed round. Default is 2.
+   */
+  maxReconnectRounds: number;
   /**
    * Base delay in milliseconds for the exponential backoff between
    * same-host reconnect retries after an abnormal WebSocket close. Each

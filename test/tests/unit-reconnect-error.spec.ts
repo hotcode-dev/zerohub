@@ -8,10 +8,12 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  * With the same-host retry-with-backoff behavior, an abnormal close on the
  * LAST configured host no longer rejects immediately: the client first
  * re-dials the same host (`config.maxReconnectAttempts` retries,
- * exponential backoff with jitter). `getZeroHubBackupHost()` only rejects
- * once that retry budget is genuinely spent; before the fix that rejection
- * was only logged and `onZeroHubError` never fired, violating the documented
- * contract ("Listen to `onZeroHubError` to surface unrecoverable errors").
+ * exponential backoff with jitter). The terminal "all hosts exhausted"
+ * failure only surfaces through `onZeroHubError` once that retry budget is
+ * genuinely spent; before the fix that terminal failure was only logged
+ * (or never reached) and `onZeroHubError` never fired, violating the
+ * documented contract ("Listen to `onZeroHubError` to surface unrecoverable
+ * errors").
  *
  * Runs without a server or real WebRTC: the client is bundled with the
  * unit harness (mocked `RTCPeerConnection`, no-op topology) and driven

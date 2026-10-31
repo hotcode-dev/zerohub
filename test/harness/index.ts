@@ -136,7 +136,6 @@ function getClientInfo(componentId: string) {
     wsOpen: client.ws?.readyState === WebSocket.OPEN,
   };
 }
-
 /**
  * Closes the client's WebSocket connection to simulate a peer leaving the hub.
  * The server will broadcast a `PeerDisconnectedMessage` to the remaining peers.
