@@ -478,6 +478,27 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
+   * Invokes the user-supplied `onZeroHubError` callback, isolating any
+   * user-handler throw (same isolation rule as `reportPeerError`).
+   *
+   * A throwing user handler must never escape the event handler / dispatch
+   * path that invokes it: doing so would leave an uncaught exception in the
+   * runtime AND — critically for the WebSocket error/reconnect sites — skip
+   * the subsequent `settle(new Error(...))`, leaving the connect Promise
+   * returned by `createHub()`/`joinHub()`/etc. unsettled forever.
+   */
+  private reportZeroHubError(error: Error): void {
+    if (!this.onZeroHubError) {
+      return;
+    }
+    try {
+      this.onZeroHubError(error);
+    } catch (err) {
+      this.logger.error("onZeroHubError handler threw", err);
+    }
+  }
+
+  /**
    * Reconnects to ZeroHub after the active WebSocket closed.
    *
    * With a redirect host (`newHost`, the 1001 "going away" close reason):
@@ -556,9 +577,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
           `zero hub reconnecting failed: redirect target \`${newHost}\` is the current host, not retrying`
         );
         this.logger.error(err.message);
-        if (this.onZeroHubError) {
-          this.onZeroHubError(err);
-        }
+        this.reportZeroHubError(err);
         return;
       }
       this.logger.warn(
@@ -718,9 +737,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     this.reconnectAbandoned = true;
     const err = new Error(ALL_HOSTS_EXHAUSTED_ERROR_MESSAGE);
     this.logger.error(`zero hub reconnecting failed: ${err.message}`);
-    if (this.onZeroHubError) {
-      this.onZeroHubError(err);
-    }
+    this.reportZeroHubError(err);
   }
 
   /**
@@ -1265,17 +1282,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
           // catch is the last line of defense for the decode path and
           // anything else.
           this.logger.error("failed to process ZeroHub message", err);
-          try {
-            if (this.onZeroHubError) {
-              this.onZeroHubError(
-                err instanceof Error ? err : new Error(String(err))
-              );
-            }
-          } catch (handlerErr) {
-            // The user's onZeroHubError handler throwing must not escape the
-            // event handler either (same isolation rule as reportPeerError).
-            this.logger.error("onZeroHubError handler threw", handlerErr);
-          }
+          // `reportZeroHubError` isolates a throwing user handler: the
+          // throw must not escape the onmessage event handler either (same
+          // isolation rule as reportPeerError).
+          this.reportZeroHubError(
+            err instanceof Error ? err : new Error(String(err))
+          );
         }
       };
       // Per RFC 6455, a network failure fires `error` and then `close` with
@@ -1291,11 +1303,13 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       // unable to settle the Promise a second time.
       socket.onerror = (event) => {
         this.logger.error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`);
-        if (this.onZeroHubError) {
-          this.onZeroHubError(
-            Error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`)
-          );
-        }
+        // `reportZeroHubError` isolates a throwing user handler: a throw
+        // must not escape the onerror event handler, and the settle below
+        // must still run — otherwise the connect Promise would be left
+        // pending forever.
+        this.reportZeroHubError(
+          Error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`)
+        );
         settle(new Error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`));
       };
       socket.onclose = (event) => {
@@ -1325,14 +1339,14 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
           default:
             // Any other close code is a protocol-level failure: reject the
             // connect Promise (if it is still pending) in addition to the
-            // existing onZeroHubError surface.
-            if (this.onZeroHubError) {
-              this.onZeroHubError(
-                Error(
-                  `ZeroHub error code \`${event.code}\` reason \`${event.reason}\``
-                )
-              );
-            }
+            // existing onZeroHubError surface. `reportZeroHubError`
+            // isolates a throwing user handler so the settle below always
+            // runs and the throw never escapes the onclose event handler.
+            this.reportZeroHubError(
+              Error(
+                `ZeroHub error code \`${event.code}\` reason \`${event.reason}\``
+              )
+            );
             settle(
               new Error(
                 `ZeroHub error code \`${event.code}\` reason \`${event.reason}\``
