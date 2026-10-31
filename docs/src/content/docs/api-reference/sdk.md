@@ -125,6 +125,9 @@ The SDK will by default wait for ICE candidates for `waitIceCandidatesTimeout` m
 
 - `onHubInfo(hubInfo)` - fired when hub metadata or peer list updates
 - `onPeerStatusChange(peer)` - fired when a peer status changes (Pending, Connected, etc.)
+- `onPeerError(peer, error)` - fired when a per-peer WebRTC signaling exchange fails (creating/applying SDP or a media-track error); transient signaling-socket delivery failures are retried automatically and are not reported here
+- `onOffer(peer, offerSdp)` - fired when `autoAnswer` is `false`; complete the exchange by calling `sendAnswer(peer.id, offerSdp)`
+- `onAnswer(peer, answerSdp)` - fired when `autoAcceptAnswer` is `false`; complete the exchange by calling `acceptAnswer(peer.id, answerSdp)`
 - `onZeroHubError(error)` - when websocket or server errors occur
 
 ## Example: data channel chat
