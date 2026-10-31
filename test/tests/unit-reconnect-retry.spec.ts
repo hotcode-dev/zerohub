@@ -5,13 +5,14 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  * Regression test: a single-host client (the default deployment — `new
  * ZeroHubClient(["localhost:8080"], ...)`) must NOT permanently give up
  * auto-reconnection after ONE transient abnormal WebSocket close (code 1006
- * abnormal close, or 1011 internal error). Before the fix,
- * `getZeroHubBackupHost()` rejected the moment `hostIndex` was already at
- * the last host, so the very first 1006/1011 close abandoned reconnection
- * forever: a dead `ws`, no signaling, and no path back for the lifetime of
- * the `ZeroHubClient` instance — even though the host was healthy. The
- * documented contract (client README, "Reconnection & host failover") says
- * reconnect is automatic on unexpected close.
+ * abnormal close, or 1011 internal error). Before the fix, there was no
+ * retry at all: the single-shot failover walk found no backup host left to
+ * fail over to (we were already at the last host), so the very first
+ * 1006/1011 close abandoned reconnection forever: a dead `ws`, no
+ * signaling, and no path back for the lifetime of the `ZeroHubClient`
+ * instance — even though the host was healthy. The documented contract
+ * (client README, "Reconnection & host failover") says reconnect is
+ * automatic on unexpected close.
  *
  * After the fix, an abnormal close on the LAST configured host schedules a
  * SAME-HOST retry with exponential backoff + jitter (default budget 10
@@ -118,6 +119,12 @@ test.describe("ZeroHubClient same-host retry-with-backoff on abnormal close", ()
     await h.createHub(id, "room");
     expect(await h.getLastSocketUrl(id)).toBe(SINGLE_HOST_URL);
 
+    // Confirm the session (the server's hub info) so the client is in
+    // RECONNECT mode: an abnormal close now does a same-host retry with
+    // backoff instead of the initial-connection failover (which is pinned
+    // to advance `hostIndex` immediately in `multihosts.spec.ts`).
+    await h.sendHubInfoOnSocket(id, "room", "1");
+
     // Spy on onZeroHubError BEFORE the blip: the only error that may ever
     // matter for the assertions is a premature terminal one.
     await h.captureZeroHubErrors(id);
@@ -162,6 +169,9 @@ test.describe("ZeroHubClient same-host retry-with-backoff on abnormal close", ()
     await h.setConfig(id, { maxReconnectAttempts: 3 });
     await h.createHub(id, "room");
     expect(await h.getLastSocketUrl(id)).toBe(SINGLE_HOST_URL);
+    // Confirm the session so an abnormal close takes the RECONNECT path
+    // (same-host retry with backoff), not the initial-connection failover.
+    await h.sendHubInfoOnSocket(id, "room", "1");
     await h.captureZeroHubErrors(id);
 
     await test.step("each of the first three blips re-dials the SAME host", async () => {
@@ -188,8 +198,9 @@ test.describe("ZeroHubClient same-host retry-with-backoff on abnormal close", ()
 
     await test.step("the budget is exhausted: one more close is terminal", async () => {
       // The third retry's timer has already dialed the (mock) socket back;
-      // the NEXT abnormal close finds no budget left and falls through to
-      // getZeroHubBackupHost(), which rejects — the terminal error.
+      // the NEXT abnormal close finds no budget left and, with no next host
+      // and no wraparound round left, hits the terminal branch — the
+      // terminal error.
       await h.simulateAbnormalClose(id);
       await page.waitForTimeout(200);
       const errors = await h.getZeroHubErrorMessages(id);
@@ -207,6 +218,10 @@ test.describe("ZeroHubClient same-host retry-with-backoff on abnormal close", ()
     await h.setConfig(id, { maxReconnectAttempts: 3 });
     await h.createHub(id, "room");
     await h.captureZeroHubErrors(id);
+
+    // Confirm the session so an abnormal close takes the RECONNECT path
+    // (same-host retry with backoff), not the initial-connection failover.
+    await h.sendHubInfoOnSocket(id, "room", "1");
 
     // A single transient blip; the retry dials the same host back.
     await h.simulateAbnormalClose(id);
@@ -245,6 +260,10 @@ test.describe("ZeroHubClient same-host retry-with-backoff on abnormal close", ()
     const id = await h.createClient();
     await h.createHub(id, "room");
     const socketsBefore = await h.getSocketCount(id);
+
+    // Confirm the session so the blip queues a same-host retry (reconnect
+    // mode) instead of the initial-connection failover.
+    await h.sendHubInfoOnSocket(id, "room", "1");
 
     // A blip queues a same-host retry behind the backoff timer.
     await h.simulateAbnormalClose(id);

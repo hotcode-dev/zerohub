@@ -73,6 +73,12 @@ test("migration redirect to a configured host starts automatic failover from tha
   const id = await page.evaluate(
     () => ZeroHubUnitHarness.createClientWithHosts(["a.zerohub.dev", "b.zerohub.dev"])
   );
+  // Shrink the retry budget so the wraparound is reachable in-test.
+  await page.evaluate(
+    (clientId) =>
+      ZeroHubUnitHarness.setConfig(clientId, { maxReconnectAttempts: 1 }),
+    id
+  );
   await page.evaluate((clientId) => ZeroHubUnitHarness.createHub(clientId, "room"), id);
 
   // Redirect from `a` to `b`: hostIndex must land on `b`'s position (1).
@@ -82,24 +88,110 @@ test("migration redirect to a configured host starts automatic failover from tha
   );
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHostIndex(clientId), id)).toBe(1);
 
-  // Now the (mocked) connection to `b` dies with an abnormal 1006: the
-  // automatic failover must advance from the redirected position to the end
-  // of the list and reject cleanly instead of hopping a stale index.
+  // Now the (mocked) connection to `b` dies with an abnormal 1006. The
+  // redirect moved the client to a fresh host and ended the
+  // initial-connection phase, so the close takes the RECONNECT path:
+  // `b` gets its (single) same-host retry first (hostIndex stays on `b`'s
+  // position, not a stale one)…
   await page.evaluate((clientId) => ZeroHubUnitHarness.simulateAbnormalClose(clientId), id);
-  // `getZeroHubBackupHost()` rejection settles in microtasks; flush them.
+  await page.waitForTimeout(400); // attempt-#1 backoff (250 ms base ±20%)
+  // …the retry re-dials `b` (the redirected host), not the old one.
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHost(clientId), id)).toBe(
+    "b.zerohub.dev"
+  );
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
+    "wss://b.zerohub.dev/v1/hubs/create?id=room"
+  );
+
+  // …and only when that retry budget is spent does the sweep move on:
+  // `b` is the LAST configured host (index 1 of 2), so the wraparound
+  // sweep goes back to the FIRST configured host `a` instead of staying
+  // put or hopping a stale index.
+  await page.evaluate((clientId) => ZeroHubUnitHarness.simulateAbnormalClose(clientId), id);
+  // The wraparound re-dial settles synchronously; flush microtasks.
   await page.evaluate(async () => {
     for (let i = 0; i < 5; i += 1) {
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
   });
 
-  // State stays consistent on the dead redirected host; no further socket
-  // was opened (the last one is still the redirected-to `b` socket).
+  // The sweep wrapped to the first host: hostIndex reset to 0, host is `a`,
+  // and a fresh socket was opened against `a`.
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHost(clientId), id)).toBe(
-    "b.zerohub.dev"
+    "a.zerohub.dev"
+  );
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHostIndex(clientId), id)).toBe(0);
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
+    "wss://a.zerohub.dev/v1/hubs/create?id=room"
+  );
+});
+
+test("migration redirect to a host OUTSIDE the list that flaps once recovers on the backup host", async ({
+  page,
+}) => {
+  // The common operator flow: /admin/migrate points at a NEW instance whose
+  // address is not in the client's configured host list. The client must
+  // follow the server-directed host, keep it when it flaps (1006 blip), and
+  // recover there — instead of the pre-fix dead end where a later blip
+  // advanced the STALE hostIndex back onto the old hosts (which, in migrate
+  // mode, redirect back to the new host until the "redirect target is the
+  // current host, not retrying" terminal error fires even though the backup
+  // host may come back seconds later).
+  await prepareUnitHarnessPage(page);
+
+  const id = await page.evaluate(
+    () => ZeroHubUnitHarness.createClientWithHosts(["a.zerohub.dev"])
+  );
+  await page.evaluate((clientId) => ZeroHubUnitHarness.recordZeroHubErrors(clientId), id);
+  await page.evaluate((clientId) => ZeroHubUnitHarness.createHub(clientId, "room"), id);
+
+  // Operator migrates `a` to the new instance `new.example` (not configured):
+  // the live socket closes 1001 with the backup host in the reason.
+  await page.evaluate(
+    (clientId) => ZeroHubUnitHarness.simulateMigrationClose(clientId, "new.example"),
+    id
+  );
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHost(clientId), id)).toBe(
+    "new.example"
+  );
+  // The redirect target is not in the list: hostIndex stays put (0) — it
+  // does NOT point at the redirected host.
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHostIndex(clientId), id)).toBe(0);
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
+    "wss://new.example/v1/hubs/create?id=room"
+  );
+
+  // The redirected host flaps once (a transient 1006, like the blip that
+  // triggered the original migration): the client must retry the SAME
+  // (redirected) host — not advance the stale hostIndex onto old host `a`,
+  // and certainly not hit the self-redirect terminal error.
+  await page.evaluate(
+    (clientId) => ZeroHubUnitHarness.simulateAbnormalClose(clientId),
+    id
+  );
+  await page.waitForTimeout(400); // attempt-#1 backoff (250 ms base ±20%)
+
+  // The retry re-dialed the redirected host…
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHost(clientId), id)).toBe(
+    "new.example"
   );
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
-    "wss://b.zerohub.dev/v1/hubs/create?id=room"
+    "wss://new.example/v1/hubs/create?id=room"
+  );
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getZeroHubErrors(clientId), id)).toHaveLength(
+    0
+  );
+
+  // …and the server's hub info confirms the recovered session.
+  await page.evaluate(
+    (clientId) => ZeroHubUnitHarness.sendHubInfoOnSocket(clientId, "room", "1"),
+    id
+  );
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHost(clientId), id)).toBe(
+    "new.example"
+  );
+  expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getZeroHubErrors(clientId), id)).toHaveLength(
+    0
   );
 });
 
@@ -205,6 +297,11 @@ test("1001 close with a non-host reason on the last host retries the same host i
   );
   await page.evaluate((clientId) => ZeroHubUnitHarness.recordZeroHubErrors(clientId), id);
   await page.evaluate((clientId) => ZeroHubUnitHarness.createHub(clientId, "room"), id);
+  // Confirm the session (the server's hub info) so an abnormal close takes
+  // the RECONNECT path (same-host retry with backoff) instead of the
+  // initial-connection failover, which on a single host would be a terminal
+  // error on the first close.
+  await page.evaluate((clientId) => ZeroHubUnitHarness.sendHubInfoOnSocket(clientId, "room", "1"), id);
   // Shrink the retry budget so the terminal error is reachable in-test.
   await page.evaluate(
     (clientId) =>

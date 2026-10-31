@@ -107,9 +107,9 @@ function driver(page: Page) {
 }
 
 /**
- * The reconnect flow (`reconnect` → `getZeroHubBackupHost().then(...)`)
- * settles in microtasks; flush them so the reconnected socket exists before
- * the next assertion.
+ * The reconnect flow (`reconnect` → failover/wraparound re-dial) settles in
+ * microtasks; flush them so the reconnected socket exists before the next
+ * assertion.
  */
 async function flushMicrotasks(page: Page) {
   await page.evaluate(async () => {
@@ -139,6 +139,15 @@ test.describe("ZeroHubClient SDP send across the reconnect CONNECTING window", (
       "wss://a.zerohub.dev/v1/hubs/create?id=room",
     );
     await h.sendHubInfo(id, "1", ["2"]);
+
+    // This spec models the immediate failover hop onto host `b` (a fresh
+    // CONNECTING socket #2); zero the same-host retry budget so an
+    // abnormal close on the confirmed session fails over right away
+    // instead of queueing a backoffed retry on `a` first.
+    await page.evaluate(
+      (clientId) => ZeroHubUnitHarness.setConfig(clientId, { maxReconnectAttempts: 0 }),
+      id,
+    );
 
     // Arm the offer with a short ICE window: no ICE candidates ever arrive
     // on the mock connection, so the fallback timer is the only thing that
@@ -222,6 +231,14 @@ test.describe("ZeroHubClient SDP send across the reconnect CONNECTING window", (
 
     await h.createHub(id, "room");
     await h.sendHubInfo(id, "1", ["2"]);
+
+    // Zero the same-host retry budget so the abnormal close fails over to
+    // host `b` immediately (the spec models the failover hop, not the
+    // same-host retry-with-backoff path).
+    await page.evaluate(
+      (clientId) => ZeroHubUnitHarness.setConfig(clientId, { maxReconnectAttempts: 0 }),
+      id,
+    );
 
     // Long ICE window so the fallback timer cannot interfere: the
     // onicecandidate path is the only delivery attempt in this test.

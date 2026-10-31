@@ -166,24 +166,37 @@ const client = new ZeroHubClient(hosts, config, new MeshTopology());
 - Provide multiple hosts: `['sg1.zerohub.dev', 'sg2.zerohub.dev']`.
 - When a WebSocket closes abnormally (code `1006` abnormal close or `1011`
   internal error), the client reconnects automatically:
-  - If a **backup host** is still available, it fails over to the next host
-    in the list immediately (a single failure advances the host index
-    exactly once).
-  - When the client is already on the **last configured host** — including
-    the common single-host deployment — it instead retries the **same host**
-    with exponential backoff and jitter (250 ms, 500 ms, 1 s, 2 s, ...
-    capped at 30 s), up to `maxReconnectAttempts` attempts (default 10, base
-    delay `reconnectBaseBackoffMs`). A transient blip (NAT rebind, WiFi
+  - An ESTABLISHED session (the server's hub info has confirmed the
+    connection at least once) first retries the **same host** with
+    exponential backoff and jitter (250 ms, 500 ms, 1 s, 2 s, ... capped
+    at 30 s), up to `maxReconnectAttempts` attempts (default 10, base delay
+    `reconnectBaseBackoffMs`). A transient blip (NAT rebind, WiFi
     reassociation, mobile-sleep wake, laptop suspend/resume) is recovered
     this way without the application intervening.
-  - Only when the retry budget is genuinely exhausted does
-    `getZeroHubBackupHost()` reject, surfacing the terminal failure via
-    `onZeroHubError`.
-- The retry budget resets to zero whenever a connection is confirmed (the
-  server's hub info arrives) or a migration redirect (code `1001`) lands, so
-  a long-lived healthy session never accumulates backoff.
-- A manual `disconnect()` cancels any queued retry: the client never
-  re-dials on its own after an intentional teardown.
+  - The FIRST connection (before any host has confirmed a session) fails
+    over to the next host in the list immediately instead — a single
+    failure advances the host index exactly once.
+  - When a host's retry budget is genuinely exhausted the client moves on:
+    to the next configured host, or — on the last host — wraps back to the
+    first host for an additional full sweep, bounded by
+    `maxReconnectRounds` sweeps (default 2).
+  - A migration redirect (close code `1001` with a well-formed backup host)
+    moves the client to the redirected host and gives it its own retry
+    budget; if that host later drops abnormally the client retries it the
+    same way instead of giving up. A redirect back to the host we are
+    already on (an operator misconfiguration) is surfaced via
+    `onZeroHubError` and not retried.
+  - Only when every host's retry budget is spent on every allowed sweep does
+    the terminal failure surface via `onZeroHubError` — exactly once; after
+    that the client is latched and further closes are no-ops until the
+    application calls an entry point (`createHub()`, `joinHub()`, ...) again.
+- The retry budget and the sweep round reset to zero whenever a connection
+  is confirmed (the server's hub info arrives) or a migration redirect
+  (code `1001`) lands, so a long-lived healthy session never accumulates
+  backoff.
+- A manual `disconnect()` cancels any queued retry and resets the sweep
+  round: the client never re-dials on its own after an intentional
+  teardown.
 - Listen to `onZeroHubError` to surface unrecoverable errors to the user
   interface.
 

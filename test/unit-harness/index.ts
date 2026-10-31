@@ -349,6 +349,24 @@ function snapshotPeer(client: ZeroHubClient, peerId: string): PeerSnapshot {
   };
 }
 
+/** The in-page state of `installFakeWebSocket()` (thrown when not installed). */
+function zhFakeState(): {
+  original: unknown;
+  healthy: Set<string>;
+  dials: string[];
+  current: () => MockWebSocket | null;
+} {
+  const fake = (globalThis as { __zhubFake?: unknown }).__zhubFake as
+    | ReturnType<typeof zhFakeState>
+    | undefined;
+  if (!fake) {
+    throw new Error(
+      "fake WebSocket is not installed (call installFakeWebSocket first)"
+    );
+  }
+  return fake;
+}
+
 const ZeroHubUnitHarness = {
   /** Pure helper under test: return the WS URL for a host + tls flag. */
   wsUrl(host: string, tls: boolean): string {
@@ -1389,6 +1407,151 @@ const ZeroHubUnitHarness = {
   },
 
   /**
+   * Installs a fake `WebSocket` constructor (replacing the harness's mock)
+   * so multi-host failover / wraparound specs can model WHICH hosts are
+   * down without real servers or dead ports. Every constructed socket
+   * starts CONNECTING; `settleOpen()` then fails its dial (`onerror` +
+   * `onclose` 1006, like a connection refusal) or completes it (`onopen`)
+   * depending on the host's health classification.
+   *
+   * The fake lives in-page (a serialized driver handle cannot carry its
+   * methods back to Node), so specs drive it through the sibling helpers:
+   * `markFakeWebSocketHealthy` / `markFakeWebSocketDead` / `settleOpen` /
+   * `fireLiveClose` / `getFakeDials`, and `teardownFakeWebSocket` to
+   * restore the harness mock (do this at the end of each test so sibling
+   * tests see a clean global).
+   */
+  installFakeWebSocket(): void {
+    const original = globalThis.WebSocket;
+    const healthy = new Set<string>();
+    const dials: string[] = [];
+    let current: MockWebSocket | null = null;
+    globalThis.WebSocket = class extends MockWebSocket {
+      constructor(url: string | URL) {
+        super(url);
+        this.readyState = 0; // CONNECTING: the fake settles it via settleOpen()
+        dials.push(this.url);
+        current = this;
+      }
+    } as unknown as typeof original;
+    (globalThis as { __zhubFake?: unknown }).__zhubFake = {
+      original,
+      healthy,
+      dials,
+      current: () => current,
+    };
+  },
+
+  /** Marks a host healthy: the next `settleOpen()` on its dial completes. */
+  markFakeWebSocketHealthy(host: string): void {
+    zhFakeState().healthy.add(host);
+  },
+
+  /** Marks a host dead: the next `settleOpen()` on its dial fails. */
+  markFakeWebSocketDead(host: string): void {
+    zhFakeState().healthy.delete(host);
+  },
+
+  /**
+   * Settles the latest pending dial: `onopen` when its host is marked
+   * healthy, `onclose` 1006 otherwise (a connection refusal).
+   *
+   * Refusal settles via `onclose` ONLY: a real browser does not fire
+   * `onerror` on a normal 1006 close, and the client's `onerror` surfaces a
+   * spurious `onZeroHubError` that a refused dial must not produce —
+   * `reconnect()` (the onclose path) is the recovery driver. (A dial
+   * failure like DNS/refusal that DOES fire `onerror` is exercised by the
+   * "connect Promise settles once" specs against a real server.)
+   *
+   * Throws when there is no pending dial — specs must settle every dial
+   * they create, in order.
+   */
+  settleOpen(): void {
+    const fake = zhFakeState();
+    const ws = fake.current();
+    if (!ws || ws.readyState === 3) {
+      throw new Error("no pending socket to settle");
+    }
+    const host = new URL(ws.url).host;
+    if (fake.healthy.has(host)) {
+      ws.readyState = 1;
+      ws.onopen?.();
+    } else {
+      ws.onclose?.({ code: 1006, reason: "" });
+    }
+  },
+
+  /**
+   * Fires a close event on the client's LIVE socket — the one the fake
+   * most recently constructed (the real `connectToZeroHub` wired its
+   * handlers onto it). Codes 1006/1011 model a network blip; 1001 with a
+   * host-shaped reason models a migration redirect.
+   */
+  fireLiveClose(code: number, reason: string): void {
+    const fake = zhFakeState();
+    const ws = fake.current();
+    if (!ws?.onclose) {
+      throw new Error("no live socket with a close handler to fire on");
+    }
+    ws.onclose({ code, reason });
+  },
+
+  /** The URL of every dial the fake has constructed (in order). */
+  getFakeDials(): string[] {
+    return [...zhFakeState().dials];
+  },
+
+  /**
+   * Restores the harness's original mock `WebSocket` global (and clears the
+   * fake's in-page driver state) so sibling specs see a clean global. Call
+   * this at the end of every spec that installed the fake.
+   */
+  teardownFakeWebSocket(): void {
+    const fake = (globalThis as { __zhubFake?: unknown }).__zhubFake as
+      | { original?: typeof WebSocket }
+      | undefined;
+    delete (globalThis as { __zhubFake?: unknown }).__zhubFake;
+    // Restore the harness's mock only if we captured it (installFakeWebSocket
+    // stashes the global that was in place at install time).
+    if (fake?.original && (globalThis.WebSocket as unknown) !== fake.original) {
+      (globalThis as { WebSocket: unknown }).WebSocket = fake.original;
+    }
+  },
+
+  /**
+   * Flushes pending microtasks in-page (the unit harness runs inside the
+   * browser page; a Node-side `page.evaluate` that awaits the client's
+   * Promise chains would need this to settle rejections like a
+   * failover-dial failure).
+   */
+  async flushMicrotasks(): Promise<void> {
+    for (let i = 0; i < 10; i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  },
+
+  /**
+   * Drives `createHub("room")` and reports how its connect Promise settled:
+   * `"resolved"` when a dial's `onopen` fires, `"rejected"` when the FIRST
+   * dial's refusal settles it (the Promise is one-shot: later failover
+   * dials do not re-settle it, so with every host down the entry point is
+   * rejected exactly once even though the reconnect loop keeps dialing).
+   * Specs must settle the dials that follow via `settleOpen()`.
+   */
+  async settleEntryPoint(id: number): Promise<"resolved" | "rejected"> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    try {
+      await entry.client.createHub("room");
+      return "resolved";
+    } catch {
+      return "rejected";
+    }
+  },
+
+  /**
    * Real-time in-page wait. Lets specs outlast the client's P2P-drop recovery
    * delay (private `WEBRTC_RECOVERY_DELAY_MS`) and its 2s
    * `waitIceCandidatesTimeout` fallback without `page.waitForTimeout` on the
@@ -1478,17 +1641,46 @@ const ZeroHubUnitHarness = {
   },
 
   /**
+   * The private `reconnectRound` counter of the bounded wraparound sweep
+   * (private is erased at runtime). Exposed so wraparound specs can assert
+   * how many full sweeps have completed and that the counter resets on a
+   * confirmed connection / disconnect.
+   */
+  getReconnectRound(id: number): number {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return (
+      entry.client as unknown as { reconnectRound: number }
+    ).reconnectRound;
+  },
+
+  /**
+   * The client's `config.maxReconnectRounds` (the number of full sweeps
+   * through the configured host list before the terminal error fires).
+   * Specs override it via `setConfig` to keep multi-host terminal tests fast.
+   */
+  getMaxReconnectRounds(id: number): number {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return entry.client.config.maxReconnectRounds;
+  },
+
+  /**
    * Triggers a terminal reconnect failure: the client's single host is
    * already the last one, so `reconnect()` retries the SAME host with
    * backoff until the retry budget (`config.maxReconnectAttempts`) is
-   * exhausted; then `getZeroHubBackupHost()` rejects and the rejection
-   * must surface through `onZeroHubError`. To keep this deterministic and
-   * fast, the budget is first lowered to 3 (via the `setConfig` override),
-   * and each abnormal close is driven through the live socket's `onclose`
-   * handler (code 1006) exactly as a real network blip would. Pending
-   * same-host retry timers are flushed between closes so each retry dials
-   * before the next close is injected. Returns the captured error
-   * messages after the rejection has settled.
+   * exhausted; then, with no next host and no wraparound round left, the
+   * terminal branch surfaces `onZeroHubError` synchronously. To keep this
+   * deterministic and fast, the budget is first lowered to 3 (via the
+   * `setConfig` override), and each abnormal close is driven through the
+   * live socket's `onclose` handler (code 1006) exactly as a real network
+   * blip would. Pending same-host retry timers are flushed between closes
+   * so each retry dials before the next close is injected. Returns the
+   * captured error messages after the terminal branch has run.
    */
   async triggerAllHostsExhausted(id: number): Promise<string[]> {
     const entry = clients.get(id);
@@ -1504,6 +1696,12 @@ const ZeroHubUnitHarness = {
     if (!entry.client.ws) {
       entry.client.createHub("room");
     }
+    // Confirm the session (the server's hub info) so the abnormal closes
+    // below take the RECONNECT path (same-host retry with backoff), not the
+    // initial-connection failover: without this, every close on a single
+    // host is an immediate terminal error and the budget loop fires it
+    // repeatedly instead of exactly once.
+    this.sendHubInfoOnSocket(id, "room", "1");
     // Budget of 3 same-host retries keeps this fast; the terminal error
     // must still fire after the budget is genuinely spent.
     this.setConfig(id, { maxReconnectAttempts: 3 });
@@ -1519,11 +1717,12 @@ const ZeroHubUnitHarness = {
         this.simulateAbnormalClose(id);
       }
     }
-    // The budget is now spent: one more abnormal close must fall through to
-    // `getZeroHubBackupHost()` and reject — the terminal error.
+    // The budget is now spent: one more abnormal close must hit the
+    // terminal branch — the terminal error (no next host, no wraparound
+    // round left).
     this.simulateAbnormalClose(id);
-    // The `getZeroHubBackupHost()` rejection flows through the
-    // `.then().catch()` chain in microtasks; flush them before reading.
+    // The terminal branch is synchronous; flush a few microtasks before
+    // reading just in case.
     for (let i = 0; i < 5; i += 1) {
       await Promise.resolve();
     }

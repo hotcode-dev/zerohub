@@ -44,6 +44,7 @@ export const DEFAULT_CONFIG: Config = {
   autoAnswer: true,
   autoAcceptAnswer: true,
   maxReconnectAttempts: 10,
+  maxReconnectRounds: 2,
   reconnectBaseBackoffMs: 250,
   rtcConfig: DEFAULT_RTC_CONFIG,
   rtcOfferOptions: DEFAULT_RTC_OFFER_OPTIONS,
