@@ -446,6 +446,62 @@ describe("connectToZeroHub — connect Promise settles once", () => {
     client.disconnect();
     await new Promise((r) => setTimeout(r, 20));
   });
+
+  /**
+   * Fire the client socket's `onerror` handler with a fake event object.
+   * The handler is wired by the REAL connectToZeroHub, so this exercises
+   * the exact production event-handler path (not a re-implementation).
+   */
+  function fakeError() {
+    (client.ws as unknown as { onerror: (ev: unknown) => void }).onerror({});
+  }
+
+  it("a throwing onZeroHubError onerror does not escape the event handler", async () => {
+    const promise = client.connectToZeroHub(
+      new URL(`ws://127.0.0.1:${wsPort}/v1/hubs/join?id=h`)
+    );
+    await promise; // open resolved the connect Promise
+
+    // A throwing user handler must NOT take down the onerror event handler:
+    // if it did, the `settle(...)` below it would be skipped and, on a
+    // still-pending dial, the connect Promise returned by createHub()/
+    // joinHub() would stay pending forever. The connect Promise is already
+    // settled here (open consumed the one-shot `settle` guard), so this
+    // spec pins the handler-isolation contract directly: nothing throws out
+    // of the handler, and the throw is logged via the standard surface.
+    client.onZeroHubError = () => {
+      throw new Error("user handler boom");
+    };
+    expect(() => fakeError()).not.toThrow();
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalledWith(
+      "onZeroHubError handler threw",
+      expect.anything()
+    );
+    client.disconnect();
+    await new Promise((r) => setTimeout(r, 20));
+  });
+
+  it("a throwing onZeroHubError onclose (protocol-level code) does not escape the event handler", async () => {
+    const promise = client.connectToZeroHub(
+      new URL(`ws://127.0.0.1:${wsPort}/v1/hubs/join?id=h`)
+    );
+    await promise; // open resolved the connect Promise
+
+    // Same isolation contract for the onclose default branch: the throw is
+    // contained and logged; the `settle(...)` below the handler stays
+    // reachable (a no-op here — already settled — but would reject the
+    // connect Promise on a still-pending dial).
+    client.onZeroHubError = () => {
+      throw new Error("user handler boom");
+    };
+    expect(() => fakeClose(1002)).not.toThrow();
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalledWith(
+      "onZeroHubError handler threw",
+      expect.anything()
+    );
+    client.disconnect();
+    await new Promise((r) => setTimeout(r, 20));
+  });
 });
 
 describe("handleZeroHubMessage — hubInfo roster reconciliation", () => {
@@ -657,6 +713,30 @@ describe("onmessage — corrupt frame isolation", () => {
     expect(hubInfoCalls).toHaveBeenCalledTimes(1);
     expect(client.hubInfo?.id).toBe("hub-1");
     expect(client.myPeerId).toBe("1");
+  });
+
+  it("a throwing onZeroHubError does not escape the onmessage handler on a decode failure", () => {
+    client = makeClient();
+    const handler = onMessage();
+    client.onZeroHubError = () => {
+      throw new Error("user handler boom");
+    };
+
+    // A corrupt frame: the dispatcher's outer catch must isolate the
+    // throwing user handler — nothing may escape the onmessage event
+    // handler, and the throw is logged via the standard surface.
+    expect(() =>
+      handler({ data: new Uint8Array([0xff, 0xff, 0xff, 0xff]) } as never)
+    ).not.toThrow();
+    const logger = client.logger as unknown as FakeLogger;
+    expect(logger.error).toHaveBeenCalledWith(
+      "failed to process ZeroHub message",
+      expect.anything()
+    );
+    expect(logger.error).toHaveBeenCalledWith(
+      "onZeroHubError handler threw",
+      expect.anything()
+    );
   });
 
   it("a throwing onPeerStatusChange inside the dispatcher cannot escape the onmessage handler", () => {
@@ -977,6 +1057,30 @@ describe("reconnect — 1001 close reason host validation", () => {
     expect(connectCalls[0].host).toBe("new-host");
   });
 
+  it("a throwing onZeroHubError on a self-redirect (1001 back to current host) does not escape reconnect()", () => {
+    // The self-redirect branch is invoked from the onclose 1001 handler, so
+    // a throw out of `reconnect()` would escape the WebSocket event handler
+    // (an uncaught exception that takes down the page's event loop).
+    const client = makeClient(["first-host"]);
+    stubConnectToZeroHub(client);
+    client.onZeroHubError = () => {
+      throw new Error("user handler boom");
+    };
+
+    // A 1001 close whose reason is the CURRENT host: the redirect would
+    // cycle forever, so the client surfaces a terminal error and stops —
+    // and the throwing user handler must not escape that path.
+    expect(() =>
+      client.reconnect(new URL("ws://first-host/hub"), "first-host")
+    ).not.toThrow();
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalledWith(
+      "onZeroHubError handler threw",
+      expect.anything()
+    );
+    // The host state was NOT corrupted by the self-redirect.
+    expect(client.host).toBe("first-host");
+  });
+
   it("redirects (not failover) on non-canonical-but-valid 1001 reasons the server accepts", () => {
     // Regression for the isWellFormedHost divergence: these are valid
     // migration targets the server's validateBackupHost accepts and emits,
@@ -1095,6 +1199,38 @@ describe("reconnect — same-host retry-with-backoff on abnormal close", () => {
     expect(errors[0].message).toBe(
       "all ZeroHub hosts are not working, please check the ZeroHub hosts"
     );
+  });
+
+  it("a throwing onZeroHubError on the terminal all-hosts-exhausted branch does not escape reconnect()", async () => {
+    // The terminal branch is invoked from the onclose handler, so a throw
+    // out of `reconnect()` would escape the WebSocket event handler.
+    vi.useFakeTimers();
+    const client = makeClient(["only-host"]);
+    client.config.maxReconnectAttempts = 1;
+    markEstablished(client);
+    stubConnectToZeroHub(client);
+    client.onZeroHubError = () => {
+      throw new Error("user handler boom");
+    };
+
+    // Blip #1 queues the single same-host retry; fire it.
+    client.reconnect(url());
+    await vi.advanceTimersByTimeAsync(30_000);
+    // Blip #2: the budget is spent — the terminal branch fires. The
+    // throwing user handler must not escape it.
+    expect(() => {
+      client.reconnect(url());
+    }).not.toThrow();
+    await vi.advanceTimersByTimeAsync(1);
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalledWith(
+      "onZeroHubError handler threw",
+      expect.anything()
+    );
+    // The `reconnectAbandoned` latch was set before the user handler ran,
+    // so the terminal state was reached even though the handler threw.
+    expect(
+      (client as unknown as { reconnectAbandoned: boolean }).reconnectAbandoned
+    ).toBe(true);
   });
 
   it("the terminal error fires exactly once: a further blip on a leftover socket is a no-op", async () => {
