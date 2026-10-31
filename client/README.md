@@ -61,6 +61,7 @@ client.createHub("demo-room", { name: "Alice" }, { roomName: "Demo" });
 | `dataChannelConfig`               | `undefined`                                                  | Configure data channel count, init options, and callback.                     |
 | `mediaChannelConfig`              | `undefined`                                                  | Attach local media streams and handle remote tracks.                          |
 | `maxReconnectAttempts`            | `10`                                                         | Same-host retries after an abnormal close (1006/1011) on the last host before the terminal `onZeroHubError`. Resets when a connection is confirmed. |
+| `maxReconnectRounds`              | `2`                                                          | Number of additional full sweeps through the configured host list (wrapping back to the first host after the last host's retry budget is exhausted) before the terminal `onZeroHubError`. Resets when a connection is confirmed. |
 | `reconnectBaseBackoffMs`          | `250`                                                        | Base delay for the exponential backoff between same-host reconnect retries (doubles each attempt, ±20% jitter, capped at 30 s). |
 
 Partial configs are merged with `DEFAULT_CONFIG`, so you only set what you need.
