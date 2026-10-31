@@ -15,6 +15,9 @@ import { Config } from "../types";
  *
  * @param zeroHubConfig - The ZeroHub client configuration.
  * @param peer - The peer whose RTCPeerConnection is set up.
+ * @param logger - The log-level-gated logger to log through. Call sites must
+ *   pass the gated `ZeroHubClient.logger` (a `ZeroHubLogger`), not the raw
+ *   user `config.logger`, so log-level gating is preserved.
  * @param isOfferer - True if this peer creates the offer (and the channels).
  * @param logOnDataChannel - Optional answerer-only callback invoked when an
  *   incoming data channel is received, used by topologies that log it.
@@ -22,6 +25,7 @@ import { Config } from "../types";
 export function setupDataChannel<T>(
   zeroHubConfig: Config<T>,
   peer: Peer<T>,
+  logger: ZeroHubLogger,
   isOfferer: boolean,
   logOnDataChannel?: () => void
 ): void {
@@ -43,11 +47,17 @@ export function setupDataChannel<T>(
       onDataChannel(peer, dataChannel, true);
     }
   } else {
-    // handle incoming data channel
+    // handle incoming data channel. The user callback fires in the browser
+    // event loop (long after setup returns), so a throw must be isolated
+    // here: it must never escape the RTCPeerConnection event handler.
     peer.rtcConn.ondatachannel = (event) => {
       if (event.channel) {
         logOnDataChannel?.();
-        onDataChannel(peer, event.channel, false);
+        try {
+          onDataChannel(peer, event.channel, false);
+        } catch (err) {
+          logger.error("onDataChannel handler threw", err);
+        }
       }
     };
   }
@@ -91,9 +101,15 @@ export function setupMediaChannel<T>(
     });
   }
 
-  // handle incoming media stream
+  // handle incoming media stream. The user callback fires in the browser
+  // event loop, so a throw must be isolated here: it must never escape the
+  // RTCPeerConnection event handler.
   peer.rtcConn.ontrack = (event) => {
     logOnTrack?.(logger, peer);
-    mediaChannelConfig.onTrack(peer, event);
+    try {
+      mediaChannelConfig.onTrack(peer, event);
+    } catch (err) {
+      logger.error("onTrack handler threw", err);
+    }
   };
 }

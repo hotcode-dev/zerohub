@@ -11,11 +11,12 @@ import {
 import * as crypto from "node:crypto";
 import * as http from "node:http";
 import type { Duplex } from "node:stream";
-import { LogLevel, PeerStatus } from "./types";
+import { Config, LogLevel, PeerStatus } from "./types";
 import { ZeroHubLogger } from "./logger";
 import { Peer } from "./peer";
 import { ServerMessage } from "./proto/zerohub/v1/server_message";
 import { ZeroHubClient } from "./zeroHub";
+import { setupDataChannel, setupMediaChannel } from "./topology/peerSetup";
 
 /**
  * Focused unit tests for the highest-risk signalling/reconnect logic in
@@ -44,6 +45,10 @@ class FakeRTCPeerConnection {
   public oniceconnectionstatechange: ((ev: unknown) => void) | null = null;
   public onicecandidate: ((ev: { candidate?: object | null }) => void) | null =
     null;
+  public ondatachannel:
+    | ((ev: { channel?: { label: string } | null }) => void)
+    | null = null;
+  public ontrack: ((ev: { streams?: MediaStream[] }) => void) | null = null;
   public connectionState = "new";
   public iceConnectionState = "new";
 
@@ -730,6 +735,162 @@ describe("onmessage — corrupt frame isolation", () => {
     expect(client.peers["2"].status).toBe(PeerStatus.Pending);
     // …and the stale peer was pruned (the reconciliation's prune pass ran).
     expect(client.peers["9"]).toBeUndefined();
+  });
+});
+
+describe("WebRTC event boundary — throwing user callbacks are isolated", () => {
+  it("a throwing answerer onDataChannel does not escape the ondatachannel handler", () => {
+    const logger = new FakeLogger();
+    const { peer, rtc } = makePeer("2");
+    setupDataChannel(
+      {
+        dataChannelConfig: {
+          onDataChannel: () => {
+            throw new Error("user channel boom");
+          },
+        },
+      } as Config,
+      peer,
+      logger as unknown as ZeroHubLogger,
+      false
+    );
+    const channel = { label: "0" };
+
+    // The handler is installed and a throw inside the user callback must
+    // never escape it (an uncaught throw here is a raw page exception —
+    // the exact failure class #107 eliminated at the signaling boundary).
+    expect(rtc.ondatachannel).toBeDefined();
+    expect(() => rtc.ondatachannel?.({ channel } as never)).not.toThrow();
+    expect(logger.error).toHaveBeenCalledWith(
+      "onDataChannel handler threw",
+      expect.anything()
+    );
+  });
+
+  it("keeps delivering subsequent channel events after a throwing onDataChannel", () => {
+    const logger = new FakeLogger();
+    const seen: unknown[] = [];
+    const { peer, rtc } = makePeer("2");
+    setupDataChannel(
+      {
+        dataChannelConfig: {
+          onDataChannel: (p, dc) => {
+            // Record the delivery, then throw on the FIRST event only:
+            // the guard must keep the handler alive for later events.
+            seen.push([p.id, dc.label]);
+            if (seen.length === 1) {
+              throw new Error("first channel boom");
+            }
+          },
+        },
+      } as Config,
+      peer,
+      logger as unknown as ZeroHubLogger,
+      false
+    );
+
+    // First event throws; the second must still reach the user callback —
+    // the guard must not swallow legitimate channel events or detach the
+    // handler. Both events recorded a delivery before the first one threw.
+    expect(() =>
+      rtc.ondatachannel?.({ channel: { label: "0" } } as never)
+    ).not.toThrow();
+    expect(() =>
+      rtc.ondatachannel?.({ channel: { label: "1" } } as never)
+    ).not.toThrow();
+    expect(seen).toEqual([
+      ["2", "0"],
+      ["2", "1"],
+    ]);
+    expect(logger.error).toHaveBeenCalledTimes(1);
+  });
+
+  it("a throwing mediaChannelConfig.onTrack does not escape the ontrack handler", () => {
+    const logger = new FakeLogger();
+    const { peer, rtc } = makePeer("2");
+    setupMediaChannel(
+      {
+        mediaChannelConfig: {
+          onTrack: () => {
+            throw new Error("user track boom");
+          },
+        },
+      } as Config,
+      peer,
+      logger as unknown as ZeroHubLogger
+    );
+    const trackEvent = { streams: [{}] } as never;
+
+    expect(rtc.ontrack).toBeDefined();
+    expect(() => rtc.ontrack?.(trackEvent)).not.toThrow();
+    expect(logger.error).toHaveBeenCalledWith(
+      "onTrack handler threw",
+      expect.anything()
+    );
+  });
+
+  it("keeps delivering subsequent track events after a throwing onTrack", () => {
+    const logger = new FakeLogger();
+    const seen: unknown[] = [];
+    const { peer, rtc } = makePeer("2");
+    setupMediaChannel(
+      {
+        mediaChannelConfig: {
+          onTrack: (p, event) => {
+            // Record the delivery, then throw on the FIRST event only.
+            seen.push(p.id);
+            if (seen.length === 1) {
+              throw new Error("first track boom");
+            }
+            void event;
+          },
+        },
+      } as Config,
+      peer,
+      logger as unknown as ZeroHubLogger
+    );
+
+    expect(() => rtc.ontrack?.({} as never)).not.toThrow();
+    expect(() => rtc.ontrack?.({} as never)).not.toThrow();
+    // Both events reached the callback (the first recorded its delivery
+    // before throwing).
+    expect(seen).toEqual(["2", "2"]);
+    expect(logger.error).toHaveBeenCalledTimes(1);
+  });
+
+  it("a throwing onOffer with autoAnswer:false is isolated and not surfaced as a signaling error", () => {
+    const client = makeClient();
+    const { peer } = makePeer("2");
+    client.peers = { "2": peer };
+    client.myPeerId = "1";
+    client.config.autoAnswer = false;
+    const signalingErrors: unknown[] = [];
+    client.onZeroHubError = (err) => signalingErrors.push(err);
+    client.onOffer = () => {
+      throw new Error("manual offer boom");
+    };
+
+    const serverMessage: ServerMessage = {
+      offerMessage: { offerPeerId: "2", offerSdp: "v=0 fake-sdp" },
+    };
+
+    expect(() => client.handleZeroHubMessage(serverMessage)).not.toThrow();
+
+    // The status transition still applied before the callback ran…
+    expect(peer.status).toBe(PeerStatus.AnswerPending);
+    // …and the throw was isolated with the standard "handler threw" log…
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalledWith(
+      "onOffer handler threw",
+      expect.anything()
+    );
+    // …but NOT misclassified as a connection-level/signaling failure.
+    expect(signalingErrors).toHaveLength(0);
+    expect(
+      (client.logger as unknown as FakeLogger).error
+    ).not.toHaveBeenCalledWith(
+      "failed to process ZeroHub message",
+      expect.anything()
+    );
   });
 });
 

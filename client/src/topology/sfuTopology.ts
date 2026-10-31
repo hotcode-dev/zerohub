@@ -288,7 +288,7 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
     this.zeroHub.logger.log(`SFU: Setting up connection to client ${peer.id}`);
 
     // SFU creates the offer, so it is always the offerer
-    setupDataChannel(this.zeroHub.config, peer, true);
+    setupDataChannel(this.zeroHub.config, peer, this.zeroHub.logger, true);
 
     // Set up media channels if configured
     setupMediaChannel(
@@ -329,9 +329,15 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
     this.zeroHub.logger.log("Client: Connecting to SFU");
 
     // Client is the answerer (SFU creates the offer)
-    setupDataChannel(this.zeroHub.config, peer, false, () => {
-      this.zeroHub?.logger.log("Client: Received data channel from SFU");
-    });
+    setupDataChannel(
+      this.zeroHub.config,
+      peer,
+      this.zeroHub.logger,
+      false,
+      () => {
+        this.zeroHub?.logger.log("Client: Received data channel from SFU");
+      }
+    );
 
     // Set up media channels if configured
     setupMediaChannel(
