@@ -46,17 +46,34 @@ const client = new ZeroHubClient(
 - `mediaChannelConfig` (optional) - Configure local media stream and track handling.
 - `maxReconnectAttempts` (number) - Same-host retries after an abnormal close (1006/1011) on the last configured host before the terminal `onZeroHubError`. Default: `10`. The counter resets to zero when a connection is confirmed (the server's hub info arrives).
 - `reconnectBaseBackoffMs` (number) - Base delay (ms) for the exponential backoff between same-host reconnect retries; each retry doubles the previous delay with ±20% jitter, capped at 30 s. Default: `250`.
+- `maxReconnectRounds` (number) - Number of additional full sweeps through the configured host list (wrapping back to the first host after the last host's retry budget is exhausted) before the terminal `onZeroHubError`. Default: `2`. The round counter resets when a connection is confirmed (the server's hub info arrives), when a migration redirect lands, or on `disconnect()`.
 
 ### Automatic reconnection
 
 When a signaling WebSocket closes abnormally (code `1006` abnormal close or
-`1011` internal error), the client reconnects automatically: it fails over to
-the next configured host immediately when one is available (a single failure
-advances the host index exactly once), and retries the **same** last host with
-exponential backoff when it is already on the final host — including the
-common single-host deployment. The terminal `onZeroHubError` fires only after
-the retry budget is exhausted, or when a manual `disconnect()` leaves no
-recovery path.
+`1011` internal error), the client reconnects automatically:
+
+- An established session (the server's hub info has confirmed the connection
+  at least once) first retries the **same** host with exponential backoff
+  (base `reconnectBaseBackoffMs`, doubling each retry with ±20% jitter,
+  capped at 30 s), up to `maxReconnectAttempts` attempts. A transient blip
+  (NAT rebind, WiFi reassociation, laptop suspend/resume) is recovered this
+  way without the application intervening.
+- The first connection (before any host has confirmed a session) fails over
+  to the next configured host immediately instead — a single failure advances
+  the host index exactly once, and each host gets a fresh retry budget.
+- When a host's retry budget is exhausted the client moves on: to the next
+  configured host, or — on the last host — wraps back to the first host for
+  another full sweep, bounded by `maxReconnectRounds` sweeps (default `2`).
+- Only when every host's retry budget is spent on every allowed sweep does
+  the terminal `onZeroHubError` fire; a manual `disconnect()` also leaves no
+  recovery path, since the client never re-dials after an intentional
+  teardown.
+
+The retry budget and the sweep round reset to zero whenever a connection is
+confirmed (the server's hub info arrives) or a migration redirect (close code
+`1001` with a well-formed backup host) lands, so a long-lived healthy session
+never accumulates backoff.
 
 ## Topology: Mesh
 
@@ -76,10 +93,17 @@ It handles:
 - `joinOrCreateIPHub(peerMetadata?, hubMetadata?)` - IP hub API (hub id is derived from the caller's IP)
 - `joinPermanentHub(hubId, peerMetadata?)` - join an existing permanent (never-expires) hub
 
-These entry points all return `void` — they open the WebSocket connection
-asynchronously. Hub join completion is delivered via the `onHubInfo` callback
-(and subsequent peer activity via `onPeerStatusChange`), never via a Promise,
-so do not `await` them or read `myPeerId`/`peers` immediately after the call.
+These entry points all return `Promise<void>`: the Promise resolves when the
+signaling WebSocket **opens** and rejects when the connection attempt fails
+(a failed dial — DNS failure / connection refused — or an abnormal close with
+a code other than `1000`/`1001`/`1006`/`1011`). Note that "socket open" is
+not "hub joined": the server's hub info arrives after the socket opens, so
+hub join completion is still delivered via the `onHubInfo` callback (and
+subsequent peer activity via `onPeerStatusChange`). `await` the call to know
+the socket is open, but do not read `myPeerId`/`peers` immediately after the
+`await` — they are populated when `onHubInfo` fires. Since the Promise
+rejects on connection failure, handle the rejection (try/catch or `.catch`)
+instead of dropping the returned Promise.
 
 Permanent hubs are created out-of-band via the admin HTTP endpoint
 `GET /v1/permanent-hubs/create` (requires the `Authorization` header), since
@@ -116,10 +140,12 @@ client.config.dataChannelConfig = {
   },
 };
 
-// Fire-and-forget: `joinRandomHub` returns `void` and the connection is
-// established asynchronously. The join completes when the `onHubInfo`
-// callback fires — do not read `myPeerId` or `peers` immediately after.
-client.joinRandomHub(
+// `joinRandomHub` returns a Promise that resolves when the signaling socket
+// opens and rejects on connection failure, so `await` it (or `.catch`) —
+// never drop the returned Promise. The join itself completes later, when the
+// `onHubInfo` callback fires, so don't read `myPeerId` or `peers` right
+// after the `await`.
+await client.joinRandomHub(
   "my-random-hub-id", // random hub id returned to the creator via onHubInfo
   { displayName: "alice" } // peer metadata shared with other peers
 );
