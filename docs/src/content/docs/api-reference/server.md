@@ -11,18 +11,34 @@ The server routes these endpoints by path only and does not check the HTTP
 method, so any method reaches the handler; clients conventionally use `GET`,
 which is what the AsyncAPI spec (`server/api.yml`) models.
 
-- `GET /v1/hubs/create?id={hubId}` - create a fixed hub. Accepts optional `hubMetadata` and `peerMetadata` query params (JSON-encoded).
-- `GET /v1/hubs/join?id={hubId}` - join a fixed hub
-- `GET /v1/hubs/join-or-create?id={hubId}` - join an existing fixed hub or create it if it doesn't exist
-- `GET /v1/hubs/get?id={hubId}` - get an existing fixed hub's metadata as plain HTTP JSON (no WebSocket upgrade, no peer roster)
-- `GET /v1/random-hubs/create` - create a random hub
-- `GET /v1/random-hubs/join?id={hubId}` - join a random hub
-- `GET /v1/random-hubs/get?id={hubId}` - get an existing random hub's metadata as plain HTTP JSON (no WebSocket upgrade, no peer roster)
-- `GET /v1/ip-hubs/join-or-create` - join or create an IP hub (server derives hubId from request IP)
-- `GET /v1/permanent-hubs/join?id={hubId}` - join an existing permanent hub
-- `GET /v1/permanent-hubs/create?id={hubId}` - create a permanent (never-expires) hub. Admin-gated: requires the `Authorization` header (base64 of the server's `APP_CLIENT_SECRET`). Plain HTTP (no WebSocket upgrade). Creation is out-of-band from the browser WebSocket API — browsers cannot set custom headers on a WebSocket handshake, so issue this request with a plain HTTP client (curl, `fetch` from a Node.js process), then connect with `/v1/permanent-hubs/join`.
+Every path in the router switch of `server/pkg/handler/handler.go` is listed below, grouped by hub type. The query parameters match `server/api.yml`.
+
+### General
+
 - `GET /v1/status` - health / version endpoint (public, read-only)
-- `GET /v1/admin/migrate?host={newHost}` - start a zero-downtime migration: new connections are routed to the backup host while existing ones drain; admin-gated, requires the `Authorization` header
+- `GET /v1/admin/migrate?host={newHost}` - start a zero-downtime migration: new connections are routed to the backup host while existing ones drain. Admin-gated: requires the `Authorization` header (base64 of the server's `APP_CLIENT_SECRET`)
+
+### Static hubs (`/v1/hubs/*`)
+
+- `GET /v1/hubs/create?id={hubId}` - create a fixed hub. Accepts optional `peerMetadata` and `hubMetadata` query params (JSON-encoded).
+- `GET /v1/hubs/join?id={hubId}` - join an existing fixed hub. Accepts optional `peerMetadata`.
+- `GET /v1/hubs/join-or-create?id={hubId}` - join an existing fixed hub or create it if it doesn't exist. Accepts optional `peerMetadata` and `hubMetadata` (used only on create).
+- `GET /v1/hubs/get?id={hubId}` - get an existing fixed hub's metadata as plain HTTP JSON (no WebSocket upgrade, no peer roster)
+
+### Random hubs (`/v1/random-hubs/*`)
+
+- `GET /v1/random-hubs/create` - create a random hub (server assigns the hub ID, delivered to the client via `hubInfoMessage`). Accepts optional `peerMetadata` and `hubMetadata`.
+- `GET /v1/random-hubs/join?id={hubId}` - join a random hub. Accepts optional `peerMetadata`.
+- `GET /v1/random-hubs/get?id={hubId}` - get an existing random hub's metadata as plain HTTP JSON (no WebSocket upgrade, no peer roster)
+
+### IP hubs (`/v1/ip-hubs/*`)
+
+- `GET /v1/ip-hubs/join-or-create` - join or create an IP hub (server derives hubId from the request IP). Accepts optional `peerMetadata` and `hubMetadata` (used only on create)
+
+### Permanent hubs (`/v1/permanent-hubs/*`)
+
+- `GET /v1/permanent-hubs/join?id={hubId}` - join an existing permanent hub. Accepts optional `peerMetadata`.
+- `GET /v1/permanent-hubs/create?id={hubId}` - create a permanent (never-expires) hub. Admin-gated: requires the `Authorization` header (base64 of the server's `APP_CLIENT_SECRET`). Plain HTTP (no WebSocket upgrade). Accepts optional `hubMetadata`. Creation is out-of-band from the browser WebSocket API — browsers cannot set custom headers on a WebSocket handshake, so issue this request with a plain HTTP client (curl, `fetch` from a Node.js process), then connect with `/v1/permanent-hubs/join`.
 
 > Note: The docs repository contains `proto/` definitions describing the WebSocket messages used by the server and client for signaling.
 
