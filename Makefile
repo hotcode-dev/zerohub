@@ -4,7 +4,7 @@ MAKEFLAGS += -j3
 .PHONY: default
 default: server-serve
 
-test-all: server-test e2e-test
+test-all: server-test e2e-test client-test
 
 proto-gen:
 	api-linter ./proto/zerohub/v1/*.proto
@@ -35,6 +35,9 @@ server-bench:
 
 client-build:
 	cd ./client && npm run build
+
+client-test:
+	cd ./client && npm run test
 
 kill-server:
 	@PIDS=$$(lsof -ti:8080 -sTCP:LISTEN 2>/dev/null); \
