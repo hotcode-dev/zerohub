@@ -38,7 +38,12 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
         break;
       case PeerStatus.Pending:
         // if data channel config is provided, set up data channel handling
-        setupDataChannel(this.zeroHub.config, peer, isOfferer);
+        setupDataChannel(
+          this.zeroHub.config,
+          peer,
+          this.zeroHub.logger,
+          isOfferer
+        );
 
         // if media channel config is provided, set up media stream handling
         setupMediaChannel(this.zeroHub.config, peer, this.zeroHub.logger);
