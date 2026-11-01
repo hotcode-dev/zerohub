@@ -189,16 +189,25 @@ func NewHandler(cfg *config.Config, zeroHub zerohub.ZeroHub, zeroHubRandom zeroh
 	}, nil
 }
 
-// clientIP returns the client IP used for per-client identity: the
-// rate-limiter key and the IP-hub key. When trustProxy is set (the server
-// sits behind a trusted reverse proxy), it is the first (outermost) entry
-// of X-Forwarded-For; otherwise the socket peer address, which is
-// unspoofable.
+// clientIP returns the client IP used as the IP-hub identity key: the value
+// that JoinOrCreateHubIP hashes into the hub ID. When trustProxy is set
+// (the server sits behind a trusted reverse proxy), it is the first
+// (outermost) entry of X-Forwarded-For; otherwise the socket peer's IP
+// address (no port), which is unspoofable.
 //
-// SECURITY: only safe behind a proxy that strips or replaces
-// X-Forwarded-For. The value here must agree with the limiter's own IP
-// parsing (limiter.WithTrustForwardHeader) so the per-client budget is
-// applied per real client, never per socket.
+// This is the IP-hub key only — NOT the rate-limiter key. The limiter keys
+// on a deliberately different derivation (remoteAddrKey / forwardedIPKey):
+// its non-trustProxy key is the full socket address, IP:port, so each TCP
+// connection gets its own per-client DoS budget, whereas clientIP drops the
+// port so that every connection from one client IP lands in the same hub —
+// the same-network grouping IP hubs exist for. The two sources are
+// therefore intentionally different; do not "unify" clientIP with the
+// limiter's key without re-checking both the per-socket throttle
+// (ratelimit_test.go) and the IP-hub grouping tests below.
+//
+// SECURITY: safe only behind a proxy that strips or replaces
+// X-Forwarded-For; in front of an untrusted hop any client could forge a
+// fresh hub IP per request.
 func (h *handler) clientIP(ctx *fasthttp.RequestCtx) string {
 	if h.trustProxy {
 		if ip := ipFromForwardedHeader(ctx); ip != "" {
@@ -208,19 +217,27 @@ func (h *handler) clientIP(ctx *fasthttp.RequestCtx) string {
 	return ctx.RemoteIP().String()
 }
 
-// remoteAddrKey returns the unspoofable TCP socket peer address.
+// remoteAddrKey returns the unspoofable TCP socket peer address, IP:port.
+// It is the rate limiter's default key: because it includes the port, each
+// socket (rather than each IP) gets its own per-client budget, the most
+// conservative DoS stance. It is deliberately NOT the IP-hub key, which
+// drops the port so that all connections from one IP share one hub.
 func remoteAddrKey(ctx *fasthttp.RequestCtx) string {
 	return ctx.RemoteAddr().String()
 }
 
 // forwardedIPKey returns the client IP recorded by a trusted reverse proxy
-// in X-Forwarded-For, falling back to the socket peer address when the header
-// is absent or unparseable.
+// in X-Forwarded-For, falling back to the socket peer address
+// (remoteAddrKey) when the header is absent or unparseable.
 //
-// SECURITY: only safe behind a proxy that strips or replaces X-Forwarded-For.
-// The key here must agree with the limiter's own IP parsing
-// (limiter.WithTrustForwardHeader) so the per-client budget is applied per
-// real client, never per socket.
+// This is the rate limiter's key when trustProxy is set: the sanitized
+// X-Forwarded-For value identifies the real client behind the proxy, so the
+// per-client budget is applied per real client, never per socket. It is not
+// used as an IP-hub key — IP hubs key by the port-less clientIP.
+//
+// SECURITY: safe only behind a proxy that strips or replaces
+// X-Forwarded-For; in front of an untrusted hop any client could forge a
+// fresh "IP" per request and defeat the per-client DoS throttle.
 func forwardedIPKey(ctx *fasthttp.RequestCtx) string {
 	if ip := ipFromForwardedHeader(ctx); ip != "" {
 		return ip
