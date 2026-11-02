@@ -27,7 +27,7 @@ func mockHandlerAndTest(test testData, mockCtrl *gomock.Controller) (*handler, *
 	}
 	if test.mockZeroHub != nil {
 		zerohubMock := zerohub.NewMockZeroHub(mockCtrl)
-		h.zeroHub = test.mockZeroHub(zerohubMock)
+		h.zeroHubStatic = test.mockZeroHub(zerohubMock)
 	}
 
 	server := &fasthttp.Server{

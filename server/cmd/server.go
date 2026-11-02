@@ -24,12 +24,11 @@ func main() {
 		stdLog.Panic(fmt.Errorf("error to init logger: %w", err))
 	}
 
-	zeroHub := newZeroHubOrPanic(cfg, "static")
+	zeroHubStatic := newZeroHubOrPanic(cfg, "static")
 	zeroHubRandom := newZeroHubOrPanic(cfg, "random")
 	zeroHubIP := newZeroHubOrPanic(cfg, "ip")
-	zeroHubPermanent := newZeroHubOrPanic(cfg, "permanent")
 
-	hdl, err := handler.NewHandler(cfg, zeroHub, zeroHubRandom, zeroHubIP, zeroHubPermanent)
+	hdl, err := handler.NewHandler(cfg, zeroHubStatic, zeroHubRandom, zeroHubIP)
 	if err != nil {
 		log.Panic().Err(fmt.Errorf("error to init handler: %w", err)).Send()
 	}

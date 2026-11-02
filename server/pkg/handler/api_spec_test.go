@@ -9,13 +9,13 @@ import (
 )
 
 // These tests pin the plain-HTTP modeling of the hub-metadata read
-// endpoints (/v1/hubs/get, /v1/random-hubs/get) in server/api.yml — the
+// endpoint (/v1/random-hubs/get) in server/api.yml — the
 // AsyncAPI contract AGENTS.md requires keeping aligned with
 // pkg/handler/handler.go routing. The GetHub handler (get_hub.go) never
 // upgrades the connection and answers a single JSON body, so the spec must
-// model the two read channels as plain-HTTP channels (http binding, admin
-// servers, empty request payload, JSON `hub` response) — not as WebSocket
-// signaling channels carrying protobuf ClientMessage/ServerMessage payloads.
+// model the read channel as a plain-HTTP channel (http binding, admin
+// servers, empty request payload, JSON `hub` response) — not as a WebSocket
+// signaling channel carrying protobuf ClientMessage/ServerMessage payloads.
 
 // specPath resolves api.yml relative to this package.
 func specPath() string {
@@ -85,8 +85,8 @@ func assertAbsent(t *testing.T, m *yaml.Node, path ...string) {
 	}
 }
 
-// TestGetHubChannelsArePlainHTTP pins the channel modeling: both read
-// endpoints must be plain-HTTP channels scoped to the admin HTTP servers,
+// TestGetHubChannelsArePlainHTTP pins the channel modeling: the read
+// endpoint must be a plain-HTTP channel scoped to the admin HTTP servers,
 // with an empty-payload request message and a JSON `hub` response message —
 // never a ws binding or the protobuf signaling messages.
 func TestGetHubChannelsArePlainHTTP(t *testing.T) {
@@ -94,7 +94,6 @@ func TestGetHubChannelsArePlainHTTP(t *testing.T) {
 	channels := child(t, root, "channels")
 
 	want := map[string]string{
-		"hubsGet":       "/v1/hubs/get",
 		"randomHubsGet": "/v1/random-hubs/get",
 	}
 	for name, address := range want {
@@ -136,7 +135,7 @@ func TestGetHubChannelsArePlainHTTP(t *testing.T) {
 	}
 }
 
-// TestGetHubOperationsAreHTTP pins the operation modeling: the four get
+// TestGetHubOperationsAreHTTP pins the operation modeling: the get
 // operations must exist as send/receive pairs against the JSON messages,
 // and the old WebSocket-signal operation names must be gone.
 func TestGetHubOperationsAreHTTP(t *testing.T) {
@@ -155,8 +154,6 @@ func TestGetHubOperationsAreHTTP(t *testing.T) {
 		channel string
 		message string
 	}{
-		"adminSendOnHubsGet":          {"send", "hubsGet", "getHubRequest"},
-		"adminReceiveOnHubsGet":       {"receive", "hubsGet", "hub"},
 		"adminSendOnRandomHubsGet":    {"send", "randomHubsGet", "getHubRequest"},
 		"adminReceiveOnRandomHubsGet": {"receive", "randomHubsGet", "hub"},
 	}

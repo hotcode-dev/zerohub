@@ -30,7 +30,7 @@ func TestJoinOrCreateHubByIDRejectsMalformedHubMetadata(t *testing.T) {
 	h := newTestHandler()
 
 	for _, raw := range []string{"not-json", "%21"} {
-		ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join-or-create?id=bad-hub&hubMetadata=" + raw)
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join-or-create?id=bad-hub&hubMetadata=" + raw)
 		// rejectInvalidJSONParam writes the 400 via Response (which returns
 		// nil on success), so the contract is pinned by the written status,
 		// not the error value.
@@ -69,7 +69,7 @@ func TestJoinOrCreateHubByIDAcceptsValidHubMetadata(t *testing.T) {
 		MaxTimes(1)
 	h := newTestHandler()
 
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join-or-create?id=valid-hub&hubMetadata=" +
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join-or-create?id=valid-hub&hubMetadata=" +
 		"%7B%22name%22%3A%22test%22%7D")
 	if err := h.JoinOrCreateHubByID(ctx, zerohubMock, "valid-hub"); err != nil &&
 		!strings.Contains(err.Error(), "websocket") {
@@ -85,7 +85,7 @@ func TestCreateHubByIDRejectsMalformedHubMetadata(t *testing.T) {
 	zerohubMock := zerohub.NewMockZeroHub(ctrl)
 	h := newTestHandler()
 
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create?id=bad-hub&hubMetadata=not-json")
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/create?id=bad-hub&hubMetadata=not-json")
 	if err := h.CreateHubByID(ctx, zerohubMock, "bad-hub"); err != nil {
 		t.Fatalf("CreateHubByID with malformed hubMetadata: unexpected error %v", err)
 	}
@@ -97,19 +97,19 @@ func TestCreateHubByIDRejectsMalformedHubMetadata(t *testing.T) {
 	}
 }
 
-// TestCreateHubPermanentRejectsMalformedHubMetadata covers the admin-only
-// permanent hub create endpoint.
-func TestCreateHubPermanentRejectsMalformedHubMetadata(t *testing.T) {
+// TestCreateStaticHubRejectsMalformedHubMetadata covers the admin-gated
+// static hub create endpoint.
+func TestCreateStaticHubRejectsMalformedHubMetadata(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	permanentMock := zerohub.NewMockZeroHub(ctrl)
+	staticMock := zerohub.NewMockZeroHub(ctrl)
 	// No expectations: the 400 for malformed metadata must be written
 	// before any hub-state access (CreateHubIfAbsent).
-	h := &handler{clientSecret: testClientSecret, zeroHubPermanent: permanentMock}
+	h := &handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
 
-	ctx := newRequestCtx("http://127.0.0.1/v1/permanent-hubs/create?id=perm-hub&hubMetadata=not-json")
+	ctx := newRequestCtx("http://127.0.0.1/v1/static-hubs/create?id=static-hub&hubMetadata=not-json")
 	ctx.Request.Header.Set("Authorization", adminAuthHeader())
-	if err := h.CreateHubPermanent(ctx); err != nil {
-		t.Fatalf("CreateHubPermanent with malformed hubMetadata: unexpected error %v", err)
+	if err := h.CreateStaticHub(ctx); err != nil {
+		t.Fatalf("CreateStaticHub with malformed hubMetadata: unexpected error %v", err)
 	}
 	if got := ctx.Response.StatusCode(); got != fasthttp.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", got)
@@ -136,7 +136,7 @@ func TestUpgradeRejectsMalformedPeerMetadata(t *testing.T) {
 	// Malformed peerMetadata: 400 written before the handshake attempt.
 	// Upgrade reports responseWritten=true: the 400 was already written and
 	// no caller-level fallback may overwrite it.
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join?id=upg-hub&peerMetadata=not-json")
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join?id=upg-hub&peerMetadata=not-json")
 	if err, responseWritten := h.Upgrade(ctx, zerohubMock, hubInstance); err != nil || responseWritten != true {
 		t.Fatalf("Upgrade with malformed peerMetadata: got (err=%v, responseWritten=%v), want (nil, true)", err, responseWritten)
 	}
@@ -149,7 +149,7 @@ func TestUpgradeRejectsMalformedPeerMetadata(t *testing.T) {
 
 	// Valid peerMetadata: passes validation and reaches the websocket
 	// handshake, which fails on the plain GET — expected.
-	ctx = newRequestCtx("http://127.0.0.1/v1/hubs/join?id=upg-hub&peerMetadata=%7B%22name%22%3A%22test%22%7D")
+	ctx = newRequestCtx("http://127.0.0.1/v1/random-hubs/join?id=upg-hub&peerMetadata=%7B%22name%22%3A%22test%22%7D")
 	if err, responseWritten := h.Upgrade(ctx, zerohubMock, hubInstance); err == nil ||
 		!strings.Contains(err.Error(), "websocket") || responseWritten != false {
 		t.Fatalf("Upgrade with valid peerMetadata = (err=%v, responseWritten=%v), want websocket upgrade error and responseWritten=false", err, responseWritten)

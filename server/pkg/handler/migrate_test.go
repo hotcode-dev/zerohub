@@ -357,7 +357,7 @@ func TestMigrateEmptyAuthorizationHeader(t *testing.T) {
 // silently opening the admin endpoints to every request.
 func TestNewHandlerRejectsEmptySecret(t *testing.T) {
 	cfg := &config.Config{App: config.AppConfig{ClientSecret: ""}}
-	if _, err := NewHandler(cfg, nil, nil, nil, nil); err == nil {
+	if _, err := NewHandler(cfg, nil, nil, nil); err == nil {
 		t.Fatal("NewHandler with empty client secret: got nil error, want error")
 	}
 }

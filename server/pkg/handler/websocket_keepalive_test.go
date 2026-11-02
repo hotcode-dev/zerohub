@@ -114,7 +114,7 @@ func wsCloseCode(f wsFrame) int {
 	return int(f.payload[0])<<8 | int(f.payload[1])
 }
 
-// dialWS connects to /v1/hubs/create?id=hubId with a raw RFC 6455 client
+// dialWS connects to /v1/static-hubs/join?id=hubId with a raw RFC 6455 client
 // handshake against the real endpoint.
 func dialWS(t *testing.T, addr, hubId string) net.Conn {
 	t.Helper()
@@ -122,7 +122,7 @@ func dialWS(t *testing.T, addr, hubId string) net.Conn {
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
-	_, err = c.Write([]byte("GET /v1/hubs/create?id=" + hubId +
+	_, err = c.Write([]byte("GET /v1/static-hubs/join?id=" + hubId +
 		" HTTP/1.1\r\n" +
 		"Host: " + addr + "\r\n" +
 		"Upgrade: websocket\r\n" +
@@ -185,32 +185,40 @@ func drainUntilClosed(t *testing.T, c net.Conn, d time.Duration, respond bool) (
 
 // ---- test server -----------------------------------------------------------
 
-// startSignalingTestServer serves the real static-hub create endpoint on a
+// startSignalingTestServer serves the real static-hub join endpoint on a
 // random port, so the Upgrade callback (and its keepalive goroutine +
 // read-limit wiring) runs on a real connection exactly as in production.
 // The handler gets short liveness timings so tests do not wait 60s. It
 // returns the ZeroHub storage so tests can assert peer/hub removal directly.
+//
+// The test seeds an expiring (isPermanent=false) hub on the static instance
+// and joins it via /v1/static-hubs/join: static hubs are now
+// admin-created and never-expire, and the expiring static family was removed
+// in the hub-taxonomy consolidation, so the hub-deletion assertions below
+// (a hub is removed when its last peer is reaped) run against the seeded
+// expiring hub instead.
 func startSignalingTestServer(t *testing.T, idleTimeout, pingInterval time.Duration) (string, string, zerohub.ZeroHub) {
 	t.Helper()
 	hubId := fmt.Sprintf("ka-%d", time.Now().UnixNano())
 	h := newTestHandler()
 	zh := newRealZeroHub(t)
-	h.zeroHub = zh
-	// CreateHubStatic runs a cross-mode collision check against the
-	// permanent and random instances, so give it real ones (a nil instance
-	// would panic in rejectHubIdCollidesWithOtherModes).
-	h.zeroHubPermanent = newRealZeroHub(t)
-	h.zeroHubRandom = newRealZeroHub(t)
+	h.zeroHubStatic = zh
+	// Seed an expiring hub directly so the join resolves it. The join
+	// path carries no cross-mode collision check, so no sibling
+	// instances are needed.
+	if _, _, err := zh.GetOrCreateHub(hubId, "", false); err != nil {
+		t.Fatalf("seed expiring static hub: %v", err)
+	}
 	h.wsIdleTimeout = idleTimeout
 	h.wsPingInterval = pingInterval
 
 	server := &fasthttp.Server{
 		Handler: func(ctx *fasthttp.RequestCtx) {
-			if string(ctx.Path()) != "/v1/hubs/create" {
+			if string(ctx.Path()) != "/v1/static-hubs/join" {
 				ctx.Error("unsupported path", fasthttp.StatusNotFound)
 				return
 			}
-			_ = h.CreateHubStatic(ctx, zh)
+			_ = h.JoinHub(ctx, zh)
 		},
 		Name:               "ZeroHub",
 		MaxRequestBodySize: config.HTTPMaxRequestBodySize,
