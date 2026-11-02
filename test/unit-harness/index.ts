@@ -1028,47 +1028,16 @@ const ZeroHubUnitHarness = {
   },
 
   /**
-   * Drives the public `createHub` entry point (opens a socket via
+   * Drives the public `joinStaticHub` entry point (opens a socket via
    * `connectToZeroHub`) so specs can exercise the real connection path
    * without a server.
    */
-  createHub(
-    id: number,
-    hubId: string,
-    peerMetadata?: object,
-    hubMetadata?: object
-  ): void {
+  joinStaticHub(id: number, hubId: string, peerMetadata?: object): void {
     const entry = clients.get(id);
     if (!entry) {
       throw new Error(`no client ${id}`);
     }
-    entry.client.createHub(hubId, peerMetadata, hubMetadata);
-  },
-
-  /**
-   * Drives the public `joinHub` entry point (opens a socket via
-   * `connectToZeroHub`) so specs can exercise the real connection path
-   * without a server.
-   */
-  joinHub(id: number, hubId: string, peerMetadata?: object): void {
-    const entry = clients.get(id);
-    if (!entry) {
-      throw new Error(`no client ${id}`);
-    }
-    entry.client.joinHub(hubId, peerMetadata);
-  },
-
-  /**
-   * Drives the public `joinPermanentHub` entry point (opens a socket via
-   * `connectToZeroHub`) so specs can exercise the real connection path
-   * without a server.
-   */
-  joinPermanentHub(id: number, hubId: string, peerMetadata?: object): void {
-    const entry = clients.get(id);
-    if (!entry) {
-      throw new Error(`no client ${id}`);
-    }
-    entry.client.joinPermanentHub(hubId, peerMetadata);
+    entry.client.joinStaticHub(hubId, peerMetadata);
   },
 
   /** Drives the public `disconnect()` on the client. */
@@ -1531,7 +1500,8 @@ const ZeroHubUnitHarness = {
   },
 
   /**
-   * Drives `createHub("room")` and reports how its connect Promise settled:
+   * Drives `joinStaticHub("room")` and reports how its connect Promise
+   * settled:
    * `"resolved"` when a dial's `onopen` fires, `"rejected"` when the FIRST
    * dial's refusal settles it (the Promise is one-shot: later failover
    * dials do not re-settle it, so with every host down the entry point is
@@ -1544,7 +1514,7 @@ const ZeroHubUnitHarness = {
       throw new Error(`no client ${id}`);
     }
     try {
-      await entry.client.createHub("room");
+      await entry.client.joinStaticHub("room");
       return "resolved";
     } catch {
       return "rejected";
@@ -1694,7 +1664,7 @@ const ZeroHubUnitHarness = {
     // A client created via createClient() has no socket yet — open one so
     // the simulated abnormal closes have a live socket to fire on.
     if (!entry.client.ws) {
-      entry.client.createHub("room");
+      entry.client.joinStaticHub("room");
     }
     // Confirm the session (the server's hub info) so the abnormal closes
     // below take the RECONNECT path (same-host retry with backoff), not the

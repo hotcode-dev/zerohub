@@ -42,10 +42,10 @@ const client = new ZeroHubClient<PeerMetadata, HubMetadata>(
 client.onHubInfo = (hub) => console.log("Joined hub", hub.id);
 client.onPeerStatusChange = (peer) => console.log(peer.id, peer.status);
 
-client.createHub("demo-room", { name: "Alice" }, { roomName: "Demo" });
+client.createRandomHub({ name: "Alice" });
 // Alternatives:
-// client.joinHub('demo-room', { name: 'Bob' });
-// client.joinRandomHub('lobby', { name: 'Carol' });
+// client.joinRandomHub('lobby', { name: 'Bob' });
+// client.joinStaticHub('demo-room', { name: 'Bob' });
 ```
 
 ## Client configuration
@@ -136,19 +136,16 @@ For media streams, supply `mediaChannelConfig` with a `localStream` and `onTrack
 
 ## Hub workflows
 
-- `createHub(id, peerMetadata?, hubMetadata?)`
-- `joinHub(id, peerMetadata?)`
-- `joinOrCreateHub(id, peerMetadata?, hubMetadata?)`
 - `joinOrCreateIPHub(peerMetadata?, hubMetadata?)`
 - `createRandomHub(peerMetadata?, hubMetadata?)`
 - `joinRandomHub(id, peerMetadata?)`
-- `joinPermanentHub(id, peerMetadata?)` - join an existing permanent (never-expires) hub
+- `joinStaticHub(id, peerMetadata?)` - join an existing static (never-expires) hub
 
-Permanent hubs are created out-of-band via the admin HTTP endpoint
-`GET /v1/permanent-hubs/create` (requires the `Authorization` header), since
+Static hubs are created out-of-band via the admin HTTP endpoint
+`GET /v1/static-hubs/create` (requires the `Authorization` header), since
 the browser WebSocket API cannot send custom headers. Use an HTTP client
-(curl, `fetch` from a Node.js process) to create a permanent hub, then connect
-to it with `joinPermanentHub`.
+(curl, `fetch` from a Node.js process) to create a static hub, then connect
+to it with `joinStaticHub`.
 
 Each call issues a WebSocket handshake to `/v1/...` endpoints on the ZeroHub server. Metadata objects are serialized and shared with other peers upon connection.
 
@@ -190,7 +187,7 @@ const client = new ZeroHubClient(hosts, config, new MeshTopology());
   - Only when every host's retry budget is spent on every allowed sweep does
     the terminal failure surface via `onZeroHubError` — exactly once; after
     that the client is latched and further closes are no-ops until the
-    application calls an entry point (`createHub()`, `joinHub()`, ...) again.
+    application calls an entry point (`createRandomHub()`, `joinStaticHub()`, ...) again.
 - The retry budget and the sweep round reset to zero whenever a connection
   is confirmed (the server's hub info arrives) or a migration redirect
   (code `1001`) lands, so a long-lived healthy session never accumulates

@@ -86,12 +86,9 @@ It handles:
 
 ## Hub lifecycle
 
-- `createHub(hubId, peerMetadata?, hubMetadata?)` - create and join a hub
-- `joinHub(hubId, peerMetadata?)` - join an existing hub
-- `joinOrCreateHub(hubId, peerMetadata?, hubMetadata?)` - join or create a fixed hub
 - `createRandomHub(peerMetadata?, hubMetadata?)` / `joinRandomHub(hubId, peerMetadata?)` - random hub APIs
 - `joinOrCreateIPHub(peerMetadata?, hubMetadata?)` - IP hub API (hub id is derived from the caller's IP)
-- `joinPermanentHub(hubId, peerMetadata?)` - join an existing permanent (never-expires) hub
+- `joinStaticHub(hubId, peerMetadata?)` - join an existing static (never-expires) hub
 
 These entry points all return `Promise<void>`: the Promise resolves when the
 signaling WebSocket **opens** and rejects when the connection attempt fails
@@ -105,11 +102,11 @@ the socket is open, but do not read `myPeerId`/`peers` immediately after the
 rejects on connection failure, handle the rejection (try/catch or `.catch`)
 instead of dropping the returned Promise.
 
-Permanent hubs are created out-of-band via the admin HTTP endpoint
-`GET /v1/permanent-hubs/create` (requires the `Authorization` header), since
+Static hubs are created out-of-band via the admin HTTP endpoint
+`GET /v1/static-hubs/create` (requires the `Authorization` header), since
 the browser WebSocket API cannot send custom headers. Use an HTTP client
-(curl, `fetch` from a Node.js process) to create a permanent hub, then connect
-to it with `joinPermanentHub`.
+(curl, `fetch` from a Node.js process) to create a static hub, then connect
+to it with `joinStaticHub`.
 
 ## Peer lifecycle and signaling
 

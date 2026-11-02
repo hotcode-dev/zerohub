@@ -20,7 +20,7 @@ import { getWS, isWellFormedHost } from "./utils";
  *
  * 1. **Constructor** — `new ZeroHubClient(hosts, config, topology)` initializes the client with server addresses, configuration (including TLS, logging, and WebRTC settings), and a topology strategy (default: MeshTopology). No network connection is made yet.
  *
- * 2. **Connect** — Call one of the hub entry points (`createHub()`, `joinHub()`, `joinOrCreateHub()`, `joinPermanentHub()`, `createRandomHub()`, `joinRandomHub()`, `joinOrCreateIPHub()`) to establish a WebSocket connection. Each entry point returns a Promise that resolves when the signaling socket opens and rejects when the connection attempt fails. The client automatically handles reconnection with failover across multiple hosts.
+ * 2. **Connect** — Call one of the hub entry points (`createRandomHub()`, `joinRandomHub()`, `joinStaticHub()`, `joinOrCreateIPHub()`) to establish a WebSocket connection. Each entry point returns a Promise that resolves when the signaling socket opens and rejects when the connection attempt fails. The client automatically handles reconnection with failover across multiple hosts.
  *
  * 3. **Hub Establishment** — The server responds with a `HubInfoMessage` containing the hub's metadata, the client's own peer ID, and the list of existing peers. New peers are created in the `peers` map with `PeerStatus.Pending`.
  *
@@ -61,7 +61,7 @@ import { getWS, isWellFormedHost } from "./utils";
  * // server's `HubInfoMessage` with `myPeerId` and the peer roster —
  * // still completes when the `onHubInfo` callback fires, which happens
  * // shortly after the socket opens.
- * await client.createHub('my-room', { name: 'Alice' });
+ * await client.joinStaticHub('my-room', { name: 'Alice' });
  * ```
  */
 export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
@@ -109,7 +109,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * Tracks whether the client has been manually disconnected via `disconnect()`.
    * When true, the client will not attempt to auto-reconnect and
    * `sendZeroHubMessage` fails fast. `connectToZeroHub` resets this to
-   * `false`, so a new `createHub()`/`joinHub()` after `disconnect()` starts
+   * `false`, so a new entry-point call (`createRandomHub()`/
+   * `joinStaticHub()`/...) after `disconnect()` starts
    * a clean, reusable connection.
    */
   private isDisconnected = false;
@@ -187,7 +188,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * abnormal closes on any leftover socket must be no-ops instead of
    * re-firing the terminal error or re-dialing (the application has been
    * told the session is dead; only a fresh entry-point call
-   * (`createHub`/`joinHub`/...) — which clears this in `connectToZeroHub` —
+   * (`createRandomHub`/`joinStaticHub`/...) — which clears this in `connectToZeroHub` —
    * may start a new session).
    */
   private reconnectAbandoned = false;
@@ -486,7 +487,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * path that invokes it: doing so would leave an uncaught exception in the
    * runtime AND — critically for the WebSocket error/reconnect sites — skip
    * the subsequent `settle(new Error(...))`, leaving the connect Promise
-   * returned by `createHub()`/`joinHub()`/etc. unsettled forever.
+   * returned by `createRandomHub()`/`joinStaticHub()`/etc. unsettled forever.
    */
   private reportZeroHubError(error: Error): void {
     if (!this.onZeroHubError) {
@@ -586,7 +587,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         `ZeroHub \`${this.host}\` is redirecting to \`${newHost}\`, reconnecting...`
       );
       // Mirror the backup-host branch below: update the client's host state,
-      // not just this URL. Every entry point (createHub/joinHub/...) builds
+      // not just this URL. Every entry point (createRandomHub/joinStaticHub/...) builds
       // its URL from `this.host`, so leaving it stale makes the next call
       // connect back to the migrating (or shut down) old host.
       this.host = newHost;
@@ -1200,7 +1201,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   public connectToZeroHub(url: URL): Promise<void> {
     // Starting a fresh connection resets the manual-disconnect flag, so a
     // client that previously called disconnect() can be reused: a new
-    // createHub()/joinHub() (or any other connection entry point) begins a
+    // createRandomHub()/joinStaticHub() (or any other entry point) begins a
     // clean, live connection instead of a dead socket that still throws from
     // sendZeroHubMessage().
     //
@@ -1217,7 +1218,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     // A fresh dial supersedes any queued same-host retry timer: cancel it
     // (and bump the generation so a stale pending timer aborts) so its
     // callback can never dial a SECOND socket while this one is being
-    // established. This covers a manual re-entry — createHub()/joinHub()
+    // established. This covers a manual re-entry — createRandomHub()/joinStaticHub()
     // called while a retry is pending. The attempt COUNTER is deliberately
     // NOT reset here: the budget only refills when a connection is
     // CONFIRMED (the server's hub info arrives), so a dial that will fail
@@ -1381,7 +1382,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * timers, and transitions each peer to `PeerStatus.Disconnected`.
    * After calling `disconnect()`, the client will not attempt to
    * auto-reconnect to ZeroHub. The client can be reused by calling
-   * `createHub()`/`joinHub()` (or any other connection entry point) again,
+   * `createRandomHub()`/`joinStaticHub()` (or any other connection entry point) again,
    * which establishes a fresh, live connection.
    */
   public disconnect() {
@@ -1438,12 +1439,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   public sendZeroHubMessage(msg: ClientMessage) {
     if (this.isDisconnected) {
       throw Error(
-        "ZeroHub is disconnected, please connect again via `createHub` or `joinHub`"
+        "ZeroHub is disconnected, please connect again via `createRandomHub` or `joinStaticHub`"
       );
     }
     if (!this.ws) {
       throw Error(
-        "ZeroHub not connected, please connect to ZeroHub by `createHub` or `joinHub`"
+        "ZeroHub not connected, please connect to ZeroHub by `createRandomHub` or `joinStaticHub`"
       );
     }
     if (this.ws.readyState !== WebSocket.OPEN) {
@@ -1540,7 +1541,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   ) {
     if (!this.ws) {
       throw Error(
-        "send offer error: ZeroHub not connected, please connect to ZeroHub by `createHub` or `joinHub`"
+        "send offer error: ZeroHub not connected, please connect to ZeroHub by `createRandomHub` or `joinStaticHub`"
       );
     }
 
@@ -1596,7 +1597,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   ) {
     if (!this.ws) {
       throw Error(
-        "send answer error: ZeroHub not connected, please connect to ZeroHub by `createHub` or `joinHub`"
+        "send answer error: ZeroHub not connected, please connect to ZeroHub by `createRandomHub` or `joinStaticHub`"
       );
     }
 
@@ -1780,97 +1781,29 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
-   *  Creates a new hub on ZeroHub
+   * Join an existing static hub on ZeroHub.
    *
+   * A static hub is a never-expires named hub: it is created out-of-band
+   * by an admin over the plain-HTTP endpoint
+   * `GET /v1/static-hubs/create` (requires the `Authorization` header)
+   * and joined via the `/v1/static-hubs/join` WebSocket signaling
+   * endpoint. The browser WebSocket API cannot send custom headers, so
+   * the SDK only exposes the join path here; use an HTTP client (curl,
+   * fetch from a Node.js process, etc.) to create a static hub before
+   * calling `joinStaticHub`.
    *
-   * @param hubId - The id of the hub to create
-   * @param peerMetadata - Peer metadata will share to each peer in the Hub
-   * @param hubMetadata - Hub metadata will share to each peer in the Hub
-   * @returns A Promise that resolves when the signaling WebSocket opens and
-   *   rejects when the connection attempt fails. Hub join state
-   *   (`myPeerId`, `peers`, `hubInfo`) is populated when the `onHubInfo`
-   *   callback fires.
-   */
-  public createHub(
-    hubId: string,
-    peerMetadata?: PeerMetadata,
-    hubMetadata?: HubMetadata
-  ): Promise<void> {
-    return this.openHubConnection(
-      "/v1/hubs/create",
-      hubId,
-      peerMetadata,
-      hubMetadata
-    );
-  }
-
-  /**
-   * Join an existing hub on ZeroHub
-   *
-   * @param hubId - The id of the hub to join
+   * @param hubId - The id of the static hub to join
    * @param peerMetadata - Peer metadata will share to each peer in the Hub
    * @returns A Promise that resolves when the signaling WebSocket opens and
    *   rejects when the connection attempt fails. Hub join state
    *   (`myPeerId`, `peers`, `hubInfo`) is populated when the `onHubInfo`
    *   callback fires.
    */
-  public joinHub(hubId: string, peerMetadata?: PeerMetadata): Promise<void> {
-    return this.openHubConnection("/v1/hubs/join", hubId, peerMetadata);
-  }
-
-  /**
-   * Join an existing permanent hub on ZeroHub.
-   * The Permanent Hub never expires; it is used for always-on
-   * collaboration rooms.
-   *
-   * Note: permanent hubs are created out-of-band via the admin HTTP
-   * endpoint `GET /v1/permanent-hubs/create` (requires the `Authorization`
-   * header). The browser WebSocket API does not allow custom headers, so
-   * the SDK cannot call that endpoint directly. Use an HTTP client (curl,
-   * fetch from a Node.js process, etc.) to create a permanent hub before
-   * calling `joinPermanentHub`.
-   *
-   * @param hubId - The id of the hub to join
-   * @param peerMetadata - Peer metadata will share to each peer in the Hub
-   * @returns A Promise that resolves when the signaling WebSocket opens and
-   *   rejects when the connection attempt fails. Hub join state
-   *   (`myPeerId`, `peers`, `hubInfo`) is populated when the `onHubInfo`
-   *   callback fires.
-   */
-  public joinPermanentHub(
+  public joinStaticHub(
     hubId: string,
     peerMetadata?: PeerMetadata
   ): Promise<void> {
-    return this.openHubConnection(
-      "/v1/permanent-hubs/join",
-      hubId,
-      peerMetadata
-    );
-  }
-
-  /**
-   * Join an existing hub or create if not on ZeroHub
-   *
-   * @param hubId - The id of the hub to join or create
-   * @param peerMetadata - Peer metadata will share to each peer in the Hub
-   * @param hubMetadata - (will only use if no hub exist) Hub metadata will share to each peer in the Hub
-   *
-   * @returns A Promise that resolves when the signaling WebSocket opens and
-   *   rejects when the connection attempt fails. Hub join state
-   *   (`myPeerId`, `peers`, `hubInfo`) is populated when the `onHubInfo`
-   *   callback fires.
-   */
-  public joinOrCreateHub(
-    hubId: string,
-    peerMetadata?: PeerMetadata,
-    hubMetadata?: HubMetadata
-  ): Promise<void> {
-    return this.openHubConnection(
-      "/v1/hubs/join-or-create",
-      hubId,
-      peerMetadata,
-      hubMetadata
-    );
+    return this.openHubConnection("/v1/static-hubs/join", hubId, peerMetadata);
   }
 
   /**
@@ -1943,7 +1876,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * Shared by all public hub entry points: builds the connection URL (with
    * id/hubMetadata/peerMetadata query params as applicable), and connects.
    *
-   * @param path - The endpoint path (e.g. "/v1/hubs/create")
+   * @param path - The endpoint path (e.g. "/v1/static-hubs/join")
    * @param hubId - Optional hub id to send as the "id" query param
    * @param peerMetadata - Optional peer metadata
    * @param hubMetadata - Optional hub metadata

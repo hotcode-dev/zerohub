@@ -14,9 +14,9 @@ type BaseOptions = {
   testName?: string;
 };
 
-type CreateHubOptions = BaseOptions;
+type CreateHubOptions = BaseOptions & { hubId: string };
 type JoinHubOptions = BaseOptions & { hubId: string };
-type JoinPermanentHubOptions = BaseOptions & { hubId: string };
+type JoinStaticHubOptions = BaseOptions & { hubId: string };
 type DisconnectOptions = Pick<BaseOptions, "componentId">;
 type ReuseCreateHubOptions = Pick<BaseOptions, "componentId">;
 
@@ -245,12 +245,12 @@ type BuildHubClientOptions = {
   hubIdTestId: string;
   /** data-testid of the peer-status div. */
   peerStatusTestId: string;
-  /** Entry-point call (`createRandomHub` / `joinRandomHub` / `joinPermanentHub`). */
+  /** Entry-point call (`createRandomHub` / `joinRandomHub` / `joinStaticHub`). */
   invoke: (zeroHub: ZeroHubClient<PeerMetadata, Record<string, unknown>>) => void;
 };
 
 /**
- * Shared scaffolding for `createHub`, `joinHub` and `joinPermanentHub`:
+ * Shared scaffolding for `createHub`, `joinHub` and `joinStaticHub`:
  * builds the DOM section (labels + data divs), constructs a
  * `ZeroHubClient` with the harness's standard config, wires the
  * `onHubInfo` / `onPeerStatusChange` handlers, runs the per-entry-point
@@ -317,20 +317,25 @@ function buildHubClient(options: BuildHubClientOptions) {
   registerInstance(componentId, zeroHub, container);
 }
 
-function createHub(options: CreateHubOptions) {
-  const { componentId, zeroHubHosts, testName } = options;
+function createHub(options: CreateHubOptions & { hubId: string }) {
+  const { componentId, zeroHubHosts, testName, hubId } = options;
   buildHubClient({
     componentId,
     zeroHubHosts,
     testName,
     label: "Create Hub",
+    hubIdLabel: `Hub ID: ${hubId}`,
     hubIdTestId: `create-hub-id-${componentId}`,
     peerStatusTestId: `create-peer-status-${componentId}`,
     invoke: (zeroHub) => {
-      // The hub id is the componentId: a unique, spec-provided id that the
-      // `/v1/hubs/create` handler returns verbatim, so the create hub id can
-      // be asserted against a known value instead of a uuid shape.
-      zeroHub.createHub(componentId, { name: "test" });
+      // The "creator" joins the static hub the spec seeded out-of-band via
+      // the admin HTTP endpoint (seedStaticHub in tests/utils/harness.ts):
+      // the SDK has no static-hub create entry point (creation is
+      // admin-gated plain HTTP, which a browser cannot auth), so the
+      // creator's role now is just the first joiner. The hub id is
+      // spec-provided (usually the componentId), so it can be asserted
+      // against a known value instead of a uuid shape.
+      zeroHub.joinStaticHub(hubId, { name: "test" });
     },
   });
 }
@@ -346,46 +351,30 @@ function joinHub(options: JoinHubOptions) {
     hubIdTestId: `join-hub-id-${componentId}`,
     peerStatusTestId: `join-peer-status-${componentId}`,
     invoke: (zeroHub) => {
-      zeroHub.joinHub(hubId, { name: "test" });
-    },
-  });
-}
-
-function joinOrCreateHub(options: JoinHubOptions) {
-  const { componentId, zeroHubHosts, testName, hubId } = options;
-  buildHubClient({
-    componentId,
-    zeroHubHosts,
-    testName,
-    label: "Join or Create Hub",
-    hubIdLabel: `Hub ID: ${hubId}`,
-    hubIdTestId: `join-or-create-hub-id-${componentId}`,
-    peerStatusTestId: `join-or-create-peer-status-${componentId}`,
-    invoke: (zeroHub) => {
-      zeroHub.joinOrCreateHub(hubId, { name: "test" });
+      zeroHub.joinStaticHub(hubId, { name: "test" });
     },
   });
 }
 
 /**
- * Joins an existing permanent hub via the public `joinPermanentHub` entry
- * point. Used by the permanent-hub e2e spec to prove the
- * `/v1/permanent-hubs/join` WebSocket upgrade actually establishes a live
- * signaling connection (the hub is created out-of-band by the spec via the
- * admin HTTP endpoint, since the SDK cannot send the `Authorization` header).
+ * Joins an existing static hub via the public `joinStaticHub` entry point.
+ * Used by the static-hub e2e spec to prove the `/v1/static-hubs/join`
+ * WebSocket upgrade actually establishes a live signaling connection (the
+ * hub is created out-of-band by the spec via the admin HTTP endpoint, since
+ * the SDK cannot send the `Authorization` header).
  */
-function joinPermanentHub(options: JoinPermanentHubOptions) {
+function joinStaticHub(options: JoinStaticHubOptions) {
   const { componentId, zeroHubHosts, testName, hubId } = options;
   buildHubClient({
     componentId,
     zeroHubHosts,
     testName,
-    label: "Join Permanent Hub",
+    label: "Join Static Hub",
     hubIdLabel: `Hub ID: ${hubId}`,
-    hubIdTestId: `join-permanent-hub-id-${componentId}`,
-    peerStatusTestId: `join-permanent-peer-status-${componentId}`,
+    hubIdTestId: `join-static-hub-id-${componentId}`,
+    peerStatusTestId: `join-static-peer-status-${componentId}`,
     invoke: (zeroHub) => {
-      zeroHub.joinPermanentHub(hubId, { name: "test" });
+      zeroHub.joinStaticHub(hubId, { name: "test" });
     },
   });
 }
@@ -447,8 +436,7 @@ function reuseCreateHub(options: ReuseCreateHubOptions) {
 const ZeroHubHarness = {
   createHub,
   joinHub,
-  joinOrCreateHub,
-  joinPermanentHub,
+  joinStaticHub,
   disconnect,
   reuseCreateHub,
   getDataChannelStatus,

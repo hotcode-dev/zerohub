@@ -2,8 +2,8 @@ import { test, expect } from "@playwright/test";
 import { prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
- * Regression test: a second connection entry-point call (e.g. `joinHub`
- * while a `createHub` socket is still open) must not leak the previous
+ * Regression test: a second connection entry-point call (e.g. `joinStaticHub`
+ * while a first `joinStaticHub` socket is still open) must not leak the previous
  * `WebSocket`.
  *
  * `connectToZeroHub` used to assign `this.ws = new WebSocket(url)` without
@@ -41,7 +41,7 @@ test("second connection without disconnect() closes and clears the previous sock
 
   // First connection entry point: opens socket #1 with live handlers.
   await page.evaluate(
-    (clientId) => ZeroHubUnitHarness.createHub(clientId, "hub-a"),
+    (clientId) => ZeroHubUnitHarness.joinStaticHub(clientId, "hub-a"),
     id
   );
 
@@ -58,7 +58,7 @@ test("second connection without disconnect() closes and clears the previous sock
   // must be closed (code 1000) and every handler nulled, so it can no longer
   // decode signaling for the old hub or fire reconnect() when it dies.
   await page.evaluate(
-    (clientId) => ZeroHubUnitHarness.joinHub(clientId, "hub-b"),
+    (clientId) => ZeroHubUnitHarness.joinStaticHub(clientId, "hub-b"),
     id
   );
 

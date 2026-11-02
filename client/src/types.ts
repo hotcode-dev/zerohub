@@ -36,7 +36,7 @@ export enum PeerStatus {
    * Disconnected: the local client called `disconnect()` and tore down this
    * peer connection (and all others): the ZeroHub WebSocket is closed, so the
    * local client is no longer connected to ZeroHub at all. No peer can be
-   * restored until the client reconnects (e.g. `createHub()`/`joinHub()`).
+   * restored until the client reconnects (e.g. `createRandomHub()`/`joinStaticHub()`).
    */
   Disconnected = "disconnected",
 }

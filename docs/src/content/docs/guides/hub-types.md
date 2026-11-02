@@ -1,67 +1,17 @@
 ---
 title: Hub Types
-description: Learn about different hub types in ZeroHub - Fixed Hub, Random Hub, IP Hub, and Permanent Hub
+description: Learn about different hub types in ZeroHub - Static Hub, Random Hub, and IP Hub
 ---
 
-ZeroHub provides four different hub types to accommodate various use cases for peer-to-peer communication. Each hub type offers different characteristics in terms of identification, persistence, and access patterns.
+ZeroHub provides three different hub types to accommodate various use cases for peer-to-peer communication. Each hub type offers different characteristics in terms of identification, persistence, and access patterns.
 
 ## Overview
 
 | Hub Type       | ID Source         | Use Case                                 | Persistence   |
 | -------------- | ----------------- | ---------------------------------------- | ------------- |
-| **Fixed Hub**  | User-defined      | Persistent rooms, organized spaces       | Manual        |
+| **Static Hub** | User-defined (admin-created) | Always-on collaboration rooms | Never expires |
 | **Random Hub** | Server-generated  | One-time sessions, temporary connections | Temporary     |
 | **IP Hub**     | Client IP address | Location-based connections               | Session-based |
-| **Permanent Hub** | User-defined (admin-created) | Always-on collaboration rooms | Never expires |
-
-## Fixed Hub
-
-Fixed hubs use user-defined identifiers, making them perfect for persistent rooms, organized spaces, or any scenario where you need predictable hub names.
-
-### Creating a Fixed Hub
-
-```typescript
-import { ZeroHubClient } from "@zero-hub/client";
-
-const client = new ZeroHubClient(["sg1.zerohub.dev"]);
-
-// Create a new hub with a specific ID
-client.createHub(
-  "my-gaming-room", // Hub ID
-  { username: "player1", level: 5 }, // Peer metadata
-  { gameMode: "battle", maxPlayers: 4 } // Hub metadata
-);
-```
-
-### Joining a Fixed Hub
-
-```typescript
-// Join an existing hub
-client.joinHub(
-  "my-gaming-room", // Hub ID to join
-  { username: "player2", level: 3 } // Peer metadata
-);
-```
-
-### Join or Create Pattern
-
-For convenience, you can attempt to join a hub and create it if it doesn't exist:
-
-```typescript
-// Will join if exists, create if it doesn't
-client.joinOrCreateHub(
-  "my-gaming-room",
-  { username: "player1", level: 5 }, // Peer metadata
-  { gameMode: "battle", maxPlayers: 4 } // Hub metadata (only used if creating)
-);
-```
-
-### Use Cases
-
-- **Gaming rooms**: Create persistent game lobbies with memorable names
-- **Team collaboration**: Set up dedicated spaces for teams or projects
-- **Educational sessions**: Create classrooms or study groups
-- **Conference rooms**: Virtual meeting spaces with consistent identifiers
 
 ## Random Hub
 
@@ -121,33 +71,33 @@ client.joinOrCreateIPHub(
 - **IoT device coordination**: Coordinate devices within the same network
 - **Office collaboration**: Connect colleagues on the same office network
 
-## Permanent Hub
+## Static Hub
 
-Permanent hubs use user-defined identifiers like fixed hubs, but they are created out-of-band by an admin and **never expire** — they are designed for always-on collaboration rooms that must stay available indefinitely.
+Static hubs use user-defined identifiers and are created out-of-band by an admin and **never expire** — they are designed for always-on collaboration rooms that must stay available indefinitely.
 
-### Creating a Permanent Hub
+### Creating a Static Hub
 
-Permanent hubs are created out-of-band via the admin HTTP endpoint
-`GET /v1/permanent-hubs/create` (requires the `Authorization` header), since
+Static hubs are created out-of-band via the admin HTTP endpoint
+`GET /v1/static-hubs/create` (requires the `Authorization` header), since
 the browser WebSocket API cannot send custom headers. Use an HTTP client
-(curl, `fetch` from a Node.js process) to create a permanent hub, then connect
-to it with `joinPermanentHub`.
+(curl, `fetch` from a Node.js process) to create a static hub, then connect
+to it with `joinStaticHub`.
 
 The `Authorization` header value is the base64 encoding of the server's `APP_CLIENT_SECRET`:
 
 ```bash
-# Plain HTTP endpoint (no WebSocket upgrade): create a permanent hub that never expires
-curl "http://localhost:8080/v1/permanent-hubs/create?id=my-collab-room" \
-  -H "Authorization: $(echo -n 'YOUR_APP_CLIENT_SECRET' | base64)"
+# Plain HTTP endpoint (no WebSocket upgrade): create a static hub that never expires
+curl "http://localhost:8080/v1/static-hubs/create?id=my-collab-room" \
+  -H "Authorization: *** -n 'YOUR_APP_CLIENT_SECRET' | base64)"
 ```
 
 The endpoint responds with the created hub as JSON (`{ id, createdAt, metadata, isPermanent }`).
 
-### Joining a Permanent Hub
+### Joining a Static Hub
 
 ```typescript
-// Join an existing permanent hub
-client.joinPermanentHub(
+// Join an existing static hub
+client.joinStaticHub(
   "my-collab-room", // Hub ID created out-of-band
   { username: "player1", level: 5 } // Peer metadata
 );
@@ -224,11 +174,11 @@ client.onZeroHubError = (error) => {
 
 ### Choosing the Right Hub Type
 
-1. **Use Fixed Hubs when**:
+1. **Use Static Hubs when**:
 
-   - You need persistent, named rooms
-   - Users need to remember or bookmark specific hubs
-   - You want organized, structured spaces
+   - The room must never expire (always-on collaboration rooms)
+   - Hub creation must be admin-controlled and out-of-band
+   - Users repeatedly join the same long-lived room by its ID
 
 2. **Use Random Hubs when**:
 
@@ -240,11 +190,6 @@ client.onZeroHubError = (error) => {
    - Building location-aware applications
    - Coordinating devices on the same network
    - Automatic peer discovery is desired
-
-4. **Use Permanent Hubs when**:
-   - The room must never expire (always-on collaboration rooms)
-   - Hub creation must be admin-controlled and out-of-band
-   - Users repeatedly join the same long-lived room by its ID
 
 ### Metadata Design
 
