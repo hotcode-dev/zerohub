@@ -115,8 +115,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   private isDisconnected = false;
   /**
    * Number of same-host reconnect retries queued for the CURRENT host since
-   * the last confirmed connection. Abnormal WebSocket closures (1006/1011)
-   * schedule a retry to the SAME host with exponential backoff while this is
+   * the last confirmed connection. Abnormal WebSocket closures
+   * (1006/1011/1012/1013) schedule a retry to the SAME host with
+   * exponential backoff while this is
    * below `config.maxReconnectAttempts`; only when the budget is exhausted
    * does `reconnect()` fall through to host failover / the terminal
    * `onZeroHubError`. Reset to zero when a connection is confirmed (the
@@ -511,7 +512,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * after that budget is spent does the client wrap back to the configured
    * host list.
    *
-   * Without a redirect host (abnormal close, 1006/1011): the CURRENT host
+   * Without a redirect host (abnormal close, 1006/1011/1012/1013): the
+   * CURRENT host
    * (any position in the configured list) keeps a bounded retry budget
    * (`config.maxReconnectAttempts`) of same-host re-dials with exponential
    * backoff — a close is often a transient blip on a healthy host, and
@@ -655,7 +657,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     if (!this.isInitialConnection && this.reconnectAttempts < maxAttempts) {
       this.scheduleSameHostReconnect(
         currentURL,
-        "abnormal WebSocket close (1006/1011)"
+        "abnormal WebSocket close (1006/1011/1012/1013)"
       );
       return;
     }
@@ -1177,7 +1179,8 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    *
    * The returned Promise settles exactly once: it resolves when the
    * WebSocket opens, and rejects on the first `error` event or a `close`
-   * event with a code other than 1000/1001/1006/1011. The 1006/1011
+   * event with a code other than 1000/1001/1006/1011/1012/1013. The
+   * 1006/1011/1012/1013
    * branches of `onclose` do NOT settle the Promise: they are the
    * auto-reconnect entry point (failover to the next host / same-host
    * backoff retry), and the outcome of that recovery is already surfaced
@@ -1192,7 +1195,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * @param url - The URL of the ZeroHub to connect to
    * @returns A Promise that resolves when the WebSocket opens and rejects
    *   on a connection `error` or an abnormal `close` (any code other than
-   *   1000, 1001, 1006, 1011).
+   *   1000, 1001, 1006, 1011, 1012, 1013).
    */
   public connectToZeroHub(url: URL): Promise<void> {
     // Starting a fresh connection resets the manual-disconnect flag, so a
@@ -1332,8 +1335,15 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
             return;
           case 1006:
           case 1011:
+          case 1012:
+          case 1013:
             // 1006 is abnormal closure
             // 1011 is internal error
+            // 1012 is service restart, 1013 is try again later (RFC 6455
+            // §7.4.2/§7.4.3): both are transient outages emitted by servers
+            // and intermediate hops (load balancers, proxies, edge devices)
+            // during rolling restarts or brief maintenance, not
+            // protocol-level failures, so they reconnect like 1006/1011.
             this.reconnect(url);
             return;
           default:

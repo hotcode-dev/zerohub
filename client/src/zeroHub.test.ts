@@ -424,7 +424,7 @@ describe("connectToZeroHub — connect Promise settles once", () => {
     await new Promise((r) => setTimeout(r, 20));
   });
 
-  it("routes 1001/1006/1011 closes to reconnect, not to the Promise", async () => {
+  it("routes 1001/1006/1011/1012/1013 closes to reconnect, not to the Promise", async () => {
     const promise = client.connectToZeroHub(
       new URL(`ws://127.0.0.1:${wsPort}/v1/hubs/join?id=h`)
     );
@@ -440,9 +440,22 @@ describe("connectToZeroHub — connect Promise settles once", () => {
 
     fakeClose(1011);
     expect(reconnectSpy).toHaveBeenCalledTimes(3);
+    expect(reconnectSpy.mock.calls[2][1]).toBeUndefined();
+
+    // 1012 (service restart) and 1013 (try again later) are RFC 6455
+    // transient-outage codes emitted by servers and intermediate hops
+    // during rolling restarts / brief maintenance: they must take the
+    // same same-host retry / failover path, not the terminal one.
+    fakeClose(1012);
+    expect(reconnectSpy).toHaveBeenCalledTimes(4);
+    expect(reconnectSpy.mock.calls[3][1]).toBeUndefined();
+
+    fakeClose(1013);
+    expect(reconnectSpy).toHaveBeenCalledTimes(5);
+    expect(reconnectSpy.mock.calls[4][1]).toBeUndefined();
 
     fakeClose(1000);
-    expect(reconnectSpy).toHaveBeenCalledTimes(3);
+    expect(reconnectSpy).toHaveBeenCalledTimes(5);
     client.disconnect();
     await new Promise((r) => setTimeout(r, 20));
   });
@@ -1140,7 +1153,7 @@ describe("reconnect — same-host retry-with-backoff on abnormal close", () => {
     markEstablished(client);
     const connectCalls = stubConnectToZeroHub(client);
 
-    // The realistic trigger: the onclose 1006/1011 branch calls
+    // The realistic trigger: the onclose 1006/1011/1012/1013 branch calls
     // `reconnect(url)` with no new host. On the single (last) host this must
     // schedule a same-host retry, not give up.
     client.reconnect(url());
