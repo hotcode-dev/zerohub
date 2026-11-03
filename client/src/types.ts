@@ -230,7 +230,8 @@ export interface Config<PeerMetadata = object> {
   /**
    * Maximum number of times the client retries re-dialing the CURRENT host
    * (at any position in the configured list, or a migration-redirect target)
-   * after an abnormal WebSocket close (codes 1006/1011) before it moves on:
+   * after an abnormal WebSocket close (codes 1006/1011/1012/1013) before it
+   * moves on:
    * fails over to the next configured host, or — on the last host — wraps
    * back to the first host for another sweep (see
    * `maxReconnectRounds`), or surfaces the terminal `onZeroHubError` when no
