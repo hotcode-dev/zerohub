@@ -45,8 +45,10 @@ The client is a TypeScript/JavaScript SDK.
     // Create a new ZeroHub client
     const client = new ZeroHubClient(['localhost:8080'], { tls: false });
 
-    // Create a new hub
-    client.createHub('my-hub');
+    // Join an existing static (named, never-expires) hub.
+    // Static hubs are created out-of-band via the admin-gated HTTP
+    // endpoint GET /v1/static-hubs/create; the SDK exposes the join path.
+    client.joinStaticHub('my-hub');
     ```
 
 ## Structure
