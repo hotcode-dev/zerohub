@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	hub "github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
@@ -47,15 +48,21 @@ func (h *handler) CreateStaticHub(ctx *fasthttp.RequestCtx) error {
 	}
 
 	// Cross-mode collision guard: each hub mode keeps its own storage, so
-	// without this check a static create would silently mint a second
-	// hub with an id already held by the random instance,
-	// fragmenting the room under one public id. IP hubs are excluded:
-	// their ids are derived from the client IP and cannot collide with a
-	// user-chosen id.
-	if h.rejectHubIdCollidesWithOtherModes(ctx, hubId, h.zeroHubRandom) {
+	// without this check a static create would silently mint a second hub
+	// with an id already held by another mode, fragmenting the room under
+	// one public id. The claim is atomic under h.hubIdCrossModeMu — probe
+	// the sibling instances and run CreateHubIfAbsent all while holding
+	// the lock — so a concurrent create of the same id in another mode
+	// can't interleave between the probe and the store.
+	newHub, err, rejected := h.claimUserChosenHubId(ctx, hubId, h.siblingInstances(h.zeroHubStatic),
+		func() (hub.Hub, error) {
+			return h.zeroHubStatic.CreateHubIfAbsent(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), true)
+		})
+	if rejected {
+		// A sibling mode already holds this id; claimUserChosenHubId
+		// wrote the 409 Conflict, so stop without overwriting it.
 		return nil
 	}
-	newHub, err := h.zeroHubStatic.CreateHubIfAbsent(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), true)
 	if err != nil {
 		if errors.Is(err, zerohub.ErrHubAlreadyExists) {
 			log.Error().Err(fmt.Errorf("hub with id %s already exists", hubId)).Send()
