@@ -6,6 +6,7 @@ import {
   getJoinHubTestId,
   getJoinPeerStatusTestId,
   prepareHarnessPage,
+  seedStaticHub,
 } from "./utils/harness";
 
 type ClientInfo = {
@@ -30,7 +31,6 @@ test("multi hosts", async ({ page }, testInfo) => {
   // sequence — the default 10s timeout is not enough.
   testInfo.setTimeout(60 * 1000);
   await prepareHarnessPage(page);
-  let hubId: string = "";
   const componentId = uuidv4();
   // Nothing listens on 127.0.0.1:9 (the discard port — connection refused ->
   // code 1006), so it is an unreachable first host in every environment.
@@ -40,6 +40,10 @@ test("multi hosts", async ({ page }, testInfo) => {
   const zeroHubBadHost = "127.0.0.1:9";
   const zeroHubGoodHost = "localhost:8080";
   const zeroHubSecondGoodHost = "localhost:8081";
+  // Static hubs are admin-created out-of-band (seedStaticHub): the
+  // "creator" is the first joiner of the seeded hub.
+  const hubId = uuidv4();
+  await seedStaticHub(hubId, zeroHubGoodHost);
 
   await page.evaluate(
     ({
@@ -47,11 +51,13 @@ test("multi hosts", async ({ page }, testInfo) => {
       zeroHubBadHost: badHost,
       zeroHubGoodHost: goodHost,
       zeroHubSecondGoodHost: secondGoodHost,
+      hubId: joinHubId,
     }) => {
       window.ZeroHubHarness.createHub({
-        testName: "multi hosts, create hub",
+        testName: "multi hosts, creator joins",
         zeroHubHosts: [badHost, goodHost, secondGoodHost],
         componentId: id,
+        hubId: joinHubId,
       });
     },
     {
@@ -59,15 +65,13 @@ test("multi hosts", async ({ page }, testInfo) => {
       zeroHubBadHost,
       zeroHubGoodHost,
       zeroHubSecondGoodHost,
+      hubId,
     }
   );
 
   await test.step("create hub success", async () => {
     const hubIdLoc = page.getByTestId(getCreateHubTestId(componentId)).first();
-    await expect(hubIdLoc).toHaveText(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-    );
-    hubId = (await hubIdLoc.textContent()) || "";
+    await expect(hubIdLoc).toHaveText(hubId);
   });
 
   await test.step("single connection failure advances hostIndex exactly once", async () => {
@@ -142,7 +146,7 @@ test("multi hosts", async ({ page }, testInfo) => {
     async () => {
       // A fresh client whose FIRST host is unreachable: the initial
       // connection fails and failover advances to the good last host, where
-      // hub creation succeeds. The client is now on its LAST configured
+      // the join succeeds. The client is now on its LAST configured
       // host, so an abnormal close there used to reject immediately (no
       // backup host left to fail over to) and abandon reconnection forever —
       // the single-host give-up bug. After the fix, `reconnect()` retries the
@@ -154,18 +158,22 @@ test("multi hosts", async ({ page }, testInfo) => {
       // is asserted in `unit-reconnect-error.spec.ts` /
       // `unit-reconnect-retry.spec.ts` against a mock socket.
       const terminalComponentId = uuidv4();
+      const terminalHubId = uuidv4();
+      await seedStaticHub(terminalHubId, zeroHubGoodHost);
       await page.evaluate(
-        ({ componentId: id, badHost, goodHost }) => {
+        ({ componentId: id, badHost, goodHost, hubId: joinHubId }) => {
           window.ZeroHubHarness.createHub({
             testName: "multi hosts, last host blip",
             zeroHubHosts: [badHost, goodHost],
             componentId: id,
+            hubId: joinHubId,
           });
         },
         {
           componentId: terminalComponentId,
           badHost: zeroHubBadHost,
           goodHost: zeroHubGoodHost,
+          hubId: terminalHubId,
         }
       );
 
@@ -177,10 +185,9 @@ test("multi hosts", async ({ page }, testInfo) => {
         // connection must fail (connection refusal -> code 1006) before
         // failover advances to the good host. Give this assertion a
         // generous expect-timeout.
-        await expect(hubIdLoc).toHaveText(
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-          { timeout: 30_000 }
-        );
+        await expect(hubIdLoc).toHaveText(terminalHubId, {
+          timeout: 30_000,
+        });
         const info = await getClientInfo(page, terminalComponentId);
         expect(info.hostIndex).toBe(1);
       });

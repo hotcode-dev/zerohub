@@ -9,12 +9,15 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// CreateHubPermanent creates a new permanent hub.
-// It requires admin authentication.
-// The create goes through the atomic CreateHubIfAbsent primitive, so
+// CreateStaticHub creates a new static hub. It requires admin
+// authentication.
+//
+// A static hub never expires: it is created out-of-band by an admin over
+// plain HTTP and joined via WebSocket (GET /v1/static-hubs/join). The
+// create goes through the atomic CreateHubIfAbsent primitive, so
 // concurrent requests for the same ID never orphan a hub: exactly one wins
 // and the rest get 409.
-func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
+func (h *handler) CreateStaticHub(ctx *fasthttp.RequestCtx) error {
 	// Auth runs before the migration check so an unauthenticated request is
 	// answered with 401 instead of a WebSocket close whose reason is the
 	// internal backup host. No state is mutated between the two checks, so
@@ -44,15 +47,15 @@ func (h *handler) CreateHubPermanent(ctx *fasthttp.RequestCtx) error {
 	}
 
 	// Cross-mode collision guard: each hub mode keeps its own storage, so
-	// without this check a permanent create would silently mint a second
-	// hub with an id already held by the static or random instance,
+	// without this check a static create would silently mint a second
+	// hub with an id already held by the random instance,
 	// fragmenting the room under one public id. IP hubs are excluded:
 	// their ids are derived from the client IP and cannot collide with a
 	// user-chosen id.
-	if h.rejectHubIdCollidesWithOtherModes(ctx, hubId, h.zeroHub, h.zeroHubRandom) {
+	if h.rejectHubIdCollidesWithOtherModes(ctx, hubId, h.zeroHubRandom) {
 		return nil
 	}
-	newHub, err := h.zeroHubPermanent.CreateHubIfAbsent(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), true)
+	newHub, err := h.zeroHubStatic.CreateHubIfAbsent(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), true)
 	if err != nil {
 		if errors.Is(err, zerohub.ErrHubAlreadyExists) {
 			log.Error().Err(fmt.Errorf("hub with id %s already exists", hubId)).Send()

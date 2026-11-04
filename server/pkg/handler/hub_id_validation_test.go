@@ -22,88 +22,41 @@ func checkInvalidHubIdResponse(t *testing.T, ctx *fasthttp.RequestCtx, label str
 	}
 }
 
-// TestCreateHubStaticRejectsEmptyHubId verifies that a missing/empty `id`
-// query parameter is rejected with 400 before any hub state is touched: no
-// hub may be created under the empty-string key.
-func TestCreateHubStaticRejectsEmptyHubId(t *testing.T) {
+// TestCreateStaticHubRejectsEmptyHubId covers the admin-gated static hub
+// create endpoint: an empty id must be rejected with 400 (with valid admin
+// auth) and no static hub must be persisted under the empty string.
+func TestCreateStaticHubRejectsEmptyHubId(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	zerohubMock := zerohub.NewMockZeroHub(ctrl)
-	// No expectations: any hub-resolution call would mean the empty ID
-	// reached hub state.
-	h := newTestHandler()
-
-	for _, uri := range []string{
-		"http://127.0.0.1/v1/hubs/create",
-		"http://127.0.0.1/v1/hubs/create?id=",
-		"http://127.0.0.1/v1/hubs/create?id=%20%20",
-	} {
-		ctx := newRequestCtx(uri)
-		// rejectInvalidHubIdParam writes the 400 via Response (which
-		// returns nil on success), so the contract is pinned by the
-		// written status, not the error value.
-		if err := h.CreateHubStatic(ctx, zerohubMock); err != nil {
-			t.Fatalf("CreateHubStatic %s: unexpected error %v", uri, err)
-		}
-		checkInvalidHubIdResponse(t, ctx, uri)
-	}
-}
-
-// TestJoinOrCreateHubStaticRejectsEmptyHubId covers the static
-// join-or-create endpoint for the same empty-id rejection.
-func TestJoinOrCreateHubStaticRejectsEmptyHubId(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	zerohubMock := zerohub.NewMockZeroHub(ctrl)
-	// No expectations: the 400 must be written before any hub-state access.
-	h := newTestHandler()
-
-	for _, uri := range []string{
-		"http://127.0.0.1/v1/hubs/join-or-create",
-		"http://127.0.0.1/v1/hubs/join-or-create?id=",
-	} {
-		ctx := newRequestCtx(uri)
-		if err := h.JoinOrCreateHubStatic(ctx, zerohubMock); err != nil {
-			t.Fatalf("JoinOrCreateHubStatic %s: unexpected error %v", uri, err)
-		}
-		checkInvalidHubIdResponse(t, ctx, uri)
-	}
-}
-
-// TestCreateHubPermanentRejectsEmptyHubId covers the admin-only permanent
-// hub create endpoint: an empty id must be rejected with 400 (with valid
-// admin auth) and no permanent hub must be persisted under the empty
-// string.
-func TestCreateHubPermanentRejectsEmptyHubId(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	permanentMock := zerohub.NewMockZeroHub(ctrl)
+	staticMock := zerohub.NewMockZeroHub(ctrl)
 	// No expectations: the 400 must be written before CreateHubIfAbsent.
-	h := &handler{clientSecret: testClientSecret, zeroHubPermanent: permanentMock}
+	h := &handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
 
-	ctx := newRequestCtx("http://127.0.0.1/v1/permanent-hubs/create?id=")
+	ctx := newRequestCtx("http://127.0.0.1/v1/static-hubs/create?id=")
 	ctx.Request.Header.Set("Authorization", adminAuthHeader())
-	if err := h.CreateHubPermanent(ctx); err != nil {
-		t.Fatalf("CreateHubPermanent with empty id: unexpected error %v", err)
+	if err := h.CreateStaticHub(ctx); err != nil {
+		t.Fatalf("CreateStaticHub with empty id: unexpected error %v", err)
 	}
-	checkInvalidHubIdResponse(t, ctx, "CreateHubPermanent empty id")
+	checkInvalidHubIdResponse(t, ctx, "CreateStaticHub empty id")
 }
 
-// TestCreateHubPermanentAuthPrecedenceOverInvalidId pins the ordering
+// TestCreateStaticHubAuthPrecedenceOverInvalidId pins the ordering
 // choice: an unauthenticated request with an empty id gets 401, not 400.
-func TestCreateHubPermanentAuthPrecedenceOverInvalidId(t *testing.T) {
+func TestCreateStaticHubAuthPrecedenceOverInvalidId(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	permanentMock := zerohub.NewMockZeroHub(ctrl)
-	h := &handler{clientSecret: testClientSecret, zeroHubPermanent: permanentMock}
+	staticMock := zerohub.NewMockZeroHub(ctrl)
+	h := &handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
 
-	ctx := newRequestCtx("http://127.0.0.1/v1/permanent-hubs/create")
+	ctx := newRequestCtx("http://127.0.0.1/v1/static-hubs/create")
 	// No Authorization header.
-	if err := h.CreateHubPermanent(ctx); err == nil {
-		t.Fatalf("CreateHubPermanent without auth: expected an error")
+	if err := h.CreateStaticHub(ctx); err == nil {
+		t.Fatalf("CreateStaticHub without auth: expected an error")
 	}
 	if got := ctx.Response.StatusCode(); got != fasthttp.StatusUnauthorized {
 		t.Fatalf("status = %d, want 401", got)
 	}
 }
 
-// TestJoinHubRejectsEmptyHubId verifies that /v1/hubs/join with a
+// TestJoinHubRejectsEmptyHubId verifies that /v1/random-hubs/join with a
 // missing/empty id is rejected with 400 instead of degrading to 404 (or a
 // migration forward).
 func TestJoinHubRejectsEmptyHubId(t *testing.T) {
@@ -113,8 +66,8 @@ func TestJoinHubRejectsEmptyHubId(t *testing.T) {
 	h := newTestHandler()
 
 	for _, uri := range []string{
-		"http://127.0.0.1/v1/hubs/join",
-		"http://127.0.0.1/v1/hubs/join?id=",
+		"http://127.0.0.1/v1/random-hubs/join",
+		"http://127.0.0.1/v1/random-hubs/join?id=",
 	} {
 		ctx := newRequestCtx(uri)
 		if err := h.JoinHub(ctx, zerohubMock); err != nil {
@@ -124,7 +77,7 @@ func TestJoinHubRejectsEmptyHubId(t *testing.T) {
 	}
 }
 
-// TestGetHubRejectsEmptyHubId verifies that /v1/hubs/get with a missing/
+// TestGetHubRejectsEmptyHubId verifies that /v1/random-hubs/get with a missing/
 // empty id is rejected with 400 for consistency with the other hub
 // endpoints.
 func TestGetHubRejectsEmptyHubId(t *testing.T) {
@@ -134,8 +87,8 @@ func TestGetHubRejectsEmptyHubId(t *testing.T) {
 	h := newTestHandler()
 
 	for _, uri := range []string{
-		"http://127.0.0.1/v1/hubs/get",
-		"http://127.0.0.1/v1/hubs/get?id=",
+		"http://127.0.0.1/v1/random-hubs/get",
+		"http://127.0.0.1/v1/random-hubs/get?id=",
 	} {
 		ctx := newRequestCtx(uri)
 		if err := h.GetHub(ctx, zerohubMock); err != nil {

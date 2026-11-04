@@ -6,14 +6,15 @@ import {
   getJoinHubTestId,
   getJoinPeerStatusTestId,
   prepareHarnessPage,
+  seedStaticHub,
 } from "./utils/harness";
 
-test("create/join hub", async ({ page }) => {
+test("seed/join static hub", async ({ page }) => {
   // Endpoint pinning: capture every WebSocket URL the page dials so the
-  // spec can prove the harness drove the static-hub endpoints
-  // (/v1/hubs/create + /v1/hubs/join), not the random-hub ones. The
-  // init script must be registered before navigation (the data-URL goto
-  // inside prepareHarnessPage), so it is installed first.
+  // spec can prove the harness drove the static-hub endpoint
+  // (/v1/static-hubs/join), not the random-hub ones. The init script must
+  // be registered before navigation (the data-URL goto inside
+  // prepareHarnessPage), so it is installed first.
   await page.addInitScript(() => {
     (window as unknown as { __wsUrls: string[] }).__wsUrls = [];
     const RealWS = window.WebSocket;
@@ -29,77 +30,76 @@ test("create/join hub", async ({ page }) => {
   });
   await prepareHarnessPage(page);
 
-  const componentId = uuidv4();
+  const creatorId = uuidv4();
+  const joinerId = uuidv4();
   const zeroHubHost = "localhost:8080";
-  let hubId: string = "";
+  // The hub id is spec-provided (the creator's component id): a unique,
+  // known value the harness returns verbatim on `onHubInfo`, so the join
+  // id can be asserted against a known value instead of a uuid shape.
+  const hubId = creatorId;
 
-  await page.evaluate(
-    ({ componentId: id, zeroHubHost: host }) => {
-      window.ZeroHubHarness.createHub({
-        testName: "create/join hub, create hub",
-        zeroHubHosts: [host],
-        componentId: id,
-      });
-    },
-    { componentId, zeroHubHost }
-  );
-
-  await test.step("create hub success", async () => {
-    const hubIdLoc = page.getByTestId(getCreateHubTestId(componentId)).first();
-    await expect(hubIdLoc).toHaveText(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-    );
-    hubId = (await hubIdLoc.textContent()) || "";
-  });
-
-  await test.step("created hub id round-trips the static-hub endpoint", async () => {
-    // The harness creates the hub with the componentId as the static hub
-    // id, and /v1/hubs/create returns it verbatim — a regression that
-    // drops or rewrites the id param must fail here, not silently pass
-    // against a random-hub uuid.
-    expect(hubId).toBe(componentId);
-  });
+  // Static hubs are created out-of-band by an admin over plain HTTP
+  // (`GET /v1/static-hubs/create`, Authorization-gated — the browser
+  // WebSocket API cannot carry custom headers, so the SDK exposes no
+  // static-hub create). Seed the hub Node-side first, then drive the
+  // WebSocket join path against it.
+  await seedStaticHub(hubId, zeroHubHost);
 
   await page.evaluate(
     ({ componentId: id, zeroHubHost: host, hubId: joinHubId }) => {
-      window.ZeroHubHarness.joinHub({
-        testName: "create/join hub, join hub",
+      window.ZeroHubHarness.createHub({
+        testName: "create/join hub, creator joins",
         zeroHubHosts: [host],
         hubId: joinHubId,
         componentId: id,
       });
     },
-    { componentId, zeroHubHost, hubId }
+    { componentId: creatorId, zeroHubHost, hubId }
+  );
+
+  await test.step("creator join success", async () => {
+    const hubIdLoc = page.getByTestId(getCreateHubTestId(creatorId)).first();
+    await expect(hubIdLoc).toHaveText(hubId);
+  });
+
+  await page.evaluate(
+    ({ componentId: id, zeroHubHost: host, hubId: joinHubId }) => {
+      window.ZeroHubHarness.joinHub({
+        testName: "create/join hub, joiner joins",
+        zeroHubHosts: [host],
+        hubId: joinHubId,
+        componentId: id,
+      });
+    },
+    { componentId: joinerId, zeroHubHost, hubId }
   );
 
   await test.step("join hub success", async () => {
     await expect(
-      page.getByTestId(getJoinHubTestId(componentId)).first()
+      page.getByTestId(getJoinHubTestId(joinerId)).first()
     ).toHaveText(hubId);
   });
 
-  await test.step("dialed the static-hub endpoints", async () => {
+  await test.step("dialed the static-hub endpoint", async () => {
     const urls: string[] = await page.evaluate(() => (
       window as unknown as { __wsUrls: string[] }
     ).__wsUrls);
+    // Both the creator's and the joiner's dials must hit the static-hub
+    // join endpoint with the seeded id, and no random-hub endpoint.
     expect(
-      urls.some((url) => url.includes("/v1/hubs/create") && url.includes(`id=${hubId}`))
-    ).toBe(true);
-    expect(
-      urls.some((url) => url.includes("/v1/hubs/join") && url.includes(`id=${hubId}`))
-    ).toBe(true);
-    expect(
-      urls.some((url) => url.includes("/v1/random-hubs"))
-    ).toBe(false);
+      urls.filter((url) => url.includes("/v1/static-hubs/join")).length
+    ).toBe(2);
+    expect(urls.every((url) => url.includes(`id=${hubId}`))).toBe(true);
+    expect(urls.some((url) => url.includes("/v1/random-hubs"))).toBe(false);
   });
 
   await test.step("peer status connected", async () => {
     await expect(
-      page.getByTestId(getCreatePeerStatusTestId(componentId)).first()
+      page.getByTestId(getCreatePeerStatusTestId(creatorId)).first()
     ).toHaveText("connected");
 
     await expect(
-      page.getByTestId(getJoinPeerStatusTestId(componentId)).first()
+      page.getByTestId(getJoinPeerStatusTestId(joinerId)).first()
     ).toHaveText("connected");
   });
 });

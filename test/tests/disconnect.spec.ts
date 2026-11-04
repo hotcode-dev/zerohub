@@ -8,6 +8,7 @@ import {
   getJoinPeerStatusTestId,
   getReuseHubTestId,
   prepareHarnessPage,
+  seedStaticHub,
 } from "./utils/harness";
 
 type PeersInfo = {
@@ -44,25 +45,26 @@ test("disconnect tears down websocket and peer connections", async ({
   await prepareHarnessPage(page);
   const componentId = uuidv4();
   const zeroHubHost = "localhost:8080";
-  let hubId: string = "";
+  // The hub is seeded out-of-band (admin HTTP; the SDK has no static-hub
+  // create) and the "creator" is just its first joiner.
+  const hubId = uuidv4();
+  await seedStaticHub(hubId, zeroHubHost);
 
   await page.evaluate(
-    ({ componentId: id, zeroHubHost: host }) => {
+    ({ componentId: id, zeroHubHost: host, hubId: joinHubId }) => {
       window.ZeroHubHarness.createHub({
-        testName: "disconnect, create hub",
+        testName: "disconnect, creator joins",
         zeroHubHosts: [host],
         componentId: id,
+        hubId: joinHubId,
       });
     },
-    { componentId, zeroHubHost }
+    { componentId, zeroHubHost, hubId }
   );
 
   await test.step("create hub success", async () => {
     const hubIdLoc = page.getByTestId(getCreateHubTestId(componentId)).first();
-    await expect(hubIdLoc).toHaveText(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-    );
-    hubId = (await hubIdLoc.textContent()) || "";
+    await expect(hubIdLoc).toHaveText(hubId);
   });
 
   await page.evaluate(
@@ -111,10 +113,10 @@ test("disconnect tears down websocket and peer connections", async ({
       { componentId }
     );
 
-    // A fresh createHub() on the same (previously disconnected)
+    // A fresh entry-point call on the same (previously disconnected)
     // client must open a live connection: the server responds with a new
-    // HubInfoMessage and the client is NOT stuck with a dead socket
-    // (which would leave the new hub id unset).
+    // HubInfoMessage (a fresh random hub) and the client is NOT stuck with
+    // a dead socket (which would leave the new hub id unset).
     const reuseLoc = page.getByTestId(getReuseHubTestId(componentId)).first();
     await expect(reuseLoc).toHaveText(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
@@ -125,30 +127,29 @@ test("disconnect tears down websocket and peer connections", async ({
 test("peer disconnect tears down RTCPeerConnection and removes peer from map", async ({
   page,
 }) => {
-  await prepareHarnessPage(page);
   const componentId = uuidv4();
   const joinComponentId = `${componentId}-joiner`;
   const zeroHubHost = "localhost:8080";
-  let hubId: string = "";
+  const hubId = uuidv4();
+  await prepareHarnessPage(page);
+  await seedStaticHub(hubId, zeroHubHost);
 
-  // Create a hub (Peer A).
+  // Join the hub (Peer A).
   await page.evaluate(
-    ({ componentId: id, zeroHubHost: host }) => {
+    ({ componentId: id, zeroHubHost: host, hubId: joinHubId }) => {
       window.ZeroHubHarness.createHub({
-        testName: "disconnect teardown, create hub",
+        testName: "disconnect teardown, creator joins",
         zeroHubHosts: [host],
         componentId: id,
+        hubId: joinHubId,
       });
     },
-    { componentId, zeroHubHost }
+    { componentId, zeroHubHost, hubId }
   );
 
   await test.step("create hub success", async () => {
     const hubIdLoc = page.getByTestId(getCreateHubTestId(componentId)).first();
-    await expect(hubIdLoc).toHaveText(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-    );
-    hubId = (await hubIdLoc.textContent()) || "";
+    await expect(hubIdLoc).toHaveText(hubId);
   });
 
   // Join the hub (Peer B) — this is a mid-session joiner.

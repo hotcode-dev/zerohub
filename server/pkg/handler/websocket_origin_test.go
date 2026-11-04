@@ -13,7 +13,7 @@ import (
 // headers the upgrader requires.
 func newWSHandshakeCtx(host string, origin string) *fasthttp.RequestCtx {
 	ctx := &fasthttp.RequestCtx{}
-	ctx.Request.SetRequestURI("http://" + host + "/v1/hubs/create?id=room")
+	ctx.Request.SetRequestURI("http://" + host + "/v1/random-hubs/create?id=room")
 	ctx.Request.Header.Set("Upgrade", "websocket")
 	ctx.Request.Header.Set("Connection", "Upgrade")
 	ctx.Request.Header.Set("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==")
@@ -33,11 +33,11 @@ func newWSHandshakeCtx(host string, origin string) *fasthttp.RequestCtx {
 func wsUpgradeStatus(t *testing.T, h *handler, host, origin string) int {
 	t.Helper()
 	ctx := newWSHandshakeCtx(host, origin)
-	seed, _, err := h.zeroHub.GetOrCreateHub("room", "", false)
+	seed, _, err := h.zeroHubStatic.GetOrCreateHub("room", "", false)
 	if err != nil {
 		t.Fatalf("seed hub: %v", err)
 	}
-	_, _ = h.Upgrade(ctx, h.zeroHub, seed)
+	_, _ = h.Upgrade(ctx, h.zeroHubStatic, seed)
 	return ctx.Response.StatusCode()
 }
 
@@ -50,7 +50,7 @@ func wsUpgradeStatus(t *testing.T, h *handler, host, origin string) int {
 func TestWSOriginValidation(t *testing.T) {
 	t.Run("cross-origin rejected", func(t *testing.T) {
 		h := newTestHandler()
-		h.zeroHub = newRealZeroHub(t)
+		h.zeroHubStatic = newRealZeroHub(t)
 		if status := wsUpgradeStatus(t, h, "localhost:8080", "http://evil.example"); status != fasthttp.StatusForbidden {
 			t.Fatalf("cross-origin handshake status = %d, want 403", status)
 		}
@@ -58,7 +58,7 @@ func TestWSOriginValidation(t *testing.T) {
 
 	t.Run("same-origin accepted", func(t *testing.T) {
 		h := newTestHandler()
-		h.zeroHub = newRealZeroHub(t)
+		h.zeroHubStatic = newRealZeroHub(t)
 		// Origin host == request Host (including the port).
 		if status := wsUpgradeStatus(t, h, "hub.example.com:8080", "http://hub.example.com:8080"); status != fasthttp.StatusSwitchingProtocols {
 			t.Fatalf("same-origin handshake status = %d, want 101", status)
@@ -67,7 +67,7 @@ func TestWSOriginValidation(t *testing.T) {
 
 	t.Run("no origin accepted", func(t *testing.T) {
 		h := newTestHandler()
-		h.zeroHub = newRealZeroHub(t)
+		h.zeroHubStatic = newRealZeroHub(t)
 		if status := wsUpgradeStatus(t, h, "hub.example.com:8080", ""); status != fasthttp.StatusSwitchingProtocols {
 			t.Fatalf("no-origin handshake status = %d, want 101", status)
 		}
@@ -75,7 +75,7 @@ func TestWSOriginValidation(t *testing.T) {
 
 	t.Run("allow-listed origin accepted", func(t *testing.T) {
 		h := newTestHandler()
-		h.zeroHub = newRealZeroHub(t)
+		h.zeroHubStatic = newRealZeroHub(t)
 		h.allowedOrigins = parseAllowedOrigins("https://ui.example.com, http://evil.example,")
 		if status := wsUpgradeStatus(t, h, "hub.example.com:8080", "http://evil.example"); status != fasthttp.StatusSwitchingProtocols {
 			t.Fatalf("allow-listed origin handshake status = %d, want 101", status)
@@ -84,7 +84,7 @@ func TestWSOriginValidation(t *testing.T) {
 
 	t.Run("unlisted origin rejected", func(t *testing.T) {
 		h := newTestHandler()
-		h.zeroHub = newRealZeroHub(t)
+		h.zeroHubStatic = newRealZeroHub(t)
 		h.allowedOrigins = parseAllowedOrigins("https://ui.example.com")
 		if status := wsUpgradeStatus(t, h, "hub.example.com:8080", "http://attacker.example"); status != fasthttp.StatusForbidden {
 			t.Fatalf("unlisted origin handshake status = %d, want 403", status)

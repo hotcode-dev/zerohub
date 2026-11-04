@@ -40,7 +40,7 @@ func TestJoinOrCreateRemovesOrphanOnUpgradeFailure(t *testing.T) {
 	}
 
 	h := newTestHandler()
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join-or-create?id=" + hubId)
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join-or-create?id=" + hubId)
 	// Plain GET: the websocket handshake cannot succeed. The returned error
 	// is expected (a websocket failure), not a "create hub error".
 	_ = h.JoinOrCreateHubByID(ctx, zh, hubId)
@@ -70,7 +70,7 @@ func TestJoinOrCreateKeepsExistingHubOnUpgradeFailure(t *testing.T) {
 	}
 
 	h := newTestHandler()
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join-or-create?id=" + hubId)
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join-or-create?id=" + hubId)
 	// Plain GET: the handshake fails. created=false here (the hub was
 	// pre-seeded), so the cleanup path must be a no-op.
 	_ = h.JoinOrCreateHubByID(ctx, zh, hubId)
@@ -120,7 +120,7 @@ func TestJoinOrCreatePreserves400OnMalformedPeerMetadata(t *testing.T) {
 
 	h := newTestHandler()
 	// Malformed peerMetadata: Upgrade rejects it up front with a 400.
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join-or-create?id=" + hubId + "&peerMetadata=not-json")
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join-or-create?id=" + hubId + "&peerMetadata=not-json")
 	_ = h.JoinOrCreateHubByID(ctx, zh, hubId)
 
 	if got := ctx.Response.StatusCode(); got != 400 {
@@ -140,7 +140,7 @@ func TestCreateHubByIDPreserves400OnMalformedPeerMetadata(t *testing.T) {
 	zh := newRealZeroHub(t)
 
 	h := newTestHandler()
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create?id=" + hubId + "&peerMetadata=not-json")
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/create?id=" + hubId + "&peerMetadata=not-json")
 	_ = h.CreateHubByID(ctx, zh, hubId)
 
 	if got := ctx.Response.StatusCode(); got != 400 {
@@ -164,7 +164,7 @@ func TestJoinHubPreserves400OnMalformedPeerMetadata(t *testing.T) {
 	}
 
 	h := newTestHandler()
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join?id=" + hubId + "&peerMetadata=not-json")
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join?id=" + hubId + "&peerMetadata=not-json")
 	_ = h.JoinHub(ctx, zh)
 
 	if got := ctx.Response.StatusCode(); got != 400 {

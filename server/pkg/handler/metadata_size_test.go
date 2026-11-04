@@ -58,7 +58,7 @@ func TestUpgradeRejectsOversizedPeerMetadata(t *testing.T) {
 	// happen up front.
 	h := newTestHandler()
 
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join?id=size-hub&peerMetadata=" + oversizedValue)
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join?id=size-hub&peerMetadata=" + oversizedValue)
 	// Upgrade reports responseWritten=true: the 413 was already written and
 	// no caller-level fallback may overwrite it.
 	if err, responseWritten := h.Upgrade(ctx, zerohubMock, hubInstance); err != nil || responseWritten != true {
@@ -84,7 +84,7 @@ func TestCreateHubByIDRejectsOversizedHubMetadata(t *testing.T) {
 	// value — the 413 must be written before any hub-state access.
 	h := newTestHandler()
 
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create?id=size-hub&hubMetadata=" + oversizedValue)
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/create?id=size-hub&hubMetadata=" + oversizedValue)
 	if err := h.CreateHubByID(ctx, zerohubMock, "size-hub"); err != nil {
 		t.Fatalf("CreateHubByID with oversized hubMetadata: unexpected error %v", err)
 	}
@@ -100,26 +100,26 @@ func TestJoinOrCreateHubByIDRejectsOversizedHubMetadata(t *testing.T) {
 	// value.
 	h := newTestHandler()
 
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join-or-create?id=size-hub&hubMetadata=" + oversizedValue)
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join-or-create?id=size-hub&hubMetadata=" + oversizedValue)
 	if err := h.JoinOrCreateHubByID(ctx, zerohubMock, "size-hub"); err != nil {
 		t.Fatalf("JoinOrCreateHubByID with oversized hubMetadata: unexpected error %v", err)
 	}
 	assertOversizedParamRejected(t, ctx, "hubMetadata")
 }
 
-// TestCreateHubPermanentRejectsOversizedHubMetadata covers the admin-only
-// permanent hub create endpoint. The 413 must win over the cross-mode
+// TestCreateStaticHubRejectsOversizedHubMetadata covers the admin-only
+// static hub create endpoint. The 413 must win over the cross-mode
 // collision guard, which runs after the size check.
-func TestCreateHubPermanentRejectsOversizedHubMetadata(t *testing.T) {
+func TestCreateStaticHubRejectsOversizedHubMetadata(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	permanentMock := zerohub.NewMockZeroHub(ctrl)
+	staticMock := zerohub.NewMockZeroHub(ctrl)
 	// No expectations: the 413 must be written before any hub-state access.
-	h := &handler{clientSecret: testClientSecret, zeroHubPermanent: permanentMock}
+	h := &handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
 
-	ctx := newRequestCtx("http://127.0.0.1/v1/permanent-hubs/create?id=perm-hub&hubMetadata=" + oversizedValue)
+	ctx := newRequestCtx("http://127.0.0.1/v1/static-hubs/create?id=static-hub&hubMetadata=" + oversizedValue)
 	ctx.Request.Header.Set("Authorization", adminAuthHeader())
-	if err := h.CreateHubPermanent(ctx); err != nil {
-		t.Fatalf("CreateHubPermanent with oversized hubMetadata: unexpected error %v", err)
+	if err := h.CreateStaticHub(ctx); err != nil {
+		t.Fatalf("CreateStaticHub with oversized hubMetadata: unexpected error %v", err)
 	}
 	assertOversizedParamRejected(t, ctx, "hubMetadata")
 }
@@ -136,7 +136,7 @@ func TestOversizedIdRejected(t *testing.T) {
 		zerohubMock := zerohub.NewMockZeroHub(ctrl)
 		h := newTestHandler()
 
-		ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create?id=x&hubMetadata=")
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/create?id=x&hubMetadata=")
 		if err := h.CreateHubByID(ctx, zerohubMock, oversizedID); err != nil {
 			t.Fatalf("CreateHubByID with oversized id: unexpected error %v", err)
 		}
@@ -148,7 +148,7 @@ func TestOversizedIdRejected(t *testing.T) {
 		zerohubMock := zerohub.NewMockZeroHub(ctrl)
 		h := newTestHandler()
 
-		ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join-or-create?id=x")
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join-or-create?id=x")
 		if err := h.JoinOrCreateHubByID(ctx, zerohubMock, oversizedID); err != nil {
 			t.Fatalf("JoinOrCreateHubByID with oversized id: unexpected error %v", err)
 		}
@@ -160,7 +160,7 @@ func TestOversizedIdRejected(t *testing.T) {
 		zerohubMock := zerohub.NewMockZeroHub(ctrl)
 		h := newTestHandler()
 
-		ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join?id=" + oversizedID)
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join?id=" + oversizedID)
 		if err := h.JoinHub(ctx, zerohubMock); err != nil {
 			t.Fatalf("JoinHub with oversized id: unexpected error %v", err)
 		}
@@ -172,24 +172,24 @@ func TestOversizedIdRejected(t *testing.T) {
 		zerohubMock := zerohub.NewMockZeroHub(ctrl)
 		h := newTestHandler()
 
-		ctx := newRequestCtx("http://127.0.0.1/v1/hubs/get?id=" + oversizedID)
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/get?id=" + oversizedID)
 		if err := h.GetHub(ctx, zerohubMock); err != nil {
 			t.Fatalf("GetHub with oversized id: unexpected error %v", err)
 		}
 		assertOversizedParamRejected(t, ctx, "id")
 	})
 
-	t.Run("CreateHubPermanent", func(t *testing.T) {
+	t.Run("CreateStaticHub", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		permanentMock := zerohub.NewMockZeroHub(ctrl)
+		staticMock := zerohub.NewMockZeroHub(ctrl)
 		// The 413 for the oversized id must win over the cross-mode
-		// collision guard, so zeroHub/zeroHubRandom can stay nil.
-		h := &handler{clientSecret: testClientSecret, zeroHubPermanent: permanentMock}
+		// collision guard, so zeroHubRandom can stay nil.
+		h := &handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
 
-		ctx := newRequestCtx("http://127.0.0.1/v1/permanent-hubs/create?id=" + oversizedID)
+		ctx := newRequestCtx("http://127.0.0.1/v1/static-hubs/create?id=" + oversizedID)
 		ctx.Request.Header.Set("Authorization", adminAuthHeader())
-		if err := h.CreateHubPermanent(ctx); err != nil {
-			t.Fatalf("CreateHubPermanent with oversized id: unexpected error %v", err)
+		if err := h.CreateStaticHub(ctx); err != nil {
+			t.Fatalf("CreateStaticHub with oversized id: unexpected error %v", err)
 		}
 		assertOversizedParamRejected(t, ctx, "id")
 	})
@@ -227,7 +227,7 @@ func TestBoundaryValuesAccepted(t *testing.T) {
 			MaxTimes(1)
 		h := newTestHandler()
 
-		ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create?id=cap-hub&hubMetadata=" +
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/create?id=cap-hub&hubMetadata=" +
 			"%7B%22pad%22%3A%22" + strings.Repeat("b", config.MaxMetadataSize-len(`{"pad":""}`)) + `%22%7D`)
 		// The query string is URL-decoded by fasthttp's QueryArgs, so the
 		// percent-encoded boundary JSON above decodes to `cap`.
@@ -261,7 +261,7 @@ func TestBoundaryValuesAccepted(t *testing.T) {
 			MaxTimes(1)
 		h := newTestHandler()
 
-		ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create")
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/create")
 		// No `id` in the query: CreateHubByID receives the id verbatim
 		// from the caller, exactly like the static endpoint passes it.
 		if err := h.CreateHubByID(ctx, zerohubMock, capID); err != nil {
@@ -286,7 +286,7 @@ func TestBoundaryValuesAccepted(t *testing.T) {
 		zerohubMock := zerohub.NewMockZeroHub(ctrl)
 		h := newTestHandler()
 
-		ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join?id=cap-hub&peerMetadata=" + cap)
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join?id=cap-hub&peerMetadata=" + cap)
 		if err, responseWritten := h.Upgrade(ctx, zerohubMock, hubInstance); err == nil ||
 			!strings.Contains(err.Error(), "websocket") || responseWritten != false {
 			t.Fatalf("Upgrade with cap-sized peerMetadata: got (err=%v, responseWritten=%v), want websocket upgrade error and responseWritten=false", err, responseWritten)
@@ -309,7 +309,7 @@ func TestOversizedValueWinsOverShape(t *testing.T) {
 	h := newTestHandler()
 
 	// oversizedValue is 4097 'a's: neither valid JSON nor size-legal.
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/join-or-create?id=size-hub&hubMetadata=" + oversizedValue)
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join-or-create?id=size-hub&hubMetadata=" + oversizedValue)
 	if err := h.JoinOrCreateHubByID(ctx, zerohubMock, "size-hub"); err != nil {
 		t.Fatalf("JoinOrCreateHubByID: unexpected error %v", err)
 	}

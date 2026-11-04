@@ -7,7 +7,7 @@ import (
 )
 
 // These tests pin the plain-HTTP admin endpoint modeling of
-// /v1/permanent-hubs/create in server/api.yml — the AsyncAPI contract
+// /v1/static-hubs/create in server/api.yml — the AsyncAPI contract
 // AGENTS.md requires keeping aligned with
 // pkg/handler/create_hub_permanent.go. The handler answers a single JSON
 // success body (hub.go: id, createdAt, metadata, isPermanent) and JSON
@@ -25,7 +25,7 @@ func TestPermanentHubsCreateChannelMessages(t *testing.T) {
 	root := loadSpec(t)
 	ch := child(t, child(t, root, "channels"), "permanentHubsCreate")
 
-	if got := child(t, ch, "address").Value; got != "/v1/permanent-hubs/create" {
+	if got := child(t, ch, "address").Value; got != "/v1/static-hubs/create" {
 		t.Fatalf("permanentHubsCreate: address = %q", got)
 	}
 

@@ -172,20 +172,9 @@ describe("hub entry points — awaitable connect contract", () => {
     string,
   ][] = [
     [
-      "createHub",
-      (c) => c.createHub("h", { p: 1 }, { m: 1 }),
-      "/v1/hubs/create",
-    ],
-    ["joinHub", (c) => c.joinHub("h", { p: 1 }), "/v1/hubs/join"],
-    [
-      "joinPermanentHub",
-      (c) => c.joinPermanentHub("h", { p: 1 }),
-      "/v1/permanent-hubs/join",
-    ],
-    [
-      "joinOrCreateHub",
-      (c) => c.joinOrCreateHub("h", { p: 1 }, { m: 1 }),
-      "/v1/hubs/join-or-create",
+      "joinStaticHub",
+      (c) => c.joinStaticHub("h", { p: 1 }),
+      "/v1/static-hubs/join",
     ],
     [
       "joinOrCreateIPHub",
@@ -376,7 +365,7 @@ describe("connectToZeroHub — connect Promise settles once", () => {
 
   it("resolves on open", async () => {
     const promise = client.connectToZeroHub(
-      new URL(`ws://127.0.0.1:${wsPort}/v1/hubs/join?id=h`)
+      new URL(`ws://127.0.0.1:${wsPort}/v1/static-hubs/join?id=h`)
     );
     expect(promise).toBeInstanceOf(Promise);
     await promise;
@@ -389,7 +378,7 @@ describe("connectToZeroHub — connect Promise settles once", () => {
     // Port 9 (discard) is guaranteed to refuse the connection: the global
     // WebSocket fires `error` and then `close` (1006) for the aborted dial.
     const promise = client.connectToZeroHub(
-      new URL("ws://127.0.0.1:9/v1/hubs/join?id=h")
+      new URL("ws://127.0.0.1:9/v1/static-hubs/join?id=h")
     );
     let rejected: Error | undefined;
     const outcome = await promise.then(
@@ -409,7 +398,7 @@ describe("connectToZeroHub — connect Promise settles once", () => {
 
   it("a protocol-level close code after open surfaces onZeroHubError without re-settling", async () => {
     const promise = client.connectToZeroHub(
-      new URL(`ws://127.0.0.1:${wsPort}/v1/hubs/join?id=h`)
+      new URL(`ws://127.0.0.1:${wsPort}/v1/static-hubs/join?id=h`)
     );
     await promise; // open resolved it
 
@@ -426,7 +415,7 @@ describe("connectToZeroHub — connect Promise settles once", () => {
 
   it("routes 1001/1006/1011/1012/1013 closes to reconnect, not to the Promise", async () => {
     const promise = client.connectToZeroHub(
-      new URL(`ws://127.0.0.1:${wsPort}/v1/hubs/join?id=h`)
+      new URL(`ws://127.0.0.1:${wsPort}/v1/static-hubs/join?id=h`)
     );
     await promise;
 
@@ -471,14 +460,15 @@ describe("connectToZeroHub — connect Promise settles once", () => {
 
   it("a throwing onZeroHubError onerror does not escape the event handler", async () => {
     const promise = client.connectToZeroHub(
-      new URL(`ws://127.0.0.1:${wsPort}/v1/hubs/join?id=h`)
+      new URL(`ws://127.0.0.1:${wsPort}/v1/static-hubs/join?id=h`)
     );
     await promise; // open resolved the connect Promise
 
     // A throwing user handler must NOT take down the onerror event handler:
     // if it did, the `settle(...)` below it would be skipped and, on a
-    // still-pending dial, the connect Promise returned by createHub()/
-    // joinHub() would stay pending forever. The connect Promise is already
+    // still-pending dial, the connect Promise returned by
+    // createRandomHub()/joinStaticHub() would stay pending forever. The
+    // connect Promise is already
     // settled here (open consumed the one-shot `settle` guard), so this
     // spec pins the handler-isolation contract directly: nothing throws out
     // of the handler, and the throw is logged via the standard surface.
@@ -496,7 +486,7 @@ describe("connectToZeroHub — connect Promise settles once", () => {
 
   it("a throwing onZeroHubError onclose (protocol-level code) does not escape the event handler", async () => {
     const promise = client.connectToZeroHub(
-      new URL(`ws://127.0.0.1:${wsPort}/v1/hubs/join?id=h`)
+      new URL(`ws://127.0.0.1:${wsPort}/v1/static-hubs/join?id=h`)
     );
     await promise; // open resolved the connect Promise
 
@@ -684,7 +674,9 @@ describe("onmessage — corrupt frame isolation", () => {
     // a rejected connect Promise); swallow the rejection — the spec only
     // invokes the onmessage handler synchronously.
     client
-      .connectToZeroHub(new URL("ws://fake-host-never-resolves/v1/hubs/join"))
+      .connectToZeroHub(
+        new URL("ws://fake-host-never-resolves/v1/static-hubs/join")
+      )
       .catch(() => {});
     return (client.ws as unknown as { onmessage: () => unknown }).onmessage;
   }
@@ -1145,7 +1137,7 @@ describe("reconnect — 1001 close reason host validation", () => {
 });
 
 describe("reconnect — same-host retry-with-backoff on abnormal close", () => {
-  const url = () => new URL("ws://only-host:8080/v1/hubs/join?id=hub");
+  const url = () => new URL("ws://only-host:8080/v1/static-hubs/join?id=hub");
 
   it("single abnormal close on the last host retries the SAME host and does not surface onZeroHubError", async () => {
     vi.useFakeTimers();
@@ -1299,7 +1291,7 @@ describe("reconnect — same-host retry-with-backoff on abnormal close", () => {
     // also resets the attempt counter (the budget only refills on a
     // CONFIRMED connection, not on a bare dial).
     await client.connectToZeroHub(
-      new URL("ws://only-host:8080/v1/hubs/join?id=hub")
+      new URL("ws://only-host:8080/v1/static-hubs/join?id=hub")
     );
     client.handleZeroHubMessage({
       hubInfoMessage: {

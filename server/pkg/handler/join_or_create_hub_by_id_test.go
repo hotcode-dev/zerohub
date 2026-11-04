@@ -59,7 +59,7 @@ func TestJoinOrCreateHubConcurrent(t *testing.T) {
 			// A fresh RequestCtx per goroutine, mirroring production where
 			// fasthttp serves each request in its own worker.
 			ctx := &fasthttp.RequestCtx{}
-			ctx.Request.SetRequestURI("http://127.0.0.1/v1/hubs/join-or-create?hubMetadata=%7B%22name%22%3A%22test%22%7D")
+			ctx.Request.SetRequestURI("http://127.0.0.1/v1/random-hubs/join-or-create?hubMetadata=%7B%22name%22%3A%22test%22%7D")
 
 			// Hub resolution must succeed. The websocket handshake then fails
 			// (plain GET, no upgrade) — a benign, expected error. The racy

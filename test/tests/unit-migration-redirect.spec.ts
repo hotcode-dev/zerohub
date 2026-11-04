@@ -7,13 +7,13 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  * `host` / `hostIndex` state, not just the URL it is passed.
  *
  * `reconnect(url, newHost)` used to set only `currentURL.host`. Every
- * public entry point (`createHub`, `joinHub`, ...) builds its URL from
+ * public entry point (`joinStaticHub`, ...) builds its URL from
  * `this.host` (`openHubConnection`), so after a migration redirect the next
  * entry-point call dialed the OLD (still-migrating or shut-down) host
  * instead of the redirected one. This spec pins:
  *
  *  1. After a 1001 + reason close, `this.host` equals the redirect host and
- *     a subsequent `joinHub()` opens a socket against it (not the old host).
+ *     a subsequent `joinStaticHub()` opens a socket against it (not the old host).
  *  2. When the redirect host is in the configured host list, `hostIndex`
  *     moves to its position, so a following 1006 automatic failover starts
  *     from the redirected host instead of a stale position.
@@ -35,9 +35,9 @@ test("migration redirect (1001 + reason) updates host state for the next entry p
   );
 
   // Initial connection entry point: socket #1 opens against host `a`.
-  await page.evaluate((clientId) => ZeroHubUnitHarness.createHub(clientId, "room"), id);
+  await page.evaluate((clientId) => ZeroHubUnitHarness.joinStaticHub(clientId, "room"), id);
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
-    "wss://a.zerohub.dev/v1/hubs/create?id=room"
+    "wss://a.zerohub.dev/v1/static-hubs/join?id=room"
   );
 
   // Operator migrates server A: the live socket is closed with code 1001
@@ -54,14 +54,14 @@ test("migration redirect (1001 + reason) updates host state for the next entry p
 
   // The redirected reconnect dialed host `b`.
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
-    "wss://b.zerohub.dev/v1/hubs/create?id=room"
+    "wss://b.zerohub.dev/v1/static-hubs/join?id=room"
   );
 
   // The next entry-point call builds its URL from the UPDATED host, not the
   // stale one: it must open against `b.zerohub.dev`, never the old `a`.
-  await page.evaluate((clientId) => ZeroHubUnitHarness.joinHub(clientId, "room"), id);
+  await page.evaluate((clientId) => ZeroHubUnitHarness.joinStaticHub(clientId, "room"), id);
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
-    "wss://b.zerohub.dev/v1/hubs/join?id=room"
+    "wss://b.zerohub.dev/v1/static-hubs/join?id=room"
   );
 });
 
@@ -79,7 +79,7 @@ test("migration redirect to a configured host starts automatic failover from tha
       ZeroHubUnitHarness.setConfig(clientId, { maxReconnectAttempts: 1 }),
     id
   );
-  await page.evaluate((clientId) => ZeroHubUnitHarness.createHub(clientId, "room"), id);
+  await page.evaluate((clientId) => ZeroHubUnitHarness.joinStaticHub(clientId, "room"), id);
 
   // Redirect from `a` to `b`: hostIndex must land on `b`'s position (1).
   await page.evaluate(
@@ -100,7 +100,7 @@ test("migration redirect to a configured host starts automatic failover from tha
     "b.zerohub.dev"
   );
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
-    "wss://b.zerohub.dev/v1/hubs/create?id=room"
+    "wss://b.zerohub.dev/v1/static-hubs/join?id=room"
   );
 
   // …and only when that retry budget is spent does the sweep move on:
@@ -122,7 +122,7 @@ test("migration redirect to a configured host starts automatic failover from tha
   );
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHostIndex(clientId), id)).toBe(0);
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
-    "wss://a.zerohub.dev/v1/hubs/create?id=room"
+    "wss://a.zerohub.dev/v1/static-hubs/join?id=room"
   );
 });
 
@@ -143,7 +143,7 @@ test("migration redirect to a host OUTSIDE the list that flaps once recovers on 
     () => ZeroHubUnitHarness.createClientWithHosts(["a.zerohub.dev"])
   );
   await page.evaluate((clientId) => ZeroHubUnitHarness.recordZeroHubErrors(clientId), id);
-  await page.evaluate((clientId) => ZeroHubUnitHarness.createHub(clientId, "room"), id);
+  await page.evaluate((clientId) => ZeroHubUnitHarness.joinStaticHub(clientId, "room"), id);
 
   // Operator migrates `a` to the new instance `new.example` (not configured):
   // the live socket closes 1001 with the backup host in the reason.
@@ -158,7 +158,7 @@ test("migration redirect to a host OUTSIDE the list that flaps once recovers on 
   // does NOT point at the redirected host.
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getHostIndex(clientId), id)).toBe(0);
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
-    "wss://new.example/v1/hubs/create?id=room"
+    "wss://new.example/v1/static-hubs/join?id=room"
   );
 
   // The redirected host flaps once (a transient 1006, like the blip that
@@ -176,7 +176,7 @@ test("migration redirect to a host OUTSIDE the list that flaps once recovers on 
     "new.example"
   );
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
-    "wss://new.example/v1/hubs/create?id=room"
+    "wss://new.example/v1/static-hubs/join?id=room"
   );
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getZeroHubErrors(clientId), id)).toHaveLength(
     0
@@ -207,12 +207,12 @@ test("migration redirect to the current host (self-redirect) does not reconnect"
     () => ZeroHubUnitHarness.createClientWithHosts(["a.zerohub.dev"])
   );
   await page.evaluate((clientId) => ZeroHubUnitHarness.recordZeroHubErrors(clientId), id);
-  await page.evaluate((clientId) => ZeroHubUnitHarness.createHub(clientId, "room"), id);
+  await page.evaluate((clientId) => ZeroHubUnitHarness.joinStaticHub(clientId, "room"), id);
   const originalUrl = await page.evaluate(
     (clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId),
     id
   );
-  expect(originalUrl).toBe("wss://a.zerohub.dev/v1/hubs/create?id=room");
+  expect(originalUrl).toBe("wss://a.zerohub.dev/v1/static-hubs/join?id=room");
 
   // Self-redirect: the close reason is the host we are already on.
   await page.evaluate(
@@ -247,12 +247,12 @@ test("1001 close with a non-host reason does not corrupt host state and fails ov
   const id = await page.evaluate(
     () => ZeroHubUnitHarness.createClientWithHosts(["a.zerohub.dev", "b.zerohub.dev"])
   );
-  await page.evaluate((clientId) => ZeroHubUnitHarness.createHub(clientId, "room"), id);
+  await page.evaluate((clientId) => ZeroHubUnitHarness.joinStaticHub(clientId, "room"), id);
   const originalUrl = await page.evaluate(
     (clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId),
     id
   );
-  expect(originalUrl).toBe("wss://a.zerohub.dev/v1/hubs/create?id=room");
+  expect(originalUrl).toBe("wss://a.zerohub.dev/v1/static-hubs/join?id=room");
 
   await page.evaluate(
     (clientId) =>
@@ -276,7 +276,7 @@ test("1001 close with a non-host reason does not corrupt host state and fails ov
   // The client dialed the next configured host, not the garbage reason: no
   // socket exists against "Server going away for maintenance".
   expect(await page.evaluate((clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId), id)).toBe(
-    "wss://b.zerohub.dev/v1/hubs/create?id=room"
+    "wss://b.zerohub.dev/v1/static-hubs/join?id=room"
   );
 });
 
@@ -296,7 +296,7 @@ test("1001 close with a non-host reason on the last host retries the same host i
     () => ZeroHubUnitHarness.createClientWithHosts(["a.zerohub.dev"])
   );
   await page.evaluate((clientId) => ZeroHubUnitHarness.recordZeroHubErrors(clientId), id);
-  await page.evaluate((clientId) => ZeroHubUnitHarness.createHub(clientId, "room"), id);
+  await page.evaluate((clientId) => ZeroHubUnitHarness.joinStaticHub(clientId, "room"), id);
   // Confirm the session (the server's hub info) so an abnormal close takes
   // the RECONNECT path (same-host retry with backoff) instead of the
   // initial-connection failover, which on a single host would be a terminal
@@ -312,7 +312,7 @@ test("1001 close with a non-host reason on the last host retries the same host i
     (clientId) => ZeroHubUnitHarness.getLastSocketUrl(clientId),
     id
   );
-  expect(originalUrl).toBe("wss://a.zerohub.dev/v1/hubs/create?id=room");
+  expect(originalUrl).toBe("wss://a.zerohub.dev/v1/static-hubs/join?id=room");
 
   // `simulateMigrationClose` would reject with a stack trace if the close
   // handler threw; reaching this point means `onclose` completed cleanly.
