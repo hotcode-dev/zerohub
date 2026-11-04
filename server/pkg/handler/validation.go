@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/hotcode-dev/zerohub/pkg/config"
+	hub "github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
@@ -87,7 +88,7 @@ func (h *handler) rejectInvalidJSONParam(ctx *fasthttp.RequestCtx, param string)
 // shared reject* helpers, which write the response and return nil so the
 // caller's 503 fallback in Serve cannot overwrite the written body — a
 // non-nil error would propagate to Serve and clobber the 4xx. This matches
-// the rejectHubIdCollidesWithOtherModes and Upgrade(responseWritten) idioms
+// the claimUserChosenHubId and Upgrade(responseWritten) idioms
 // already in this package.
 //
 // The ordering is intentional: the 400 for a missing id wins over any 413
@@ -119,23 +120,29 @@ func (h *handler) validateHubCreateParams(ctx *fasthttp.RequestCtx, hubId string
 	return false
 }
 
-// rejectHubIdCollidesWithOtherModes applies the cross-mode collision guard
-// to user-chosen hub IDs: each hub mode keeps its own storage, so without
-// this check a create would silently mint a second hub with an id already
-// held by another mode's instance, fragmenting the room under one public
-// id. It probes the given sibling instances (the caller's own storage is
-// the one the create will land in, so it is not passed here). IP hubs are
-// never probed: their ids are derived from the client IP and cannot
-// collide with a user-chosen id.
+// claimUserChosenHubId atomically claims a user-chosen hub id across the
+// hub modes: it probes every sibling instance for an existing holder and,
+// if the id is free in all of them, runs create — all under
+// h.hubIdCrossModeMu. Each hub mode keeps its own storage behind its own
+// lock, so a same-mode create is atomic on its own — but the cross-mode
+// probe by itself is an unlocked read. Without the handler-level lock, two
+// concurrent requests that each create the same user-chosen id in two
+// different modes can both pass the probe (neither sibling holds the id
+// yet) and both store, fragmenting the room under one public id. Running
+// create while the lock is still held makes the check-and-store mutually
+// exclusive across modes. The caller's own instance is not among the
+// siblings: it is where create lands, and a same-mode duplicate is caught
+// by the atomic create primitive (ErrHubAlreadyExists → 409).
 //
-// It returns true — having already written the 409 Conflict to the
-// response — when the id is held in one of the probed instances, so the
-// caller must stop; false when the id is free in all of them.
-func (h *handler) rejectHubIdCollidesWithOtherModes(ctx *fasthttp.RequestCtx, hubId string, instances ...zerohub.ZeroHub) bool {
-	for _, instance := range instances {
-		// A nil instance holds no hubs; skipping it keeps this guard
-		// usable from call sites that only have some of the sibling
-		// instances.
+// When a sibling already holds the id it writes a 409 Conflict and returns
+// rejected=true — the caller must stop. create's error (including a
+// same-mode ErrHubAlreadyExists) is passed through with rejected=false.
+// A nil sibling holds no hubs and is skipped, keeping the guard usable
+// from call sites that only have some of the sibling instances.
+func (h *handler) claimUserChosenHubId(ctx *fasthttp.RequestCtx, hubId string, siblings []zerohub.ZeroHub, create func() (hub.Hub, error)) (newHub hub.Hub, err error, rejected bool) {
+	h.hubIdCrossModeMu.Lock()
+	defer h.hubIdCrossModeMu.Unlock()
+	for _, instance := range siblings {
 		if instance == nil {
 			continue
 		}
@@ -144,8 +151,50 @@ func (h *handler) rejectHubIdCollidesWithOtherModes(ctx *fasthttp.RequestCtx, hu
 			// Response writes the 409 body; a marshal failure here is
 			// impossible for a static map[string]string body.
 			h.Response(ctx, fasthttp.StatusConflict, map[string]string{"error": "hub id collides with another hub type"})
-			return true
+			return nil, nil, true
 		}
 	}
-	return false
+	newHub, err = create()
+	return newHub, err, false
+}
+
+// claimGetOrCreateHub is the GetOrCreateHub twin of claimUserChosenHubId:
+// it atomically probes every sibling instance for an existing holder of the
+// id and, if the id is free in all of them, runs getOrCreate — all under
+// h.hubIdCrossModeMu — so a join-or-create that would mint a new hub can't
+// race a create in another mode into storing two hubs under one public id.
+// The 409/rejected contract matches claimUserChosenHubId.
+func (h *handler) claimGetOrCreateHub(ctx *fasthttp.RequestCtx, hubId string, siblings []zerohub.ZeroHub, getOrCreate func() (hub.Hub, bool, error)) (newHub hub.Hub, created bool, err error, rejected bool) {
+	h.hubIdCrossModeMu.Lock()
+	defer h.hubIdCrossModeMu.Unlock()
+	for _, instance := range siblings {
+		if instance == nil {
+			continue
+		}
+		if instance.GetHubById(hubId) != nil {
+			log.Error().Err(fmt.Errorf("hub with id %s already exists in another hub type", hubId)).Send()
+			h.Response(ctx, fasthttp.StatusConflict, map[string]string{"error": "hub id collides with another hub type"})
+			return nil, false, nil, true
+		}
+	}
+	newHub, created, err = getOrCreate()
+	return newHub, created, err, false
+}
+
+// siblingInstances returns every hub-mode instance the handler owns except
+// self — the set of storages that could already hold a user-chosen hub id,
+// and therefore the set the claim* helpers probe. A nil instance holds no
+// hubs and is skipped, which keeps the helpers usable from call sites (and
+// tests) where only some of the instances are present. Excluding self
+// avoids a self-probe that would 409 its own just-created hub; same-mode
+// duplicates are already caught atomically by the create primitive.
+func (h *handler) siblingInstances(self zerohub.ZeroHub) []zerohub.ZeroHub {
+	siblings := []zerohub.ZeroHub{}
+	for _, instance := range []zerohub.ZeroHub{h.zeroHubStatic, h.zeroHubRandom, h.zeroHubIP} {
+		if instance == nil || instance == self {
+			continue
+		}
+		siblings = append(siblings, instance)
+	}
+	return siblings
 }

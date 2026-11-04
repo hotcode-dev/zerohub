@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	hub "github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
@@ -25,7 +26,22 @@ func (h *handler) CreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hu
 		return nil
 	}
 
-	newHub, err := zh.CreateHubIfAbsent(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), false)
+	// The cross-mode collision claim is atomic under h.hubIdCrossModeMu:
+	// probe every sibling hub mode for an existing holder of this user-
+	// chosen id, then run CreateHubIfAbsent — all while holding the lock,
+	// so two concurrent creates of the same id in different modes can't
+	// both pass the probe and both store (which would fragment the room
+	// under one public id). Random-hub callers pass a fresh uuid, which no
+	// sibling holds, so the probe is a no-op there.
+	newHub, err, rejected := h.claimUserChosenHubId(ctx, hubId, h.siblingInstances(zh),
+		func() (hub.Hub, error) {
+			return zh.CreateHubIfAbsent(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), false)
+		})
+	if rejected {
+		// A sibling mode already holds this id; claimUserChosenHubId
+		// wrote the 409 Conflict, so stop without overwriting it.
+		return nil
+	}
 	if err != nil {
 		if errors.Is(err, zerohub.ErrHubAlreadyExists) {
 			log.Error().Err(fmt.Errorf("hub with id %s already exists", hubId)).Send()

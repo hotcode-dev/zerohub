@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 
+	hub "github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
@@ -21,7 +22,22 @@ func (h *handler) JoinOrCreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroH
 		return nil
 	}
 
-	newHub, created, err := zh.GetOrCreateHub(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), false)
+	// The cross-mode collision claim is atomic under h.hubIdCrossModeMu:
+	// probe every sibling hub mode for an existing holder of this user-
+	// chosen id, then run GetOrCreateHub — all while holding the lock, so
+	// a join-or-create that would create a new hub can't race a create in
+	// another mode into fragmenting the room under one public id. IP-hub
+	// callers pass an xxh3 hash, which no sibling holds, so the probe is a
+	// no-op there.
+	newHub, created, err, rejected := h.claimGetOrCreateHub(ctx, hubId, h.siblingInstances(zh),
+		func() (hub.Hub, bool, error) {
+			return zh.GetOrCreateHub(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), false)
+		})
+	if rejected {
+		// A sibling mode already holds this id; the claim wrote the 409
+		// Conflict, so stop without overwriting it.
+		return nil
+	}
 	if err != nil {
 		log.Error().Err(err).Send()
 		return h.Response(ctx, fasthttp.StatusInternalServerError, map[string]string{"error": "create hub error"})

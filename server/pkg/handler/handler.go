@@ -143,6 +143,27 @@ type handler struct {
 	// assertions fast.
 	wsIdleTimeout  time.Duration
 	wsPingInterval time.Duration
+
+	// hubIdCrossModeMu serializes the "probe the sibling hub modes, then
+	// create under this user-chosen id" step across ALL create/join-or-
+	// create paths that take a hub id (claimUserChosenHubId,
+	// claimGetOrCreateHub). Each hub mode keeps its own ZeroHub instance
+	// with its own storage and its own lock, so a same-mode create is
+	// atomic on its own — but the cross-mode collision probe is a plain
+	// read that no instance lock covers. Without this mutex, two
+	// concurrent requests that each create the same user-chosen id in two
+	// different modes can both pass the probe (neither sibling holds the
+	// id yet) and both store, fragmenting the room under one public id.
+	// Holding this mutex for the probe plus the store makes the
+	// check-and-create atomic across modes. The paths that mint generated
+	// ids (random uuid, IP xxh3 hash) also take the lock, but their probe
+	// always misses and their id can never collide, so the guard is a
+	// no-op there — it just costs one uncontended lock. The WebSocket
+	// upgrade (and a failed-upgrade rollback) happens AFTER the lock is
+	// released: the critical section only covers the hub-identity claim,
+	// and a released claim stays valid because the claim itself — the
+	// stored hub — outlives the lock.
+	hubIdCrossModeMu sync.Mutex
 }
 
 // idleTimeout / pingInterval return the effective probe timings, falling
