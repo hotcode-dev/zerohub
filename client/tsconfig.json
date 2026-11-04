@@ -8,7 +8,8 @@
     "removeComments": false, // Generate source map for IDE
     "sourceMap": true, // Tells TypeScript to read JS files, as normally they are ignored as source files
     "allowJs": true, // Emit additional JavaScript to ease support for importing CommonJS modules.
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "skipLibCheck": true // Suppress third-party node_modules .d.ts noise (tinybench/vitest) in the typecheck gate without weakening project strictness.
   },
   "include": ["src/**/*.ts"]
 }

@@ -40,7 +40,8 @@
     "format": "prettier --write \"src/**/*.{ts,js,json,md}\" \"!src/proto/**\"",
     "format:check": "prettier --check \"src/**/*.{ts,js,json,md}\" \"!src/proto/**\"",
     "test": "vitest run",
-    "check": "npm run lint && npm run format:check && npm run tsc && npm run test",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "check": "npm run lint && npm run format:check && npm run tsc && npm run typecheck && npm run test",
     "fix": "npm run lint:fix && npm run format"
   },
   "repository": {

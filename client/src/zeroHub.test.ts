@@ -669,7 +669,7 @@ describe("onmessage — corrupt frame isolation", () => {
   });
 
   /** Get the onmessage handler the real connectToZeroHub registered. */
-  function onMessage(): () => unknown {
+  function onMessage(): (event: { data: Uint8Array }) => unknown {
     // The fake host makes the underlying dial fail (error + close 1006 →
     // a rejected connect Promise); swallow the rejection — the spec only
     // invokes the onmessage handler synchronously.
@@ -678,7 +678,11 @@ describe("onmessage — corrupt frame isolation", () => {
         new URL("ws://fake-host-never-resolves/v1/static-hubs/join")
       )
       .catch(() => {});
-    return (client.ws as unknown as { onmessage: () => unknown }).onmessage;
+    return (
+      client.ws as unknown as {
+        onmessage: (event: { data: Uint8Array }) => unknown;
+      }
+    ).onmessage;
   }
 
   it("a frame that makes ServerMessage.decode throw does not break the socket or subsequent messages", () => {
@@ -834,7 +838,7 @@ describe("WebRTC event boundary — throwing user callbacks are isolated", () =>
             throw new Error("user channel boom");
           },
         },
-      } as Config,
+      } as unknown as Config,
       peer,
       logger as unknown as ZeroHubLogger,
       false
@@ -859,7 +863,7 @@ describe("WebRTC event boundary — throwing user callbacks are isolated", () =>
     setupDataChannel(
       {
         dataChannelConfig: {
-          onDataChannel: (p, dc) => {
+          onDataChannel: (p: Peer, dc: RTCDataChannel) => {
             // Record the delivery, then throw on the FIRST event only:
             // the guard must keep the handler alive for later events.
             seen.push([p.id, dc.label]);
@@ -868,7 +872,7 @@ describe("WebRTC event boundary — throwing user callbacks are isolated", () =>
             }
           },
         },
-      } as Config,
+      } as unknown as Config,
       peer,
       logger as unknown as ZeroHubLogger,
       false
@@ -900,7 +904,7 @@ describe("WebRTC event boundary — throwing user callbacks are isolated", () =>
             throw new Error("user track boom");
           },
         },
-      } as Config,
+      } as unknown as Config,
       peer,
       logger as unknown as ZeroHubLogger
     );

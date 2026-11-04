@@ -36,7 +36,11 @@ server-bench:
 client-build:
 	cd ./client && npm run build
 
+client-typecheck:
+	cd ./client && npm run typecheck
+
 client-test:
+	$(MAKE) client-typecheck
 	cd ./client && npm run test
 
 kill-server:
