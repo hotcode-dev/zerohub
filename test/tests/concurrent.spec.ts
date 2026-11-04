@@ -6,40 +6,42 @@ import {
   getJoinHubTestId,
   getJoinPeerStatusTestId,
   prepareHarnessPage,
+  seedStaticHub,
 } from "./utils/harness";
 
 test("multiple concurrent connections", async ({ page }) => {
   await prepareHarnessPage(page);
-  const componentId = uuidv4();
+  const creatorId = uuidv4();
   const zeroHubHost = "localhost:8080";
-  let hubId: string = "";
   const numberOfConcurrentConnections = 10;
   const joinedComponentIds: string[] = [];
+  // The hub is seeded out-of-band (admin HTTP; the SDK has no static-hub
+  // create) and the "creator" is just its first joiner.
+  const hubId = uuidv4();
+  await seedStaticHub(hubId, zeroHubHost);
 
-  // Create a hub first
+  // Join the hub first
   await page.evaluate(
-    ({ componentId: id, zeroHubHost: host }) => {
+    ({ componentId: id, zeroHubHost: host, hubId: joinHubId }) => {
       window.ZeroHubHarness.createHub({
-        testName: "concurrent test, create hub",
+        testName: "concurrent test, creator joins",
         zeroHubHosts: [host],
         componentId: id,
+        hubId: joinHubId,
       });
     },
-    { componentId, zeroHubHost }
+    { componentId: creatorId, zeroHubHost, hubId }
   );
 
   await test.step("create hub success", async () => {
-    const hubIdLoc = page.getByTestId(getCreateHubTestId(componentId)).first();
-    await expect(hubIdLoc).toHaveText(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-    );
-    hubId = (await hubIdLoc.textContent()) || "";
+    const hubIdLoc = page.getByTestId(getCreateHubTestId(creatorId)).first();
+    await expect(hubIdLoc).toHaveText(hubId);
   });
 
   // Join multiple components concurrently
   await test.step("join multiple components concurrently", async () => {
     for (let i = 0; i < numberOfConcurrentConnections; i++) {
-      const joinComponentId = `${componentId}-join-${i}`;
+      const joinComponentId = `${creatorId}-join-${i}`;
       joinedComponentIds.push(joinComponentId);
       await page.evaluate(
         ({ componentId: id, zeroHubHost: host, hubId: joinHubId, index }) => {
@@ -68,7 +70,7 @@ test("multiple concurrent connections", async ({ page }) => {
   await test.step("verify all peers are connected", async () => {
     // Check that the creator is connected to all peers
     await expect(
-      page.getByTestId(getCreatePeerStatusTestId(componentId)).first()
+      page.getByTestId(getCreatePeerStatusTestId(creatorId)).first()
     ).toHaveText("connected", { timeout: 15000 });
 
     // Check that all joiners are connected
@@ -91,34 +93,35 @@ test("multiple concurrent hub creation and joining", async ({ page }) => {
   const hubIds: string[] = [];
   const creatorIds: string[] = [];
 
-  // Step 1: Create multiple hubs concurrently
+  // Step 1: Seed multiple hubs out-of-band, then join them concurrently
+  // (static hubs are admin-created; the "creator" is the first joiner)
   await test.step("create multiple hubs concurrently", async () => {
     for (let i = 0; i < numberOfHubs; i++) {
       const creatorId = `creator-${uuidv4()}-${i}`;
       creatorIds.push(creatorId);
+      const hubId = uuidv4();
+      await seedStaticHub(hubId, zeroHubHost);
+      hubIds.push(hubId);
 
       await page.evaluate(
-        ({ componentId: id, zeroHubHost: host, index }) => {
+        ({ componentId: id, zeroHubHost: host, hubId: joinHubId, index }) => {
           window.ZeroHubHarness.createHub({
             testName: `concurrent hub creation ${index}`,
             zeroHubHosts: [host],
             componentId: id,
+            hubId: joinHubId,
           });
         },
-        { componentId: creatorId, zeroHubHost, index: i }
+        { componentId: creatorId, zeroHubHost, hubId, index: i }
       );
 
-      // Verify hub creation success: the harness creates the hub with the
-      // componentId as the static hub id, which /v1/hubs/create returns
-      // verbatim.
+      // The hub id is spec-provided and returned verbatim by the
+      // static-hub join handler.
       const hubIdLoc = page
         .getByTestId(getCreateHubTestId(creatorId))
         .first();
 
-      await expect(hubIdLoc).toHaveText(creatorId);
-
-      const hubId = (await hubIdLoc.textContent()) || "";
-      hubIds.push(hubId);
+      await expect(hubIdLoc).toHaveText(hubId);
     }
   });
 

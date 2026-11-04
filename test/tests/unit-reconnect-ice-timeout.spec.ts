@@ -19,7 +19,7 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  *     second time (a stale offer/answer on top of the fresh one).
  *  2. Leak onto a later socket: a manual `disconnect()` after the
  *     reconnect could not clear the orphaned timer, so a still-pending
- *     SDP send fired onto a socket opened by a later `createHub()` —
+ *     SDP send fired onto a socket opened by a later `joinStaticHub()` —
  *     exactly what the old comment claimed to prevent ("no offer/answer
  *     can be sent to a closed socket").
  *
@@ -38,7 +38,7 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  *     reconnect a re-armed offer must NOT double-send (the orphaned
  *     prior timer would have delivered a second, stale SDP).
  *  (b) a manual `disconnect()` after a reconnect still clears the pending
- *     ICE send: no SDP leaks onto a socket opened by a later `createHub()`.
+ *     ICE send: no SDP leaks onto a socket opened by a later `joinStaticHub()`.
  */
 
 type Send = { kind: "offer" | "answer"; peerId: string; sdp: string };
@@ -52,9 +52,9 @@ function driver(page: Page) {
         (hostList) => ZeroHubUnitHarness.createClientWithHosts(hostList),
         hosts,
       ),
-    createHub: (id: number, hubId: string) =>
+    joinStaticHub: (id: number, hubId: string) =>
       page.evaluate(
-        ([id, hubId]) => ZeroHubUnitHarness.createHub(id, hubId),
+        ([id, hubId]) => ZeroHubUnitHarness.joinStaticHub(id, hubId),
         [id, hubId] as const,
       ),
     sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
@@ -126,9 +126,9 @@ test.describe("ZeroHubClient ICE-candidate timer bookkeeping across reconnect", 
     ]);
 
     // Initial connection: socket #1 opens against host `a`.
-    await h.createHub(id, "room");
+    await h.joinStaticHub(id, "room");
     expect(await h.getLastSocketUrl(id)).toBe(
-      "wss://a.zerohub.dev/v1/hubs/create?id=room",
+      "wss://a.zerohub.dev/v1/static-hubs/join?id=room",
     );
     await h.sendHubInfo(id, "1", ["2"]);
 
@@ -156,7 +156,7 @@ test.describe("ZeroHubClient ICE-candidate timer bookkeeping across reconnect", 
     await flushMicrotasks(page);
     expect(await h.getSocketCount(id)).toBe(2);
     expect(await h.getLastSocketUrl(id)).toBe(
-      "wss://b.zerohub.dev/v1/hubs/create?id=room",
+      "wss://b.zerohub.dev/v1/static-hubs/join?id=room",
     );
 
     // Still inside the first timer's window: nothing has been sent yet.
@@ -198,7 +198,7 @@ test.describe("ZeroHubClient ICE-candidate timer bookkeeping across reconnect", 
       "b.zerohub.dev",
     ]);
 
-    await h.createHub(id, "room");
+    await h.joinStaticHub(id, "room");
     await h.sendHubInfo(id, "1", ["2"]);
 
     // Zero the same-host retry budget so the abnormal close fails over to
@@ -230,8 +230,8 @@ test.describe("ZeroHubClient ICE-candidate timer bookkeeping across reconnect", 
     // reconnected.
     await h.disconnectClient(id);
 
-    // Reuse the client: a fresh createHub opens a brand-new socket.
-    await h.createHub(id, "room");
+    // Reuse the client: a fresh joinStaticHub opens a brand-new socket.
+    await h.joinStaticHub(id, "room");
     expect(await h.getSocketCount(id)).toBe(3);
     await h.captureSocket(id);
     await h.sendHubInfo(id, "1", ["2"]);

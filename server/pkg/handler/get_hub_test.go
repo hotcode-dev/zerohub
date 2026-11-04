@@ -11,9 +11,8 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// startGetHubTestServer serves the two plain-HTTP hub-metadata read
-// endpoints on a random local port, mirroring the routing in
-// handler.go: /v1/hubs/get against the static instance and
+// startGetHubTestServer serves the plain-HTTP hub-metadata read endpoint on a
+// random local port, mirroring the routing in handler.go:
 // /v1/random-hubs/get against the random instance.
 func startGetHubTestServer(t *testing.T, h *handler) string {
 	t.Helper()
@@ -21,8 +20,6 @@ func startGetHubTestServer(t *testing.T, h *handler) string {
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
 		var err error
 		switch string(ctx.Path()) {
-		case "/v1/hubs/get":
-			err = h.GetHub(ctx, h.zeroHub)
 		case "/v1/random-hubs/get":
 			err = h.GetHub(ctx, h.zeroHubRandom)
 		default:
@@ -63,27 +60,21 @@ type hubJSONBody struct {
 	IsPermanent bool   `json:"isPermanent"`
 }
 
-// TestGetHubPlainHTTPContract pins the behavior the re-modeled spec now
-// documents: /v1/hubs/get and /v1/random-hubs/get are plain-HTTP GET
-// endpoints that answer a single JSON body — no request payload, no
-// WebSocket upgrade.
+// TestGetHubPlainHTTPContract pins the behavior the spec documents:
+// /v1/random-hubs/get is a plain-HTTP GET endpoint that answers a single
+// JSON body — no request payload, no WebSocket upgrade.
 func TestGetHubPlainHTTPContract(t *testing.T) {
 	h := newTestHandler()
-	h.zeroHub = newRealZeroHub(t)
 	h.zeroHubRandom = newRealZeroHub(t)
 	addr := startGetHubTestServer(t, h)
 	client := newTestClient(addr)
 
-	// Seed one hub in each namespace.
-	if _, err := h.zeroHub.CreateHubIfAbsent("static-room", `{"room":"alpha"}`, false); err != nil {
-		t.Fatalf("seed static hub: %v", err)
-	}
+	// Seed one hub in the random namespace.
 	if _, err := h.zeroHubRandom.CreateHubIfAbsent("random-room", `{"room":"beta"}`, false); err != nil {
 		t.Fatalf("seed random hub: %v", err)
 	}
 
 	for path, wantID := range map[string]string{
-		"/v1/hubs/get?id=static-room":        "static-room",
 		"/v1/random-hubs/get?id=random-room": "random-room",
 	} {
 		t.Run(path, func(t *testing.T) {
@@ -124,12 +115,11 @@ func TestGetHubPlainHTTPContract(t *testing.T) {
 // the `id` query parameter is rejected up front, with no hub lookup.
 func TestGetHubMissingID(t *testing.T) {
 	h := newTestHandler()
-	h.zeroHub = newRealZeroHub(t)
 	h.zeroHubRandom = newRealZeroHub(t)
 	addr := startGetHubTestServer(t, h)
 	client := newTestClient(addr)
 
-	for _, path := range []string{"/v1/hubs/get", "/v1/hubs/get?id=", "/v1/random-hubs/get"} {
+	for _, path := range []string{"/v1/random-hubs/get", "/v1/random-hubs/get?id=", "/v1/random-hubs/get"} {
 		status, body, err := doRequest(t, client, path, nil)
 		if err != nil {
 			t.Fatalf("%s: transport error: %v", path, err)
@@ -151,12 +141,11 @@ func TestGetHubMissingID(t *testing.T) {
 // answers {"error":"hub not found"} instead of upgrading the connection.
 func TestGetHubNotFound(t *testing.T) {
 	h := newTestHandler()
-	h.zeroHub = newRealZeroHub(t)
 	h.zeroHubRandom = newRealZeroHub(t)
 	addr := startGetHubTestServer(t, h)
 	client := newTestClient(addr)
 
-	for _, path := range []string{"/v1/hubs/get?id=nope", "/v1/random-hubs/get?id=nope"} {
+	for _, path := range []string{"/v1/random-hubs/get?id=nope", "/v1/random-hubs/get?id=nope"} {
 		status, body, err := doRequest(t, client, path, nil)
 		if err != nil {
 			t.Fatalf("%s: transport error: %v", path, err)
@@ -181,15 +170,14 @@ func TestGetHubNotFound(t *testing.T) {
 // would hang forever waiting for an upgrade that never happens.
 func TestGetHubNeverUpgradesWebSocket(t *testing.T) {
 	h := newTestHandler()
-	h.zeroHub = newRealZeroHub(t)
 	h.zeroHubRandom = newRealZeroHub(t)
 	addr := startGetHubTestServer(t, h)
 
-	if _, err := h.zeroHub.CreateHubIfAbsent("static-room", "", false); err != nil {
+	if _, err := h.zeroHubRandom.CreateHubIfAbsent("random-room", "", false); err != nil {
 		t.Fatalf("seed hub: %v", err)
 	}
 
-	for _, target := range []string{"/v1/hubs/get?id=static-room", "/v1/random-hubs/get?id=missing"} {
+	for _, target := range []string{"/v1/random-hubs/get?id=random-room", "/v1/random-hubs/get?id=missing"} {
 		t.Run(target, func(t *testing.T) {
 			conn, err := net.Dial("tcp", addr)
 			if err != nil {
@@ -230,15 +218,14 @@ func TestGetHubNeverUpgradesWebSocket(t *testing.T) {
 }
 
 // TestGetHubMigratingForwardsHTTP pins the migration forward: while the
-// server is in migrate mode, /v1/hubs/get and /v1/random-hubs/get must
-// answer with the HTTP-level migration response — a 301 carrying the
-// backup host, the same JSON /v1/status and /v1/permanent-hubs/create
-// report — instead of reading local hub state and answering 200/404.
-// Pre-fix GetHub was the only hub endpoint missing the isMigrating gate,
-// defeating the "clients must move to the backup host" contract every
-// sibling endpoint honors. The mock carries no expectations, so any hub
-// storage read (GetHubById) would fail the test: no hub state may be
-// touched while migrating.
+// server is in migrate mode, /v1/random-hubs/get must answer with the
+// HTTP-level migration response — a 301 carrying the backup host, the same
+// JSON /v1/status and /v1/static-hubs/create report — instead of reading
+// local hub state and answering 200/404. Pre-fix GetHub was the only hub
+// endpoint missing the isMigrating gate, defeating the "clients must move
+// to the backup host" contract every sibling endpoint honors. The mock
+// carries no expectations, so any hub storage read (GetHubById) would fail
+// the test: no hub state may be touched while migrating.
 func TestGetHubMigratingForwardsHTTP(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	// No expectations: a storage read during migration would error out.
@@ -250,7 +237,6 @@ func TestGetHubMigratingForwardsHTTP(t *testing.T) {
 	h.isMigrating.Store(true)
 
 	for _, path := range []string{
-		"/v1/hubs/get?id=room",
 		"/v1/random-hubs/get?id=room",
 	} {
 		ctx := newRequestCtx("http://127.0.0.1" + path)
@@ -266,7 +252,7 @@ func TestGetHubMigratingForwardsHTTP(t *testing.T) {
 
 // TestGetHubMigratingStillRejectsInvalidHubId pins the ordering: the id
 // validation runs before the migration gate, so a request with a missing or
-// empty id gets the 400 even while migrating — mirroring CreateHubPermanent,
+// empty id gets the 400 even while migrating — mirroring CreateStaticHub,
 // where auth and parameter rejection precede any hub-state access.
 func TestGetHubMigratingStillRejectsInvalidHubId(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -276,7 +262,7 @@ func TestGetHubMigratingStillRejectsInvalidHubId(t *testing.T) {
 	h.backupHost = testBackupHost
 	h.isMigrating.Store(true)
 
-	for _, path := range []string{"/v1/hubs/get", "/v1/hubs/get?id="} {
+	for _, path := range []string{"/v1/random-hubs/get", "/v1/random-hubs/get?id="} {
 		ctx := newRequestCtx("http://127.0.0.1" + path)
 		if err := h.GetHub(ctx, zerohubMock); err != nil {
 			t.Fatalf("GetHub %s: unexpected error %v", path, err)

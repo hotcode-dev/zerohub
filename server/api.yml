@@ -12,14 +12,13 @@ info:
       - proto/zerohub/v1/client_message.proto
       - proto/zerohub/v1/server_message.proto
     - Channel address determines hub behavior (create/join/join-or-create).
-    - The admin endpoint `/v1/permanent-hubs/create` (channel
+    - The admin endpoint `/v1/static-hubs/create` (channel
       `permanentHubsCreate`) is plain HTTP, not WebSocket: it uses the
       `admin-local`/`admin-production` servers declared on that channel.
-    - The hub-metadata read endpoints `/v1/hubs/get` (channel `hubsGet`)
-      and `/v1/random-hubs/get` (channel `randomHubsGet`) are likewise
-      plain HTTP (GET, JSON response, no request payload), not WebSocket
-      signaling channels, and use the same `admin-local`/`admin-production`
-      servers.
+    - The hub-metadata read endpoint `/v1/random-hubs/get` (channel
+      `randomHubsGet`) is likewise plain HTTP (GET, JSON response, no
+      request payload), not a WebSocket signaling channel, and uses the
+      same `admin-local`/`admin-production` servers.
 
 defaultContentType: application/protobuf
 
@@ -40,7 +39,7 @@ servers:
     variables:
       host:
         default: api.example.com
-  # Plain-HTTP admin API. The server serves /v1/permanent-hubs/create over
+  # Plain-HTTP admin API. The server serves /v1/static-hubs/create over
   # the same host/port as the WebSocket endpoints, but that endpoint never
   # upgrades, so it is scoped to these HTTP servers instead of the ws ones.
   admin-local:
@@ -61,104 +60,6 @@ servers:
         default: api.example.com
 
 channels:
-  hubsCreate:
-    address: /v1/hubs/create
-    description: |
-      Create a static hub and connect to it.
-      Query params:
-      - id (required): hub id
-      - peerMetadata (optional): stringified peer metadata
-      - hubMetadata (optional): stringified hub metadata
-
-      Hub ids are not globally unique across modes: each hub type (static,
-      random, IP, permanent) keeps its own storage. If a hub with the same
-      id already exists in the permanent or random namespace on this
-      server, this endpoint answers 409 Conflict with the body
-      `{"error": "hub id collides with another hub type"}` instead of
-      creating a shadow hub under the same id.
-    messages:
-      clientMessage:
-        $ref: '#/components/messages/ClientMessage'
-      serverMessage:
-        $ref: '#/components/messages/ServerMessage'
-    bindings:
-      ws:
-        method: GET
-
-  hubsJoin:
-    address: /v1/hubs/join
-    description: |
-      Join an existing static hub.
-      Query params:
-      - id (required): hub id
-      - peerMetadata (optional): stringified peer metadata
-    messages:
-      clientMessage:
-        $ref: '#/components/messages/ClientMessage'
-      serverMessage:
-        $ref: '#/components/messages/ServerMessage'
-    bindings:
-      ws:
-        method: GET
-
-  hubsJoinOrCreate:
-    address: /v1/hubs/join-or-create
-    description: |
-      Join a static hub or create it if it does not exist.
-      Query params:
-      - id (required): hub id
-      - peerMetadata (optional): stringified peer metadata
-      - hubMetadata (optional): stringified hub metadata (used only on create)
-
-      If the id is already held by the permanent or random namespace,
-      this endpoint answers 409 Conflict with the body
-      `{"error": "hub id collides with another hub type"}` instead of
-      creating a parallel static hub under the same id — joining a
-      permanent hub with the same id reaches that hub, so a shadow static
-      hub would fragment the room under one public id.
-    messages:
-      clientMessage:
-        $ref: '#/components/messages/ClientMessage'
-      serverMessage:
-        $ref: '#/components/messages/ServerMessage'
-    bindings:
-      ws:
-        method: GET
-
-  hubsGet:
-    address: /v1/hubs/get
-    description: |
-      Get the metadata of an existing static hub.
-
-      Unlike the other /v1/hubs/* endpoints, this is a plain HTTP GET read
-      endpoint, NOT a WebSocket signaling channel: it never upgrades the
-      connection, carries no request payload (the hub id rides on the URL),
-      and answers a single JSON object describing the hub — `{id, createdAt,
-      metadata, isPermanent}`. It is unreachable from the SDK (the SDK only
-      dials WebSocket signaling endpoints) and is instead consumed
-      out-of-band with an HTTP client (curl, fetch from a Node.js process),
-      exactly like `/v1/permanent-hubs/create`.
-
-      Query params:
-      - id (required): hub id
-
-      Response: HTTP 200 with the `Hub` JSON body. Error responses are 400
-      (missing/empty `id`, body `{"error": "id query parameter is
-      required"}`), 413 (`id` exceeds the 4096-byte cap, body
-      `{"error": "id query parameter exceeds the maximum size of 4096
-      bytes"}`) and 404 (no hub with that id, body
-      `{"error": "hub not found"}`).
-    servers:
-      - $ref: '#/servers/admin-local'
-      - $ref: '#/servers/admin-production'
-    messages:
-      getHubRequest:
-        $ref: '#/components/messages/HubGetRequest'
-      hub:
-        $ref: '#/components/messages/HubInfo'
-    bindings:
-      http: {}
-
   randomHubsCreate:
     address: /v1/random-hubs/create
     description: |
@@ -196,12 +97,12 @@ channels:
     description: |
       Get the metadata of an existing random hub.
 
-      Like `/v1/hubs/get`, this is a plain HTTP GET read endpoint, NOT a
-      WebSocket signaling channel: it never upgrades the connection, carries
-      no request payload (the hub id rides on the URL), and answers a single
-      JSON object describing the hub — `{id, createdAt, metadata,
-      isPermanent}`. It is unreachable from the SDK and is instead consumed
-      out-of-band with an HTTP client (curl, fetch from a Node.js process).
+      This is a plain HTTP GET read endpoint, NOT a WebSocket signaling
+      channel: it never upgrades the connection, carries no request payload
+      (the hub id rides on the URL), and answers a single JSON object
+      describing the hub — `{id, createdAt, metadata, isPermanent}`. It is
+      unreachable from the SDK and is instead consumed out-of-band with an
+      HTTP client (curl, fetch from a Node.js process).
 
       Query params:
       - id (required): hub id
@@ -240,9 +141,9 @@ channels:
         method: GET
 
   permanentHubsJoin:
-    address: /v1/permanent-hubs/join
+    address: /v1/static-hubs/join
     description: |
-      Join an existing permanent hub.
+      Join an existing static hub.
       Query params:
       - id (required): hub id
       - peerMetadata (optional): stringified peer metadata
@@ -256,9 +157,9 @@ channels:
         method: GET
 
   permanentHubsCreate:
-    address: /v1/permanent-hubs/create
+    address: /v1/static-hubs/create
     description: |
-      Create a permanent (never-expires) hub.
+      Create a static (never-expires) hub.
 
       Unlike every other create/join endpoint, this is a plain HTTP admin
       endpoint, NOT a WebSocket signaling channel. It requires the
@@ -271,16 +172,16 @@ channels:
       this endpoint is unreachable from the SDK and is instead called
       out-of-band with an HTTP client (curl, fetch from a Node.js
       process) that can set the `Authorization` header. After creating a
-      hub this way, clients connect to it with `/v1/permanent-hubs/join`.
+      hub this way, clients connect to it with `/v1/static-hubs/join`.
 
       Query params:
       - id (required): hub id
       - hubMetadata (optional): stringified hub metadata
 
       Hub ids are not globally unique across modes: each hub type (static,
-      random, IP, permanent) keeps its own storage. If a hub with the same
-      id already exists in the static or random namespace on this server,
-      this endpoint returns 409 Conflict with the body
+      random, IP) keeps its own storage. If a hub with the same id already
+      exists in the random namespace on this server, this endpoint returns
+      409 Conflict with the body
       `{"error": "hub id collides with another hub type"}` instead of
       creating a shadow hub under the same id.
 
@@ -306,66 +207,6 @@ channels:
       http: {}
 
 operations:
-  clientSendOnHubsCreate:
-    action: send
-    channel:
-      $ref: '#/channels/hubsCreate'
-    messages:
-      - $ref: '#/channels/hubsCreate/messages/clientMessage'
-
-  clientReceiveOnHubsCreate:
-    action: receive
-    channel:
-      $ref: '#/channels/hubsCreate'
-    messages:
-      - $ref: '#/channels/hubsCreate/messages/serverMessage'
-
-  clientSendOnHubsJoin:
-    action: send
-    channel:
-      $ref: '#/channels/hubsJoin'
-    messages:
-      - $ref: '#/channels/hubsJoin/messages/clientMessage'
-
-  clientReceiveOnHubsJoin:
-    action: receive
-    channel:
-      $ref: '#/channels/hubsJoin'
-    messages:
-      - $ref: '#/channels/hubsJoin/messages/serverMessage'
-
-  # Plain-HTTP read endpoint (not a WebSocket channel): an HTTP client
-  # issues a GET (the query param `id` rides on the URL; there is no
-  # request body) and receives a single JSON `hub` response. The GET
-  # method is fixed by the server routing (fasthttp: `GET /v1/hubs/get`).
-  adminSendOnHubsGet:
-    action: send
-    channel:
-      $ref: '#/channels/hubsGet'
-    messages:
-      - $ref: '#/channels/hubsGet/messages/getHubRequest'
-
-  adminReceiveOnHubsGet:
-    action: receive
-    channel:
-      $ref: '#/channels/hubsGet'
-    messages:
-      - $ref: '#/channels/hubsGet/messages/hub'
-
-  clientSendOnHubsJoinOrCreate:
-    action: send
-    channel:
-      $ref: '#/channels/hubsJoinOrCreate'
-    messages:
-      - $ref: '#/channels/hubsJoinOrCreate/messages/clientMessage'
-
-  clientReceiveOnHubsJoinOrCreate:
-    action: receive
-    channel:
-      $ref: '#/channels/hubsJoinOrCreate'
-    messages:
-      - $ref: '#/channels/hubsJoinOrCreate/messages/serverMessage'
-
   clientSendOnRandomHubsCreate:
     action: send
     channel:
@@ -394,10 +235,9 @@ operations:
     messages:
       - $ref: '#/channels/randomHubsJoin/messages/serverMessage'
 
-  # Plain-HTTP read endpoint (not a WebSocket channel): same modeling as
-  # `/v1/hubs/get` — a GET with no request body, a single JSON `hub`
-  # response. The GET method is fixed by the server routing (fasthttp:
-  # `GET /v1/random-hubs/get`).
+  # Plain-HTTP read endpoint (not a WebSocket channel): a GET with no
+  # request body and a single JSON `hub` response. The GET method is fixed
+  # by the server routing (fasthttp: `GET /v1/random-hubs/get`).
   adminSendOnRandomHubsGet:
     action: send
     channel:
@@ -416,7 +256,7 @@ operations:
   # issues the request (the query params `id`/`hubMetadata` and the
   # `Authorization` header are carried by the HTTP request itself) and
   # receives a single JSON `createdHub` response. The GET method is fixed
-  # by the server routing (fasthttp: `GET /v1/permanent-hubs/create`).
+  # by the server routing (fasthttp: `GET /v1/static-hubs/create`).
   adminSendOnPermanentHubsCreate:
     action: send
     channel:
@@ -509,10 +349,10 @@ components:
 
     PermanentHubCreateRequest:
       name: PermanentHubCreateRequest
-      title: Permanent hub creation request
-      summary: HTTP GET request to the admin-gated permanent-hub create endpoint
+      title: Static hub creation request
+      summary: HTTP GET request to the admin-gated static-hub create endpoint
       description: |
-        Carried by `GET /v1/permanent-hubs/create` on the plain-HTTP admin
+        Carried by `GET /v1/static-hubs/create` on the plain-HTTP admin
         server. The payload is empty: the request is entirely described by
         its URL and headers.
       contentType: application/json
@@ -523,19 +363,19 @@ components:
 
     PermanentHubCreated:
       name: PermanentHubCreated
-      title: Permanent hub creation response
-      summary: JSON body returned by the admin-gated permanent-hub create endpoint
+      title: Static hub creation response
+      summary: JSON body returned by the admin-gated static-hub create endpoint
       contentType: application/json
       payload:
         $ref: '#/components/schemas/PermanentHubCreated'
 
     PermanentHubCreateError:
       name: PermanentHubCreateError
-      title: Permanent hub creation error response
-      summary: JSON error body returned by the admin-gated permanent-hub create endpoint
+      title: Static hub creation error response
+      summary: JSON error body returned by the admin-gated static-hub create endpoint
       description: >
         Carried on the HTTP 400/401/409/413/500 responses of
-        `GET /v1/permanent-hubs/create`. The 401 answer wins over any 400
+        `GET /v1/static-hubs/create`. The 401 answer wins over any 400
         validation answer (auth runs first), and while the server is
         migrating the 301 answer — with the distinct
         `{"status": "migrating", "backupHost": "..."}` body described on
@@ -547,12 +387,11 @@ components:
     HubGetRequest:
       name: HubGetRequest
       title: Hub metadata read request
-      summary: HTTP GET request to /v1/hubs/get or /v1/random-hubs/get
+      summary: HTTP GET request to /v1/random-hubs/get
       description: |
-        Carried by `GET /v1/hubs/get` (static hubs) or `GET
-        /v1/random-hubs/get` (random hubs) on the plain-HTTP servers. The
-        payload is empty: the request is entirely described by the `id`
-        query parameter on the URL.
+        Carried by `GET /v1/random-hubs/get` (random hubs) on the
+        plain-HTTP servers. The payload is empty: the request is entirely
+        described by the `id` query parameter on the URL.
       contentType: application/json
       payload:
         type: 'null'
@@ -560,7 +399,7 @@ components:
     HubInfo:
       name: HubInfo
       title: Hub metadata response
-      summary: JSON body returned by /v1/hubs/get and /v1/random-hubs/get
+      summary: JSON body returned by /v1/random-hubs/get
       contentType: application/json
       payload:
         $ref: '#/components/schemas/Hub'
@@ -570,7 +409,7 @@ components:
       type: object
       required: [Authorization]
       description: >
-        Headers of the GET request to /v1/permanent-hubs/create. The query
+        Headers of the GET request to /v1/static-hubs/create. The query
         parameters `id` (required, hub id) and `hubMetadata` (optional,
         stringified hub metadata) ride on the URL and are documented on
         the channel.
@@ -587,7 +426,7 @@ components:
       required: [error]
       description: >
         JSON body of the error responses (400/401/409/413/500) returned by
-        /v1/permanent-hubs/create.
+        /v1/static-hubs/create.
       properties:
         error:
           type: string
@@ -607,7 +446,7 @@ components:
     PermanentHubCreated:
       type: object
       required: [id, createdAt, metadata, isPermanent]
-      description: JSON body of the /v1/permanent-hubs/create response (the created hub).
+      description: JSON body of the /v1/static-hubs/create response (the created hub).
       properties:
         id:
           type: string
@@ -624,7 +463,7 @@ components:
       required: [error]
       description: >
         JSON body of the error responses (400/404/413) returned by
-        /v1/hubs/get and /v1/random-hubs/get.
+        /v1/random-hubs/get.
       properties:
         error:
           type: string
@@ -639,9 +478,9 @@ components:
       type: object
       required: [id, createdAt, metadata, isPermanent]
       description: >
-        JSON body of the /v1/hubs/get and /v1/random-hubs/get response: the
-        looked-up hub. The peer roster is intentionally not included — the
-        read endpoint answers hub-level metadata only.
+        JSON body of the /v1/random-hubs/get response: the looked-up hub.
+        The peer roster is intentionally not included — the read endpoint
+        answers hub-level metadata only.
       properties:
         id:
           type: string

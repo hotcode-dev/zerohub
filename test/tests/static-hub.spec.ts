@@ -1,21 +1,20 @@
 import { test, expect } from "@playwright/test";
 import { v4 as uuidv4 } from "uuid";
 import {
-  getJoinPermanentHubTestId,
-  getJoinPermanentPeerStatusTestId,
+  getJoinStaticHubTestId,
+  getJoinStaticPeerStatusTestId,
   prepareHarnessPage,
 } from "./utils/harness";
 
 /**
- * Exercises the real `/v1/permanent-hubs/join` WebSocket upgrade against the
- * live server (no mocked WebSocket), analogous to the static-hub
- * create/join spec.
+ * Exercises the real `/v1/static-hubs/join` WebSocket upgrade against the
+ * live server (no mocked WebSocket), analogous to the random-hub specs.
  *
- * Permanent hubs are created out-of-band via the admin HTTP endpoint
- * `GET /v1/permanent-hubs/create` (requires the `Authorization` header) —
+ * Static hubs are created out-of-band via the admin HTTP endpoint
+ * `GET /v1/static-hubs/create` (requires the `Authorization` header) —
  * the browser WebSocket API cannot send custom headers, so this spec creates
  * the hub from Node.js with `fetch`, then two SDK clients join it with
- * `joinPermanentHub`. Proving both joiners reach the "connected" signaling
+ * `joinStaticHub`. Proving both joiners reach the "connected" signaling
  * state verifies the join endpoint upgrades to WebSocket and the two peers
  * establish a real WebRTC connection.
  *
@@ -29,7 +28,7 @@ import {
  * `playwright.config.ts` — and `zz-migrate.spec.ts` runs last via its file
  * name.)
  */
-test("permanent hub create (HTTP) + join (WebSocket) connects", async ({
+test("static hub create (HTTP) + join (WebSocket) connects", async ({
   page,
 }, testInfo) => {
   // ICE candidates + the data channel exchange can take several seconds in a
@@ -43,9 +42,9 @@ test("permanent hub create (HTTP) + join (WebSocket) connects", async ({
   const creatorId = uuidv4();
   const joinerId = uuidv4();
 
-  await test.step("create permanent hub out-of-band via admin HTTP", async () => {
+  await test.step("create static hub out-of-band via admin HTTP", async () => {
     const res = await fetch(
-      `http://${zeroHubHost}/v1/permanent-hubs/create?id=${encodeURIComponent(
+      `http://${zeroHubHost}/v1/static-hubs/create?id=${encodeURIComponent(
         hubId
       )}`,
       { headers: { Authorization: adminAuth } }
@@ -61,8 +60,8 @@ test("permanent hub create (HTTP) + join (WebSocket) connects", async ({
     for (const componentId of [creatorId, joinerId]) {
       await page.evaluate(
         ({ id, host, hub: hubId }) => {
-          window.ZeroHubHarness.joinPermanentHub({
-            testName: "permanent hub join",
+          window.ZeroHubHarness.joinStaticHub({
+            testName: "static hub join",
             zeroHubHosts: [host],
             hubId: hubId,
             componentId: id,
@@ -76,7 +75,7 @@ test("permanent hub create (HTTP) + join (WebSocket) connects", async ({
   await test.step("both joiners receive the hub info", async () => {
     for (const componentId of [creatorId, joinerId]) {
       await expect(
-        page.getByTestId(getJoinPermanentHubTestId(componentId)).first()
+        page.getByTestId(getJoinStaticHubTestId(componentId)).first()
       ).toHaveText(hubId);
     }
   });
@@ -84,7 +83,7 @@ test("permanent hub create (HTTP) + join (WebSocket) connects", async ({
   await test.step("peer status connected", async () => {
     for (const componentId of [creatorId, joinerId]) {
       await expect(
-        page.getByTestId(getJoinPermanentPeerStatusTestId(componentId)).first()
+        page.getByTestId(getJoinStaticPeerStatusTestId(componentId)).first()
       )
         .toHaveText("connected", { timeout: 30 * 1000 });
     }

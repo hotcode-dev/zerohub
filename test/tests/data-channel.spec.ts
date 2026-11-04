@@ -6,6 +6,7 @@ import {
   prepareHarnessPage,
   getCreateHubTestId,
   getJoinHubTestId,
+  seedStaticHub,
 } from "./utils/harness";
 
 test.slow();
@@ -16,24 +17,25 @@ test("data channels open for creator and joiner", async ({ page }) => {
   const creatorId = uuidv4();
   const joinerId = uuidv4();
   const zeroHubHost = "localhost:8080";
-  let hubId = "";
+  // The hub is seeded out-of-band (admin HTTP; the SDK has no static-hub
+  // create) and the "creator" is just its first joiner.
+  const hubId = uuidv4();
+  await seedStaticHub(hubId, zeroHubHost);
 
   await page.evaluate(
-    ({ creatorId: id, zeroHubHost: host }) => {
+    ({ creatorId: id, zeroHubHost: host, hubId: joinHubId }) => {
       window.ZeroHubHarness.createHub({
         componentId: id,
         zeroHubHosts: [host],
         testName: "data channel creator",
+        hubId: joinHubId,
       });
     },
-    { creatorId, zeroHubHost }
+    { creatorId, zeroHubHost, hubId }
   );
 
   const hubIdLocator = page.getByTestId(getCreateHubTestId(creatorId)).first();
-  await expect(hubIdLocator).toHaveText(
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-  );
-  hubId = (await hubIdLocator.textContent()) ?? "";
+  await expect(hubIdLocator).toHaveText(hubId);
 
   await page.evaluate(
     ({ joinerId: id, zeroHubHost: host, hubId: existingHubId }) => {

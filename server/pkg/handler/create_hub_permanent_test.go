@@ -12,11 +12,11 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// startPermanentCreateTestServer serves the permanent-create endpoint (and the
+// startStaticCreateTestServer serves the static-create endpoint (and the
 // migration endpoints) on a random local port so requests land in fasthttp
 // worker goroutines, exactly like production. This is what a real unauthenticated
 // WebSocket client would hit.
-func startPermanentCreateTestServer(t *testing.T, h *handler) string {
+func startStaticCreateTestServer(t *testing.T, h *handler) string {
 	t.Helper()
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
@@ -26,8 +26,8 @@ func startPermanentCreateTestServer(t *testing.T, h *handler) string {
 			err = h.Status(ctx)
 		case "/v1/admin/migrate":
 			err = h.Migrate(ctx)
-		case "/v1/permanent-hubs/create":
-			err = h.CreateHubPermanent(ctx)
+		case "/v1/static-hubs/create":
+			err = h.CreateStaticHub(ctx)
 		default:
 			ctx.Error("unsupported path", fasthttp.StatusNotFound)
 			return
@@ -88,15 +88,15 @@ func readFirstResponse(t *testing.T, c net.Conn) (statusLine string, statusCode 
 	return
 }
 
-// TestCreateHubPermanentUnauthorizedDuringMigration pins the security fix: an
+// TestCreateStaticHubUnauthorizedDuringMigration pins the security fix: an
 // unauthenticated create request made while the server is in migrate mode must
 // be answered with 401 "invalid authorization code" and must NOT leak the
 // internal backup host. Before the fix the migration check ran before auth, so
 // the request was WebSocket-upgraded and closed with a close frame whose reason
 // was the backup host — disclosing it to anyone holding no credentials.
-func TestCreateHubPermanentUnauthorizedDuringMigration(t *testing.T) {
+func TestCreateStaticHubUnauthorizedDuringMigration(t *testing.T) {
 	h := newTestHandler()
-	addr := startPermanentCreateTestServer(t, h)
+	addr := startStaticCreateTestServer(t, h)
 	client := newTestClient(addr)
 
 	// Enter migrate mode through the real, auth-gated endpoint.
@@ -117,7 +117,7 @@ func TestCreateHubPermanentUnauthorizedDuringMigration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
-	req := "GET /v1/permanent-hubs/create?id=room HTTP/1.1\r\n" +
+	req := "GET /v1/static-hubs/create?id=room HTTP/1.1\r\n" +
 		"Host: " + addr + "\r\n" +
 		"Upgrade: websocket\r\n" +
 		"Connection: Upgrade\r\n" +
@@ -144,22 +144,21 @@ func TestCreateHubPermanentUnauthorizedDuringMigration(t *testing.T) {
 	}
 }
 
-// TestCreateHubPermanentMigratingPlainHTTP pins the P0 fix: an out-of-band
+// TestCreateStaticHubMigratingPlainHTTP pins the P0 fix: an out-of-band
 // plain-HTTP create (curl, Node fetch) that arrives while the server is in
 // migrate mode must get the HTTP-level migration response — a 301 with
 // {"status":"migrating","backupHost":<host>} — not a 503 "websocket
 // handshake". Pre-fix the handler routed through the WebSocket-only
 // ForwardMigrate, whose upgrade failed on a request that carries no
 // Upgrade: websocket header. No hub may be created while migrating.
-func TestCreateHubPermanentMigratingPlainHTTP(t *testing.T) {
+func TestCreateStaticHubMigratingPlainHTTP(t *testing.T) {
 	const hubId = "room"
 	h := newTestHandler()
 	// Real (memory-backed) instances so the "no hub created" assertion
 	// inspects actual storage state, not mock call history.
-	h.zeroHub = newRealZeroHub(t)
+	h.zeroHubStatic = newRealZeroHub(t)
 	h.zeroHubRandom = newRealZeroHub(t)
-	h.zeroHubPermanent = newRealZeroHub(t)
-	addr := startPermanentCreateTestServer(t, h)
+	addr := startStaticCreateTestServer(t, h)
 	client := newTestClient(addr)
 
 	// Enter migrate mode through the real, auth-gated endpoint.
@@ -171,7 +170,7 @@ func TestCreateHubPermanentMigratingPlainHTTP(t *testing.T) {
 
 	// An authorized plain-HTTP create: no Upgrade/Sec-WebSocket-* headers,
 	// exactly what curl sends.
-	status, body, err = doRequest(t, client, "/v1/permanent-hubs/create?id="+hubId,
+	status, body, err = doRequest(t, client, "/v1/static-hubs/create?id="+hubId,
 		map[string]string{"Authorization": adminAuthHeader()})
 	if err != nil {
 		t.Fatalf("create during migration: transport error: %v", err)
@@ -183,22 +182,22 @@ func TestCreateHubPermanentMigratingPlainHTTP(t *testing.T) {
 	checkStatusBody(t, body, "migrating", testBackupHost)
 
 	// The hub must NOT have been created.
-	if got := h.zeroHubPermanent.GetHubById(hubId); got != nil {
+	if got := h.zeroHubStatic.GetHubById(hubId); got != nil {
 		t.Fatalf("hub %q was created during migration, want none", hubId)
 	}
 }
 
-// TestCreateHubPermanentMigratingNeverUpgradesWebSocket pins the companion
+// TestCreateStaticHubMigratingNeverUpgradesWebSocket pins the companion
 // invariant: even when a client sends a WebSocket-handshake-shaped request
 // (Upgrade/Sec-WebSocket-Key headers, with valid admin auth), the plain-HTTP
-// permanent-create endpoint must NOT upgrade the connection. It answers 301
+// static-create endpoint must NOT upgrade the connection. It answers 301
 // with the backup host like every other plain-HTTP migration response.
 // Pre-fix, an authorized handshake completed with a 101 and the server
 // followed it with a 1001 close frame carrying the backup host —
 // signaling-client semantics that do not apply to this endpoint.
-func TestCreateHubPermanentMigratingNeverUpgradesWebSocket(t *testing.T) {
+func TestCreateStaticHubMigratingNeverUpgradesWebSocket(t *testing.T) {
 	h := newTestHandler()
-	addr := startPermanentCreateTestServer(t, h)
+	addr := startStaticCreateTestServer(t, h)
 	client := newTestClient(addr)
 
 	status, body, err := doRequest(t, client, "/v1/admin/migrate?host="+testBackupHost,
@@ -214,7 +213,7 @@ func TestCreateHubPermanentMigratingNeverUpgradesWebSocket(t *testing.T) {
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
-	req := "GET /v1/permanent-hubs/create?id=room HTTP/1.1\r\n" +
+	req := "GET /v1/static-hubs/create?id=room HTTP/1.1\r\n" +
 		"Host: " + addr + "\r\n" +
 		"Authorization: " + adminAuthHeader() + "\r\n" +
 		"Upgrade: websocket\r\n" +

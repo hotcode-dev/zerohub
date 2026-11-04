@@ -62,9 +62,9 @@ function driver(page: Page) {
         (hostList) => ZeroHubUnitHarness.createClientWithHosts(hostList),
         hosts,
       ),
-    createHub: (id: number, hubId: string) =>
+    joinStaticHub: (id: number, hubId: string) =>
       page.evaluate(
-        ([id, hubId]) => ZeroHubUnitHarness.createHub(id, hubId),
+        ([id, hubId]) => ZeroHubUnitHarness.joinStaticHub(id, hubId),
         [id, hubId] as const,
       ),
     sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
@@ -134,9 +134,9 @@ test.describe("ZeroHubClient SDP send across the reconnect CONNECTING window", (
     ]);
 
     // Initial connection: socket #1 opens against host `a`.
-    await h.createHub(id, "room");
+    await h.joinStaticHub(id, "room");
     expect(await h.getLastSocketUrl(id)).toBe(
-      "wss://a.zerohub.dev/v1/hubs/create?id=room",
+      "wss://a.zerohub.dev/v1/static-hubs/join?id=room",
     );
     await h.sendHubInfo(id, "1", ["2"]);
 
@@ -164,7 +164,7 @@ test.describe("ZeroHubClient SDP send across the reconnect CONNECTING window", (
     await flushMicrotasks(page);
     expect(await h.getSocketCount(id)).toBe(2);
     expect(await h.getLastSocketUrl(id)).toBe(
-      "wss://b.zerohub.dev/v1/hubs/create?id=room",
+      "wss://b.zerohub.dev/v1/static-hubs/join?id=room",
     );
     // Model the reconnection handshake as still in flight: the new mock
     // socket is CONNECTING, so every signaling send to it is refused
@@ -229,7 +229,7 @@ test.describe("ZeroHubClient SDP send across the reconnect CONNECTING window", (
       "b.zerohub.dev",
     ]);
 
-    await h.createHub(id, "room");
+    await h.joinStaticHub(id, "room");
     await h.sendHubInfo(id, "1", ["2"]);
 
     // Zero the same-host retry budget so the abnormal close fails over to

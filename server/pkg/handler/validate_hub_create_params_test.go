@@ -23,7 +23,7 @@ func TestValidateHubCreateParamsRejections(t *testing.T) {
 	h := newTestHandler()
 
 	t.Run("empty id -> 400", func(t *testing.T) {
-		ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create")
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/create")
 		if !h.validateHubCreateParams(ctx, "") {
 			t.Fatal("empty id: helper returned false, want true (rejection written)")
 		}
@@ -36,7 +36,7 @@ func TestValidateHubCreateParamsRejections(t *testing.T) {
 	})
 
 	t.Run("whitespace-only id -> 400", func(t *testing.T) {
-		ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create")
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/create")
 		if !h.validateHubCreateParams(ctx, "   ") {
 			t.Fatal("whitespace id: helper returned false, want true (rejection written)")
 		}
@@ -47,7 +47,7 @@ func TestValidateHubCreateParamsRejections(t *testing.T) {
 
 	t.Run("oversized id -> 413", func(t *testing.T) {
 		oversizedID := strings.Repeat("a", config.MaxMetadataSize+1)
-		ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create")
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/create")
 		if !h.validateHubCreateParams(ctx, oversizedID) {
 			t.Fatal("oversized id: helper returned false, want true (rejection written)")
 		}
@@ -60,7 +60,7 @@ func TestValidateHubCreateParamsRejections(t *testing.T) {
 	})
 
 	t.Run("oversized hubMetadata -> 413", func(t *testing.T) {
-		ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create?id=ok-hub&hubMetadata=" + oversizedValue)
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/create?id=ok-hub&hubMetadata=" + oversizedValue)
 		if !h.validateHubCreateParams(ctx, "ok-hub") {
 			t.Fatal("oversized hubMetadata: helper returned false, want true (rejection written)")
 		}
@@ -73,7 +73,7 @@ func TestValidateHubCreateParamsRejections(t *testing.T) {
 	})
 
 	t.Run("malformed hubMetadata JSON -> 400", func(t *testing.T) {
-		ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create?id=ok-hub&hubMetadata=not-json")
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/create?id=ok-hub&hubMetadata=not-json")
 		if !h.validateHubCreateParams(ctx, "ok-hub") {
 			t.Fatal("malformed hubMetadata: helper returned false, want true (rejection written)")
 		}
@@ -93,7 +93,7 @@ func TestValidateHubCreateParamsAcceptsClean(t *testing.T) {
 	h := newTestHandler()
 
 	// hubMetadata valid JSON, under the cap.
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create?id=clean-hub&hubMetadata=%7B%22name%22%3A%22test%22%7D")
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/create?id=clean-hub&hubMetadata=%7B%22name%22%3A%22test%22%7D")
 	if h.validateHubCreateParams(ctx, "clean-hub") {
 		t.Fatalf("clean params: helper returned true, want false; status=%d body=%q",
 			ctx.Response.StatusCode(), string(ctx.Response.Body()))
@@ -107,7 +107,7 @@ func TestValidateHubCreateParamsAcceptsClean(t *testing.T) {
 
 	// No hubMetadata at all is also acceptable (absent -> treated as empty
 	// by the JSON check, and empty passes the size check).
-	ctx = newRequestCtx("http://127.0.0.1/v1/hubs/create?id=clean-hub")
+	ctx = newRequestCtx("http://127.0.0.1/v1/random-hubs/create?id=clean-hub")
 	if h.validateHubCreateParams(ctx, "clean-hub") {
 		t.Fatalf("clean id, absent hubMetadata: helper returned true, want false")
 	}
@@ -123,7 +123,7 @@ func TestValidateHubCreateParamsOrderingPinned(t *testing.T) {
 	h := newTestHandler()
 
 	// oversized AND malformed: the 413 (size) must beat the 400 (shape).
-	ctx := newRequestCtx("http://127.0.0.1/v1/hubs/create?id=ok&hubMetadata=" + oversizedValue)
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/create?id=ok&hubMetadata=" + oversizedValue)
 	if !h.validateHubCreateParams(ctx, "ok") {
 		t.Fatal("helper returned false, want true (rejection written)")
 	}
@@ -137,7 +137,7 @@ func TestValidateHubCreateParamsOrderingPinned(t *testing.T) {
 	// valid shape but oversized id: the id 413 must beat a would-be JSON
 	// pass. (id is checked before hubMetadata.)
 	oversizedID := strings.Repeat("a", config.MaxMetadataSize+1)
-	ctx = newRequestCtx("http://127.0.0.1/v1/hubs/create?id=x&hubMetadata=%7B%22a%22%3A1%7D")
+	ctx = newRequestCtx("http://127.0.0.1/v1/random-hubs/create?id=x&hubMetadata=%7B%22a%22%3A1%7D")
 	if !h.validateHubCreateParams(ctx, oversizedID) {
 		t.Fatal("helper returned false, want true (rejection written)")
 	}

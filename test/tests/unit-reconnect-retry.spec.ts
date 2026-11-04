@@ -47,9 +47,9 @@ function driver(page: Page) {
   return {
     createClient: () =>
       page.evaluate(() => ZeroHubUnitHarness.createClient()),
-    createHub: (id: number, hubId: string) =>
+    joinStaticHub: (id: number, hubId: string) =>
       page.evaluate(
-        ([id, hubId]) => ZeroHubUnitHarness.createHub(id, hubId),
+        ([id, hubId]) => ZeroHubUnitHarness.joinStaticHub(id, hubId),
         [id, hubId] as const,
       ),
     setConfig: (id: number, overrides: Record<string, unknown>) =>
@@ -90,11 +90,11 @@ function driver(page: Page) {
 }
 
 /**
- * The initial socket URL for the single-host client's `createHub("room")`:
+ * The initial socket URL for the single-host client's `joinStaticHub("room")`:
  * the unit harness's `createClient` builds the client with `tls` unset, and
  * the default config has `tls: true` — so it is a plain `wss://` URL.
  */
-const SINGLE_HOST_URL = "wss://localhost:1/v1/hubs/create?id=room";
+const SINGLE_HOST_URL = "wss://localhost:1/v1/static-hubs/join?id=room";
 
 /** The terminal all-hosts-exhausted error message. */
 const TERMINAL_ERROR =
@@ -116,7 +116,7 @@ test.describe("ZeroHubClient same-host retry-with-backoff on abnormal close", ()
     await prepareUnitHarnessPage(page);
     const h = driver(page);
     const id = await h.createClient();
-    await h.createHub(id, "room");
+    await h.joinStaticHub(id, "room");
     expect(await h.getLastSocketUrl(id)).toBe(SINGLE_HOST_URL);
 
     // Confirm the session (the server's hub info) so the client is in
@@ -167,7 +167,7 @@ test.describe("ZeroHubClient same-host retry-with-backoff on abnormal close", ()
     // Shrink the budget so the terminal error is reachable in a test:
     // total backoff for 3 retries stays well under the test timeout.
     await h.setConfig(id, { maxReconnectAttempts: 3 });
-    await h.createHub(id, "room");
+    await h.joinStaticHub(id, "room");
     expect(await h.getLastSocketUrl(id)).toBe(SINGLE_HOST_URL);
     // Confirm the session so an abnormal close takes the RECONNECT path
     // (same-host retry with backoff), not the initial-connection failover.
@@ -216,7 +216,7 @@ test.describe("ZeroHubClient same-host retry-with-backoff on abnormal close", ()
     const h = driver(page);
     const id = await h.createClient();
     await h.setConfig(id, { maxReconnectAttempts: 3 });
-    await h.createHub(id, "room");
+    await h.joinStaticHub(id, "room");
     await h.captureZeroHubErrors(id);
 
     // Confirm the session so an abnormal close takes the RECONNECT path
@@ -258,7 +258,7 @@ test.describe("ZeroHubClient same-host retry-with-backoff on abnormal close", ()
     await prepareUnitHarnessPage(page);
     const h = driver(page);
     const id = await h.createClient();
-    await h.createHub(id, "room");
+    await h.joinStaticHub(id, "room");
     const socketsBefore = await h.getSocketCount(id);
 
     // Confirm the session so the blip queues a same-host retry (reconnect

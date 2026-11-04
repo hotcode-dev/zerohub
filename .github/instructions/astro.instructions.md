@@ -56,7 +56,7 @@ description: Compare static, random, and IP-based hubs
 ```ts
 import { ZeroHubClient, LogLevel } from '@zero-hub/client';
 const client = new ZeroHubClient(['localhost:8080'], { tls: false, logLevel: LogLevel.Debug });
-client.createHub('demo-hub');
+client.joinStaticHub('demo-hub');
 ```
 ### Multiple Data Channels
 ```ts

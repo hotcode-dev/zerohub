@@ -105,7 +105,7 @@ func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
 // WebSocket signaling endpoints: those clients are already mid-handshake, so
 // the server upgrades the connection and sends a 1001 close frame whose
 // reason is the backup host. A plain-HTTP client (e.g. curl or Node fetch
-// calling /v1/permanent-hubs/create) sends no Upgrade: websocket header, so
+// calling /v1/static-hubs/create) sends no Upgrade: websocket header, so
 // attempting an upgrade would fail the handshake and surface as a 503
 // "websocket handshake". Plain-HTTP handlers must return this response
 // instead and must never call ForwardMigrate.

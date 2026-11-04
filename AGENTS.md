@@ -132,10 +132,13 @@ client.onPeerStatusChange = (peer) => {
   }
 };
 
-// Auto-generates UUID if hubId not provided
-client.createHub('my-hub', { name: 'Alice' }, { hubName: 'Test Hub' });
-// or
-client.joinHub('my-hub', { name: 'Bob' });
+// Random hub: new random id per call, no setup required
+client.createRandomHub({ name: 'Alice' }, { hubName: 'Test Hub' });
+// or join a known random hub by id
+client.joinRandomHub('my-hub', { name: 'Bob' });
+// or join a static (named, never-expires) hub — static hubs are created
+// out-of-band via the admin-gated HTTP endpoint GET /v1/static-hubs/create
+client.joinStaticHub('my-hub', { name: 'Bob' });
 ```
 
 ### Multiple Data Channels Pattern

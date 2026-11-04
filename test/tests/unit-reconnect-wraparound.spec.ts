@@ -61,9 +61,9 @@ function driver(page: Page) {
         (hostList) => ZeroHubUnitHarness.createClientWithHosts(hostList),
         hosts,
       ),
-    createHub: (id: number, hubId: string) =>
+    joinStaticHub: (id: number, hubId: string) =>
       page.evaluate(
-        ([id, hubId]) => ZeroHubUnitHarness.createHub(id, hubId),
+        ([id, hubId]) => ZeroHubUnitHarness.joinStaticHub(id, hubId),
         [id, hubId] as const,
       ),
     setConfig: (id: number, overrides: Record<string, unknown>) =>
@@ -122,7 +122,7 @@ async function startSession(
   firstHost: string
 ) {
   await h.markHealthy(firstHost);
-  await h.createHub(id, "room"); // dial #1 (pending, CONNECTING)
+  await h.joinStaticHub(id, "room"); // dial #1 (pending, CONNECTING)
   await h.settleOpen(); // onopen -> entry point resolves
   await h.sendHubInfoOnSocket(id, "room", "1");
 }
@@ -195,7 +195,7 @@ test.describe("ZeroHubClient multi-host reconnect sweep (fake WebSocket)", () =>
       await h.markDead("down1.example");
       await h.markDead("down2.example");
       await h.markHealthy("up.example");
-      await h.createHub(id, "room"); // dial #1: down1 (pending)
+      await h.joinStaticHub(id, "room"); // dial #1: down1 (pending)
       await h.settleOpen(); // down1 refusal -> failover dial #2: down2
       await h.settleOpen(); // down2 refusal -> failover dial #3: up
       await h.settleOpen(); // up: onopen -> session established
