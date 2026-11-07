@@ -168,6 +168,13 @@ class MockRTCPeerConnection {
   public __restartIceCount: number;
   /** Whether `close()` has been called. */
   public __closed: boolean;
+  /**
+   * `addTrack(track, stream)` calls in order (inspectable by specs). Lets a
+   * media spec assert the configured `localStream`'s tracks were actually
+   * wired into the peer connection — a no-op `addTrack` previously masked
+   * the regression where a stream was never passed to the config.
+   */
+  public __addedTracks: Array<{ track: unknown; stream: unknown }> = [];
 
   constructor(_config?: RTCConfiguration) {
     this.__instanceId = ++instanceSeq;
@@ -183,6 +190,7 @@ class MockRTCPeerConnection {
     this.onicecandidate = null;
     this.__restartIceCount = 0;
     this.__closed = false;
+    this.__addedTracks = [];
   }
 
   restartIce(): void {
@@ -193,8 +201,8 @@ class MockRTCPeerConnection {
     this.__closed = true;
   }
 
-  addTrack(): void {
-    // no-op
+  addTrack(track: unknown, stream?: unknown): void {
+    this.__addedTracks.push({ track, stream });
   }
 
   addTransceiver(): void {
@@ -314,6 +322,16 @@ const clients = new Map<number, ClientState>();
 let nextClientId = 0;
 /** `onZeroHubError` messages captured per client by `captureZeroHubErrors`. */
 const zeroHubErrorLogs = new Map<number, string[]>();
+/**
+ * `mediaChannelConfig.onTrack` invocations captured for clients built via
+ * `createClientWithMedia` (peer id + the id of the incoming remote stream).
+ */
+const mediaOnTrackLogs = new Map<
+  number,
+  Array<{ peerId: string; streamId: string }>
+>();
+/** The fake `localStream` object installed per media client (by id). */
+const mediaLocalStreams = new Map<number, unknown>();
 
 /** Serialisable view of a single peer + its live connection. */
 function snapshotPeer(client: ZeroHubClient, peerId: string): PeerSnapshot {
@@ -518,6 +536,133 @@ const ZeroHubUnitHarness = {
       createdAtWsSeq: wsInstances.length,
     });
     return id;
+  },
+
+  /**
+   * Create a client whose `mediaChannelConfig` carries a fake `localStream`
+   * (an object whose `getTracks()` yields `tracks.length` fake tracks) plus
+   * an `onTrack` recorder. This is the in-page twin of the docs media
+   * playground's corrected wiring: the resolved stream is wired INTO the
+   * config so the SDK's peer-setup can add its tracks to each peer
+   * connection. The fake stream's object identity is tracked so specs can
+   * assert every `addTrack` call received exactly that stream, not a copy.
+   * Returns an opaque numeric id.
+   */
+  createClientWithMedia(trackCount: number): number {
+    const id = ++nextClientId;
+    mediaOnTrackLogs.set(id, []);
+    const tracks = Array.from({ length: trackCount }, (_, i) => ({
+      kind: i % 2 === 0 ? "audio" : "video",
+      id: `track-${i}`,
+    }));
+    const localStream = {
+      getTracks: () => tracks,
+    } as unknown as MediaStream;
+    mediaLocalStreams.set(id, localStream);
+    const client = new ZeroHubClient(["localhost:1"], {
+      logLevel: LogLevel.None,
+      mediaChannelConfig: {
+        localStream,
+        onTrack: (peer, event) => {
+          const streamId =
+            event.streams && event.streams.length > 0
+              ? String((event.streams[0] as { id?: unknown })?.id ?? "unknown")
+              : "unknown";
+          mediaOnTrackLogs.get(id)?.push({ peerId: peer.id, streamId });
+        },
+      },
+    });
+    clients.set(id, {
+      client,
+      createdAtConnSeq: createdInstances.length,
+      createdAtWsSeq: wsInstances.length,
+    });
+    return id;
+  },
+
+  /**
+   * `createClientWithMedia` twin for the BROKEN-demo shape: a
+   * `mediaChannelConfig` with only `onTrack` and no `localStream` — exactly
+   * what the docs media playground shipped before the fix. Specs use it to
+   * pin that the regression is detectable (no tracks added) while the
+   * receiving side (`onTrack`) still works. Returns an opaque numeric id.
+   */
+  createClientWithMediaNoStream(): number {
+    const id = ++nextClientId;
+    mediaOnTrackLogs.set(id, []);
+    const client = new ZeroHubClient(["localhost:1"], {
+      logLevel: LogLevel.None,
+      mediaChannelConfig: {
+        onTrack: (peer, event) => {
+          const streamId =
+            event.streams && event.streams.length > 0
+              ? String((event.streams[0] as { id?: unknown })?.id ?? "unknown")
+              : "unknown";
+          mediaOnTrackLogs.get(id)?.push({ peerId: peer.id, streamId });
+        },
+      },
+    });
+    clients.set(id, {
+      client,
+      createdAtConnSeq: createdInstances.length,
+      createdAtWsSeq: wsInstances.length,
+    });
+    return id;
+  },
+
+  /** The `onTrack` invocations captured for a media client (peer id + stream id). */
+  getMediaOnTrackCalls(id: number): Array<{ peerId: string; streamId: string }> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    return mediaOnTrackLogs.get(id) ?? [];
+  },
+
+  /**
+   * The `addTrack` calls recorded on a peer's mock `RTCPeerConnection`,
+   * reporting for each whether the stream argument is the object identity of
+   * the client's configured `localStream` (proves the resolved stream was
+   * actually wired into the connection) and which track kinds were added.
+   */
+  getAddedTracks(id: number, peerId: string): Array<{
+    isConfiguredStream: boolean;
+    trackKinds: string[];
+  }> {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const conn = asMock(entry.client.peers[peerId]?.rtcConn);
+    const added = conn?.__addedTracks ?? [];
+    const configuredStream = mediaLocalStreams.get(id);
+    return added.map((call) => ({
+      isConfiguredStream: configuredStream !== undefined && call.stream === configuredStream,
+      trackKinds: call.track
+        ? [String((call.track as { kind?: unknown })?.kind ?? "unknown")]
+        : [],
+    }));
+  },
+
+  /**
+   * Simulate an incoming remote track on a peer's connection (the
+   * `RTCPeerConnection.ontrack` event a real WebRTC stack fires once the
+   * remote side's media flow). Proves the user's `onTrack` callback is
+   * reachable on the receiving peer — the second half of the "a media peer
+   * receives the remote's tracks" regression the docs demo broke.
+   */
+  fireOnTrack(id: number, peerId: string, remoteStreamId: string): void {
+    const entry = clients.get(id);
+    if (!entry) {
+      throw new Error(`no client ${id}`);
+    }
+    const conn = asMock(entry.client.peers[peerId]?.rtcConn);
+    if (!conn) {
+      throw new Error(`no peer ${peerId} on client ${id}`);
+    }
+    if (conn.ontrack) {
+      conn.ontrack({ streams: [{ id: remoteStreamId }] } as unknown);
+    }
   },
 
   /** Feed a `hubInfoMessage` (initial-join path) with the given peer ids. */
@@ -1532,7 +1677,7 @@ const ZeroHubUnitHarness = {
   },
 
   /**
-   * Drives `client.sendOffer(peerId, options)` end-to-end (mock
+   * Drives the public `client.sendOffer(peerId, options)` end-to-end (mock
    * RTCPeerConnection) and returns the shared config options plus the options
    * the mock connection actually received, so specs can assert the merge
    * neither mutated the shared config nor lost a key the config set.
