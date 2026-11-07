@@ -67,7 +67,4 @@ e2e-test:
 	E2E_STATUS=$$?; \
 	kill $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; \
 	wait $$SERVER1_PID $$SERVER2_PID 2>/dev/null || true; \
-	exit $$E2E_STATUS; \
-
-link-agent:
-	ln AGENTS.md .github/copilot-instructions.md
+	exit $$E2E_STATUS;
