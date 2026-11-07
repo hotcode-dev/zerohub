@@ -39,3 +39,20 @@ const zh = new ZeroHubClient(
   }
 );
 ```
+
+## Topologies
+
+The SDK ships with two built-in topologies. Choose one by passing an instance as the third argument to the `ZeroHubClient` constructor — the default is `MeshTopology`:
+
+```typescript
+import { ZeroHubClient, LogLevel, MeshTopology, SFUTopology } from "@zero-hub/client";
+
+// Mesh: every peer connects to every other peer (default)
+const meshClient = new ZeroHubClient(hosts, { logLevel: LogLevel.Debug }, new MeshTopology());
+
+// SFU: a star topology where one peer (by default the numerically lowest peer id)
+// holds a connection to every client — more scalable for larger groups
+const sfuClient = new ZeroHubClient(hosts, { logLevel: LogLevel.Debug }, new SFUTopology());
+```
+
+For a custom strategy, implement the `Topology` interface. See the [SDK reference](/api-reference/sdk#topologies-mesh-and-sfu) for details on how each built-in topology behaves.
