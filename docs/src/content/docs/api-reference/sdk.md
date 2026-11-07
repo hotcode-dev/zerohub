@@ -6,7 +6,7 @@ description: Reference for the ZeroHub JavaScript/TypeScript client SDK.
 This page documents the public surface of the ZeroHub Client SDK:
 
 - initialization and configuration
-- topologies (Mesh)
+- topologies (Mesh, SFU)
 - hub lifecycle (create/join/join-or-create)
 - peer lifecycle (offer/answer/accept)
 
@@ -75,14 +75,42 @@ confirmed (the server's hub info arrives) or a migration redirect (close code
 `1001` with a well-formed backup host) lands, so a long-lived healthy session
 never accumulates backoff.
 
-## Topology: Mesh
+## Topologies: Mesh and SFU
 
-The library ships with a `MeshTopology` implementation that connects every peer to every other peer.
+The library ships with two topology implementations. Select one by passing an instance as the third argument of the `ZeroHubClient` constructor; the default is `MeshTopology`.
+
+### MeshTopology
+
+Connects every peer to every other peer.
 It handles:
 
 - creating data channels (if configured)
 - creating offers/answers using a deterministic "higher-id creates offer" rule to avoid collisions
 - wiring media tracks from a local stream to remote peers
+
+### SFUTopology
+
+A star topology where one peer (the SFU) holds a direct connection to every
+other peer, and regular clients only ever connect to the SFU — two non-SFU
+peers never hold a direct connection. This is more scalable for larger groups
+than a full mesh.
+
+```ts
+import { SFUTopology, ZeroHubClient, LogLevel } from "@zero-hub/client";
+
+const client = new ZeroHubClient(
+  ["sg1.zerohub.dev"],
+  { tls: true, logLevel: LogLevel.Warning },
+  new SFUTopology()
+);
+```
+
+- **Election** — By default the SFU is the peer with the numerically lowest peer id (compared with `parseInt`, not lexicographically, so `"2"` sorts before `"10"`). Pin a specific peer instead by passing its id to the constructor: `new SFUTopology("42")`.
+- **Offer direction** — The SFU is always the offerer toward each client; the client auto-answers through the existing offer/answer path.
+- **Re-election** — When an *implicitly elected* SFU leaves the hub (`PeerStatus.ZeroHubDisconnected`), the remaining peers re-elect the numerically lowest remaining peer id as the new SFU and re-establish the star around it. A duplicate or delayed departure broadcast for the same departed peer does not re-run the election (no second set of connections). When an explicit `sfuPeerId` is set, no re-election happens — a departure from the designated SFU just logs a warning.
+- **P2P drop recovery** — When a peer's WebRTC connection drops while the signaling socket is still alive (`PeerStatus.WebRTCDisconnected`), only the SFU side re-sends an offer to that client; the established data channels and transceivers are kept.
+
+For genuinely custom strategies, implement the `Topology` interface (see `client/src/topology` in the repository) and pass an instance as the third argument of `ZeroHubClient`.
 
 ## Hub lifecycle
 

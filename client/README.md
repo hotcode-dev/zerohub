@@ -151,13 +151,20 @@ Each call issues a WebSocket handshake to `/v1/...` endpoints on the ZeroHub ser
 
 ## Topology customization
 
-The SDK ships with `MeshTopology`, which compares numeric peer IDs to avoid offer glare. To implement a different strategy (e.g., SFU coordination), implement the `Topology` interface in `client/src/topology` and pass an instance as the third argument of `ZeroHubClient`.
+The SDK ships with two topologies: `MeshTopology` (the default, every peer connects to every other peer) and `SFUTopology` (a star topology where one peer — by default the numerically lowest peer id — connects out to every client, which re-elects automatically if the SFU leaves the hub). Select one by passing an instance as the third argument of `ZeroHubClient`:
 
 ```ts
-import { MeshTopology } from "@zero-hub/client";
+import { MeshTopology, SFUTopology } from "@zero-hub/client";
 
-const client = new ZeroHubClient(hosts, config, new MeshTopology());
+// mesh (default)
+const meshClient = new ZeroHubClient(hosts, config, new MeshTopology());
+
+// star / SFU (useful for larger groups); pass a peer id to pin the SFU
+const sfuClient = new ZeroHubClient(hosts, config, new SFUTopology());
+const pinnedSfuClient = new ZeroHubClient(hosts, config, new SFUTopology("42"));
 ```
+
+For genuinely custom strategies, implement the `Topology` interface (see `client/src/topology` in the repository) and pass an instance as the third argument of `ZeroHubClient`.
 
 ## Reconnection & host failover
 
