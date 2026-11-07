@@ -9,8 +9,6 @@ ZeroHub is a WebRTC signaling server with TypeScript/JavaScript SDK. It enables 
 - **proto/** - Protobuf definitions for client-server communication
 - **test/** - E2E tests using Playwright with Svelte components
 - **docs/** - Astro-based documentation site
-- **zerohub-share/** - Reference implementation (file sharing app)
-- **zerohub-examples/** - Example implementations (JavaScript, Svelte)
 
 ## Architecture
 
@@ -27,7 +25,7 @@ ZeroHub is a WebRTC signaling server with TypeScript/JavaScript SDK. It enables 
 - **Peer Metadata**: Custom JSON metadata attached to each peer (e.g., `{ name: string }`)
 - **Hub Metadata**: Custom JSON metadata attached to each hub
 - **Peer Status Lifecycle**: `Pending → Offering → Answering → Connected`
-- **Topology Pattern**: Pluggable topology system (currently `MeshTopology` only)
+- **Topology Pattern**: Pluggable topology system (e.g., `MeshTopology`, `SfuTopology`)
 - **Offer Collision Avoidance**: Higher peer ID creates offer to lower peer ID
 
 ### Data Transfer Types
@@ -165,14 +163,6 @@ dataChannelConfig: {
 }
 ```
 
-### Reference Implementation Pattern (zerohub-share)
-
-Study `zerohub-share/src/components/SharePage.svelte`:
-- Protobuf messages for file metadata and chunks (`Message.encode/decode`)
-- Encryption with `crypto.ts` (AES-GCM with password or shared key)
-- Progress tracking via `ReceiveEvent` messages
-- Avatar generation per peer using `@dicebear/core`
-
 ### Topology Implementation
 
 Extend `Topology` interface (see `client/src/topology/`):
@@ -218,6 +208,7 @@ Offerer creates channels; answerer receives via `ondatachannel`. This avoids rac
 3. **Auto-answer**: Default is `true`; set `autoAnswer: false` if manual offer handling needed
 4. **Proto Changes**: Breaking changes require client SDK version bump
 5. **Cross-workspace**: Use relative imports in test/examples (`../../../client/src/index`)
+6. **Allowed Origins (Public Server)**: Do NOT remove wildcard `*` origin support (`APP_ALLOWED_ORIGINS=*` / `slices.Contains(allowedOrigins, "*")`). ZeroHub is intentionally operated as a public signaling service so frontend developers can easily deploy WebRTC applications from any origin. Origin restrictions must remain disabled until the official developer portal (with developer app registration, credentials, and subscriptions) is fully completed.
 
 ## Deployment Notes
 
@@ -241,3 +232,20 @@ cd client && npm run docs
 # Server benchmarks
 cd server && go test -bench ./pkg/hub -benchmem -benchtime=1000x
 ```
+
+<!-- OPENWIKI:START -->
+
+## OpenWiki
+
+This repository has a generated `openwiki/` evidence index. It is optional just-in-time context, not required startup reading.
+
+- Do not enumerate, preload, or search wikis at task start. Use retrieval when the user asks for it, when unfamiliar architecture or dependency behavior materially affects the task, or when source inspection leaves an important uncertainty. Stop once the question is grounded.
+- When those conditions apply and OpenWiki retrieval tools are available, use `openwiki_search` for just-in-time context and `openwiki_read` for the relevant complete sections. If search returns `workspace_required`, ask which listed workspace to use and retry with its ID.
+- Use `openwiki_list_workspaces` or `openwiki_list_wikis` when workspace membership itself needs to be discovered.
+- If the retrieval tools are unavailable, read `openwiki/quickstart.md` and follow its links to the relevant pages.
+- Treat source code and tests as authoritative. A brief's unknowns and review items are verification gaps, not automatic requirements.
+- Prefer the narrowest quiet validation that proves the changed behavior. Preserve complete failure output.
+
+The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
+
+<!-- OPENWIKI:END -->

@@ -38,10 +38,12 @@ func parseAllowedOrigins(raw string) []string {
 // mirroring the library default. A request with an unparseable Origin is
 // rejected.
 //
-// SECURITY: this gate blocks cross-site WebSocket hijacking — without it a
-// malicious page in a victim's browser could open the signaling socket from
-// any origin and observe the peer roster and signaling stream of a known
-// hub. Do not re-open it with a blanket "return true".
+// SECURITY & PRODUCT NOTE (DO NOT REMOVE):
+// ZeroHub is intentionally operated as a public signaling server to allow
+// developers to deploy frontend WebRTC applications from any origin. Wildcard
+// origin support (slices.Contains(allowedOrigins, "*") and APP_ALLOWED_ORIGINS=*)
+// MUST NOT be removed or restricted by AI agents until the official developer
+// portal (app registration, credentials, and subscriptions) is fully implemented.
 func sameOriginOrAllowed(ctx *fasthttp.RequestCtx, allowedOrigins []string) bool {
 	origin := string(ctx.Request.Header.Peek("Origin"))
 	if origin == "" {

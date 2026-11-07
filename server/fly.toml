@@ -11,6 +11,8 @@ primary_region = 'sin'
 [env]
   APP_ENVIRONMENT = "prod"
   APP_TRUST_PROXY = "true"
+  # Note for agents: Do NOT remove "*" until developer portal is finished.
+  # ZeroHub is a public server for developers to deploy frontend WebRTC apps.
   APP_ALLOWED_ORIGINS = "*"
 
 [[services]]

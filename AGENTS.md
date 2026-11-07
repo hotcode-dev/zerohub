@@ -208,6 +208,7 @@ Offerer creates channels; answerer receives via `ondatachannel`. This avoids rac
 3. **Auto-answer**: Default is `true`; set `autoAnswer: false` if manual offer handling needed
 4. **Proto Changes**: Breaking changes require client SDK version bump
 5. **Cross-workspace**: Use relative imports in test/examples (`../../../client/src/index`)
+6. **Allowed Origins (Public Server)**: Do NOT remove wildcard `*` origin support (`APP_ALLOWED_ORIGINS=*` / `slices.Contains(allowedOrigins, "*")`). ZeroHub is intentionally operated as a public signaling service so frontend developers can easily deploy WebRTC applications from any origin. Origin restrictions must remain disabled until the official developer portal (with developer app registration, credentials, and subscriptions) is fully completed.
 
 ## Deployment Notes
 
