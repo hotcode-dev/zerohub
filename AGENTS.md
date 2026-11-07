@@ -71,6 +71,18 @@ go test -bench ./pkg/*** -benchmem        # Benchmarks
 
 Environment: Copy `.env.example` to `.env`. Key vars: `APP_PORT`, `APP_CLIENT_SECRET`.
 
+### Docs Development
+
+```bash
+cd docs
+npm run dev      # Start Astro/Starlight dev server
+npm run build    # Build static docs site
+```
+
+- Built with Astro + `@astrojs/starlight` in `docs/`
+- Markdown content lives under `docs/src/content/docs/` (`.md` / `.mdx`)
+- Sidebar navigation is configured in `docs/astro.config.mjs`
+
 ### AsyncAPI Specification
 
 - Signaling AsyncAPI spec is `server/api.yml` (version `3.1.0`)
