@@ -8,6 +8,11 @@ primary_region = 'sin'
 
 [build]
 
+[env]
+  APP_ENVIRONMENT = "prod"
+  APP_TRUST_PROXY = "true"
+  APP_ALLOWED_ORIGINS = "*"
+
 [[services]]
   protocol = "tcp"
   internal_port = 8080

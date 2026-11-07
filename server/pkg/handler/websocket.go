@@ -47,7 +47,7 @@ func sameOriginOrAllowed(ctx *fasthttp.RequestCtx, allowedOrigins []string) bool
 	if origin == "" {
 		return true
 	}
-	if slices.Contains(allowedOrigins, origin) {
+	if slices.Contains(allowedOrigins, "*") || slices.Contains(allowedOrigins, origin) {
 		return true
 	}
 	u, err := url.Parse(origin)

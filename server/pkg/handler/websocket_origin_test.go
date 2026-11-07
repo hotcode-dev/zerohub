@@ -90,6 +90,15 @@ func TestWSOriginValidation(t *testing.T) {
 			t.Fatalf("unlisted origin handshake status = %d, want 403", status)
 		}
 	})
+
+	t.Run("wildcard origin accepted", func(t *testing.T) {
+		h := newTestHandler()
+		h.zeroHubStatic = newRealZeroHub(t)
+		h.allowedOrigins = parseAllowedOrigins("*")
+		if status := wsUpgradeStatus(t, h, "hub.example.com:8080", "http://attacker.example"); status != fasthttp.StatusSwitchingProtocols {
+			t.Fatalf("wildcard origin handshake status = %d, want 101", status)
+		}
+	})
 }
 
 // TestParseAllowedOrigins pins the APP_ALLOWED_ORIGINS parse contract:
@@ -146,4 +155,11 @@ func TestSameOriginOrAllowed(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("wildcard allowed", func(t *testing.T) {
+		ctx := newWSHandshakeCtx("hub.example.com:8080", "http://any-site.example")
+		if got := sameOriginOrAllowed(ctx, []string{"*"}); !got {
+			t.Fatalf("sameOriginOrAllowed with wildcard = %v, want true", got)
+		}
+	})
 }

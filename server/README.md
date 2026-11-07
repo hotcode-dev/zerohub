@@ -26,3 +26,12 @@ go run cmd/server.go
 ```
 
 The server will start on port 8080 by default. You can change the port and other configuration options by setting the environment variables in the `.env` file.
+
+## Deployment
+
+The server is configured for deployment on [Fly.io](https://fly.io) via GitHub Actions ([`.github/workflows/server.yml`](../.github/workflows/server.yml)):
+
+- **Automated CI/CD**: Pushing changes to `main` that affect `server/**` or `proto/**` runs unit tests and executes `flyctl deploy --local-only`.
+- **Pull Requests**: Pull requests targeting `main` automatically run Go tests and `go vet`.
+- **Health Checks**: Machine health is verified via `/v1/status` before traffic shifts.
+- **Secrets**: Requires `FLY_API_TOKEN` configured in GitHub Repository Secrets. Runtime application secrets (e.g., `APP_CLIENT_SECRET`) are configured directly via `fly secrets set`.
