@@ -4,7 +4,7 @@ The official TypeScript/JavaScript client for the ZeroHub WebRTC signaling serve
 
 ## Highlights
 
-- Mesh topology out of the box with a pluggable `Topology` interface.
+- Mesh and SFU topologies out of the box with a pluggable `Topology` interface.
 - Type-safe peer and hub metadata via generics (`ZeroHubClient<PeerMetadata, HubMetadata>`).
 - Auto-offer collision avoidance by comparing numeric peer IDs.
 - Data channel + media channel helpers with configurable ICE wait window.
