@@ -7,7 +7,7 @@ ZeroHub is a WebRTC signaling server with TypeScript/JavaScript SDK. It enables 
 - **client/** - TypeScript SDK (`@zero-hub/client` on npm)
 - **server/** - Go signaling server
 - **proto/** - Protobuf definitions for client-server communication
-- **test/** - E2E tests using Playwright with Svelte components
+- **test/** - Playwright E2E and unit tests driving `ZeroHubClient` via esbuild-bundled in-page JS harnesses
 - **docs/** - Astro-based documentation site
 
 ## Architecture
@@ -98,10 +98,15 @@ npm run build    # Build static docs site
 
 ```bash
 make test-all  # Spawns 2 servers + runs E2E tests (parallel with -j3)
-cd test && npm run test  # Playwright component tests only
+cd test && npm run test  # Playwright tests only
 ```
 
-E2E tests use Svelte components that instantiate `ZeroHubClient` to verify connection flows.
+The suite is Playwright specs that drive `ZeroHubClient` through two in-page JavaScript harnesses, both bundled by esbuild during `pretest` (`npm run typecheck && npm run build:harness && node ./scripts/build-unit-harness.mjs` in `test/`):
+
+- **Full-browser harness** — `test/harness/` is bundled by `test/scripts/build-harness.mjs` into `test/dist/harness.js` and injected into the Playwright page by `test/tests/utils/harness.ts` (`prepareHarnessPage`, `getCreateHubTestId`, …). It drives a real `RTCPeerConnection` against the two live servers spawned by `make e2e-test` (:8080/:8081) and is used by the non-`unit-*` specs (connect, concurrent, data-channel, disconnect, multihosts, static-hub, zz-migrate).
+- **Unit harness** — `test/unit-harness/` is bundled by `test/scripts/build-unit-harness.mjs` into `test/dist/unit-harness.js`; it installs a mocked `RTCPeerConnection` and exposes a driver on `window`. It is injected by `test/tests/utils/unit-harness.ts` (`prepareUnitHarnessPage`) and used by all `unit-*.spec.ts` specs — no servers or real WebRTC stack needed.
+
+The E2E suite must stay serial (`workers: 1` in `test/playwright.config.ts`) and `zz-migrate.spec.ts` must stay last — Playwright orders serial specs by file path, and that spec latches the shared :8080 server into migrate mode, so any spec dialing :8080 afterwards fails. The `e2e-test` Makefile target already encodes this.
 
 ### Mocking (Go)
 
