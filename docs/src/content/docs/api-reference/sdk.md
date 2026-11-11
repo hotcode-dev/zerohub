@@ -146,6 +146,27 @@ The SDK exposes high-level methods for WebRTC signaling:
 
 The SDK will by default wait for ICE candidates for `waitIceCandidatesTimeout` ms before forcing the offer/answer to be sent.
 
+## Internal / advanced
+
+The following methods are `public` on `ZeroHubClient` **only so that tests and
+topology implementations can reach them**. They are implementation details,
+not part of the stable public API, and may change or be removed without a
+major version bump.
+
+| Method | Purpose |
+|---|---|
+| `reconnect(currentURL: URL, newHost?: string)` | Re-establishes the signaling WebSocket after an abnormal close. Called internally from the socket's `onclose` handler. |
+| `connectToZeroHub(url: URL): Promise<void>` | Opens (or re-opens) a WebSocket to the given URL. Called internally by `openHubConnection` and the reconnection logic. |
+| `handleZeroHubMessage(serverMessage: ServerMessage)` | Dispatches a decoded `ServerMessage` to the appropriate handler (hub info, offer, answer, ICE candidate, peer join/disconnect). Called internally from the socket's `onmessage` handler. |
+| `updatePeerStatus(peerId: string, status: PeerStatus)` | Updates a peer's status in the internal peer map and fires `onPeerStatusChange`. Called internally by message dispatch and the ICE-ready callbacks. |
+| `sendOfferToWebsocket(peerId: string, offerSession: RTCSessionDescription)` | Sends an offer SDP to the server for the target peer and sets the peer status to `Offering`. Called internally by `armSendOnIceReady`. |
+| `sendAnswerToWebsocket(peerId: string, answerSession: RTCSessionDescription)` | Sends an answer SDP to the server for the target peer and sets the peer status to `Answering`. Called internally by `armSendOnIceReady`. |
+| `sendIceCandidateToWebsocket(peerId: string, candidate: RTCIceCandidate)` | Trickles an ICE candidate to the server for the target peer. Called internally by `armSendOnIceReady`. |
+
+Do not call these from application code; use the high-level entry points
+(`createRandomHub`, `joinRandomHub`, `joinStaticHub`, `sendOffer`, `sendAnswer`,
+`acceptAnswer`) instead.
+
 ## Events
 
 - `onHubInfo(hubInfo)` - fired when hub metadata or peer list updates
