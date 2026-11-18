@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -10,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytedance/sonic"
 	websocket "github.com/fasthttp/websocket"
 	"github.com/hotcode-dev/zerohub/pkg/peer"
 	pb "github.com/hotcode-dev/zerohub/pkg/proto/zerohub/v1"
@@ -176,12 +176,16 @@ func TestGacheStorageHubAddPeer(t *testing.T) {
 	}
 }
 
-// goos: darwin
+// Measures the stdlib encoding/json cost of marshaling a hub (used by the
+// handler Response helper after dropping the third-party JSON library).
+// For reference, the previous third-party numbers were ~296-300 ns/op on
+// an Apple M3.
+//
+// goos: linux
 // goarch: arm64
-// cpu: Apple M3
-// BenchmarkHubMarshal/hub_marshal_peer_size_10-8         	 3912436	       295.5 ns/op	     180 B/op	       3 allocs/op
-// BenchmarkHubMarshal/hub_marshal_peer_size_100-8        	 4026879	       297.2 ns/op	     181 B/op	       3 allocs/op
-// BenchmarkHubMarshal/hub_marshal_peer_size_1000-8       	 3995517	       300.3 ns/op	     183 B/op	       3 allocs/op
+// BenchmarkHubMarshal/hub_marshal_peer_size_10-4        	960774	      1165 ns/op	     160 B/op	       2 allocs/op
+// BenchmarkHubMarshal/hub_marshal_peer_size_100-4       	1000000	      1166 ns/op	     160 B/op	       2 allocs/op
+// BenchmarkHubMarshal/hub_marshal_peer_size_1000-4      	1000000	      1240 ns/op	     160 B/op	       2 allocs/op
 func BenchmarkHubMarshal(b *testing.B) {
 	now := time.Now()
 
@@ -200,7 +204,7 @@ func BenchmarkHubMarshal(b *testing.B) {
 
 		b.Run(fmt.Sprintf("hub_marshal_peer_size_%d", v), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				_, _ = sonic.Marshal(h)
+				_, _ = json.Marshal(h)
 			}
 		})
 	}
