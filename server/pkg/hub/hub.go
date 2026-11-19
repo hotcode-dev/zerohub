@@ -81,14 +81,14 @@ type hub struct {
 }
 
 // NewHub creates a new hub.
-func NewHub(hubId string, metadata string, peerStorage storage.Storage[peer.Peer], isPermanent bool) (Hub, error) {
+func NewHub(hubId string, metadata string, peerStorage storage.Storage[peer.Peer], isPermanent bool) Hub {
 	return &hub{
 		Id:          hubId,
 		CreatedAt:   time.Now(),
 		PeerStorage: peerStorage,
 		Metadata:    metadata,
 		IsPermanent: isPermanent,
-	}, nil
+	}
 }
 
 // AddPeer adds a peer to the hub.

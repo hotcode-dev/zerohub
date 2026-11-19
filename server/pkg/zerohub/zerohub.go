@@ -144,10 +144,7 @@ func (z *zeroHub) buildHub(hubId string, metadata string, isPermanent bool) (hub
 		return nil, fmt.Errorf("unknown peer storage: %s", z.cfg.App.PeerStorage)
 	}
 
-	newHub, err := hub.NewHub(hubId, metadata, peerStorage, isPermanent)
-	if err != nil {
-		return nil, fmt.Errorf("new hub error: %w", err)
-	}
+	newHub := hub.NewHub(hubId, metadata, peerStorage, isPermanent)
 
 	return newHub, nil
 }

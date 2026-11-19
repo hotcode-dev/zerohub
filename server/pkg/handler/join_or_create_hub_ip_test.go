@@ -25,10 +25,7 @@ func ipHubKeyFor(clientIP string) string {
 func captureHubKey(t *testing.T, got *string) zerohub.ZeroHub {
 	t.Helper()
 	ctrl := gomock.NewController(t)
-	sharedHub, err := hub.NewHub("shared", "", nil, false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	sharedHub := hub.NewHub("shared", "", nil, false)
 	zerohubMock := zerohub.NewMockZeroHub(ctrl)
 	zerohubMock.EXPECT().
 		GetOrCreateHub(gomock.Any(), gomock.Any(), false).

@@ -108,10 +108,7 @@ func TestCreateHubRandomStillCreatesAfterHubIdValidation(t *testing.T) {
 	// benign, expected error, and RemoveHubById cleans up on that path.
 	ctrl := gomock.NewController(t)
 	zerohubMock := zerohub.NewMockZeroHub(ctrl)
-	sharedHub, err := hub.NewHub("random-hub", `{"name":"test"}`, nil, false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	sharedHub := hub.NewHub("random-hub", `{"name":"test"}`, nil, false)
 	zerohubMock.EXPECT().
 		CreateHubIfAbsent(gomock.Any(), gomock.Any(), false).
 		Return(sharedHub, nil).
