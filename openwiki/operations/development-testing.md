@@ -52,8 +52,6 @@ The root `Makefile` is the primary orchestration point. Key targets:
 | `server-serve` | Run the server (`APP_CLIENT_SECRET=client_secret go run ./cmd/server.go`) |
 | `server-serve-2` | Run a second server on `APP_PORT=8081` |
 | `server-test` | `go test -v ./...` in `server/` |
-| `server-bench` | `go test -bench ./pkg/*** -benchmem` |
-| `client-build` | `npm run build` in `client/` (tsc + rollup → dist) |
 | `e2e-test` | Kills ports, spawns two servers on 8080/8081, waits, runs `test/`, kills servers |
 | `test-all` | `server-test` + `e2e-test` in parallel (`-j3`) |
 | `proto-gen` | Runs `api-linter`, then regenerates TS + Go protobuf for both |
