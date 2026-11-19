@@ -317,7 +317,7 @@ function buildHubClient(options: BuildHubClientOptions) {
   registerInstance(componentId, zeroHub, container);
 }
 
-function createHub(options: CreateHubOptions & { hubId: string }) {
+function createHub(options: CreateHubOptions) {
   const { componentId, zeroHubHosts, testName, hubId } = options;
   buildHubClient({
     componentId,
