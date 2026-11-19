@@ -28,13 +28,6 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  * test lands on the side being asserted.
  */
 
-type Send = {
-  kind: "offer" | "answer" | "iceCandidate";
-  peerId: string;
-  sdp?: string;
-  candidate?: string;
-};
-
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
 
 /** Thin serializable wrappers over the in-page driver. */

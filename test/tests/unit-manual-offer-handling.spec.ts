@@ -25,8 +25,6 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  *     automatically and `onOffer` is not invoked.
  */
 
-type Send = { kind: "offer" | "answer"; peerId: string; sdp: string };
-
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
 
 function driver(page: Page) {

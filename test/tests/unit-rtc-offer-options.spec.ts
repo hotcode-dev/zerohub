@@ -23,11 +23,6 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  * was actually used to create the offer/answer.
  */
 
-type InvokeResult = {
-  configOptions: string;
-  sentOptions: string;
-};
-
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
 
 function driver(page: Page) {

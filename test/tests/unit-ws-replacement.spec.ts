@@ -18,18 +18,6 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  * and driven through `window.ZeroHubUnitHarness`.
  */
 
-/** Serializable snapshot of a mock WebSocket. */
-type SocketSnapshot = {
-  instanceId: number;
-  url: string;
-  closed: boolean;
-  closeCodes: number[];
-  hasMessageHandler: boolean;
-  hasErrorHandler: boolean;
-  hasCloseHandler: boolean;
-  hasOpenHandler: boolean;
-};
-
 /** The in-page driver surface (window.ZeroHubUnitHarness). */
 
 test("second connection without disconnect() closes and clears the previous socket", async ({
