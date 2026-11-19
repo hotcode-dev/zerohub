@@ -1399,19 +1399,6 @@ const ZeroHubUnitHarness = {
   },
 
   /**
-   * The client's `config.maxReconnectAttempts` (the same-host retry budget
-   * for abnormal-close reconnection). Specs override it via `setConfig` to
-   * exhaust the budget fast instead of waiting out the default 10 retries.
-   */
-  getMaxReconnectAttempts(id: number): number {
-    const entry = clients.get(id);
-    if (!entry) {
-      throw new Error(`no client ${id}`);
-    }
-    return entry.client.config.maxReconnectAttempts;
-  },
-
-  /**
    * Overwrites individual `config` fields on a live client (type cast; the
    * config is a plain object the client reads at reconnect time), so specs
    * can tune the same-host retry budget / backoff without recreating the
