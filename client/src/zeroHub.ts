@@ -1528,30 +1528,47 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
   }
 
   /**
-   * Send an offer to the specified peer using WebRTC.
+   * Shared signaling-exchange plumbing for `sendOffer` / `sendAnswer`.
    *
-   * @param peerId - The ID of the peer to send the offer to
-   * @param rtcOfferOptions - The options for the WebRTC offer (default: \{ offerToReceiveAudio: false, offerToReceiveVideo: false \})
-   * @param rtcConfig - The configuration for the WebRTC connection
+   * Owns everything the two public methods have in common: the `this.ws`
+   * connected guard, merging `rtcOfferOptions` over the config defaults, the
+   * peer lookup (with a `send <op> error: ... not found` log and early
+   * return), applying an optional `rtcConfig`, the error normalisation /
+   * `reportPeerError` / re-throw wrapper, and the `armSendOnIceReady` wiring
+   * with its `localDescription` null-guard. The op-specific WebRTC steps and
+   * the WebSocket send are injected via `exchange` and `send`.
+   *
+   * @param op - "offer" or "answer"; used only to build the log strings
+   * @param peerId - The peer to negotiate with
+   * @param rtcOfferOptions - Per-call options, merged over the config defaults
+   * @param rtcConfig - Optional RTC configuration to apply to the peer
+   * @param exchange - The op-specific WebRTC steps (create offer/answer, etc.)
+   * @param send - Invoked once the local description is ready to ship the SDP
    */
-  public async sendOffer(
+  private async negotiateWithPeer(
+    op: "offer" | "answer",
     peerId: string,
-    rtcOfferOptions: RTCOfferOptions = {},
-    rtcConfig?: RTCConfiguration
+    rtcOfferOptions: RTCOfferOptions,
+    rtcConfig: RTCConfiguration | undefined,
+    exchange: (
+      rtcConn: RTCPeerConnection,
+      mergedOptions: RTCOfferOptions
+    ) => Promise<void>,
+    send: (localDescription: RTCSessionDescription) => void
   ) {
     if (!this.ws) {
       throw Error(
-        "send offer error: ZeroHub not connected, please connect to ZeroHub by `createRandomHub` or `joinStaticHub`"
+        `send ${op} error: ZeroHub not connected, please connect to ZeroHub by \`createRandomHub\` or \`joinStaticHub\``
       );
     }
 
-    rtcOfferOptions = {
+    const mergedOptions = {
       ...this.config.rtcOfferOptions,
       ...rtcOfferOptions,
     };
     const peer = this.peers[peerId];
     if (!peer) {
-      this.logger.error(`send offer error: peer id ${peerId} not found`);
+      this.logger.error(`send ${op} error: peer id ${peerId} not found`);
       return;
     }
 
@@ -1561,11 +1578,10 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     }
 
     try {
-      const offer = await peer.rtcConn.createOffer(rtcOfferOptions);
-      await peer.rtcConn.setLocalDescription(offer);
+      await exchange(peer.rtcConn, mergedOptions);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
-      this.logger.error("Failed to create offer for peer", peerId, error);
+      this.logger.error(`Failed to create ${op} for peer`, peerId, error);
       this.reportPeerError(peerId, error);
       // Re-throw: callers (topology, user code) still observe the failed
       // exchange via the rejected promise; onPeerError is additive.
@@ -1577,8 +1593,33 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       if (!localDescription) {
         return;
       }
-      this.sendOfferToWebsocket(peerId, localDescription);
+      send(localDescription);
     });
+  }
+
+  /**
+   * Send an offer to the specified peer using WebRTC.
+   *
+   * @param peerId - The ID of the peer to send the offer to
+   * @param rtcOfferOptions - The options for the WebRTC offer (default: \{ offerToReceiveAudio: false, offerToReceiveVideo: false \})
+   * @param rtcConfig - The configuration for the WebRTC connection
+   */
+  public async sendOffer(
+    peerId: string,
+    rtcOfferOptions: RTCOfferOptions = {},
+    rtcConfig?: RTCConfiguration
+  ) {
+    await this.negotiateWithPeer(
+      "offer",
+      peerId,
+      rtcOfferOptions,
+      rtcConfig,
+      async (rtcConn, mergedOptions) => {
+        const offer = await rtcConn.createOffer(mergedOptions);
+        await rtcConn.setLocalDescription(offer);
+      },
+      (localDescription) => this.sendOfferToWebsocket(peerId, localDescription)
+    );
   }
 
   /**
@@ -1595,52 +1636,21 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     rtcOfferOptions: RTCOfferOptions = {},
     rtcConfig?: RTCConfiguration
   ) {
-    if (!this.ws) {
-      throw Error(
-        "send answer error: ZeroHub not connected, please connect to ZeroHub by `createRandomHub` or `joinStaticHub`"
-      );
-    }
-
-    rtcOfferOptions = {
-      ...this.config.rtcOfferOptions,
-      ...rtcOfferOptions,
-    };
-
-    const peer = this.peers[peerId];
-    if (!peer) {
-      this.logger.error(`send answer error: peer id ${peerId} not found`);
-      return;
-    }
-
-    // replace RTC config
-    if (rtcConfig) {
-      peer.rtcConn.setConfiguration(rtcConfig);
-    }
-
-    try {
-      await peer.rtcConn.setRemoteDescription({
-        type: "offer",
-        sdp: offerSdp,
-      });
-
-      const offer = await peer.rtcConn.createAnswer(rtcOfferOptions);
-      await peer.rtcConn.setLocalDescription(offer);
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      this.logger.error("Failed to create answer for peer", peerId, error);
-      this.reportPeerError(peerId, error);
-      // Re-throw: callers (topology, user code) still observe the failed
-      // exchange via the rejected promise; onPeerError is additive.
-      throw error;
-    }
-
-    this.armSendOnIceReady(peerId, peer.rtcConn, () => {
-      const localDescription = peer.rtcConn.localDescription;
-      if (!localDescription) {
-        return;
-      }
-      this.sendAnswerToWebsocket(peerId, localDescription);
-    });
+    await this.negotiateWithPeer(
+      "answer",
+      peerId,
+      rtcOfferOptions,
+      rtcConfig,
+      async (rtcConn, mergedOptions) => {
+        await rtcConn.setRemoteDescription({
+          type: "offer",
+          sdp: offerSdp,
+        });
+        const answer = await rtcConn.createAnswer(mergedOptions);
+        await rtcConn.setLocalDescription(answer);
+      },
+      (localDescription) => this.sendAnswerToWebsocket(peerId, localDescription)
+    );
   }
 
   /**

@@ -1893,3 +1893,144 @@ describe("onPeerError — per-peer WebRTC signaling failures", () => {
     expect(peerErrorSpy).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("negotiateWithPeer — shared sendOffer/sendAnswer plumbing", () => {
+  let client: ZeroHubClient;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    client = makeClient();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("sendOffer: rejects with the not-connected error when there is no signaling socket", async () => {
+    // `ws` is unset on a fresh client (no createRandomHub/joinStaticHub
+    // call yet), so the shared guard fires before any peer/RTC work.
+    expect(client.ws).toBeUndefined();
+
+    await expect(client.sendOffer("1")).rejects.toThrow(
+      "send offer error: ZeroHub not connected, please connect to ZeroHub by `createRandomHub` or `joinStaticHub`"
+    );
+  });
+
+  it("sendAnswer: rejects with the not-connected error when there is no signaling socket", async () => {
+    expect(client.ws).toBeUndefined();
+
+    await expect(client.sendAnswer("1", "v=0-offer")).rejects.toThrow(
+      "send answer error: ZeroHub not connected, please connect to ZeroHub by `createRandomHub` or `joinStaticHub`"
+    );
+  });
+
+  it("sendOffer: logs the peer-not-found error and returns early for an unknown peer", async () => {
+    const ws = new FakeWebSocket();
+    ws.readyState = WebSocket.OPEN;
+    client.ws = ws as unknown as WebSocket;
+    const peerErrorSpy = vi.fn();
+    client.onPeerError = peerErrorSpy;
+
+    await expect(client.sendOffer("missing")).resolves.toBeUndefined();
+
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalledWith(
+      "send offer error: peer id missing not found"
+    );
+    // Early return: no error reported, nothing sent, no SDP queued.
+    expect(peerErrorSpy).not.toHaveBeenCalled();
+    expect(ws.sent).toHaveLength(0);
+  });
+
+  it("sendAnswer: logs the peer-not-found error and returns early for an unknown peer", async () => {
+    const ws = new FakeWebSocket();
+    ws.readyState = WebSocket.OPEN;
+    client.ws = ws as unknown as WebSocket;
+    const peerErrorSpy = vi.fn();
+    client.onPeerError = peerErrorSpy;
+
+    await expect(client.sendAnswer("missing", "v=0-offer")).resolves.toBe(
+      undefined
+    );
+
+    expect((client.logger as unknown as FakeLogger).error).toHaveBeenCalledWith(
+      "send answer error: peer id missing not found"
+    );
+    expect(peerErrorSpy).not.toHaveBeenCalled();
+    expect(ws.sent).toHaveLength(0);
+  });
+
+  it("sendOffer: merges per-call options over the config defaults and applies rtcConfig", async () => {
+    const ws = new FakeWebSocket();
+    ws.readyState = WebSocket.OPEN;
+    client.ws = ws as unknown as WebSocket;
+    client.config = {
+      ...client.config,
+      rtcOfferOptions: { offerToReceiveAudio: true },
+    };
+    const { peer, rtc } = makePeer("20");
+    client.peers = { "20": peer };
+    const createOfferSpy = vi.fn(() =>
+      Promise.resolve({ type: "offer", sdp: "v=0" } as RTCSessionDescription)
+    );
+    rtc.createOffer = createOfferSpy;
+    const setConfigurationSpy = vi.fn();
+    rtc.setConfiguration = setConfigurationSpy;
+    const rtcConfig: RTCConfiguration = { iceServers: [] };
+
+    await client.sendOffer("20", { offerToReceiveVideo: true }, rtcConfig);
+
+    // Config default is merged in; per-call option wins on conflict.
+    expect(createOfferSpy).toHaveBeenCalledWith({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true,
+    });
+    expect(setConfigurationSpy).toHaveBeenCalledTimes(1);
+    expect(setConfigurationSpy).toHaveBeenCalledWith(rtcConfig);
+
+    // Flush the ICE-timeout fallback so the armed timer settles before the
+    // fake timers are restored (the fake never trickles a candidate, and the
+    // fake's no-op setLocalDescription leaves localDescription null, so the
+    // guarded send is a no-op either way).
+    vi.advanceTimersByTime(client.config.waitIceCandidatesTimeout + 10);
+  });
+
+  it("sendAnswer: applies the remote offer, then creates the answer with merged options", async () => {
+    const ws = new FakeWebSocket();
+    ws.readyState = WebSocket.OPEN;
+    client.ws = ws as unknown as WebSocket;
+    client.config = {
+      ...client.config,
+      rtcOfferOptions: { offerToReceiveAudio: true },
+    };
+    const { peer, rtc } = makePeer("21");
+    client.peers = { "21": peer };
+    const setRemoteDescriptionSpy = vi.fn(() => Promise.resolve());
+    rtc.setRemoteDescription = setRemoteDescriptionSpy;
+    const createAnswerSpy = vi.fn(() =>
+      Promise.resolve({
+        type: "answer",
+        sdp: "v=0-answer",
+      } as RTCSessionDescription)
+    );
+    rtc.createAnswer = createAnswerSpy;
+
+    await client.sendAnswer("21", "v=0-offer-sdp", {
+      offerToReceiveVideo: true,
+    });
+
+    expect(setRemoteDescriptionSpy).toHaveBeenCalledWith({
+      type: "offer",
+      sdp: "v=0-offer-sdp",
+    });
+    expect(createAnswerSpy).toHaveBeenCalledWith({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true,
+    });
+    // The remote offer was applied before the answer was created.
+    expect(setRemoteDescriptionSpy.mock.invocationCallOrder[0]).toBeLessThan(
+      createAnswerSpy.mock.invocationCallOrder[0]
+    );
+
+    vi.advanceTimersByTime(client.config.waitIceCandidatesTimeout + 10);
+  });
+});
