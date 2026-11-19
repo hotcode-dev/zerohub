@@ -7,7 +7,7 @@ import (
 )
 
 // InitLogger initial global zerolog logger
-func InitLogger(cfg *config.Config) error {
+func InitLogger(cfg *config.Config) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 
@@ -15,6 +15,4 @@ func InitLogger(cfg *config.Config) error {
 	if cfg.App.Environment == config.DevelopEnvironment {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
-
-	return nil
 }
