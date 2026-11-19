@@ -25,10 +25,7 @@ func TestCreateStaticHubConcurrent(t *testing.T) {
 	zerohubMock := zerohub.NewMockZeroHub(ctrl)
 
 	// One real hub instance shared by every goroutine.
-	sharedHub, err := hub.NewHub(hubId, `{"name":"test"}`, nil, true)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	sharedHub := hub.NewHub(hubId, `{"name":"test"}`, nil, true)
 
 	// Static hubs must be created with isPermanent=true.
 	zerohubMock.EXPECT().
@@ -112,10 +109,7 @@ func TestCreateStaticHubAlreadyExists(t *testing.T) {
 func TestCreateStaticHubCollidesWithOtherMode(t *testing.T) {
 	const hubId = "hot-hub"
 
-	colliding, err := hub.NewHub(hubId, `{"name":"test"}`, nil, false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	colliding := hub.NewHub(hubId, `{"name":"test"}`, nil, false)
 
 	ctrl := gomock.NewController(t)
 	staticMock := zerohub.NewMockZeroHub(ctrl)

@@ -53,10 +53,7 @@ func TestJoinOrCreateHubByIDAcceptsValidHubMetadata(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	zerohubMock := zerohub.NewMockZeroHub(ctrl)
-	sharedHub, err := hub.NewHub("valid-hub", valid, nil, false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	sharedHub := hub.NewHub("valid-hub", valid, nil, false)
 	// The metadata passed to hub resolution must be the verbatim raw string.
 	// created=true models this call creating the hub; the failed upgrade then
 	// triggers the RemoveHubById cleanup path.
@@ -124,10 +121,7 @@ func TestCreateStaticHubRejectsMalformedHubMetadata(t *testing.T) {
 // handshake, so malformed peer metadata never enters hub state to be
 // re-broadcast in PeerJoinedMessage.
 func TestUpgradeRejectsMalformedPeerMetadata(t *testing.T) {
-	hubInstance, err := hub.NewHub("upg-hub", `{"name":"test"}`, nil, false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	hubInstance := hub.NewHub("upg-hub", `{"name":"test"}`, nil, false)
 	ctrl := gomock.NewController(t)
 	zerohubMock := zerohub.NewMockZeroHub(ctrl)
 	// No expectations: the rejection must happen before any hub mutation.

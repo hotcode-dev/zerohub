@@ -397,10 +397,7 @@ func TestRemovePeerIfLastIdempotent(t *testing.T) {
 	t.Parallel()
 
 	hubStore := storage.NewMemoryStorage[Hub]()
-	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	h := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
 	hubStore.Add("id", h)
 
 	leaver := &fakePeer{id: "2"}
@@ -437,10 +434,7 @@ func TestRemovePeerIfLastLastPeerTwice(t *testing.T) {
 	t.Parallel()
 
 	hubStore := storage.NewMemoryStorage[Hub]()
-	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	h := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
 	hubStore.Add("id", h)
 
 	leaver := &fakePeer{id: "2"}
@@ -471,10 +465,7 @@ func TestRemovePeerIfLastDeletesHubWhenLastPeerLeaves(t *testing.T) {
 	t.Parallel()
 
 	hubStore := storage.NewMemoryStorage[Hub]()
-	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	h := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
 	hubStore.Add("id", h)
 
 	leaver := &fakePeer{id: "2"}
@@ -497,10 +488,7 @@ func TestRemovePeerIfLastKeepsHubWhenPeersRemain(t *testing.T) {
 	t.Parallel()
 
 	hubStore := storage.NewMemoryStorage[Hub]()
-	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	h := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
 	hubStore.Add("id", h)
 
 	leaver := &fakePeer{id: "2"}
@@ -526,10 +514,7 @@ func TestRemovePeerIfLastNeverDeletesPermanentHub(t *testing.T) {
 	t.Parallel()
 
 	hubStore := storage.NewMemoryStorage[Hub]()
-	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), true)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	h := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), true)
 	hubStore.Add("id", h)
 
 	leaver := &fakePeer{id: "2"}
@@ -549,10 +534,7 @@ func TestRemovePeerIfLastUnknownPeerIsNoOp(t *testing.T) {
 	t.Parallel()
 
 	hubStore := storage.NewMemoryStorage[Hub]()
-	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	h := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
 	hubStore.Add("id", h)
 
 	other := &fakePeer{id: "3"}
@@ -582,10 +564,7 @@ func TestAddPeerRejectedAfterRemovePeerIfLastLast(t *testing.T) {
 	t.Parallel()
 
 	hubStore := storage.NewMemoryStorage[Hub]()
-	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	h := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
 	hubStore.Add("id", h)
 
 	leaver := &fakePeer{id: "2"}
@@ -635,10 +614,7 @@ func TestAddPeerWhileRemovePeerIfLastRunning(t *testing.T) {
 	for i := 0; i < iterations; i++ {
 		t.Run(fmt.Sprintf("iter_%d", i), func(t *testing.T) {
 			hubStore := storage.NewMemoryStorage[Hub]()
-			h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
-			if err != nil {
-				t.Fatalf("NewHub: %v", err)
-			}
+			h := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
 			hubStore.Add("id", h)
 
 			leaver := &fakePeer{id: "1"}
@@ -687,10 +663,7 @@ func TestRemovePeerIfLastDoesNotDeadlockWhenBroadcastStalls(t *testing.T) {
 	t.Parallel()
 
 	hubStore := storage.NewMemoryStorage[Hub]()
-	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	h := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
 	hubStore.Add("id", h)
 
 	// The leaver's removal must broadcast the disconnect signal to the
@@ -1177,10 +1150,7 @@ func TestAddPeerStalledBroadcastDoesNotBlockConcurrentRemovePeerIfLast(t *testin
 	t.Parallel()
 
 	hubStore := storage.NewMemoryStorage[Hub]()
-	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	h := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
 	hubStore.Add("id", h)
 
 	// slowPeer parks on its first send; leaver is the peer
@@ -1250,10 +1220,7 @@ func TestRemovePeerIfLastStalledBroadcastDoesNotBlockConcurrentAddPeer(t *testin
 	t.Parallel()
 
 	hubStore := storage.NewMemoryStorage[Hub]()
-	h, err := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	h := NewHub("id", "metadata", storage.NewMemoryStorage[peer.Peer](), false)
 	hubStore.Add("id", h)
 
 	slowPeer := &fakePeer{id: "5", stallFirst: make(chan struct{}), parkedSig: make(chan struct{})}

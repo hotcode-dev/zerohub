@@ -48,10 +48,7 @@ func assertOversizedParamRejected(t *testing.T, ctx *fasthttp.RequestCtx, param 
 // storage empty.
 func TestUpgradeRejectsOversizedPeerMetadata(t *testing.T) {
 	peerStore := storage.NewMemoryStorage[peer.Peer]()
-	hubInstance, err := hub.NewHub("size-hub", `{}`, peerStore, false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	hubInstance := hub.NewHub("size-hub", `{}`, peerStore, false)
 	ctrl := gomock.NewController(t)
 	zerohubMock := zerohub.NewMockZeroHub(ctrl)
 	// No expectations: any ZeroHub call would mean the rejection did not
@@ -214,10 +211,7 @@ func TestBoundaryValuesAccepted(t *testing.T) {
 	t.Run("hubMetadata at cap reaches CreateHubIfAbsent", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		zerohubMock := zerohub.NewMockZeroHub(ctrl)
-		sharedHub, err := hub.NewHub("cap-hub", cap, nil, false)
-		if err != nil {
-			t.Fatalf("NewHub: %v", err)
-		}
+		sharedHub := hub.NewHub("cap-hub", cap, nil, false)
 		zerohubMock.EXPECT().
 			CreateHubIfAbsent("cap-hub", cap, false).
 			Return(sharedHub, nil).
@@ -248,10 +242,7 @@ func TestBoundaryValuesAccepted(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		zerohubMock := zerohub.NewMockZeroHub(ctrl)
 		capID := strings.Repeat("a", config.MaxMetadataSize)
-		sharedHub, err := hub.NewHub(capID, "", nil, false)
-		if err != nil {
-			t.Fatalf("NewHub: %v", err)
-		}
+		sharedHub := hub.NewHub(capID, "", nil, false)
 		zerohubMock.EXPECT().
 			CreateHubIfAbsent(capID, "", false).
 			Return(sharedHub, nil).
@@ -278,10 +269,7 @@ func TestBoundaryValuesAccepted(t *testing.T) {
 	// the plain GET — expected — with responseWritten=false (nothing was
 	// rejected up front).
 	t.Run("peerMetadata at cap reaches handshake", func(t *testing.T) {
-		hubInstance, err := hub.NewHub("cap-hub", `{}`, nil, false)
-		if err != nil {
-			t.Fatalf("NewHub: %v", err)
-		}
+		hubInstance := hub.NewHub("cap-hub", `{}`, nil, false)
 		ctrl := gomock.NewController(t)
 		zerohubMock := zerohub.NewMockZeroHub(ctrl)
 		h := newTestHandler()

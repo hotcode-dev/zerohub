@@ -29,10 +29,7 @@ func TestJoinOrCreateHubConcurrent(t *testing.T) {
 	zerohubMock := zerohub.NewMockZeroHub(ctrl)
 
 	// One real hub instance shared by every goroutine.
-	sharedHub, err := hub.NewHub(hubId, `{"name":"test"}`, nil, false)
-	if err != nil {
-		t.Fatalf("NewHub: %v", err)
-	}
+	sharedHub := hub.NewHub(hubId, `{"name":"test"}`, nil, false)
 	// GetOrCreateHub is the ONLY hub-resolution call the handler may make.
 	// created=true: this call created the hub, so the cleanup-on-upgrade
 	// failure path may remove it (benign here; a plain GET fails the
