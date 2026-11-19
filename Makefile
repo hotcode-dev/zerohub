@@ -24,8 +24,8 @@ server-serve-2:
 server-mock:
 	# Reflex mode read ZeroHub mock
 	cd server && mockgen -source=./pkg/zerohub/zerohub.go -destination ./pkg/zerohub/mock.go -package zerohub -self_package github.com/hotcode-dev/zerohub/pkg/zerohub ZeroHub
-	cd server && mockgen -source=./pkg/hub/hub.go -destination ./pkg/hub/mock.go -package hub -self_package github.com/hotcode-dev/zerohub/pkg/hub /pkg/hub Hub
-	cd server && mockgen -source=./pkg/peer/peer.go -destination ./pkg/peer/mock.go -package peer -self_package github.com/hotcode-dev/zerohub/pkg/peer /pkg/peer Peer
+	cd server && mockgen -source=./pkg/hub/hub.go -destination ./pkg/hub/mock.go -package hub -self_package github.com/hotcode-dev/zerohub/pkg/hub Hub
+	cd server && mockgen -source=./pkg/peer/peer.go -destination ./pkg/peer/mock.go -package peer -self_package github.com/hotcode-dev/zerohub/pkg/peer Peer
 
 server-test:
 	cd server && go test -v ./...
