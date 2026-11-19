@@ -52,19 +52,8 @@ func (h *handler) CreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hu
 	}
 
 	if err, responseWritten := h.Upgrade(ctx, zh, newHub); err != nil || responseWritten {
-		// remove the hub if the upgrade failed — including the up-front
-		// peerMetadata rejection, which returns a pre-written 400 instead of
-		// an error
-		zh.RemoveHubById(newHub.GetId())
-		if err != nil {
-			log.Error().Err(fmt.Errorf("websocket upgrade error: %w", err)).Send()
-		}
-		// The up-front peerMetadata rejection already wrote a 400; do not
-		// overwrite it with a 500.
-		if responseWritten {
-			return nil
-		}
-		return h.Response(ctx, fasthttp.StatusInternalServerError, map[string]string{"error": "websocket upgrade error"})
+		return h.finishUpgradeFailure(ctx, err, responseWritten,
+			func() { zh.RemoveHubById(newHub.GetId()) })
 	}
 
 	return nil

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net"
+	"strings"
 	"testing"
 
 	"github.com/hotcode-dev/zerohub/pkg/config"
@@ -172,5 +173,38 @@ func TestJoinHubPreserves400OnMalformedPeerMetadata(t *testing.T) {
 	}
 	if gotHub := zh.GetHubById(hubId); gotHub == nil {
 		t.Fatalf("hub %q removed after rejected upgrade on a pre-existing hub, want kept", hubId)
+	}
+}
+
+// TestFinishUpgradeFailureWrites500Fallback pins the shared epilogue's 500
+// fallback (previously copy-pasted into all three handlers): when the
+// websocket handshake fails with a real error and no up-front rejection has
+// written a response, finishUpgradeFailure must write a 500 with the shared
+// "websocket upgrade error" body. Exercised through JoinHub so the
+// no-rollback policy (pre-existing hub survives) is asserted at the same
+// time.
+func TestFinishUpgradeFailureWrites500Fallback(t *testing.T) {
+	const hubId = "fallback-500-hub"
+	zh := newRealZeroHub(t)
+
+	seed, created, err := zh.GetOrCreateHub(hubId, "", false)
+	if err != nil || !created || seed == nil {
+		t.Fatalf("seed GetOrCreateHub = (%v, %v, %v), want (hub, true, nil)", seed, created, err)
+	}
+
+	h := newTestHandler()
+	// Plain GET: the handshake fails with a real error and no up-front
+	// rejection wrote a response, so the shared fallback must write the 500.
+	ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join?id=" + hubId)
+	_ = h.JoinHub(ctx, zh)
+
+	if got := ctx.Response.StatusCode(); got != fasthttp.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d", got, fasthttp.StatusInternalServerError)
+	}
+	if body := ctx.Response.String(); !strings.Contains(body, "websocket upgrade error") {
+		t.Fatalf("body = %q, want it to contain %q", body, "websocket upgrade error")
+	}
+	if gotHub := zh.GetHubById(hubId); gotHub == nil {
+		t.Fatalf("hub %q removed on a no-rollback path, want kept", hubId)
 	}
 }
