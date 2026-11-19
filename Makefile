@@ -12,10 +12,12 @@ proto-gen:
 	protoc --plugin=./client/node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./client/src --go_out=./server/pkg --go_opt=paths=source_relative ./proto/zerohub/v1/*.proto
 
 server-serve:
-	# APP_ALLOWED_ORIGINS=null: the e2e harness loads its Svelte test pages from
-	# opaque data: URLs, so the browser attaches `Origin: null` to signaling
-	# WebSockets. null is allow-listed (not blanket-allowed) to keep origin
-	# validation on in the harness — same-origin requests still pass by default.
+	# APP_ALLOWED_ORIGINS=null: the e2e harness is a plain-TypeScript module
+	# bundled with esbuild (test/harness/index.ts -> test/dist/harness.js) and
+	# injected into a bare data: URL page, so the browser attaches `Origin: null`
+	# to signaling WebSockets. null is allow-listed (not blanket-allowed) to
+	# keep origin validation on in the harness — same-origin requests still pass
+	# by default.
 	cd server && APP_CLIENT_SECRET=client_secret APP_ALLOWED_ORIGINS=null go run ./cmd/server.go
 
 server-serve-2:
