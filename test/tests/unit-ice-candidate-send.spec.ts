@@ -1,5 +1,5 @@
-import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { test, expect } from "@playwright/test";
+import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Unit tests for the shared `armSendOnIceReady` helper extracted out of
@@ -38,59 +38,6 @@ type Send = {
   candidate?: string;
 };
 
-/** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-function driver(page: Page) {
-  return {
-    createClient: () => page.evaluate(() => ZeroHubUnitHarness.createClient()),
-    sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
-      page.evaluate(
-        ([id, myPeerId, peerIds]) =>
-          ZeroHubUnitHarness.sendHubInfo(id, myPeerId, peerIds),
-        [id, myPeerId, peerIds] as const,
-      ),
-    stubSocket: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.stubSocket(id), id),
-    setWaitIceTimeout: (id: number, ms: number) =>
-      page.evaluate(
-        ([id, ms]) => ZeroHubUnitHarness.setWaitIceTimeout(id, ms),
-        [id, ms] as const,
-      ),
-    invokeSendOffer: (
-      id: number,
-      peerId: string,
-      options?: { offerToReceiveAudio?: boolean; offerToReceiveVideo?: boolean },
-    ) =>
-      page.evaluate(
-        ([id, peerId, options]) =>
-          ZeroHubUnitHarness.invokeSendOffer(id, peerId, options),
-        [id, peerId, options] as const,
-      ),
-    invokeSendAnswer: (
-      id: number,
-      peerId: string,
-      offerSdp: string,
-      options?: {
-        offerToReceiveAudio?: boolean;
-        offerToReceiveVideo?: boolean;
-      },
-    ) =>
-      page.evaluate(
-        ([id, peerId, offerSdp, options]) =>
-          ZeroHubUnitHarness.invokeSendAnswer(id, peerId, offerSdp, options),
-        [id, peerId, offerSdp, options] as const,
-      ),
-    fireIceCandidate: (id: number, peerId: string, candidate: unknown) =>
-      page.evaluate(
-        ([id, peerId, candidate]) =>
-          ZeroHubUnitHarness.fireIceCandidate(id, peerId, candidate),
-        [id, peerId, candidate] as const,
-      ),
-    getSends: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getSends(id), id),
-  };
-}
-
 /** Short fallback window used by the no-candidate tests. */
 const FALLBACK_TIMEOUT_MS = 300;
 /** Long enough that, by the time we check after this wait, the fallback
@@ -109,7 +56,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     // Shorten the fallback so it cannot race in, then arm the offer.
@@ -163,7 +110,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.setWaitIceTimeout(id, FALLBACK_TIMEOUT_MS);
@@ -197,7 +144,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.setWaitIceTimeout(id, FALLBACK_TIMEOUT_MS);
@@ -234,7 +181,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.setWaitIceTimeout(id, FALLBACK_TIMEOUT_MS);
@@ -255,7 +202,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.setWaitIceTimeout(id, FALLBACK_TIMEOUT_MS);
@@ -318,7 +265,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
     const LEGACY_CANDIDATE = "candidate:legacy 1 udp 2130 9.9.9.9 777 typ host";
 
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.setWaitIceTimeout(id, FALLBACK_TIMEOUT_MS);

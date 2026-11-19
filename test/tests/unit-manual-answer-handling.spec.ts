@@ -1,5 +1,5 @@
-import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { test, expect } from "@playwright/test";
+import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Regression test: `autoAcceptAnswer: false` (the documented "manual answer
@@ -27,54 +27,11 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  *     automatically and `onAnswer` is not invoked.
  */
 
-/** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-function driver(page: Page) {
-  return {
-    createClient: () => page.evaluate(() => ZeroHubUnitHarness.createClient()),
-    sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
-      page.evaluate(
-        ([id, myPeerId, peerIds]) =>
-          ZeroHubUnitHarness.sendHubInfo(id, myPeerId, peerIds),
-        [id, myPeerId, peerIds] as const,
-      ),
-    setAutoAcceptAnswer: (id: number, autoAcceptAnswer: boolean) =>
-      page.evaluate(
-        ([id, autoAcceptAnswer]) =>
-          ZeroHubUnitHarness.setAutoAcceptAnswer(id, autoAcceptAnswer),
-        [id, autoAcceptAnswer] as const,
-      ),
-    recordAnswers: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.recordAnswers(id), id),
-    getAnswers: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getAnswers(id), id),
-    sendAnswerMessage: (id: number, answerPeerId: string, answerSdp: string) =>
-      page.evaluate(
-        ([id, answerPeerId, answerSdp]) =>
-          ZeroHubUnitHarness.sendAnswerMessage(id, answerPeerId, answerSdp),
-        [id, answerPeerId, answerSdp] as const,
-      ),
-    getPeerStatus: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.getPeerStatus(id, peerId),
-        [id, peerId] as const,
-      ),
-    invokeAcceptAnswer: (id: number, peerId: string, answerSdp: string) =>
-      page.evaluate(
-        ([id, peerId, answerSdp]) =>
-          ZeroHubUnitHarness.invokeAcceptAnswer(id, peerId, answerSdp),
-        [id, peerId, answerSdp] as const,
-      ),
-    getRemoteDescriptions: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getRemoteDescriptions(id), id),
-  };
-}
-
 test("autoAcceptAnswer:false surfaces the incoming answer SDP via onAnswer and acceptAnswer completes the exchange", async ({
   page,
 }) => {
   await prepareUnitHarnessPage(page);
-  const h = driver(page);
+  const h = createUnitDriver(page);
   const id = await h.createClient();
 
   await h.sendHubInfo(id, "1", ["2"]);
@@ -117,7 +74,7 @@ test("autoAcceptAnswer:false does not surface a dangling answer for an unknown p
   page,
 }) => {
   await prepareUnitHarnessPage(page);
-  const h = driver(page);
+  const h = createUnitDriver(page);
   const id = await h.createClient();
 
   await h.sendHubInfo(id, "1", ["2"]);
@@ -138,7 +95,7 @@ test("autoAcceptAnswer:true accepts automatically and does not invoke onAnswer",
   page,
 }) => {
   await prepareUnitHarnessPage(page);
-  const h = driver(page);
+  const h = createUnitDriver(page);
   const id = await h.createClient();
 
   await h.sendHubInfo(id, "1", ["2"]);

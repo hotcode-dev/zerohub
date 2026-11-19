@@ -1,5 +1,9 @@
-import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { test, expect } from "@playwright/test";
+import {
+  createUnitDriver,
+  prepareUnitHarnessPage,
+  type UnitDriver,
+} from "./utils/unit-harness";
 
 /**
  * Regression tests: the multi-host reconnect sweep must survive outages
@@ -31,74 +35,6 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  * `page.evaluate` on `ZeroHubUnitHarness`.
  */
 
-/**
- * The in-page driver surface (window.ZeroHubUnitHarness). `ZeroHubUnitHarness`
- * is a global installed by the harness's init script, so every call runs
- * inline in the page and only primitive arguments (ids, strings, booleans)
- * are serialized across the boundary — never the harness handle itself
- * (Playwright serializes evaluate arguments and rejects non-serializable
- * values like function-bearing objects).
- */
-function driver(page: Page) {
-  return {
-    installFakeWebSocket: () =>
-      page.evaluate(() => ZeroHubUnitHarness.installFakeWebSocket()),
-    markHealthy: (host: string) =>
-      page.evaluate((host) => ZeroHubUnitHarness.markFakeWebSocketHealthy(host), host),
-    markDead: (host: string) =>
-      page.evaluate((host) => ZeroHubUnitHarness.markFakeWebSocketDead(host), host),
-    settleOpen: () => page.evaluate(() => ZeroHubUnitHarness.settleOpen()),
-    fireLiveClose: (code: number, reason: string) =>
-      page.evaluate(
-        ([code, reason]) => ZeroHubUnitHarness.fireLiveClose(code, reason),
-        [code, reason] as const,
-      ),
-    getDials: () => page.evaluate(() => ZeroHubUnitHarness.getFakeDials()),
-    teardownFake: () =>
-      page.evaluate(() => ZeroHubUnitHarness.teardownFakeWebSocket()),
-    createClient: (hosts: string[]) =>
-      page.evaluate(
-        (hostList) => ZeroHubUnitHarness.createClientWithHosts(hostList),
-        hosts,
-      ),
-    joinStaticHub: (id: number, hubId: string) =>
-      page.evaluate(
-        ([id, hubId]) => ZeroHubUnitHarness.joinStaticHub(id, hubId),
-        [id, hubId] as const,
-      ),
-    setConfig: (id: number, overrides: Record<string, unknown>) =>
-      page.evaluate(
-        ([id, overrides]) => ZeroHubUnitHarness.setConfig(id, overrides),
-        [id, overrides] as const,
-      ),
-    captureZeroHubErrors: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.captureZeroHubErrors(id), id),
-    getZeroHubErrorMessages: (id: number) =>
-      page.evaluate(
-        (id) => ZeroHubUnitHarness.getZeroHubErrorMessages(id),
-        id,
-      ),
-    getReconnectAttempts: (id: number) =>
-      page.evaluate(
-        (id) => ZeroHubUnitHarness.getReconnectAttempts(id),
-        id,
-      ),
-    getReconnectRound: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getReconnectRound(id), id),
-    getHostIndex: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getHostIndex(id), id),
-    getHost: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getHost(id), id),
-    sendHubInfoOnSocket: (id: number, hubId: string, myPeerId: string) =>
-      page.evaluate(
-        ([id, hubId, myPeerId]) =>
-          ZeroHubUnitHarness.sendHubInfoOnSocket(id, hubId, myPeerId),
-        [id, hubId, myPeerId] as const,
-      ),
-    wait: (ms: number) => page.evaluate((ms) => ZeroHubUnitHarness.wait(ms), ms),
-  };
-}
-
 /** The terminal all-hosts-exhausted error message. */
 const TERMINAL_ERROR =
   "all ZeroHub hosts are not working, please check the ZeroHub hosts";
@@ -117,11 +53,11 @@ const WAIT_AFTER_ATTEMPT_1_MS = 450;
  * server's hub info confirms the connection.
  */
 async function startSession(
-  h: ReturnType<typeof driver>,
+  h: UnitDriver,
   id: number,
   firstHost: string
 ) {
-  await h.markHealthy(firstHost);
+  await h.markFakeWebSocketHealthy(firstHost);
   await h.joinStaticHub(id, "room"); // dial #1 (pending, CONNECTING)
   await h.settleOpen(); // onopen -> entry point resolves
   await h.sendHubInfoOnSocket(id, "room", "1");
@@ -132,9 +68,9 @@ test.describe("ZeroHubClient multi-host reconnect sweep (fake WebSocket)", () =>
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     await h.installFakeWebSocket();
-    const id = await h.createClient(["a.example", "b.example"]);
+    const id = await h.createClientWithHosts(["a.example", "b.example"]);
     await h.captureZeroHubErrors(id);
 
     await startSession(h, id, "a.example");
@@ -143,7 +79,7 @@ test.describe("ZeroHubClient multi-host reconnect sweep (fake WebSocket)", () =>
 
     await test.step("the blip: a drops, the FIRST retry must re-dial a, not b", async () => {
       // a is down: the live socket closes 1006.
-      await h.markDead("a.example");
+      await h.markFakeWebSocketDead("a.example");
       await h.fireLiveClose(1006, "");
 
       // No failover yet: a's same-host retry is pending behind backoff,
@@ -152,12 +88,12 @@ test.describe("ZeroHubClient multi-host reconnect sweep (fake WebSocket)", () =>
       expect(await h.getHostIndex(id)).toBe(0);
       expect(await h.getReconnectAttempts(id)).toBe(1);
       expect(await h.getZeroHubErrorMessages(id)).toHaveLength(0);
-      expect(await h.getDials()).toHaveLength(1);
+      expect(await h.getFakeDials()).toHaveLength(1);
 
       // a recovers during the backoff window: the retry re-dials a.
-      await h.markHealthy("a.example");
+      await h.markFakeWebSocketHealthy("a.example");
       await h.wait(WAIT_AFTER_ATTEMPT_1_MS);
-      const dials = await h.getDials();
+      const dials = await h.getFakeDials();
       expect(dials).toHaveLength(2);
       expect(dials[1]).toContain("a.example");
       await h.settleOpen(); // onopen
@@ -170,16 +106,16 @@ test.describe("ZeroHubClient multi-host reconnect sweep (fake WebSocket)", () =>
       expect(await h.getZeroHubErrorMessages(id)).toHaveLength(0);
     });
 
-    await h.teardownFake();
+    await h.teardownFakeWebSocket();
   });
 
   test("two down hosts + one healthy host: the client recovers by sweep instead of the terminal error", async ({
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     await h.installFakeWebSocket();
-    const id = await h.createClient([
+    const id = await h.createClientWithHosts([
       "down1.example",
       "down2.example",
       "up.example",
@@ -192,9 +128,9 @@ test.describe("ZeroHubClient multi-host reconnect sweep (fake WebSocket)", () =>
       // down1 and down2 are dead at t=0; the entry point's dial (down1) is
       // refused and the initial-connection failover walks to down2 (dead)
       // and finally up (healthy) — each hop immediate, no same-host retry.
-      await h.markDead("down1.example");
-      await h.markDead("down2.example");
-      await h.markHealthy("up.example");
+      await h.markFakeWebSocketDead("down1.example");
+      await h.markFakeWebSocketDead("down2.example");
+      await h.markFakeWebSocketHealthy("up.example");
       await h.joinStaticHub(id, "room"); // dial #1: down1 (pending)
       await h.settleOpen(); // down1 refusal -> failover dial #2: down2
       await h.settleOpen(); // down2 refusal -> failover dial #3: up
@@ -208,7 +144,7 @@ test.describe("ZeroHubClient multi-host reconnect sweep (fake WebSocket)", () =>
     await test.step("the outage hits EVERY host: the sweep wraps instead of dying", async () => {
       // The whole region loses connectivity: all three hosts go down and
       // the live socket (up) drops.
-      await h.markDead("up.example");
+      await h.markFakeWebSocketDead("up.example");
       await h.fireLiveClose(1006, "");
 
       // up is the last host: same-host retry #1 (budget 1) re-dials up…
@@ -216,7 +152,7 @@ test.describe("ZeroHubClient multi-host reconnect sweep (fake WebSocket)", () =>
       await h.settleOpen(); // up refusal -> reconnect
       // …its budget is now spent: the sweep WRAPS to the first host
       // instead of firing the terminal error (immediate dial #5: down1).
-      expect(await h.getDials()).toHaveLength(5);
+      expect(await h.getFakeDials()).toHaveLength(5);
       expect(await h.getHostIndex(id)).toBe(0);
       expect(await h.getReconnectRound(id)).toBe(1);
       expect(await h.getZeroHubErrorMessages(id)).toHaveLength(0);
@@ -228,7 +164,7 @@ test.describe("ZeroHubClient multi-host reconnect sweep (fake WebSocket)", () =>
       await h.settleOpen(); // down1 retry refusal -> budget spent
       // …and being the FIRST host (not the last), a spent budget fails
       // over to the next host — down2 — instead of wrapping (dial #7).
-      await h.markHealthy("down2.example"); // the outage clears mid-sweep
+      await h.markFakeWebSocketHealthy("down2.example"); // the outage clears mid-sweep
       await h.settleOpen(); // down2: onopen
       await h.sendHubInfoOnSocket(id, "room", "1");
       expect(await h.getHost(id)).toBe("down2.example");
@@ -237,23 +173,23 @@ test.describe("ZeroHubClient multi-host reconnect sweep (fake WebSocket)", () =>
       expect(await h.getZeroHubErrorMessages(id)).toHaveLength(0);
     });
 
-    await h.teardownFake();
+    await h.teardownFakeWebSocket();
   });
 
   test("the terminal error fires exactly once after the whole sweep budget is exhausted", async ({
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     await h.installFakeWebSocket();
-    const id = await h.createClient(["a.example", "b.example"]);
+    const id = await h.createClientWithHosts(["a.example", "b.example"]);
     await h.captureZeroHubErrors(id);
     await h.setConfig(id, { maxReconnectAttempts: 1, maxReconnectRounds: 1 });
     await startSession(h, id, "a.example");
 
     // Total outage: both hosts down, live socket (a) drops.
-    await h.markDead("a.example");
-    await h.markDead("b.example");
+    await h.markFakeWebSocketDead("a.example");
+    await h.markFakeWebSocketDead("b.example");
     await h.fireLiveClose(1006, "");
 
     // Sweep with budgets of 1 and one allowed wraparound round:
@@ -282,12 +218,12 @@ test.describe("ZeroHubClient multi-host reconnect sweep (fake WebSocket)", () =>
     // And it does not fire a second time on a further blip: the client
     // latched `reconnectAbandoned`, so the close is a no-op — no further
     // dials happen.
-    const dialsBefore = await h.getDials();
+    const dialsBefore = await h.getFakeDials();
     await h.fireLiveClose(1006, "");
     await h.wait(100);
-    expect(await h.getDials()).toHaveLength(dialsBefore.length);
+    expect(await h.getFakeDials()).toHaveLength(dialsBefore.length);
     expect(await h.getZeroHubErrorMessages(id)).toHaveLength(1);
 
-    await h.teardownFake();
+    await h.teardownFakeWebSocket();
   });
 });

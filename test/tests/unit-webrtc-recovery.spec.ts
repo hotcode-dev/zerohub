@@ -1,5 +1,9 @@
-import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { test, expect } from "@playwright/test";
+import {
+  createUnitDriver,
+  prepareUnitHarnessPage,
+  type UnitDriver,
+} from "./utils/unit-harness";
 
 /**
  * Unit tests for P2P WebRTC drop recovery: when a peer's P2P connection drops
@@ -28,81 +32,7 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  * test lands on the side being asserted.
  */
 
-/** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-/** Thin serializable wrappers over the in-page driver. */
-function driver(page: Page) {
-  return {
-    createClientWithTopology: (topology: "mesh" | "sfu") =>
-      page.evaluate(
-        (t) => ZeroHubUnitHarness.createClientWithTopology(t),
-        topology,
-      ),
-    sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
-      page.evaluate(
-        ([id, myPeerId, peerIds]) =>
-          ZeroHubUnitHarness.sendHubInfo(id, myPeerId, peerIds),
-        [id, myPeerId, peerIds] as const,
-      ),
-    setConnectionState: (id: number, peerId: string, state: string) =>
-      page.evaluate(
-        ([id, peerId, state]) =>
-          ZeroHubUnitHarness.setConnectionState(id, peerId, state),
-        [id, peerId, state] as const,
-      ),
-    setIceState: (id: number, peerId: string, state: string) =>
-      page.evaluate(
-        ([id, peerId, state]) => ZeroHubUnitHarness.setIceState(id, peerId, state),
-        [id, peerId, state] as const,
-      ),
-    setPeerRemoteDescription: (id: number, peerId: string, type: string) =>
-      page.evaluate(
-        ([id, peerId, type]) =>
-          ZeroHubUnitHarness.setPeerRemoteDescription(id, peerId, type),
-        [id, peerId, type] as const,
-      ),
-    webrtcRecoveryEntries: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.webrtcRecoveryEntries(id), id),
-    recordStatusChanges: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.recordStatusChanges(id), id),
-    drainStatusChanges: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.drainStatusChanges(id), id),
-    stubSocket: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.stubSocket(id), id),
-    setWaitIceTimeout: (id: number, ms: number) =>
-      page.evaluate(
-        ([id, ms]) => ZeroHubUnitHarness.setWaitIceTimeout(id, ms),
-        [id, ms] as const,
-      ),
-    drainSends: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.drainSends(id), id),
-    getPeerStatus: (id: number, peerId: string) =>
-      page.evaluate(([id, peerId]) => ZeroHubUnitHarness.getPeerStatus(id, peerId), [
-        id,
-        peerId,
-      ] as const),
-    sendOfferMessage: (id: number, offerPeerId: string, offerSdp: string) =>
-      page.evaluate(
-        ([id, offerPeerId, offerSdp]) =>
-          ZeroHubUnitHarness.sendOfferMessage(id, offerPeerId, offerSdp),
-        [id, offerPeerId, offerSdp] as const,
-      ),
-    sendAnswerMessage: (id: number, answerPeerId: string, answerSdp: string) =>
-      page.evaluate(
-        ([id, answerPeerId, answerSdp]) =>
-          ZeroHubUnitHarness.sendAnswerMessage(id, answerPeerId, answerSdp),
-        [id, answerPeerId, answerSdp] as const,
-      ),
-    sendPeerDisconnected: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.sendPeerDisconnected(id, peerId),
-        [id, peerId] as const,
-      ),
-    wait: (ms: number) => page.evaluate((ms) => ZeroHubUnitHarness.wait(ms), ms),
-  };
-}
-
-type Driver = ReturnType<typeof driver>;
+type Driver = UnitDriver;
 
 /**
  * Simulates a P2P drop the way a real `RTCPeerConnection` reports one: the
@@ -160,7 +90,7 @@ test.describe("P2P WebRTC drop recovery", () => {
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     // Local client is peer "1", remote peer is "2": `2 > 1` makes the LOCAL
     // client the mesh offerer, so it must issue the recovery offer.
     const id = await setupClient(h, "mesh", "1", "2");
@@ -206,7 +136,7 @@ test.describe("P2P WebRTC drop recovery", () => {
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     // Local client is peer "2", remote peer is "1": the REMOTE peer is the
     // mesh offerer, so this client must stay silent until its offer arrives.
     const id = await setupClient(h, "mesh", "2", "1");
@@ -243,7 +173,7 @@ test.describe("P2P WebRTC drop recovery", () => {
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
 
     // SFU client: lowest id ("1") in the hub, so it is the SFU and the offerer
     // to client "2". Its recovery path must re-offer.
@@ -277,7 +207,7 @@ test.describe("P2P WebRTC drop recovery", () => {
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await setupClient(h, "mesh", "1", "2");
     await establishPeer(h, id, "2", "answer");
 
@@ -304,7 +234,7 @@ test.describe("P2P WebRTC drop recovery", () => {
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     // No `establishPeer`: `remoteDescription` is still null, i.e. the initial
     // offer/answer exchange never completed.
     const id = await setupClient(h, "mesh", "1", "2");
@@ -321,7 +251,7 @@ test.describe("P2P WebRTC drop recovery", () => {
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await setupClient(h, "mesh", "1", "2");
     await establishPeer(h, id, "2", "answer");
 

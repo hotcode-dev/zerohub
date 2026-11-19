@@ -1,5 +1,9 @@
-import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { test, expect } from "@playwright/test";
+import {
+  createUnitDriver,
+  prepareUnitHarnessPage,
+  type UnitDriver,
+} from "./utils/unit-harness";
 
 /**
  * Unit tests for `SFUTopology` SFU re-election on SFU departure
@@ -30,7 +34,24 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  * second offer/answer cycle fires for a duplicate departure event.
  */
 
-/** The in-page driver surface (window.ZeroHubUnitHarness). */
+/**
+ * Spec-specific composite: creates an SFU-topology client, seeds the hub
+ * roster, stubs the socket, and sets a short ICE window so the SDP send fires
+ * promptly. Shared plumbing lives in `createUnitDriver`.
+ */
+async function createSfuClient(
+  h: UnitDriver,
+  myPeerId: string,
+  peerIds: string[],
+): Promise<number> {
+  const id = await h.createClientWithTopology("sfu");
+  await h.sendHubInfo(id, myPeerId, peerIds);
+  await h.stubSocket(id);
+  await h.setWaitIceTimeout(id, 50);
+  return id;
+}
+
+type Driver = UnitDriver;
 
 type Send = {
   kind: "offer" | "answer" | "iceCandidate";
@@ -38,45 +59,6 @@ type Send = {
   sdp?: string;
   candidate?: string;
 };
-
-/** Thin serializable wrappers over the in-page driver. */
-function driver(page: Page) {
-  return {
-    createSfuClient: (myPeerId: string, peerIds: string[]) =>
-      page.evaluate(
-        ([myPeerId, peerIds]) => {
-          const id = ZeroHubUnitHarness.createClientWithTopology("sfu");
-          ZeroHubUnitHarness.sendHubInfo(id, myPeerId, peerIds);
-          ZeroHubUnitHarness.stubSocket(id);
-          ZeroHubUnitHarness.setWaitIceTimeout(id, 50);
-          return id;
-        },
-        [myPeerId, peerIds] as const,
-      ),
-    sendOfferMessage: (id: number, offerPeerId: string, offerSdp: string) =>
-      page.evaluate(
-        ([id, offerPeerId, offerSdp]) =>
-          ZeroHubUnitHarness.sendOfferMessage(id, offerPeerId, offerSdp),
-        [id, offerPeerId, offerSdp] as const,
-      ),
-    sendPeerDisconnected: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.sendPeerDisconnected(id, peerId),
-        [id, peerId] as const,
-      ),
-    getSends: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getSends(id), id),
-    drainSends: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.drainSends(id), id),
-    getPeerIds: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.peerIds(id), id),
-    getSfuLastElectingPeerId: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getSfuLastElectingPeerId(id), id),
-    wait: (ms: number) => page.evaluate((ms) => ZeroHubUnitHarness.wait(ms), ms),
-  };
-}
-
-type Driver = ReturnType<typeof driver>;
 
 /**
  * Outlasts the fire-and-forget offer/answer the SFU topology's `sendOffer`
@@ -95,13 +77,13 @@ test.describe("SFUTopology re-election on SFU departure", () => {
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
 
     // 3-peer SFU hub: "1" (SFU), "2" (will become the new SFU), "3" (client).
     // Each surviving client's view of the hub; the SFU "1" itself is not a
     // client here (its outbound offers are simulated via sendOfferMessage).
-    const sfu2 = await h.createSfuClient("2", ["1", "3"]);
-    const client3 = await h.createSfuClient("3", ["1", "2"]);
+    const sfu2 = await createSfuClient(h, "2", ["1", "3"]);
+    const client3 = await createSfuClient(h, "3", ["1", "2"]);
 
     // Establish the initial star around SFU "1": it offers to each client
     // and both auto-answer. This is the "before" state the regression
@@ -151,8 +133,8 @@ test.describe("SFUTopology re-election on SFU departure", () => {
     );
 
     await test.step("the departed peer is pruned from the roster", async () => {
-      expect(await h.getPeerIds(sfu2)).toEqual(["3"]);
-      expect(await h.getPeerIds(client3)).toEqual(["2"]);
+      expect(await h.peerIds(sfu2)).toEqual(["3"]);
+      expect(await h.peerIds(client3)).toEqual(["2"]);
     });
 
     await test.step(
@@ -193,14 +175,14 @@ test.describe("SFUTopology re-election on SFU departure", () => {
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
 
     // Peers "1" (SFU), "2", "10". After "1" leaves, the remaining ids are
     // "2" and "10". Numerically the lowest is "2"; lexicographically the
     // lowest would be "10" (since "1" < "2" in string order). So whether
     // "2" claims SFU or defers to "10" distinguishes the two orderings.
-    const local2 = await h.createSfuClient("2", ["1", "10"]);
-    const local10 = await h.createSfuClient("10", ["1", "2"]);
+    const local2 = await createSfuClient(h, "2", ["1", "10"]);
+    const local10 = await createSfuClient(h, "10", ["1", "2"]);
 
     await h.sendPeerDisconnected(local2, "1");
     await h.sendPeerDisconnected(local10, "1");
@@ -216,18 +198,18 @@ test.describe("SFUTopology re-election on SFU departure", () => {
     expect(await h.getSends(local10)).toEqual([]);
     expect(await h.getSfuLastElectingPeerId(local2)).toBe("1");
     expect(await h.getSfuLastElectingPeerId(local10)).toBe("1");
-    expect(await h.getPeerIds(local2)).toEqual(["10"]);
-    expect(await h.getPeerIds(local10)).toEqual(["2"]);
+    expect(await h.peerIds(local2)).toEqual(["10"]);
+    expect(await h.peerIds(local10)).toEqual(["2"]);
   });
 
   test("a non-SFU surviving client re-points at the new SFU without duplicating its own connection", async ({
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
 
     // 4-peer hub: "1" (SFU), "2" (new SFU), "3", "4" (client under test).
-    const local4 = await h.createSfuClient("4", ["1", "2", "3"]);
+    const local4 = await createSfuClient(h, "4", ["1", "2", "3"]);
 
     // Baseline: no SDP from "4" (it is the answerer to SFU "1").
     expect(await h.getSends(local4)).toEqual([]);
@@ -237,14 +219,14 @@ test.describe("SFUTopology re-election on SFU departure", () => {
     await h.sendPeerDisconnected(local4, "1");
     await h.wait(150);
     expect(await h.getSends(local4)).toEqual([]);
-    expect(await h.getPeerIds(local4)).toEqual(["2", "3"]);
+    expect(await h.peerIds(local4)).toEqual(["2", "3"]);
 
     // A duplicate departure event for "1" must be a no-op: no second
     // connection, no second offer, no second answer.
     await h.sendPeerDisconnected(local4, "1");
     await h.wait(150);
     expect(await h.getSends(local4)).toEqual([]);
-    expect(await h.getPeerIds(local4)).toEqual(["2", "3"]);
+    expect(await h.peerIds(local4)).toEqual(["2", "3"]);
     expect(await h.getSfuLastElectingPeerId(local4)).toBe("1");
   });
 });

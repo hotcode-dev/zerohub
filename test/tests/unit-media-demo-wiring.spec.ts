@@ -1,5 +1,5 @@
 import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Regression test for the docs media playground bug (P0): the live media
@@ -32,69 +32,6 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
 type MediaOnTrackCall = { peerId: string; streamId: string };
 type AddedTrack = { isConfiguredStream: boolean; trackKinds: string[] };
 
-/** The in-page driver surface (window.ZeroHubUnitHarness). */
-function driver(page: Page) {
-  return {
-    createClientWithMedia: (trackCount: number) =>
-      page.evaluate(
-        (trackCount) => ZeroHubUnitHarness.createClientWithMedia(trackCount),
-        trackCount,
-      ),
-    createClientWithMediaNoStream: () =>
-      page.evaluate(() => ZeroHubUnitHarness.createClientWithMediaNoStream()),
-    sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
-      page.evaluate(
-        ([id, myPeerId, peerIds]) =>
-          ZeroHubUnitHarness.sendHubInfo(id, myPeerId, peerIds),
-        [id, myPeerId, peerIds] as const,
-      ),
-    sendOfferMessage: (id: number, offerPeerId: string, offerSdp: string) =>
-      page.evaluate(
-        ([id, offerPeerId, offerSdp]) =>
-          ZeroHubUnitHarness.sendOfferMessage(id, offerPeerId, offerSdp),
-        [id, offerPeerId, offerSdp] as const,
-      ),
-    stubSocket: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.stubSocket(id), id),
-    invokeSendOffer: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.invokeSendOffer(id, peerId),
-        [id, peerId] as const,
-      ),
-    setWaitIceTimeout: (id: number, ms: number) =>
-      page.evaluate(
-        ([id, ms]) => ZeroHubUnitHarness.setWaitIceTimeout(id, ms),
-        [id, ms] as const,
-      ),
-    fireIceCandidate: (id: number, peerId: string, candidate: unknown) =>
-      page.evaluate(
-        ([id, peerId, candidate]) =>
-          ZeroHubUnitHarness.fireIceCandidate(id, peerId, candidate),
-        [id, peerId, candidate] as const,
-      ),
-    getPeerStatus: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.getPeerStatus(id, peerId),
-        [id, peerId] as const,
-      ),
-    getSends: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getSends(id), id),
-    getAddedTracks: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.getAddedTracks(id, peerId),
-        [id, peerId] as const,
-      ),
-    fireOnTrack: (id: number, peerId: string, remoteStreamId: string) =>
-      page.evaluate(
-        ([id, peerId, remoteStreamId]) =>
-          ZeroHubUnitHarness.fireOnTrack(id, peerId, remoteStreamId),
-        [id, peerId, remoteStreamId] as const,
-      ),
-    getMediaOnTrackCalls: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getMediaOnTrackCalls(id), id),
-  };
-}
-
 /**
  * Shared two-peer hub: `offerer` is myPeerId "1" (the lower id — it answers),
  * `answerer` is myPeerId "2" (the higher id — mesh offerer: 2 > 1). Both are
@@ -102,7 +39,7 @@ function driver(page: Page) {
  * mirroring `getUserMedia({ audio: true, video: true })`.
  */
 async function setupMediaPair(page: Page) {
-  const h = driver(page);
+  const h = createUnitDriver(page);
   const offerer = await h.createClientWithMedia(2);
   const answerer = await h.createClientWithMedia(2);
   // The hub tells each side the other is present. `addPeer` fires the
@@ -210,7 +147,7 @@ test("a mediaChannelConfig without localStream adds no tracks (the broken-demo s
   page,
 }) => {
   await prepareUnitHarnessPage(page);
-  const h = driver(page);
+  const h = createUnitDriver(page);
   const broken = await h.createClientWithMediaNoStream();
 
   await h.sendHubInfo(broken, "1", ["2"]);

@@ -1,5 +1,5 @@
-import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { test, expect } from "@playwright/test";
+import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Regression test: a single-host client (the default deployment — `new
@@ -41,54 +41,6 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  *     socket, no resurrection of the disconnected client.
  */
 
-/** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-function driver(page: Page) {
-  return {
-    createClient: () =>
-      page.evaluate(() => ZeroHubUnitHarness.createClient()),
-    joinStaticHub: (id: number, hubId: string) =>
-      page.evaluate(
-        ([id, hubId]) => ZeroHubUnitHarness.joinStaticHub(id, hubId),
-        [id, hubId] as const,
-      ),
-    setConfig: (id: number, overrides: Record<string, unknown>) =>
-      page.evaluate(
-        ([id, overrides]) => ZeroHubUnitHarness.setConfig(id, overrides),
-        [id, overrides] as const,
-      ),
-    captureZeroHubErrors: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.captureZeroHubErrors(id), id),
-    getZeroHubErrorMessages: (id: number) =>
-      page.evaluate(
-        (id) => ZeroHubUnitHarness.getZeroHubErrorMessages(id),
-        id,
-      ),
-    getReconnectAttempts: (id: number) =>
-      page.evaluate(
-        (id) => ZeroHubUnitHarness.getReconnectAttempts(id),
-        id,
-      ),
-    getHostIndex: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getHostIndex(id), id),
-    getSocketCount: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getSocketCount(id), id),
-    getLastSocketUrl: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getLastSocketUrl(id), id),
-    simulateAbnormalClose: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.simulateAbnormalClose(id), id),
-    sendHubInfoOnSocket: (id: number, hubId: string, myPeerId: string) =>
-      page.evaluate(
-        ([id, hubId, myPeerId]) =>
-          ZeroHubUnitHarness.sendHubInfoOnSocket(id, hubId, myPeerId),
-        [id, hubId, myPeerId] as const,
-      ),
-    wait: (ms: number) => page.evaluate((ms) => ZeroHubUnitHarness.wait(ms), ms),
-    disconnectClient: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.disconnectClient(id), id),
-  };
-}
-
 /**
  * The initial socket URL for the single-host client's `joinStaticHub("room")`:
  * the unit harness's `createClient` builds the client with `tls` unset, and
@@ -114,7 +66,7 @@ test.describe("ZeroHubClient same-host retry-with-backoff on abnormal close", ()
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
     await h.joinStaticHub(id, "room");
     expect(await h.getLastSocketUrl(id)).toBe(SINGLE_HOST_URL);
@@ -162,7 +114,7 @@ test.describe("ZeroHubClient same-host retry-with-backoff on abnormal close", ()
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
     // Shrink the budget so the terminal error is reachable in a test:
     // total backoff for 3 retries stays well under the test timeout.
@@ -213,7 +165,7 @@ test.describe("ZeroHubClient same-host retry-with-backoff on abnormal close", ()
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
     await h.setConfig(id, { maxReconnectAttempts: 3 });
     await h.joinStaticHub(id, "room");
@@ -256,7 +208,7 @@ test.describe("ZeroHubClient same-host retry-with-backoff on abnormal close", ()
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
     await h.joinStaticHub(id, "room");
     const socketsBefore = await h.getSocketCount(id);

@@ -1,5 +1,5 @@
-import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { test, expect } from "@playwright/test";
+import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Regression test: on (re)connect, `hubInfoMessage` must RECONCILE the peer
@@ -50,55 +50,12 @@ type StatusChange = {
   status: string;
 };
 
-/** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-function driver(page: Page) {
-  return {
-    createClient: () => page.evaluate(() => ZeroHubUnitHarness.createClient()),
-    sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
-      page.evaluate(
-        ([id, myPeerId, peerIds]) =>
-          ZeroHubUnitHarness.sendHubInfo(id, myPeerId, peerIds),
-        [id, myPeerId, peerIds] as const,
-      ),
-    setConnectionState: (id: number, peerId: string, state: string) =>
-      page.evaluate(
-        ([id, peerId, state]) =>
-          ZeroHubUnitHarness.setConnectionState(id, peerId, state),
-        [id, peerId, state] as const,
-      ),
-    getPeer: (id: number, peerId: string) =>
-      page.evaluate(([id, peerId]) => ZeroHubUnitHarness.getPeer(id, peerId), [
-        id,
-        peerId,
-      ] as const),
-    peerIds: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.peerIds(id), id),
-    getMyPeerId: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getMyPeerId(id), id),
-    getConnection: (id: number, connId: number) =>
-      page.evaluate(
-        ([id, connId]) => ZeroHubUnitHarness.getConnection(id, connId),
-        [id, connId] as const,
-      ),
-    recordStatusChanges: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.recordStatusChanges(id), id),
-    drainStatusChanges: (id: number) =>
-      page.evaluate(
-        (id) => ZeroHubUnitHarness.drainStatusChanges(id),
-        id,
-      ),
-    connectionsCreated: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.connectionsCreated(id), id),
-  };
-}
-
 test.describe("ZeroHubClient roster reconciliation on reconnect (hubInfo)", () => {
   test("stale peer absent from the re-issued roster is pruned and its connection closed", async ({
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     // Initial join: we are peer "1"; peers "2" and "3" are in the roster.
@@ -150,7 +107,7 @@ test.describe("ZeroHubClient roster reconciliation on reconnect (hubInfo)", () =
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.sendHubInfo(id, "1", ["2", "3"]);
@@ -181,7 +138,7 @@ test.describe("ZeroHubClient roster reconciliation on reconnect (hubInfo)", () =
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.sendHubInfo(id, "1", ["2"]);
@@ -207,7 +164,7 @@ test.describe("ZeroHubClient roster reconciliation on reconnect (hubInfo)", () =
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.sendHubInfo(id, "1", ["2", "3"]);

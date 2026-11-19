@@ -1,5 +1,5 @@
-import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { test, expect } from "@playwright/test";
+import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Unit tests for the `peerJoinedMessage` (mid-session join) vs
@@ -38,71 +38,12 @@ type PeerSnapshot = {
   joinTimeMs: number;
 };
 
-/** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-/**
- * Thin serializable wrappers. `page.evaluate` can only hand back data (not
- * live functions) and only serializes args from Node (where `window` is
- * absent), so each method re-enters the page and invokes the driver via the
- * in-page global `ZeroHubUnitHarness`, passing only scalar/serializable args.
- */
-function driver(page: Page) {
-  return {
-    createClient: () => page.evaluate(() => ZeroHubUnitHarness.createClient()),
-    sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
-      page.evaluate(
-        ([id, myPeerId, peerIds]) =>
-          ZeroHubUnitHarness.sendHubInfo(id, myPeerId, peerIds),
-        [id, myPeerId, peerIds] as const,
-      ),
-    sendPeerJoined: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.sendPeerJoined(id, peerId),
-        [id, peerId] as const,
-      ),
-    setConnectionState: (id: number, peerId: string, state: string) =>
-      page.evaluate(
-        ([id, peerId, state]) =>
-          ZeroHubUnitHarness.setConnectionState(id, peerId, state),
-        [id, peerId, state] as const,
-      ),
-    setIceState: (id: number, peerId: string, state: string) =>
-      page.evaluate(
-        ([id, peerId, state]) =>
-          ZeroHubUnitHarness.setIceState(id, peerId, state),
-        [id, peerId, state] as const,
-      ),
-    getPeer: (id: number, peerId: string) =>
-      page.evaluate(([id, peerId]) => ZeroHubUnitHarness.getPeer(id, peerId), [
-        id,
-        peerId,
-      ] as const),
-    connectionsCreated: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.connectionsCreated(id), id),
-    referencedConnectionIds: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.referencedConnectionIds(id), id),
-    setPeerRemoteDescription: (
-      id: number,
-      peerId: string,
-      type: string,
-    ) =>
-      page.evaluate(
-        ([id, peerId, type]) =>
-          ZeroHubUnitHarness.setPeerRemoteDescription(id, peerId, type),
-        [id, peerId, type] as const,
-      ),
-    webrtcRecoveryEntries: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.webrtcRecoveryEntries(id), id),
-    wait: (ms: number) => page.evaluate((ms) => ZeroHubUnitHarness.wait(ms), ms),
-  };
-}
-
 test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
   test("mid-session joiner gets the full wiring and restarts ICE on failure", async ({
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     // Initial snapshot: we are peer "1", peer "2" is already known via hubInfo.
@@ -153,7 +94,7 @@ test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.sendHubInfo(id, "1", ["2"]);
@@ -204,7 +145,7 @@ test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
 
     // Client A: peer arrives via the INITIAL path (hubInfo).
     const aId = await h.createClient();
