@@ -44,55 +44,18 @@ import (
 	"time"
 
 	"github.com/hotcode-dev/zerohub/pkg/config"
-	"github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
 )
 
-// Handler defines the HTTP endpoints and WebSocket upgrade logic for the server.
+// Handler is the entrypoint contract for the signaling server. It exposes
+// the HTTP route set documented in the package comment
+// (/v1/status, /v1/admin/migrate, /v1/static-hubs/{create,join},
+// /v1/random-hubs/{create,get,join}, /v1/ip-hubs/join-or-create). The
+// per-route handlers live on the unexported handler type and are wired
+// inside Serve.
 type Handler interface {
-	// CreateHubRandom creates a hub with a server-assigned random ID and upgrades.
-	// Corresponds to: GET /v1/random-hubs/create
-	CreateHubRandom(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error
-	// JoinHub joins an existing hub by ID and upgrades the connection.
-	// Serves the static hub join (GET /v1/static-hubs/join) and the random
-	// hub join (GET /v1/random-hubs/join); the caller picks the backing
-	// ZeroHub instance.
-	JoinHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error
-	// JoinOrCreateHubIP is the IP-keyed join-or-create variant.
-	// Corresponds to: GET /v1/ip-hubs/join-or-create
-	JoinOrCreateHubIP(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error
-	// GetHub returns the hub (id, creation time, metadata, isPermanent flag).
-	// It is a plain HTTP GET read endpoint; it does not upgrade to WebSocket
-	// and does not expose the peer roster.
-	// Corresponds to: GET /v1/random-hubs/get
-	GetHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error
-
-	// Status returns server health / version information.
-	// Corresponds to: GET /v1/status
-	Status(ctx *fasthttp.RequestCtx) error
-
-	// CreateHubByID is a helper for random hub creation — used internally by CreateHubRandom.
-	CreateHubByID(ctx *fasthttp.RequestCtx, zeroHub zerohub.ZeroHub, hubId string) error
-	// JoinOrCreateHubByID is a helper for join-or-create — used internally by JoinOrCreateHubIP.
-	JoinOrCreateHubByID(ctx *fasthttp.RequestCtx, zeroHub zerohub.ZeroHub, hubId string) error
-
-	// Migrate updates the backup host for zero-downtime deployment.
-	// Corresponds to: GET /v1/admin/migrate?host=<new-host>
-	Migrate(ctx *fasthttp.RequestCtx) error
-	// CreateStaticHub creates a static hub that never expires. It is the
-	// admin-gated, plain-HTTP create for the static family (no WebSocket
-	// upgrade, no peer added).
-	// Corresponds to: GET /v1/static-hubs/create
-	CreateStaticHub(ctx *fasthttp.RequestCtx) error
-
-	// Upgrade completes the HTTP handshake and returns the handler for
-	// WebSocket communication. On failure, responseWritten is true when an
-	// HTTP response has already been written for the request; callers must
-	// not overwrite it.
-	Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.Hub) (error, bool)
-
 	// Serve starts the fasthttp server on the configured address.
 	Serve() error
 }
