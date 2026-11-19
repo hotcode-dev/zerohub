@@ -82,26 +82,11 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
    * @returns True if this peer is the SFU, false otherwise.
    */
   private isSFU(): boolean {
-    if (!this.zeroHub || !this.zeroHub.myPeerId) {
-      return false;
-    }
-
-    // If SFU peer ID is explicitly set, check against it
-    if (this.sfuPeerId) {
-      return this.zeroHub.myPeerId === this.sfuPeerId;
-    }
-
-    // Otherwise, the peer with the lowest ID becomes the SFU
-    const allPeerIds = Object.keys(this.zeroHub.peers);
-    if (allPeerIds.length === 0) {
-      return true; // First peer is always the SFU
-    }
-
-    const lowestPeerId = this.lowestPeerId([
-      this.zeroHub.myPeerId,
-      ...allPeerIds,
-    ]);
-    return this.zeroHub.myPeerId === lowestPeerId;
+    // Single source of truth: the election lives in getSFUPeerId() alone, so
+    // the two can never drift. `getSFUPeerId()` returns `undefined` exactly
+    // when the client is uninitialized, so `false` preserves the guard.
+    const sfuPeerId = this.getSFUPeerId();
+    return sfuPeerId !== undefined && sfuPeerId === this.zeroHub?.myPeerId;
   }
 
   /**
@@ -133,8 +118,10 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
       throw new Error("ZeroHub is not initialized");
     }
 
-    const iAmSFU = this.isSFU();
     const sfuPeerId = this.getSFUPeerId();
+    // Derive from the single election above instead of re-running it
+    // (iAmSFU is exactly "the elected SFU is me").
+    const iAmSFU = sfuPeerId === this.zeroHub.myPeerId;
     const peerIsSFU = peer.id === sfuPeerId;
 
     switch (peer.status) {
