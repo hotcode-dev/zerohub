@@ -6,7 +6,6 @@ import (
 
 	goEnv "github.com/Netflix/go-env"
 	"github.com/joho/godotenv"
-	"go.uber.org/zap"
 )
 
 // Environment represents the environment of the application.
@@ -47,23 +46,17 @@ type AppConfig struct {
 
 // LoadConfig loads a configuration.
 func LoadConfig() (*Config, error) {
-	configLogger, err := zap.NewProduction()
-	if err != nil {
-		return nil, fmt.Errorf("error to new zap: %w", err)
-	}
-
 	envFile := os.Getenv("ENV_FILE")
 	if envFile == "" {
 		envFile = ".env"
 	}
 
-	if err := godotenv.Load(envFile); err != nil {
-		configLogger.Info("Error loading dot env file", zap.String("path", envFile))
-	}
+	// A missing or unreadable .env is not an error: the server falls back to
+	// the process environment.
+	_ = godotenv.Load(envFile)
 
 	var cfg Config
-	_, err = goEnv.UnmarshalFromEnviron(&cfg)
-	if err != nil {
+	if _, err := goEnv.UnmarshalFromEnviron(&cfg); err != nil {
 		return nil, fmt.Errorf("error to unmarshall environments: %w", err)
 	}
 
