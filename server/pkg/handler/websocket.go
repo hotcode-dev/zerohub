@@ -243,3 +243,23 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 
 	return nil, false
 }
+
+// finishUpgradeFailure handles the shared post-Upgrade failure path:
+// optional state rollback, error logging, the responseWritten guard
+// (the up-front peerMetadata 400/413 must not be overwritten with a 500),
+// and the 500 fallback.  `rollback` is nil when no state needs cleanup.
+func (h *handler) finishUpgradeFailure(
+	ctx *fasthttp.RequestCtx, err error, responseWritten bool, rollback func(),
+) error {
+	if rollback != nil {
+		rollback()
+	}
+	if err != nil {
+		log.Error().Err(fmt.Errorf("websocket upgrade error: %w", err)).Send()
+	}
+	if responseWritten {
+		return nil
+	}
+	return h.Response(ctx, fasthttp.StatusInternalServerError,
+		map[string]string{"error": "websocket upgrade error"})
+}
