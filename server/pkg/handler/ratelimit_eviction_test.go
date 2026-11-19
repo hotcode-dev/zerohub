@@ -6,6 +6,13 @@ import (
 	"time"
 )
 
+// len reports the number of keys currently tracked.
+func (r *rateLimiter) len() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.buckets)
+}
+
 // TestRateLimiterIdleKeyEviction verifies that keys with no request for
 // longer than rateLimitIdleTTL are reclaimed by the sweep, so the per-key
 // map cannot grow without bound for a long-running server facing many
