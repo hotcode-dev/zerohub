@@ -1,5 +1,9 @@
-import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { test, expect } from "@playwright/test";
+import {
+  createUnitDriver,
+  flushMicrotasks,
+  prepareUnitHarnessPage,
+} from "./utils/unit-harness";
 
 /**
  * Regression test: `connectToZeroHub()` must keep pending ICE-candidate
@@ -43,64 +47,6 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
 
 type Send = { kind: "offer" | "answer"; peerId: string; sdp: string };
 
-/** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-function driver(page: Page) {
-  return {
-    createClientWithHosts: (hosts: string[]) =>
-      page.evaluate(
-        (hostList) => ZeroHubUnitHarness.createClientWithHosts(hostList),
-        hosts,
-      ),
-    joinStaticHub: (id: number, hubId: string) =>
-      page.evaluate(
-        ([id, hubId]) => ZeroHubUnitHarness.joinStaticHub(id, hubId),
-        [id, hubId] as const,
-      ),
-    sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
-      page.evaluate(
-        ([id, myPeerId, peerIds]) =>
-          ZeroHubUnitHarness.sendHubInfo(id, myPeerId, peerIds),
-        [id, myPeerId, peerIds] as const,
-      ),
-    setWaitIceTimeout: (id: number, ms: number) =>
-      page.evaluate(
-        ([id, ms]) => ZeroHubUnitHarness.setWaitIceTimeout(id, ms),
-        [id, ms] as const,
-      ),
-    invokeSendOffer: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.invokeSendOffer(id, peerId),
-        [id, peerId] as const,
-      ),
-    captureSocket: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.captureSocket(id), id),
-    getSocketCount: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getSocketCount(id), id),
-    getLastSocketUrl: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getLastSocketUrl(id), id),
-    simulateAbnormalClose: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.simulateAbnormalClose(id), id),
-    disconnectClient: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.disconnectClient(id), id),
-    getSends: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getSends(id), id),
-  };
-}
-
-/**
- * The reconnect flow (`reconnect` → failover/wraparound re-dial) settles in
- * microtasks; flush them so the reconnected socket exists before the next
- * assertion.
- */
-async function flushMicrotasks(page: Page) {
-  await page.evaluate(async () => {
-    for (let i = 0; i < 5; i += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
-  });
-}
-
 /**
  * Long ICE window: comfortably past the reconnect + re-arm latency so the
  * first timer is still pending when the socket drops, yet well under the
@@ -115,7 +61,7 @@ test.describe("ZeroHubClient ICE-candidate timer bookkeeping across reconnect", 
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
 
     // Two hosts so the 1006 abnormal close auto-fails over to host `b`
     // (a single-host client has no backup and would surface a terminal
@@ -192,7 +138,7 @@ test.describe("ZeroHubClient ICE-candidate timer bookkeeping across reconnect", 
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClientWithHosts([
       "a.zerohub.dev",
       "b.zerohub.dev",

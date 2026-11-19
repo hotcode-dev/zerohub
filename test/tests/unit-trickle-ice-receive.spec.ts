@@ -1,5 +1,5 @@
-import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { test, expect } from "@playwright/test";
+import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Unit tests for the incoming trickle-ICE path: when the server relays an
@@ -24,41 +24,6 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  * topology, no server, no real WebRTC stack).
  */
 
-/** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-function driver(page: Page) {
-  return {
-    createClient: () => page.evaluate(() => ZeroHubUnitHarness.createClient()),
-    sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
-      page.evaluate(
-        ([id, myPeerId, peerIds]) =>
-          ZeroHubUnitHarness.sendHubInfo(id, myPeerId, peerIds),
-        [id, myPeerId, peerIds] as const,
-      ),
-    sendIceCandidateMessage: (
-      id: number,
-      peerId: string,
-      candidate: string,
-    ) =>
-      page.evaluate(
-        ([id, peerId, candidate]) =>
-          ZeroHubUnitHarness.sendIceCandidateMessage(id, peerId, candidate),
-        [id, peerId, candidate] as const,
-      ),
-    getAddedIceCandidates: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) =>
-          ZeroHubUnitHarness.getAddedIceCandidates(id, peerId),
-        [id, peerId] as const,
-      ),
-    getPeerStatus: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.getPeerStatus(id, peerId),
-        [id, peerId] as const,
-      ),
-  };
-}
-
 /** A post-SDP trickle candidate as the sender serializes it (JSON). */
 const POST_SDP_CANDIDATE = JSON.stringify({
   candidate: "candidate:1 1 udp 2122252543 1.2.3.4 5678 typ host",
@@ -71,7 +36,7 @@ test.describe("ZeroHubClient incoming IceCandidateMessage (trickle ICE receive)"
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.sendHubInfo(id, "1", ["2"]);
@@ -111,7 +76,7 @@ test.describe("ZeroHubClient incoming IceCandidateMessage (trickle ICE receive)"
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.sendHubInfo(id, "1", ["2"]);
@@ -133,7 +98,7 @@ test.describe("ZeroHubClient incoming IceCandidateMessage (trickle ICE receive)"
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.sendHubInfo(id, "1", ["2"]);

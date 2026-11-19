@@ -1,5 +1,5 @@
-import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { test, expect } from "@playwright/test";
+import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Regression test: `removePeer` (the shared per-peer teardown path) must
@@ -47,52 +47,12 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
 
 type Send = { kind: "offer" | "answer"; peerId: string; sdp: string };
 
-/** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-function driver(page: Page) {
-  return {
-    createClient: () => page.evaluate(() => ZeroHubUnitHarness.createClient()),
-    stubSocket: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.stubSocket(id), id),
-    sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
-      page.evaluate(
-        ([id, myPeerId, peerIds]) =>
-          ZeroHubUnitHarness.sendHubInfo(id, myPeerId, peerIds),
-        [id, myPeerId, peerIds] as const,
-      ),
-    sendPeerDisconnected: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.sendPeerDisconnected(id, peerId),
-        [id, peerId] as const,
-      ),
-    setWaitIceTimeout: (id: number, ms: number) =>
-      page.evaluate(
-        ([id, ms]) => ZeroHubUnitHarness.setWaitIceTimeout(id, ms),
-        [id, ms] as const,
-      ),
-    invokeSendOffer: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.invokeSendOffer(id, peerId),
-        [id, peerId] as const,
-      ),
-    iceTimeoutEntries: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.iceTimeoutEntries(id), id),
-    getSends: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getSends(id), id),
-    getPeerStatus: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.getPeerStatus(id, peerId),
-        [id, peerId] as const,
-      ),
-  };
-}
-
 test.describe("ZeroHubClient removePeer clears the pending ICE-candidate timer", () => {
   test("peerDisconnectedMessage clears the timer and no SDP fires after the window", async ({
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
     // No real socket: the capturing stub is all `sendOffer` needs.
     await h.stubSocket(id);
@@ -129,7 +89,7 @@ test.describe("ZeroHubClient removePeer clears the pending ICE-candidate timer",
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
     await h.stubSocket(id);
 
@@ -166,7 +126,7 @@ test.describe("ZeroHubClient removePeer clears the pending ICE-candidate timer",
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
     await h.stubSocket(id);
 

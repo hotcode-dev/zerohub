@@ -1,5 +1,5 @@
-import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { test, expect } from "@playwright/test";
+import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Unit tests for the `rtcOfferOptions` merge in `ZeroHubClient.sendOffer` /
@@ -23,49 +23,6 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  * was actually used to create the offer/answer.
  */
 
-/** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-function driver(page: Page) {
-  return {
-    createClient: () => page.evaluate(() => ZeroHubUnitHarness.createClient()),
-    sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
-      page.evaluate(
-        ([id, myPeerId, peerIds]) =>
-          ZeroHubUnitHarness.sendHubInfo(id, myPeerId, peerIds),
-        [id, myPeerId, peerIds] as const,
-      ),
-    stubSocket: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.stubSocket(id), id),
-    invokeSendOffer: (
-      id: number,
-      peerId: string,
-      options?: {
-        offerToReceiveAudio?: boolean;
-        offerToReceiveVideo?: boolean;
-      },
-    ) =>
-      page.evaluate(
-        ([id, peerId, options]) =>
-          ZeroHubUnitHarness.invokeSendOffer(id, peerId, options),
-        [id, peerId, options] as const,
-      ),
-    invokeSendAnswer: (
-      id: number,
-      peerId: string,
-      offerSdp: string,
-      options?: {
-        offerToReceiveAudio?: boolean;
-        offerToReceiveVideo?: boolean;
-      },
-    ) =>
-      page.evaluate(
-        ([id, peerId, offerSdp, options]) =>
-          ZeroHubUnitHarness.invokeSendAnswer(id, peerId, offerSdp, options),
-        [id, peerId, offerSdp, options] as const,
-      ),
-  };
-}
-
 const DEFAULTS = { offerToReceiveAudio: false, offerToReceiveVideo: false };
 
 test.describe("ZeroHubClient rtcOfferOptions merge (no shared-config mutation)", () => {
@@ -73,7 +30,7 @@ test.describe("ZeroHubClient rtcOfferOptions merge (no shared-config mutation)",
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     // Peer "2" exists; stub the socket so sendOffer passes its guard.
@@ -103,7 +60,7 @@ test.describe("ZeroHubClient rtcOfferOptions merge (no shared-config mutation)",
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.sendHubInfo(id, "1", ["2"]);
@@ -130,7 +87,7 @@ test.describe("ZeroHubClient rtcOfferOptions merge (no shared-config mutation)",
     page,
   }) => {
     await prepareUnitHarnessPage(page);
-    const h = driver(page);
+    const h = createUnitDriver(page);
     const id = await h.createClient();
 
     await h.sendHubInfo(id, "1", ["2"]);

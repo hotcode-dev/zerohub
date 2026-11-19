@@ -1,6 +1,7 @@
 import { Page, expect } from "@playwright/test";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { gotoStubPage } from "./stub-page";
 
 const harnessPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -9,9 +10,7 @@ const harnessPath = path.resolve(
 
 export async function prepareHarnessPage(page: Page) {
   await page.addInitScript({ path: harnessPath });
-  const html = "<html><head></head><body></body></html>";
-  const dataUrl = `data:text/html,${encodeURIComponent(html)}`;
-  await page.goto(dataUrl);
+  await gotoStubPage(page);
 }
 
 /**

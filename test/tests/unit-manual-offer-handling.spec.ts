@@ -1,5 +1,5 @@
-import { test, expect, Page } from "@playwright/test";
-import { prepareUnitHarnessPage } from "./utils/unit-harness";
+import { test, expect } from "@playwright/test";
+import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
 
 /**
  * Regression test: `autoAnswer: false` (the documented "manual offer
@@ -25,66 +25,11 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  *     automatically and `onOffer` is not invoked.
  */
 
-/** The in-page driver surface (window.ZeroHubUnitHarness). */
-
-function driver(page: Page) {
-  return {
-    createClient: () => page.evaluate(() => ZeroHubUnitHarness.createClient()),
-    sendHubInfo: (id: number, myPeerId: string, peerIds: string[]) =>
-      page.evaluate(
-        ([id, myPeerId, peerIds]) =>
-          ZeroHubUnitHarness.sendHubInfo(id, myPeerId, peerIds),
-        [id, myPeerId, peerIds] as const,
-      ),
-    setAutoAnswer: (id: number, autoAnswer: boolean) =>
-      page.evaluate(
-        ([id, autoAnswer]) => ZeroHubUnitHarness.setAutoAnswer(id, autoAnswer),
-        [id, autoAnswer] as const,
-      ),
-    recordOffers: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.recordOffers(id), id),
-    getOffers: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getOffers(id), id),
-    sendOfferMessage: (id: number, offerPeerId: string, offerSdp: string) =>
-      page.evaluate(
-        ([id, offerPeerId, offerSdp]) =>
-          ZeroHubUnitHarness.sendOfferMessage(id, offerPeerId, offerSdp),
-        [id, offerPeerId, offerSdp] as const,
-      ),
-    getPeerStatus: (id: number, peerId: string) =>
-      page.evaluate(
-        ([id, peerId]) => ZeroHubUnitHarness.getPeerStatus(id, peerId),
-        [id, peerId] as const,
-      ),
-    stubSocket: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.stubSocket(id), id),
-    invokeSendAnswer: (
-      id: number,
-      peerId: string,
-      offerSdp: string,
-      options?: { offerToReceiveAudio?: boolean; offerToReceiveVideo?: boolean },
-    ) =>
-      page.evaluate(
-        ([id, peerId, offerSdp, options]) =>
-          ZeroHubUnitHarness.invokeSendAnswer(id, peerId, offerSdp, options),
-        [id, peerId, offerSdp, options] as const,
-      ),
-    fireIceCandidate: (id: number, peerId: string, candidate: unknown) =>
-      page.evaluate(
-        ([id, peerId, candidate]) =>
-          ZeroHubUnitHarness.fireIceCandidate(id, peerId, candidate),
-        [id, peerId, candidate] as const,
-      ),
-    getSends: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.getSends(id), id),
-  };
-}
-
 test("autoAnswer:false surfaces the incoming offer SDP via onOffer and sendAnswer completes the exchange", async ({
   page,
 }) => {
   await prepareUnitHarnessPage(page);
-  const h = driver(page);
+  const h = createUnitDriver(page);
   const id = await h.createClient();
 
   await h.sendHubInfo(id, "1", ["2"]);
@@ -137,7 +82,7 @@ test("autoAnswer:false does not surface a dangling offer for an unknown peer", a
   page,
 }) => {
   await prepareUnitHarnessPage(page);
-  const h = driver(page);
+  const h = createUnitDriver(page);
   const id = await h.createClient();
 
   await h.sendHubInfo(id, "1", ["2"]);
@@ -158,7 +103,7 @@ test("autoAnswer:true answers automatically and does not invoke onOffer", async 
   page,
 }) => {
   await prepareUnitHarnessPage(page);
-  const h = driver(page);
+  const h = createUnitDriver(page);
   const id = await h.createClient();
 
   await h.sendHubInfo(id, "1", ["2"]);
