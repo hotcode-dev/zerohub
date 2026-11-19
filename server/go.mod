@@ -20,7 +20,6 @@ require github.com/kpango/fastime v1.1.9 // indirect
 
 require (
 	github.com/andybalholm/brotli v1.2.0 // indirect
-	github.com/google/go-cmp v0.7.0
 	github.com/klauspost/compress v1.18.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
