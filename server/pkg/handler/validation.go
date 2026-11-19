@@ -120,6 +120,30 @@ func (h *handler) validateHubCreateParams(ctx *fasthttp.RequestCtx, hubId string
 	return false
 }
 
+// probeSiblingsForCollision probes every sibling hub-mode instance for an
+// existing holder of hubId and, on a hit, writes the 409 Conflict. It
+// returns true when rejected (caller must stop), false when no sibling
+// holds the id. A nil sibling holds no hubs and is skipped, keeping the
+// guard usable from call sites (and tests) that only have some of the
+// sibling instances. Callers run it and the subsequent create under
+// h.hubIdCrossModeMu so the cross-mode check-and-store is mutually
+// exclusive.
+func (h *handler) probeSiblingsForCollision(ctx *fasthttp.RequestCtx, hubId string, siblings []zerohub.ZeroHub) bool {
+	for _, instance := range siblings {
+		if instance == nil {
+			continue
+		}
+		if instance.GetHubById(hubId) != nil {
+			log.Error().Err(fmt.Errorf("hub with id %s already exists in another hub type", hubId)).Send()
+			// Response writes the 409 body; a marshal failure here is
+			// impossible for a static map[string]string body.
+			h.Response(ctx, fasthttp.StatusConflict, map[string]string{"error": "hub id collides with another hub type"})
+			return true
+		}
+	}
+	return false
+}
+
 // claimUserChosenHubId atomically claims a user-chosen hub id across the
 // hub modes: it probes every sibling instance for an existing holder and,
 // if the id is free in all of them, runs create — all under
@@ -142,17 +166,8 @@ func (h *handler) validateHubCreateParams(ctx *fasthttp.RequestCtx, hubId string
 func (h *handler) claimUserChosenHubId(ctx *fasthttp.RequestCtx, hubId string, siblings []zerohub.ZeroHub, create func() (hub.Hub, error)) (newHub hub.Hub, err error, rejected bool) {
 	h.hubIdCrossModeMu.Lock()
 	defer h.hubIdCrossModeMu.Unlock()
-	for _, instance := range siblings {
-		if instance == nil {
-			continue
-		}
-		if instance.GetHubById(hubId) != nil {
-			log.Error().Err(fmt.Errorf("hub with id %s already exists in another hub type", hubId)).Send()
-			// Response writes the 409 body; a marshal failure here is
-			// impossible for a static map[string]string body.
-			h.Response(ctx, fasthttp.StatusConflict, map[string]string{"error": "hub id collides with another hub type"})
-			return nil, nil, true
-		}
+	if h.probeSiblingsForCollision(ctx, hubId, siblings) {
+		return nil, nil, true
 	}
 	newHub, err = create()
 	return newHub, err, false
@@ -167,15 +182,8 @@ func (h *handler) claimUserChosenHubId(ctx *fasthttp.RequestCtx, hubId string, s
 func (h *handler) claimGetOrCreateHub(ctx *fasthttp.RequestCtx, hubId string, siblings []zerohub.ZeroHub, getOrCreate func() (hub.Hub, bool, error)) (newHub hub.Hub, created bool, err error, rejected bool) {
 	h.hubIdCrossModeMu.Lock()
 	defer h.hubIdCrossModeMu.Unlock()
-	for _, instance := range siblings {
-		if instance == nil {
-			continue
-		}
-		if instance.GetHubById(hubId) != nil {
-			log.Error().Err(fmt.Errorf("hub with id %s already exists in another hub type", hubId)).Send()
-			h.Response(ctx, fasthttp.StatusConflict, map[string]string{"error": "hub id collides with another hub type"})
-			return nil, false, nil, true
-		}
+	if h.probeSiblingsForCollision(ctx, hubId, siblings) {
+		return nil, false, nil, true
 	}
 	newHub, created, err = getOrCreate()
 	return newHub, created, err, false
