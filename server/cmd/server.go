@@ -20,9 +20,7 @@ func main() {
 		stdLog.Panic(fmt.Errorf("error to load config: %w", err))
 	}
 
-	if err := logger.InitLogger(cfg); err != nil {
-		stdLog.Panic(fmt.Errorf("error to init logger: %w", err))
-	}
+	logger.InitLogger(cfg)
 
 	zeroHubStatic := newZeroHubOrPanic(cfg, "static")
 	zeroHubRandom := newZeroHubOrPanic(cfg, "random")
