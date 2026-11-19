@@ -269,7 +269,7 @@ func ipFromForwardedHeader(ctx *fasthttp.RequestCtx) string {
 	}
 	// Take the first (outermost) entry; a well-behaved proxy puts the real
 	// client address there and appends hop addresses after it.
-	first := strings.SplitN(xff, ",", 2)[0]
+	first, _, _ := strings.Cut(xff, ",")
 	ip := net.ParseIP(strings.TrimSpace(first))
 	if ip == nil {
 		return ""
