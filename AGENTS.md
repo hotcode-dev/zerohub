@@ -7,7 +7,7 @@ ZeroHub is a WebRTC signaling server with TypeScript/JavaScript SDK. It enables 
 - **client/** - TypeScript SDK (`@zero-hub/client` on npm)
 - **server/** - Go signaling server
 - **proto/** - Protobuf definitions for client-server communication
-- **test/** - E2E tests using Playwright with Svelte components
+- **test/** - E2E tests: a plain-TypeScript harness (bundled with esbuild) driven by Playwright specs
 - **docs/** - Astro-based documentation site
 
 ## Architecture
@@ -101,7 +101,7 @@ make test-all  # Spawns 2 servers + runs E2E tests (parallel with -j3)
 cd test && npm run test  # Playwright component tests only
 ```
 
-E2E tests use Svelte components that instantiate `ZeroHubClient` to verify connection flows.
+E2E tests are Playwright specs (`test/tests/*.spec.ts`) that drive a plain-TypeScript harness (`test/harness/index.ts`, bundled by esbuild to `test/dist/harness.js` via `test/scripts/build-harness.mjs`) which instantiates `ZeroHubClient` to verify connection flows.
 
 ### Mocking (Go)
 
