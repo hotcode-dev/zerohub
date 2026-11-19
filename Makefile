@@ -30,12 +30,6 @@ server-mock:
 server-test:
 	cd server && go test -v ./...
 
-server-bench:
-	cd server && go test -bench ./pkg/*** -benchmem -benchtime=1000x
-
-client-build:
-	cd ./client && npm run build
-
 client-typecheck:
 	cd ./client && npm run typecheck
 
