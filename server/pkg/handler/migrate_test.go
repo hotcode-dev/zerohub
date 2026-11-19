@@ -19,8 +19,8 @@ const (
 	testBackupHost   = "backup.example.com:9090"
 )
 
-// newTestHandler builds a handler with a known client secret, mirroring the
-// construction in mockHandlerAndTest (test_util.go).
+// newTestHandler builds a handler with a known client secret, matching how
+// handler.go constructs the handler from the config's client secret.
 func newTestHandler() *handler {
 	return &handler{clientSecret: testClientSecret}
 }
