@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"fmt"
-
 	hub "github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
@@ -44,24 +42,12 @@ func (h *handler) JoinOrCreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroH
 	}
 
 	if err, responseWritten := h.Upgrade(ctx, zh, newHub); err != nil || responseWritten {
-		// AddPeer only runs inside the upgrade callback, so whenever the
-		// upgrade does not fully succeed — a real handshake error, or the
-		// up-front peerMetadata rejection that already wrote a 400 — this
-		// request never added a peer. Remove the hub only when this call
-		// created it: a pre-existing hub may hold live peers and must be
-		// left in place.
-		if created {
-			zh.RemoveHubById(newHub.GetId())
-		}
-		if err != nil {
-			log.Error().Err(fmt.Errorf("websocket upgrade error: %w", err)).Send()
-		}
-		// The up-front peerMetadata rejection already wrote a 400; do not
-		// overwrite it with a 500.
-		if responseWritten {
-			return nil
-		}
-		return h.Response(ctx, fasthttp.StatusInternalServerError, map[string]string{"error": "websocket upgrade error"})
+		return h.finishUpgradeFailure(ctx, err, responseWritten,
+			func() {
+				if created {
+					zh.RemoveHubById(newHub.GetId())
+				}
+			})
 	}
 
 	return nil
