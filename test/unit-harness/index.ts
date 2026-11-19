@@ -1759,19 +1759,6 @@ const ZeroHubUnitHarness = {
   },
 
   /**
-   * The client's `config.maxReconnectRounds` (the number of full sweeps
-   * through the configured host list before the terminal error fires).
-   * Specs override it via `setConfig` to keep multi-host terminal tests fast.
-   */
-  getMaxReconnectRounds(id: number): number {
-    const entry = clients.get(id);
-    if (!entry) {
-      throw new Error(`no client ${id}`);
-    }
-    return entry.client.config.maxReconnectRounds;
-  },
-
-  /**
    * Triggers a terminal reconnect failure: the client's single host is
    * already the last one, so `reconnect()` retries the SAME host with
    * backoff until the retry budget (`config.maxReconnectAttempts`) is
