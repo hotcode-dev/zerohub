@@ -97,13 +97,6 @@ func (r *rateLimiter) sweepLocked(now time.Time) {
 	}
 }
 
-// len reports the number of keys currently tracked.
-func (r *rateLimiter) len() int {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return len(r.buckets)
-}
-
 // rateLimitMiddleware wraps a fasthttp handler with per-key rate limiting.
 // The key getter selects the per-client identity: the socket peer address
 // by default, or the trusted proxy's X-Forwarded-For value when trustProxy
