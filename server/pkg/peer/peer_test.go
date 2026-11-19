@@ -10,6 +10,7 @@ import (
 
 	"github.com/fasthttp/websocket"
 	pb "github.com/hotcode-dev/zerohub/pkg/proto/zerohub/v1"
+	"google.golang.org/protobuf/proto"
 )
 
 var testUpgrader = websocket.Upgrader{
@@ -55,6 +56,39 @@ func newTestConn(t *testing.T) *websocket.Conn {
 	case <-time.After(5 * time.Second):
 		t.Fatal("timed out waiting for server conn")
 		return nil
+	}
+}
+
+// newTestConnPair is like newTestConn but returns both the server-side and
+// client-side *websocket.Conn. It starts no drainer goroutine: the caller is
+// responsible for reading on whichever side it needs. Use this when a test
+// must read the frames a server-side writer (the peer) actually emits.
+func newTestConnPair(t *testing.T) (server, client *websocket.Conn) {
+	t.Helper()
+
+	ready := make(chan *websocket.Conn, 1)
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := testUpgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		ready <- conn
+	}))
+	t.Cleanup(s.Close)
+
+	clientURL := "ws://" + strings.TrimPrefix(s.URL, "http://")
+	clientConn, _, err := websocket.DefaultDialer.Dial(clientURL, nil)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	t.Cleanup(func() { _ = clientConn.Close() })
+
+	select {
+	case conn := <-ready:
+		return conn, clientConn
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for server conn")
+		return nil, nil
 	}
 }
 
@@ -124,6 +158,93 @@ func TestSendMessageSuccess(t *testing.T) {
 	}
 	if err := p.SendIceCandidate("1", "candidate:1 1 udp 2122252543 1.2.3.4 5678 typ host"); err != nil {
 		t.Fatalf("SendIceCandidate: %v", err)
+	}
+}
+
+// TestSendServerMessageErrorWrapping pins the per-operation error strings
+// produced by the shared marshal+send helper: each sender must name its
+// operation and wrap the underlying SendBinaryMessage error.
+func TestSendServerMessageErrorWrapping(t *testing.T) {
+	t.Parallel()
+
+	p := NewPeer(nil, "metadata")
+	cases := []struct {
+		op   string
+		send func() error
+	}{
+		{"hub info", func() error { return p.SendHubInfo(&pb.HubInfoMessage{Id: "hub"}) }},
+		{"offer", func() error { return p.SendOffer("1", "sdp") }},
+		{"answer", func() error { return p.SendAnswer("1", "sdp") }},
+		{"ice candidate", func() error { return p.SendIceCandidate("1", "candidate:1") }},
+	}
+	for _, tc := range cases {
+		err := tc.send()
+		if err == nil {
+			t.Fatalf("expected error sending %s on nil conn, got nil", tc.op)
+		}
+		if want := "error sending " + tc.op; !strings.Contains(err.Error(), want) {
+			t.Fatalf("%s: error %q does not contain %q", tc.op, err.Error(), want)
+		}
+		if !strings.Contains(err.Error(), "ws conn is nil") {
+			t.Fatalf("%s: error %q does not wrap the underlying send failure", tc.op, err.Error())
+		}
+	}
+}
+
+// TestSendServerMessageWireFormat verifies the refactored senders still put
+// the correct oneof variant on the wire with payloads passed through
+// verbatim: read each frame back on the client side and unmarshal it.
+func TestSendServerMessageWireFormat(t *testing.T) {
+	t.Parallel()
+
+	server, client := newTestConnPair(t)
+	p := NewPeer(server, "metadata")
+
+	sends := []struct {
+		name string
+		fn   func() error
+	}{
+		{"hub info", func() error { return p.SendHubInfo(&pb.HubInfoMessage{Id: "hub-1"}) }},
+		{"offer", func() error { return p.SendOffer("peer-1", "offer-sdp") }},
+		{"answer", func() error { return p.SendAnswer("peer-2", "answer-sdp") }},
+		{"ice candidate", func() error { return p.SendIceCandidate("peer-3", "candidate:3") }},
+	}
+
+	for i, tc := range sends {
+		if err := tc.fn(); err != nil {
+			t.Fatalf("%s: %v", tc.name, err)
+		}
+		msgType, data, err := client.ReadMessage()
+		if err != nil {
+			t.Fatalf("%s: read frame: %v", tc.name, err)
+		}
+		if msgType != websocket.BinaryMessage {
+			t.Fatalf("%s: want binary frame, got type %d", tc.name, msgType)
+		}
+		got := &pb.ServerMessage{}
+		if err := proto.Unmarshal(data, got); err != nil {
+			t.Fatalf("%s: unmarshal: %v", tc.name, err)
+		}
+		switch m := got.Message.(type) {
+		case *pb.ServerMessage_HubInfoMessage:
+			if i != 0 || m.HubInfoMessage.GetId() != "hub-1" {
+				t.Fatalf("frame %d: unexpected hub info %v", i, m.HubInfoMessage)
+			}
+		case *pb.ServerMessage_OfferMessage:
+			if i != 1 || m.OfferMessage.GetOfferPeerId() != "peer-1" || m.OfferMessage.GetOfferSdp() != "offer-sdp" {
+				t.Fatalf("frame %d: unexpected offer %v", i, m.OfferMessage)
+			}
+		case *pb.ServerMessage_AnswerMessage:
+			if i != 2 || m.AnswerMessage.GetAnswerPeerId() != "peer-2" || m.AnswerMessage.GetAnswerSdp() != "answer-sdp" {
+				t.Fatalf("frame %d: unexpected answer %v", i, m.AnswerMessage)
+			}
+		case *pb.ServerMessage_IceCandidateMessage:
+			if i != 3 || m.IceCandidateMessage.GetPeerId() != "peer-3" || m.IceCandidateMessage.GetCandidate() != "candidate:3" {
+				t.Fatalf("frame %d: unexpected ice candidate %v", i, m.IceCandidateMessage)
+			}
+		default:
+			t.Fatalf("frame %d: unexpected oneof variant %T", i, got.Message)
+		}
 	}
 }
 
