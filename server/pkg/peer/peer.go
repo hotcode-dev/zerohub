@@ -93,22 +93,29 @@ func (p *peer) SendBinaryMessage(data []byte) error {
 	return nil
 }
 
+// sendServerMessage marshals msg and delivers it to the peer over its
+// websocket connection. op names the operation (e.g. "hub info") in logs
+// and error messages.
+func (p *peer) sendServerMessage(msg *pb.ServerMessage, op string) error {
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		log.Error().Err(fmt.Errorf("error to marshal %s: %v", op, err))
+		return err
+	}
+
+	if err := p.SendBinaryMessage(data); err != nil {
+		return fmt.Errorf("error sending %s: %w", op, err)
+	}
+	return nil
+}
+
 func (p *peer) SendHubInfo(hubInfoPb *pb.HubInfoMessage) error {
 	msg := &pb.ServerMessage{
 		Message: &pb.ServerMessage_HubInfoMessage{
 			HubInfoMessage: hubInfoPb,
 		},
 	}
-	data, err := proto.Marshal(msg)
-	if err != nil {
-		log.Error().Err(fmt.Errorf("error to marshal hub info message: %v", err))
-		return err
-	}
-
-	if err := p.SendBinaryMessage(data); err != nil {
-		return fmt.Errorf("error sending hub info: %w", err)
-	}
-	return nil
+	return p.sendServerMessage(msg, "hub info")
 }
 
 func (p *peer) SendOffer(offerPeerId string, offerSdp string) error {
@@ -120,16 +127,7 @@ func (p *peer) SendOffer(offerPeerId string, offerSdp string) error {
 			},
 		},
 	}
-	data, err := proto.Marshal(msg)
-	if err != nil {
-		log.Error().Err(fmt.Errorf("error to marshal request answer message: %v", err))
-		return err
-	}
-
-	if err := p.SendBinaryMessage(data); err != nil {
-		return fmt.Errorf("error sending offer: %w", err)
-	}
-	return nil
+	return p.sendServerMessage(msg, "offer")
 }
 
 func (p *peer) SendAnswer(answerPeerId string, answerSdp string) error {
@@ -141,16 +139,7 @@ func (p *peer) SendAnswer(answerPeerId string, answerSdp string) error {
 			},
 		},
 	}
-	data, err := proto.Marshal(msg)
-	if err != nil {
-		log.Error().Err(fmt.Errorf("error to marshal answer message: %v", err))
-		return err
-	}
-
-	if err := p.SendBinaryMessage(data); err != nil {
-		return fmt.Errorf("error sending answer: %w", err)
-	}
-	return nil
+	return p.sendServerMessage(msg, "answer")
 }
 
 func (p *peer) SendIceCandidate(icePeerId string, candidate string) error {
@@ -162,16 +151,7 @@ func (p *peer) SendIceCandidate(icePeerId string, candidate string) error {
 			},
 		},
 	}
-	data, err := proto.Marshal(msg)
-	if err != nil {
-		log.Error().Err(fmt.Errorf("error to marshal ice candidate message: %v", err))
-		return err
-	}
-
-	if err := p.SendBinaryMessage(data); err != nil {
-		return fmt.Errorf("error sending ice candidate: %w", err)
-	}
-	return nil
+	return p.sendServerMessage(msg, "ice candidate")
 }
 
 // Close closes the peer's websocket connection and nils the pointer under the lock.
