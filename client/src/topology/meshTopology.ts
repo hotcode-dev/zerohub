@@ -25,6 +25,21 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
     this.zeroHub = zeroHub;
   }
 
+  /**
+   * Send an offer to a peer and log the error if it fails.
+   * `context` describes the failure situation in the log message.
+   */
+  private sendOfferToPeer(peer: Peer<PeerMetadata>, context: string) {
+    if (!this.zeroHub) {
+      return;
+    }
+    this.zeroHub
+      .sendOffer(peer.id, this.zeroHub.config.rtcOfferOptions)
+      .catch((err) => {
+        this.zeroHub?.logger.error(context, peer.id, err);
+      });
+  }
+
   onPeerStatusChange(peer: Peer<PeerMetadata>) {
     if (!this.zeroHub || !this.zeroHub.myPeerId) {
       throw new Error("ZeroHub is not initialized");
@@ -50,15 +65,7 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
 
         // offer should send after create data channel and add track
         if (isOfferer) {
-          this.zeroHub
-            .sendOffer(peer.id, this.zeroHub.config.rtcOfferOptions)
-            .catch((err) => {
-              this.zeroHub?.logger.error(
-                "failed to send offer to peer",
-                peer.id,
-                err
-              );
-            });
+          this.sendOfferToPeer(peer, "failed to send offer to peer");
         }
         break;
       case PeerStatus.ZeroHubDisconnected:
@@ -80,15 +87,7 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
         // creating duplicate channels with the same labels would hand the
         // application two channels named "0".
         if (isOfferer) {
-          this.zeroHub
-            .sendOffer(peer.id, this.zeroHub.config.rtcOfferOptions)
-            .catch((err) => {
-              this.zeroHub?.logger.error(
-                "failed to re-send offer to dropped peer",
-                peer.id,
-                err
-              );
-            });
+          this.sendOfferToPeer(peer, "failed to re-send offer to dropped peer");
         }
         // The answerer does nothing here: it recovers when the offerer's
         // new offer arrives and is auto-answered through the existing
