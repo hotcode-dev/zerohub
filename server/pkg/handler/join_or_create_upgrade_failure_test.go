@@ -97,7 +97,7 @@ func TestJoinOrCreateIPRemovesOrphanOnUpgradeFailure(t *testing.T) {
 	}
 
 	// Mirror joinOrCreateHubIPRequest: set the socket peer so the derived
-	// key is the xxh3 hash of the client IP, then a plain GET so the
+	// key is the FNV hash of the client IP, then a plain GET so the
 	// handshake fails.
 	ctx := &fasthttp.RequestCtx{}
 	ctx.SetRemoteAddr(&net.TCPAddr{IP: net.ParseIP(socketIP)})

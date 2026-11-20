@@ -119,7 +119,7 @@ type handler struct {
 	// id yet) and both store, fragmenting the room under one public id.
 	// Holding this mutex for the probe plus the store makes the
 	// check-and-create atomic across modes. The paths that mint generated
-	// ids (random uuid, IP xxh3 hash) also take the lock, but their probe
+	// ids (random uuid, IP FNV hash) also take the lock, but their probe
 	// always misses and their id can never collide, so the guard is a
 	// no-op there — it just costs one uncontended lock. The WebSocket
 	// upgrade (and a failed-upgrade rollback) happens AFTER the lock is

@@ -140,7 +140,7 @@ func TestCreateHubRandomStillCreatesAfterHubIdValidation(t *testing.T) {
 }
 
 // TestJoinOrCreateHubIPStillCreatesAfterHubIdValidation is the IP-hub
-// counterpart: the xxh3 hash of the client IP is never empty, so the
+// counterpart: the FNV hash of the client IP is never empty, so the
 // shared-helper validation must not misfire.
 func TestJoinOrCreateHubIPStillCreatesAfterHubIdValidation(t *testing.T) {
 	h := newTestHandler()

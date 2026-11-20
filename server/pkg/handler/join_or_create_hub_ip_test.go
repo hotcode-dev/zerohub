@@ -2,21 +2,19 @@ package handler
 
 import (
 	"net"
-	"strconv"
 	"strings"
 	"testing"
 
 	hub "github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/valyala/fasthttp"
-	"github.com/zeebo/xxh3"
 	"go.uber.org/mock/gomock"
 )
 
 // ipHubKeyFor returns the hub ID the handler should derive for the given
 // client IP — the exact hashing scheme JoinOrCreateHubIP applies.
 func ipHubKeyFor(clientIP string) string {
-	return strconv.FormatUint(xxh3.HashString(clientIP), 10)
+	return fnvHash64a(clientIP)
 }
 
 // captureHubKey builds a mock ZeroHub that records the hub ID passed to
