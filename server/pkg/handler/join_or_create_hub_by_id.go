@@ -12,7 +12,7 @@ import (
 // calls for the same ID always land in the same hub.
 func (h *handler) JoinOrCreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string) error {
 	// Static callers pass the `id` param verbatim; IP-hub callers pass a
-	// generated xxh3 hash. The shared validation helper rejects an
+	// generated FNV hash. The shared validation helper rejects an
 	// empty/whitespace id and oversized params before any hub state is
 	// touched, and answers an oversized hubMetadata with 413 before its
 	// JSON shape is checked (the DoS guard).
@@ -25,7 +25,7 @@ func (h *handler) JoinOrCreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroH
 	// chosen id, then run GetOrCreateHub — all while holding the lock, so
 	// a join-or-create that would create a new hub can't race a create in
 	// another mode into fragmenting the room under one public id. IP-hub
-	// callers pass an xxh3 hash, which no sibling holds, so the probe is a
+	// callers pass an FNV hash, which no sibling holds, so the probe is a
 	// no-op there.
 	newHub, created, err, rejected := h.claimGetOrCreateHub(ctx, hubId, h.siblingInstances(zh),
 		func() (hub.Hub, bool, error) {

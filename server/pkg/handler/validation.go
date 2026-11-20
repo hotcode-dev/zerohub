@@ -16,7 +16,7 @@ import (
 // validHubId reports whether a hub ID is usable: non-empty and not
 // whitespace-only. Callers of the shared by-ID helpers pass either the
 // static ID read verbatim from the `id` query parameter or a
-// server-generated ID (uuid for random hubs, xxh3 hash for IP hubs) — the
+// server-generated ID (uuid for random hubs, FNV hash for IP hubs) — the
 // latter are never empty, so this check is a no-op for those paths.
 // Rejecting an empty ID up front stops a request with a missing/empty `id`
 // from silently creating a hub under the empty-string key, which would
@@ -94,7 +94,7 @@ func (h *handler) rejectInvalidJSONParam(ctx *fasthttp.RequestCtx, param string)
 // The ordering is intentional: the 400 for a missing id wins over any 413
 // or 409, and an empty/whitespace id must not reach hub state, where it
 // would silently create/join a hub under the empty-string key and squat
-// that key forever. Generated ids (uuid for random hubs, xxh3 hash for IP
+// that key forever. Generated ids (uuid for random hubs, FNV hash for IP
 // hubs) are never empty and far under the cap, so the id checks are no-ops
 // on those paths. hubMetadata is size-capped BEFORE the JSON shape check:
 // it is stored and re-sent to every joiner, and the size guard answers an
