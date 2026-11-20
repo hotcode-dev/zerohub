@@ -152,8 +152,6 @@ export function createUnitDriver(page: Page) {
       page.evaluate((id) => ZeroHubUnitHarness.getLastSocketUrl(id), id),
     markSocketConnecting: (id: number) =>
       page.evaluate((id) => ZeroHubUnitHarness.markSocketConnecting(id), id),
-    openSocket: (id: number) =>
-      page.evaluate((id) => ZeroHubUnitHarness.openSocket(id), id),
     simulateAbnormalClose: (id: number) =>
       page.evaluate((id) => ZeroHubUnitHarness.simulateAbnormalClose(id), id),
     disconnectClient: (id: number) =>
