@@ -197,7 +197,6 @@ export interface Config<PeerMetadata = object> {
    * LogLevel.Warning will log only warnings and errors.
    * LogLevel.Error will log only errors.
    * LogLevel.None will not log any messages.
-   * Default is LogLevel.Warning.
    */
   logLevel: LogLevel;
   /**
