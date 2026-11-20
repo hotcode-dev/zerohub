@@ -1366,24 +1366,6 @@ const ZeroHubUnitHarness = {
   },
 
   /**
-   * Flips the live socket back to OPEN (browser `readyState === 1`),
-   * modeling the reconnection handshake completing. The mirror of
-   * `markSocketConnecting`: after the failed-CONNECTING-window spec step,
-   * the next signaling send must reach the socket and be captured.
-   */
-  openSocket(id: number): void {
-    const entry = clients.get(id);
-    if (!entry) {
-      throw new Error(`no client ${id}`);
-    }
-    const ws = entry.client.ws as unknown as MockWebSocket | undefined;
-    if (!ws) {
-      throw new Error(`client ${id} has no live socket to open`);
-    }
-    ws.readyState = 1;
-  },
-
-  /**
    * The private `reconnectAttempts` counter of the client's same-host retry
    * budget (private is erased at runtime). Exposed so retry specs can assert
    * the counter was queued, reset by a confirmed connection, or spent.
