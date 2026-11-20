@@ -77,19 +77,6 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
   }
 
   /**
-   * Determines if the current peer is the SFU.
-   *
-   * @returns True if this peer is the SFU, false otherwise.
-   */
-  private isSFU(): boolean {
-    // Single source of truth: the election lives in getSFUPeerId() alone, so
-    // the two can never drift. `getSFUPeerId()` returns `undefined` exactly
-    // when the client is uninitialized, so `false` preserves the guard.
-    const sfuPeerId = this.getSFUPeerId();
-    return sfuPeerId !== undefined && sfuPeerId === this.zeroHub?.myPeerId;
-  }
-
-  /**
    * Gets the SFU peer ID.
    *
    * @returns The ID of the SFU peer, or undefined if not determined yet.
