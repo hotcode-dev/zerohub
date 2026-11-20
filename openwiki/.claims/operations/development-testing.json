@@ -1,14 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:51c83b77aea8ca74345876cf4d42f42bf74828ffb21cc22879929437b5054f27",
+  "pageVersion": "sha256:25aed5e762c87c1ef262de1d2333450a438e198d97d001157b355b083ac2c90d",
   "claims": [
     {
       "id": "claim_9b265d25c6ea46ffb5cbb15403e8cd85",
-      "statement": "The root Makefile orchestrates the monorepo: server-serve/server-serve-2 run the Go server on 8080/8081, e2e-test kills ports and spawns two servers before running the test suite, test-all runs server-test + e2e-test in parallel, and proto-gen runs api-linter then regenerates both TypeScript and Go protobuf.",
+      "statement": "The root Makefile orchestrates the monorepo: server-serve/server-serve-2 run the Go server on 8080/8081 (with APP_CLIENT_SECRET=client_secret and APP_ALLOWED_ORIGINS=null), e2e-test kills ports, spawns two servers, runs the test suite, and exits with the Playwright status, and test-all runs server-test + e2e-test + client-test in parallel (-j3).",
       "evidence": [
         {
-          "resource": "repo://Makefile",
-          "version": "repo-file-v1:sha256:88e925b14c788e4c2ea098abc8791c1ad186880027ba73f56c3c7d6ff0fcb8ab"
+          "resource": "repo://Makefile#L53-L64",
+          "version": "repo-lines-v1:sha256:7f9f3d812e2f4e78d747ee58ac7d51822a170836f025f2e968dca5155d3c9280:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyMzQwMGY0ZmRiYjM0NWUyMDVhN2NiZjE5OGFmMjkwYTExMzhjYTkzNWM2YzRmNDY5ZDkwODhmMjZjZjc0M2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjN2JmZmUyOWU2ZjZmMTY3YjZmNmQ0ZTg2ZjNkNTdmNDg4ZjA2OTQ1NmJkYWZjZjc3ZmZkODI1YTg5MGNmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcyOGNlYWNmMWFmZDQ1OTI1MzY1ZWYwNzc2NDUwNzJhZDBiYjI1YWU4NTM4MGY2NWRmZGYzNzQ1NDNlNjhhMWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://Makefile#L7-L7",
+          "version": "repo-lines-v1:sha256:59bd73896b994db4c07c4da4434a37d5ea597acf4d6e61a782f60cc78861ee23:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTliZDczODk2Yjk5NGRiNGMwN2M0ZGE0NDM0YTM3ZDVlYTU5N2FjZjRkNmU2MWE3ODJmNjBjYzc4ODYxZWUyMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTliZDczODk2Yjk5NGRiNGMwN2M0ZGE0NDM0YTM3ZDVlYTU5N2FjZjRkNmU2MWE3ODJmNjBjYzc4ODYxZWUyMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWYyMWU3MjVjNzFmZmYyM2NlMzU4OTZlMjAxMTZmN2I2YWM5MTMxZGY5NWY2MmIwMGE0YWNkMDRjODU4NGNlNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDM1NGI2NGE3ZDEzYzdmMmM5ZGFiZmQ0ZDQzY2MzNGUzYzhlYmEwYTM2NWE4MDliNGM1MGI0NGIxMjYyODg1OCJ9"
         }
       ]
     },
@@ -24,21 +28,21 @@
     },
     {
       "id": "claim_2c2b053579db481d9a8df809eea0b057",
-      "statement": "The E2E test/ suite is driven via `cd test && npm test`, whose pretest step runs build:harness and build-unit-harness to produce test/dist/harness.js and test/dist/unit-harness.js via esbuild; invoking npx playwright test directly makes the specs fail with ENOENT on their missing harness bundles.",
+      "statement": "The E2E test/ suite is driven via `cd test && npm test`, whose pretest step runs the tsc typecheck, build:harness, and the unit-harness esbuild script to produce test/dist/harness.js and test/dist/unit-harness.js; invoking npx playwright test directly makes the specs fail with ENOENT on their missing harness bundles.",
       "evidence": [
         {
-          "resource": "repo://test/package.json",
-          "version": "repo-file-v1:sha256:b0267776b479247664710982a114cd0550f260cbf429c8ffb2b6bf72e20e3ec4"
+          "resource": "repo://test/package.json#L7-L12",
+          "version": "repo-lines-v1:sha256:1f7463db41187db93844b0868087f55297f2eda179f9c1ae0664d536fd99801b:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzQ4MzNkNTk0OWMwM2E0MGNhOTUyNDkxNjEwYTY2NTk2NDRiM2FhNDY2MzYyZjc5OTAyMGRiZjE5ODE1NDdkYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGQ1Y2QyZmI0ZjNkZjg4NDUxNTI1NWIzOTUyM2YyZjhiNTQ3MmJlZWE5ZjU2NmZmY2EyMDRkYjgwMjU2MTA0MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmFkNTI4ZGJmZmQzNTRkNjhjM2Q3Y2E1MzdhOWZhMDE5N2IzNmY2MDVjM2RiZjIzZWJjNThmZDI2ZjA1ZDYxMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2YxZjE3ZDg5ZmRhNjdhOWQzNzEzZWZmYmM0YjgwMjkxMTc1NWI0Yzc4YWRmZjZlNWRlZDIzODI5ZTlkOGIzNyJ9"
         }
       ]
     },
     {
       "id": "claim_a58eb140059949838704f3282a0ef24b",
-      "statement": "The Playwright config runs serially (fullyParallel: false) with a 10s timeout on Google Chrome only, and under CI=1 sets workers to 1 and retries to 2.",
+      "statement": "The Playwright config runs serially (fullyParallel: false) with a 10s timeout on Google Chrome only; workers: 1 is always pinned (locally and on CI) because the specs share two live server processes and zz-migrate.spec.ts latches one of them, and retries is 2 under CI=1 and 0 locally.",
       "evidence": [
         {
-          "resource": "repo://test/playwright.config.ts",
-          "version": "repo-file-v1:sha256:a0e5f4efc37af724af8cac7f4d0361ca73b7db18f0ea5844ce679e874d5d6758"
+          "resource": "repo://test/playwright.config.ts#L3-L24",
+          "version": "repo-lines-v1:sha256:e8730a06ce6f24cc4f4c81f5ca8fe0ca6e7fdec9b9ed9d82b7b4684c204a1dec:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyY2VjYjE0NGE0NmY1ZGNmMTJhNjE2OWZjZWVkNzY5NWU4Mjk0YjA5MGRlNzZmMzY2MWNkZDAyNDkzMDAxNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4MzA2NzgwMDUyZTA2OTE0NmEyMDc4MDY4N2I3OWVmZjk5MjQ5YTFkOTUyYWRlM2MwYzgzYzA2YTEwM2FlNGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA4ZGYzZTUyNTJhYmI0Y2QzY2Y1MzgwYzY1NzhkMGIwMGMyZGRhNTRmZGEyYmFiOTMxOTllMzE1NGVjZjY0OWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBlZjg3M2M1OTUxOGMzNjJkMTg2ZjY1OGYzMGZkNGE5OGMzMWQxYjZmYjE1ODgyOTllMDJmY2VkZDI5ZTk4ODQifQ"
         }
       ]
     },
@@ -58,55 +62,55 @@
       "evidence": [
         {
           "resource": "repo://Makefile",
-          "version": "repo-file-v1:sha256:88e925b14c788e4c2ea098abc8791c1ad186880027ba73f56c3c7d6ff0fcb8ab"
+          "version": "repo-file-v1:sha256:59c4a8253da448988d2a4ecc49f91f2b3567ed01b9a883757210b1f7f007b5ec"
         }
       ]
     },
     {
       "id": "claim_f33facbd9da84a768fa22cfc3615c800",
-      "statement": "The client test suite includes regression unit specs run through the Playwright unit harness (which installs a mocked RTCPeerConnection and a globalThis MockWebSocket whose instances are tagged and record close() codes, and which records setRemoteDescription calls): unit-malformed-metadata.spec.ts pins that malformed hub or peer metadata is tolerated via the safeParseJson fallback; unit-reconnect-peer-prune.spec.ts pins that hubInfoMessage roster reconciliation prunes peers no longer in the server roster after a reconnect; unit-ice-candidate-send.spec.ts pins the shared ICE-candidate wait-and-send behavior; unit-manual-offer-handling.spec.ts / unit-manual-answer-handling.spec.ts pin the onOffer/onAnswer manual-SDP paths; unit-migration-redirect.spec.ts pins the 1001 close-reason host validation, the self-redirect stop, and the host/hostIndex update on a valid redirect; unit-permanent-hub-endpoints.spec.ts pins that the public createPermanentHub/joinPermanentHub entry points dial /v1/permanent-hubs/create and /v1/permanent-hubs/join with the hub id and metadata query params; and unit-ws-replacement.spec.ts pins that connectToZeroHub tears down a previously leaked socket instead of leaking it.",
+      "statement": "The client test suite includes regression unit specs run through the Playwright unit harness (which installs a mocked RTCPeerConnection and a globalThis MockWebSocket whose instances are tagged and record close() codes, and which records setRemoteDescription calls): unit-malformed-metadata.spec.ts pins that malformed hub or peer metadata is tolerated via the safeParseJson fallback; unit-reconnect-peer-prune.spec.ts pins that hubInfoMessage roster reconciliation prunes peers no longer in the server roster after a reconnect; unit-ice-candidate-send.spec.ts pins the shared ICE-candidate wait-and-send behavior; unit-manual-offer-handling.spec.ts / unit-manual-answer-handling.spec.ts pin the onOffer/onAnswer manual-SDP paths; unit-migration-redirect.spec.ts pins the 1001 close-reason host validation, the self-redirect stop, and the host/hostIndex update on a valid redirect; unit-static-hub-endpoints.spec.ts pins that joinStaticHub dials /v1/static-hubs/join with the hub id and peerMetadata query params (static-hub create is deliberately not exposed on the SDK and is an admin-gated plain-HTTP endpoint); and unit-ws-replacement.spec.ts pins that connectToZeroHub tears down a previously leaked socket instead of leaking it.",
       "evidence": [
         {
           "resource": "repo://test/tests/unit-ice-candidate-send.spec.ts",
-          "version": "repo-file-v1:sha256:ad350af6625f84c19fb58135e2d61974e4096ecd4af2262f8dd69f4f6ecbae1d"
+          "version": "repo-file-v1:sha256:4199b1fb63ba0f93a8153415c9e5df55e20d19b1fffecb93ab375a93f4b20667"
         },
         {
           "resource": "repo://test/tests/unit-malformed-metadata.spec.ts",
-          "version": "repo-file-v1:sha256:86bbfe2e8b9f83341959aac8924f4e634c829d9cf659d390601b14e242c0fd22"
+          "version": "repo-file-v1:sha256:5bc37e91b4eb45769a3229821498d1b01d9c65cdd460863ec7d2c87fb7dfbbe5"
         },
         {
           "resource": "repo://test/tests/unit-manual-answer-handling.spec.ts",
-          "version": "repo-file-v1:sha256:931d421db4180c99dd199d41eee1e5171edb619482fdcb2793c44dfcf8bdec60"
+          "version": "repo-file-v1:sha256:9955ddc41c194d6e8827e0349ab09bdb969258d1cb516ee7b1d032022bb90221"
         },
         {
           "resource": "repo://test/tests/unit-manual-offer-handling.spec.ts",
-          "version": "repo-file-v1:sha256:901a4db9df11b581b64c6713b8ecfcd5dfd0e46f956baea0d0828075ee2eee3a"
+          "version": "repo-file-v1:sha256:e37fb6a1715130c3e6d97df968df881763fe3b2e8649aafa96c1c4aab7600c2b"
         },
         {
           "resource": "repo://test/tests/unit-migration-redirect.spec.ts",
-          "version": "repo-file-v1:sha256:08a181e7e43909ec13a70b354790f06d3534c2e264e7594d950c9bd64bd3497c"
-        },
-        {
-          "resource": "repo://test/tests/unit-permanent-hub-endpoints.spec.ts",
-          "version": "repo-file-v1:sha256:8e325027ca62cb03910a40cecabca76791387e46d1670c0249a0e5798b838660"
+          "version": "repo-file-v1:sha256:ed410e40eab309ade82fc9bdb789d3deb0a6c19180a79a7ac1a5ab78e7153f95"
         },
         {
           "resource": "repo://test/tests/unit-reconnect-peer-prune.spec.ts",
-          "version": "repo-file-v1:sha256:69ae50a238d2efa9c453979bbf103c5914b902f909cb9fbe96ce5abfe5ffea70"
+          "version": "repo-file-v1:sha256:458fb065e9f827f868e6a9dc4b643d7253fcfdf703b707b4704739942ebb309c"
+        },
+        {
+          "resource": "repo://test/tests/unit-static-hub-endpoints.spec.ts",
+          "version": "repo-file-v1:sha256:7608cb45e94adef12737b74736a937c969609a673b881204624c3402350887c8"
         },
         {
           "resource": "repo://test/tests/unit-ws-replacement.spec.ts",
-          "version": "repo-file-v1:sha256:89e7b5b96524406185a6c2549d12ccb42c763587f4cdc9470ef08531dd7808aa"
+          "version": "repo-file-v1:sha256:af0152886a0543943735cae32627b2ca59076ba494598eb79f4c2cef5510c1f2"
         },
         {
           "resource": "repo://test/unit-harness/index.ts",
-          "version": "repo-file-v1:sha256:43686dadf678577ec8bb43067d03885da044a8bc757b94f1ccfc596a3f96001d"
+          "version": "repo-file-v1:sha256:4b9bdf4c7d5bb0b131ccaf581fe630d66a2d4261476a96b45b58230a36424ef7"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-14T09:24:33.856Z"
+    "at": "2026-11-20T15:09:12.940Z"
   }
 }

@@ -12,18 +12,22 @@ sources:
     resource: repo://client/src/zeroHub.ts
   - id: openwiki-source-012f2c78e3b1446dfc35803f
     resource: repo://Makefile
+  - id: openwiki-source-41f21ee88395963644de9448
+    resource: repo://server/pkg/config/config.go
   - id: openwiki-source-e27a23c64f72b7d3d77630c6
     resource: repo://server/pkg/handler/handler.go
+  - id: openwiki-source-93a30dd3c2c7599eb46400a4
+    resource: repo://test/harness/index.ts
   - id: openwiki-source-b7181b4d7359d016a13b092d
     resource: repo://test/package.json
   - id: openwiki-source-bb910847e63080c9ced0e830
     resource: repo://test/playwright.config.ts
   - id: openwiki-source-801ca2739d5984913a9ac0eb
     resource: repo://test/unit-harness/index.ts
-generated: { by: "hermes", at: "2026-10-13T01:29:56.745Z" }
+generated: { by: "hermes", at: "2026-11-20T15:09:12.940Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-14T09:24:33.856Z
+    at: 2026-11-20T15:09:12.940Z
 ---
 
 # ZeroHub Quickstart
@@ -52,7 +56,7 @@ orient, then follow the related pages for depth:
 | `client/` | TypeScript/JavaScript SDK, published as `@zero-hub/client` on npm |
 | `server/` | Go signaling server (`fasthttp`) |
 | `proto/` | Protobuf definitions for client↔server communication |
-| `test/` | E2E tests (Playwright + Svelte) driving the real client, plus unit specs that exercise client internals with a mocked `WebSocket` and `RTCPeerConnection` |
+| `test/` | E2E tests (Playwright driving an esbuild-bundled TypeScript harness), plus unit specs that exercise client internals with a mocked `WebSocket` and `RTCPeerConnection` |
 | `docs/` | Astro-based documentation site |
 | `Makefile` | Root orchestration (run, test, proto-gen, e2e) |
 | `AGENTS.md` | Repository development guide |
@@ -107,12 +111,16 @@ client.onPeerStatusChange = (peer) => {
   }
 };
 
-// Connect and establish the mesh.
-client.createHub('my-hub', { name: 'Alice' });
-// ...or client.joinHub('my-hub', { name: 'Bob' });
+// Connect and establish the mesh: the server generates the hub id,
+// which this client learns through onHubInfo.
+client.createRandomHub({ name: 'Alice' });
+// ...a second peer joins that hub by its id:
+// client.joinRandomHub('<hub id>', { name: 'Bob' });
 ```
 
-For a second peer, call `joinHub` with the same hub ID. The two clients
+For a second peer, call `joinRandomHub` with the hub ID from the first
+peer's `onHubInfo` callback (or `joinStaticHub` for a named, never-expires
+hub created out-of-band by an admin). The two clients
 negotiate over the server and establish a direct WebRTC data channel.
 
 > Manual SDP handling: set `autoAnswer: false` / `autoAcceptAnswer: false` to
@@ -122,8 +130,9 @@ negotiate over the server and establish a direct WebRTC data channel.
 
 ## 3. Core concepts (in one line each)
 
-- **Hub** — a room; peers join it by ID (`createHub` / `joinHub` /
-  `joinOrCreateHub`).
+- **Hub** — a room; peers join it by hub ID (`createRandomHub` /
+  `joinRandomHub` for random hubs, `joinStaticHub` for named, never-expires
+  hubs, `joinOrCreateIPHub` for IP-keyed hubs).
 - **Peer** — a connected client, assigned a numeric ID by the server; the
   higher ID creates the offer to the lower ID to avoid collision.
 - **Metadata** — arbitrary JSON attached to each peer and to each hub,
@@ -136,10 +145,11 @@ negotiate over the server and establish a direct WebRTC data channel.
 ## 4. Common tasks
 
 - **Regenerate protobuf** after editing `proto/*.proto`: `make proto-gen`.
-- **Run the full test cycle** (two servers + E2E): `make test-all`.
+- **Run the full test cycle** (server unit tests + E2E + client vitest):
+  `make test-all`.
 - **Run server unit tests**: `make server-test` (or `cd server && go test ./...`).
-- **Run E2E tests**: `cd test && npm test` (the `pretest` step builds both
-  the E2E Svelte harness and the unit-spec harness; don't invoke
-  `npx playwright test` directly).
+- **Run E2E tests**: `cd test && npm test` (the `pretest` step type-checks and
+  builds both the E2E harness and the unit-spec harness via esbuild before
+  invoking Playwright; don't invoke `npx playwright test` directly).
 - **Factory precommit gate**: `./.zerofactory/precommit.sh` (format, build,
   test).
