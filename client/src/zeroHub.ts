@@ -1312,7 +1312,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         // must still run — otherwise the connect Promise would be left
         // pending forever.
         this.reportZeroHubError(
-          Error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`)
+          new Error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`)
         );
         settle(new Error(`ZeroHub WebSocket error: ${JSON.stringify(event)}`));
       };
@@ -1354,7 +1354,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
             // isolates a throwing user handler so the settle below always
             // runs and the throw never escapes the onclose event handler.
             this.reportZeroHubError(
-              Error(
+              new Error(
                 `ZeroHub error code \`${event.code}\` reason \`${event.reason}\``
               )
             );
@@ -1438,12 +1438,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    */
   public sendZeroHubMessage(msg: ClientMessage) {
     if (this.isDisconnected) {
-      throw Error(
+      throw new Error(
         "ZeroHub is disconnected, please connect again via `createRandomHub` or `joinStaticHub`"
       );
     }
     if (!this.ws) {
-      throw Error(
+      throw new Error(
         "ZeroHub not connected, please connect to ZeroHub by `createRandomHub` or `joinStaticHub`"
       );
     }
@@ -1557,7 +1557,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     send: (localDescription: RTCSessionDescription) => void
   ) {
     if (!this.ws) {
-      throw Error(
+      throw new Error(
         `send ${op} error: ZeroHub not connected, please connect to ZeroHub by \`createRandomHub\` or \`joinStaticHub\``
       );
     }
