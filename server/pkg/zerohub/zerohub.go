@@ -93,18 +93,14 @@ func (z *zeroHub) CreateHubIfAbsent(hubId string, metadata string, isPermanent b
 	z.mu.Lock()
 	defer z.mu.Unlock()
 
-	if existing := z.GetHubById(hubId); existing != nil {
-		return nil, ErrHubAlreadyExists
-	}
-
-	newHub, err := z.buildHub(hubId, metadata, isPermanent)
+	h, created, err := z.getOrCreateHubLocked(hubId, metadata, isPermanent)
 	if err != nil {
 		return nil, err
 	}
-
-	z.HubStorage.Add(hubId, newHub)
-
-	return newHub, nil
+	if !created {
+		return nil, ErrHubAlreadyExists
+	}
+	return h, nil
 }
 
 // GetOrCreateHub atomically returns the existing hub with the given ID, or
@@ -116,6 +112,13 @@ func (z *zeroHub) GetOrCreateHub(hubId string, metadata string, isPermanent bool
 	z.mu.Lock()
 	defer z.mu.Unlock()
 
+	return z.getOrCreateHubLocked(hubId, metadata, isPermanent)
+}
+
+// getOrCreateHubLocked performs the check-then-store under the caller's held
+// z.mu, so concurrent calls for the same ID collapse to a single hub instead
+// of orphaning one. created reports whether this call stored the hub.
+func (z *zeroHub) getOrCreateHubLocked(hubId string, metadata string, isPermanent bool) (hub.Hub, bool, error) {
 	if existing := z.GetHubById(hubId); existing != nil {
 		return existing, false, nil
 	}

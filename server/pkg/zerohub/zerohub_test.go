@@ -350,3 +350,41 @@ func TestGetOrCreateHubReturnsExisting(t *testing.T) {
 		t.Fatal("expected distinct hubs for distinct IDs")
 	}
 }
+
+// TestSharedCoreBuildHubFailure proves that when buildHub fails (unknown peer
+// storage config), the shared getOrCreateHubLocked core surfaces the error and
+// stores nothing, through both public methods. This guards the error branch
+// that was previously duplicated in each method and now lives once in the core.
+func TestSharedCoreBuildHubFailure(t *testing.T) {
+	zh := &zeroHub{
+		cfg: &config.Config{
+			App: config.AppConfig{
+				PeerStorage: "bogus",
+			},
+		},
+		HubStorage: storage.NewMemoryStorage[hub.Hub](),
+	}
+
+	h, err := zh.CreateHubIfAbsent("x", "meta", false)
+	if err == nil {
+		t.Fatalf("CreateHubIfAbsent: got nil error, want unknown peer storage error")
+	}
+	if h != nil {
+		t.Fatalf("CreateHubIfAbsent: got hub %p, want nil on error", h)
+	}
+
+	h, created, err := zh.GetOrCreateHub("x", "meta", false)
+	if err == nil {
+		t.Fatalf("GetOrCreateHub: got nil error, want unknown peer storage error")
+	}
+	if h != nil {
+		t.Fatalf("GetOrCreateHub: got hub %p, want nil on error", h)
+	}
+	if created {
+		t.Fatalf("GetOrCreateHub created = true, want false on build error")
+	}
+
+	if got := zh.GetHubById("x"); got != nil {
+		t.Fatalf("failed build left a hub in storage: %p", got)
+	}
+}
