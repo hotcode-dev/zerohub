@@ -1,12 +1,7 @@
 package handler
 
 import (
-	"errors"
-	"fmt"
-
-	hub "github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
-	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
 )
 
@@ -33,22 +28,9 @@ func (h *handler) CreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hu
 	// both pass the probe and both store (which would fragment the room
 	// under one public id). Random-hub callers pass a fresh uuid, which no
 	// sibling holds, so the probe is a no-op there.
-	newHub, err, rejected := h.claimUserChosenHubId(ctx, hubId, h.siblingInstances(zh),
-		func() (hub.Hub, error) {
-			return zh.CreateHubIfAbsent(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), false)
-		})
-	if rejected {
-		// A sibling mode already holds this id; claimUserChosenHubId
-		// wrote the 409 Conflict, so stop without overwriting it.
+	newHub, ok := h.claimHubForCreate(ctx, zh, hubId, false)
+	if !ok {
 		return nil
-	}
-	if err != nil {
-		if errors.Is(err, zerohub.ErrHubAlreadyExists) {
-			log.Error().Err(fmt.Errorf("hub with id %s already exists", hubId)).Send()
-			return h.Response(ctx, fasthttp.StatusConflict, map[string]string{"error": "hub id already exists"})
-		}
-		log.Error().Err(err).Send()
-		return h.Response(ctx, fasthttp.StatusInternalServerError, map[string]string{"error": "create hub error"})
 	}
 
 	if err, responseWritten := h.Upgrade(ctx, zh, newHub); err != nil || responseWritten {
