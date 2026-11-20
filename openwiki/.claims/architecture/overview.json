@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0806d508634e9230e866fd53d01d49e2b1cc389c54f606cd68e9a88650a38ca7",
+  "pageVersion": "sha256:e9db173c388e72be8c0b253d786fe2b53fa5d7f314a263fe701e47e187481398",
   "claims": [
     {
       "id": "claim_937b0d08bd3849b4b3ddd56a5664ca43",
-      "statement": "The Go server entrypoint constructs four independent ZeroHub instances (static, random, IP, permanent hub types) via a shared newZeroHubOrPanic constructor and passes them to the handler, so each hub type is backed by its own hub registry.",
+      "statement": "The Go server entrypoint constructs three independent ZeroHub instances (static, random, and IP hub modes) via a shared newZeroHubOrPanic constructor and passes them to the handler, so each hub mode is backed by its own hub registry; the former 'permanent' mode was merged into the never-expiring static mode.",
       "evidence": [
         {
-          "resource": "repo://server/cmd/server.go#L26-L30",
-          "version": "repo-lines-v1:sha256:7309af0b4408d0c5b67a36cc99f9b613ede7ab7775472a46fa5b07186bde0719:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODQzYjQzOGRjMjEyZjdkZTE2NWFhOGZmZTZiODZiNWRiZDU3MzY4NjIxYTA5YjE1NjExNzRmY2MzNjk0NzhhMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzE4NzEzZjU2MWI4NTYxOTEzMzBjNjg2OTc2ODY3YzUzMDZlOGI3NDMyNmM3YTI3ODkxMTUwNDhmODlhMDJmNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWRkMjUwMTg5MTBjYjIzNTIwMWI3NGFiNGU0MTZlMjMzMmRkMDVkMDJhMTEzM2Q1NGE3OWIwYWQ0NzE3ODNlZCJ9"
+          "resource": "repo://server/cmd/server.go#L25-L29",
+          "version": "repo-lines-v1:sha256:318897bae9dcb784e43f0c6bdd4586199ab1323063572b90d44ad24283129f73:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWIwMjJjNDcxZDZiZTQ4OTdiMWQ5NjI3N2RmNTQwYTRkMDIyZWE2MDI5MThjZTFhZmFhNWVjZTU4ZDJkMjU0MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTIwMWIyNDY0NjU5ZDQ3YmM3NDNlZjBjZmE3ZjE2MzkxMjgyOTNhNDk0ZDgwMjczMTQzNzMwYzI0OTdjZDEyOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODYxMjkzNWQyZDllMzI0ZDBlZjU4NjUwYjFhMDk3ZDI2MTA3MjJlZmFkNjA5ZTk1NTJlODU0NzhkOGQ0NDM4YiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2EzZjc5YmE2MmYyZTg0NGIxOGM1ZWUzMTBkOGQwZmFkMTIwOGFjMDdiMzNlNjVkZDlkNDg3MzBmMWFjNjllNCJ9"
         },
         {
-          "resource": "repo://server/cmd/server.go#L42-L50",
-          "version": "repo-lines-v1:sha256:de30767efb3115fe6498da80ed9a06712ef6a3e029bb7f939055017c649009fc:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmZmNWRiMTQwMjQxYWVhY2Y5MGNiMmU4ZTM2NzhhZTQ1MTIwYWZmNmZiODM5NWUwYzNkMmVmY2MwNTdjNjE3ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjI5NjQwNzljM2M1YzgxNTIwZWYzM2EyYjlkMmUxNWExYjg0ZDcyODBkYjg1OTBkY2Q2NTc0N2UzZTAxMmE0MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+          "resource": "repo://server/cmd/server.go#L41-L47",
+          "version": "repo-lines-v1:sha256:ce846692ec81b69018df9f46f75a09a401bb4343180001a23d1fba58ea5e5d8b:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjkxYjg0ZWU2OTQ4NjVmM2U2N2IxZjIxMjNhZWI2NjQwZGE5ZDg1ZTNlYzZlYjFhMDY1NzRjZDZkZjdmMjg5MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjQxOWM2NjE3ZWUxODBkZTVmZjA0M2YzNzM4ZjM1NTk5NWI5MzYyYzY0MjMyNmVmNjNhOTg0NjdmM2NkYmE5ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
         }
       ]
     },
@@ -31,8 +31,12 @@
       "statement": "SDP offers and answers are exchanged as protobuf ClientMessage/ServerMessage frames over the signaling WebSocket, and ICE candidates are flushed to the wire after a waitIceCandidatesTimeout (default 2000 ms) instead of being held indefinitely.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L901-L956",
-          "version": "repo-lines-v1:sha256:3aa9667674eaa2dc2a2f7eb92e754b88d071fa93ba677f8a394e05691213924a:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmMmEyZjk5NmYwOGU2ODBiZDI5MjEzNWE2ZmE0OTc4YmRhMjZlNjAyZDg0ZjMzY2IxZDU5NDc3NWQ0MzA0YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlMTJiNjExODk0M2UzMGMwMDY4MzNlNzgxNjMwYTUzYjMyZjQxN2VmNWY5Nzk1YzNmMTJmMzMwODAyNGM1ZDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMzMzYyNWQwMzMxMjJmODNhMzQwMTlhODIwMmE5N2Y1MTBmODY2ZWJjYzAwNWY3YzEyMDQyMGY2YzI1ZmZlMDYifQ"
+          "resource": "repo://client/src/const.ts#L43-L43",
+          "version": "repo-lines-v1:sha256:be7a4b59f31f5eb4b033b4dce9a8aef6dba7d9b1fcb53acc40bef78c066a1a96:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmU3YTRiNTlmMzFmNWViNGIwMzNiNGRjZTlhOGFlZjZkYmE3ZDliMWZjYjUzYWNjNDBiZWY3OGMwNjZhMWE5NiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmU3YTRiNTlmMzFmNWViNGIwMzNiNGRjZTlhOGFlZjZkYmE3ZDliMWZjYjUzYWNjNDBiZWY3OGMwNjZhMWE5NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTc5ZTllYTYyNjIxNTQ3MjFmNjU0NGZiODEzMWZmY2Q5Y2VkZDBlNzc3Y2M3YjcyNzI4M2JhOThjMGM0ZmRlZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzEyNzI2Y2QxZjYzZGJlM2MwOGI2NmU2Nzg4MmQ5ZTgwYWVkODllNzZlMmFjYTQ5MmMxZDRkMmRlMDQ5M2NkZCJ9"
+        },
+        {
+          "resource": "repo://client/src/zeroHub.ts#L1655-L1766",
+          "version": "repo-lines-v1:sha256:4ba9299384d49f2ab263f4af9145982563ed514da2004ebbf2d6ea7453865c89:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI1NTJmZjAxZmUzOWJhNWM2ZDA4NjBjYTgxNmNkNDBjZWU0YzJjM2M1ZTI3Nzk5ZmJhZWE0YThiMDZhMTlkMTg3IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIyZWI1ZmQzYzEyZDNlYmY2MjE2NDM5MjlmZWQ3ODZjZjJiNTA5MTUwMjQ1MDUzNzRlYWVkYWQ0ZDI5ZWYyYmUyIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI2NzhmZWEzMGEzMjM1ZDI0OTIyNTgxODFiN2U4M2QwMjI3NGJjODkxMjEwMmJiYWFlYjUwMWI1NWNkOWE4ZWJhIn0"
         }
       ]
     },
@@ -41,8 +45,8 @@
       "statement": "When a peer joins a hub, the hub assigns it a monotonically increasing numeric ID via an atomic counter, broadcasts a PeerJoinedMessage to existing peers, and sends the new peer a HubInfoMessage containing its own peer ID, hub metadata, and the existing peer roster; the join signal is marshaled before the peer is registered in storage, so a marshal failure is a no-op and never leaves a half-registered peer.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/hub/hub.go#L70-L107",
-          "version": "repo-lines-v1:sha256:d33adcb3c4e73afa73f1bb759ba76426f5d59d436c2ebdf0790d85e6ab4c7743:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3MjdiMzdhYmJhNjRhOTZlMTJkNmUxODIyNGNkMjJlM2M2ZGI4OWNjMmZlZThmMjI1MzhkM2VhNzkyZDIxYjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjMzZlY2Y2NmY3ODE0YWNjOWRjODE2OGE2ZDVjNWMwY2E2ZjhlMDAzODdiNzRiMjcyZTZlNzg1NTQzNzcwNzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAwZjFmMjEyNzYxMjFhY2UyNzJjNmYwNGM2NTU1ZDE2ZmUxYzk2YWVjNTRlMmI1YmY1YmUyZTExZGU0ZWRkNTcifQ"
+          "resource": "repo://server/pkg/hub/hub.go#L99-L171",
+          "version": "repo-lines-v1:sha256:f26e757f59106578f4cd70f5aeeae01afefe70d76a9a54f34fe534f63b7b274c:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiMTQ5NDZhZDNiODJmNmJlMjE1NTg0MDRhNWY3MTQ2YTM4YTE3ZDRmNzUwZWQzZGZmNzI4Nzk3YTY4YWRhODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3NTQ5MjYyZjJiYjUyYTNhMmNhMTVlZWE5YzM0ZDk0MDVkMzUwOTBiOGI3NWZlODM1ZjlmMjZlNDkxZTliODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRhZmJlZTkxNzJmODJjMjg3MDI3Y2U3ZTcyMTc4YmNhOTU5ZjA4YWUwNDIwNTMyNDRkYjU5YmE1Y2Q0MDY1ODMifQ"
         }
       ]
     },
@@ -71,46 +75,42 @@
       "statement": "After a peer is established, the server is not in the media/data path: it relays only signaling (hub/peer events and SDP), while data channels and media streams flow directly between peers over WebRTC.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/hub/hub.go#L164-L192",
-          "version": "repo-lines-v1:sha256:1f97f3fe7522b8e723d8b2f1fe91ac970b385402738a278bb8f73f0a1433d2de:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1MDFkN2I2Zjc0YzY2N2JiYmU0Zjg4Nzg0MzVkNWI1NzRjYzA5NGVjNjE3MGExYzc0YjVmYjJiMjBiMGQxZmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3NTU0MjlkYjExZDAwOWFkYWRkOGU0YjcwYzRlNTcxMTBmNDBmYWRjMjRmNjU0NDM1MGQyYjEyZWU0MjI2ODEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4ZjYzYWZjMGY1MGQ5ZWIxNDUwZDE0ZmZiMTdjNjJlMTFkZDE2YTg1YjQ2NzNhMzgxMTA1NjNhYTJhOGYwZDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFmODI1OGJlNDkzNGI3OWRjYjhhZWVkYmM1NDA5ZWFkYzMxMjZhNTA5MGMyMzI2NzBjYzBhZjc1ZGJiOTZjMzMifQ=="
+          "resource": "repo://server/pkg/hub/hub.go#L303-L348",
+          "version": "repo-lines-v1:sha256:02f23c04f94df88129aaa7cd4269f48debf139721e9d6f93d8f1a7c21ffdad52:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMGY5NDgxZGIwZTBlYmFkYzY5MDg3ZWQ3NjA4MTQ2N2I1ZGEyZjY0NDU5ZTc5NjFhMDIzYjQ5NTdkMmZhNDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYyYjBhZTk3Y2ZkNTI5YWQzMjIxYTYwYmEwMmIyM2EwZGU1Y2ViYTg5ZDkxMTJjNTg5NWVlNzdkNmMwODQ5YTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRjZTc4ZmRiNWUwODRkNmY5MWQ3YjFjNWE5ZTRiYjBlZTcxZTkzOTM1NDFmZTBhMDM5MWZmODY3ZTEzNzEyOWYifQ"
         }
       ]
     },
     {
       "id": "claim_96c053cdb46a4bee82188877cdd6cbb6",
-      "statement": "Hub creation on the Go server is performed through the atomic CreateHubIfAbsent primitive on zerohub.ZeroHub, so concurrent create requests for the same hub ID collapse to a single hub: the race winner creates and the rest receive ErrHubAlreadyExists (surfaced as HTTP 409) instead of orphaning a hub.",
+      "statement": "Hub creation on the Go server is performed through the atomic CreateHubIfAbsent primitive on zerohub.ZeroHub (run under a cross-mode collision lock), so concurrent create requests for the same hub ID collapse to a single hub: the race winner creates and the rest receive ErrHubAlreadyExists (surfaced as HTTP 409) instead of orphaning a hub.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/create_hub_by_id.go#L40-L58",
-          "version": "repo-lines-v1:sha256:6bef75627f4c4e601cf3ad749de121383dd4b72b8ce07183f0b3e590c394b0c2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwZTEyZDYxOWIxOTc0ZTEyNmFhYzNhZmUzODhiMzA2MDZhZjMwYzhiYjYzNjI1OGI3ZGFlYWJlMDIzYWRmMzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMjMyMjc0YTk2ZjhjZGE2YTI1MTQyMTZmNDc0NTFkZGQ0NGMyOWIzYmVlYWY1YmNkMjFlYzQ3ZjNhYTgyYjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM4ODMwY2NhZDJiMjMxNmVjNDQ2ZGUyMmZlM2VjNTgxYjVlY2M4NjMxMjMxZTUyZjg0MDc5NGFjYWU2MWExMDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkNzA3YjJjZDU0OWMzZDliOTJjOGY2NTQ4NTc5YzM4NWQ1MTBmN2Q1NTNmM2EzMzdlNDg1MjRhYmMzMjI0NzYifQ"
+          "resource": "repo://server/pkg/handler/claim_hub_for_create.go#L17-L41",
+          "version": "repo-lines-v1:sha256:0df50966e728cd57dee498be7041584b96ca0552697e3f1393b4bfc57eacbf54:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiOGYyYzQ3NjI5ZDk4NGMyNDllZTc4YTc4OGMwZWFmZWFlODBhNGQ1Njg5NzkzZGY1OTFiNjk0YWE2YTAwZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkZDRhMWY1NTMwNzMxYzQzNmYzNmFkMWZjZDMwMDFhMDI3MzVjNThkYTYwMDllMTYzMDQ2YTMwODMzYWNmZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4OWIwODJmZTUwMmNjYzllMjhiOTg4OGNkNzg4NWExMTk5ODgyMWMwMjQ2NmY2NDc2YWQwZjk3ZTRlNTJhMWUifQ"
         },
         {
-          "resource": "repo://server/pkg/zerohub/zerohub.go#L83-L98",
-          "version": "repo-lines-v1:sha256:02fd3ec40b9bbcd4ef64aafdd235afa2ee1bd3b27d30b78a21538a3b6aec51b1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMjhhYTM5YTQwZDQxOTFhNWE2YjE4Y2Q3NzZiZmZmYmY3ZGY0MzYzZTRkN2VhMzIyM2EyYjJkZTRjOGY4OWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1ODA0MmJlM2Q1OWZjYzlmMTg5ODg1Yzg4Yzc5MjZhMzU3ODUzYzMzYmNlOWZjMzQ3ZGYxOWNiMjFhMjk0YTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4ZmQxYzE2OGIxMzM2YjEyYWQyMGQ0N2E3ZWM3OTEzMGY0NGIzMzhiMDAxYWVlOGM1OWUzZWNiYTY4NmJmMTIifQ"
+          "resource": "repo://server/pkg/zerohub/zerohub.go#L88-L104",
+          "version": "repo-lines-v1:sha256:99406c980dcb181ceb713be1ad274ca686a647e3ac2afb50d031495555e308ec:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1MmQ5ZGM2NDQ3YmVjZTA1Y2ZmNTI2ZGM3NjY3OGZmODJhYThhNzRiZmU3Nzg2YTdmNmI4OGUzODJkZTJkZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNlNGU0MmY3MDQwMTdiZmYxMWViODYxODQ1ZDMyYTA0MjRhNjc4OGJhMWU3NDQyOGFiMTI2MDJjOGEzZmEyZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc0ZjI1ZWI1ZmQ4YzVlYjg3MWE3MWFmMjZjNDk2NmNlYWYxM2EzZDkyYmY3NTY3N2YwNGJhYzhmNWE0YzRjOTUifQ"
         }
       ]
     },
     {
       "id": "claim_2c43b5311acc47ee9d484447edca9b51",
-      "statement": "The Go signaling server validates hub-endpoint query parameters before the WebSocket handshake: a missing or empty id parameter and any non-JSON hubMetadata or peerMetadata are rejected with HTTP 400, so an empty-id request can no longer create a junk hub under the empty-string key and malformed metadata is not stored or re-broadcast.",
+      "statement": "The Go signaling server validates hub-endpoint query parameters before the WebSocket handshake via the shared validateHubCreateParams helper: a missing/empty/whitespace id or non-JSON hubMetadata is rejected with HTTP 400 and an oversized id/hubMetadata with 413; peerMetadata is size- and shape-checked at Upgrade. An empty-id request can no longer create a junk hub under the empty-string key and oversized or malformed metadata is not stored or re-broadcast.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/create_hub_by_id.go#L18-L32",
-          "version": "repo-lines-v1:sha256:07b9820bdacd82b7ef08ed9c20f790436ee0520d62fbcf693e60614e2009d009:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwYzM2N2Y3YTU3NTFiNWMwZDM4OThhZjJkNzM5MzljMDBlMTdiM2UwNzU5N2NkNDEzY2M5MDNkOWY1YjAzYmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2ZTQyZmRlOGIwZWI5ZGUwOGY2YTgzODBiYWIzNjg4OWUwNjllYTRiOTk0MDkyODk2OWQ0MjRmODcxNWMwMjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlmMmRjNTA3MDU4YmEzN2NiOWM4ODVjOWJjZTA2OTUxNzc1Njc0NWE4MGI1YTc2NzhlYTg1MTEwNmFjMTY2ODcifQ"
+          "resource": "repo://server/pkg/handler/validation.go#L79-L113",
+          "version": "repo-lines-v1:sha256:fe3a5f349af90f44bdbb749e4d8d78828ef7ca2c30dce2f7d1285982907cced2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzZmRkOTQyMWQ2NjQ2YTI2YzFhNmEyZmRlMmVlNWVlNGE0ZWQ2YTg5MDkxZWRiMTliM2JlMWE2NDA2ZjVkOTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0YzI0NWI2ODUwOTEzOWE4MmViMDJlZjBlNTdlZGY4ZjU4OGFjYmJmZDg5Nzc0NmE3MWYxNmJjZDBjNDBjNGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwNGYxOTFhY2UxM2JlNWU3Yjk5ZTgyNWQ0MTc3MDBhZTg1MTJmNzRkODUxYTQyNWI2YjE1ZDRlZmI2MGM2OGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjZjFjNjUwMzI4ZjcyYmM2MGIwZjUwMWU2ODVkYzdjODYwYjU3ZGU4M2JlM2ExNDI5NmFhY2I4MGJjNjAzOTcifQ"
         },
         {
-          "resource": "repo://server/pkg/handler/validation.go#L18-L28",
-          "version": "repo-lines-v1:sha256:17ed46d7eb0a346ccd2209e7fa37cfff2b083f3f39a628388e06da9d96d1ff60:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzZjc3OGQ2ZjllZTY2NjY3MmFkMTg2ODhlYjFjMDIyMDI1MzQ1OTViZDQ1ODY2ZWNjNjE1MTA3NDBlYjk3ZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAzODVmZDNjMTFmODFlOTA1Yzg2MmRmODZjNDc2YjFlNDE4Yzc1MDViNzIzOTVmYjBlYTAwODZjYTk0MzBkY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
-        },
-        {
-          "resource": "repo://server/pkg/handler/websocket.go#L28-L38",
-          "version": "repo-lines-v1:sha256:b250aec51f863bb696974b43927755e1e26fefbaa453ae90bdc2445bbde2191b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3YmVjMDg3ZDMwMzljNWRkOGVlYWI3ZGViYWFkZDgwYzc2NjI3Zjk3YTQzMjg2NzNhYTI1ZWYxYWZmYWFmZTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgzYjk2OGNlZmUxYzY5ZTRlNGVkNWY5Yjk3NTc0NWJlMjI2OGI2ZDcxMjZiMmNlOGUxMTZmNmU5ZTNiNTFhZTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkwMzI4Zjk3OTVhMjkzYTI4NGNkNTczYTc3ZDRmNTAxMmIzZmM2MzExZDA2OTY4YzlhMDU0NDQxNzNmMmU3YzAifQ"
+          "resource": "repo://server/pkg/handler/websocket.go#L80-L105",
+          "version": "repo-lines-v1:sha256:ce602dd435b9d480f7b710706f3c4f8ea0f4c2f4633a8f4ad38168add19a7f08:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMTcyMTkzNTU1YmExZjAwMjhhNzllZTZhZjc2N2UwNzUxZTdlYTk2OWQ1NDYzZTE1MDhiYzJlNWJkNmI5OWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiZGMwNGY2Mzc4NGNlYzM0ZWM3MTk2ODYyZGQwYTIwZGYxNjgyNzAxNGM4Mzg4NTUxYTA4OTUzMzk1OTI0MWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5NGIxOGE0OWNlZmYyNTFmZWYzMzgyYTE3MWUyZDQ2MTcxM2E4NWE5NjFlMTZkN2FkZjY4NGI4MjQyMmMwM2MifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-14T09:24:33.856Z"
+    "at": "2026-11-20T15:09:12.940Z"
   }
 }

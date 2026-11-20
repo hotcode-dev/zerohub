@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:94bd773e020290bf3102e695603cbadb5482c9d2e9e8788017ac64e7c6a9a4b3",
+  "pageVersion": "sha256:b7b0a5bb668206318b939146dde62f60bf4efec366c71a5366aed2ae07bcc716",
   "claims": [
     {
       "id": "claim_29b96b61359846dd9149060c8b57d3a3",
@@ -8,23 +8,23 @@
       "evidence": [
         {
           "resource": "repo://AGENTS.md",
-          "version": "repo-file-v1:sha256:3a5d338c9fe7c643d8b4ac966cacae92f1450c196628e112ec4d811ce71ecc1b"
+          "version": "repo-file-v1:sha256:a608ad960b8a1fda6d9249730d6f3d4a03d11644e5a025979935b6f69690b9ee"
         }
       ]
     },
     {
       "id": "claim_819db68304f043128f8fb1d793ec51b4",
-      "statement": "The client SDK's public surface is re-exported from client/src/index.ts: Peer, ZeroHubClient, the config consts/types, and the topology module.",
+      "statement": "The client SDK public surface is re-exported from client/src/index.ts: the peer module (Peer, PeerStatus), ZeroHubClient, the config consts and types, the topology module, and the logger module (Logger, ZeroHubLogger).",
       "evidence": [
         {
           "resource": "repo://client/src/index.ts",
-          "version": "repo-file-v1:sha256:77165a24ca4d3c9085e7d968f2f17ef096235f11831c6b203a2ae8506b756538"
+          "version": "repo-file-v1:sha256:9090ff649f0f1c35a17cff3066f4aaff115662ec3d820f05c58bd5506558a82b"
         }
       ]
     },
     {
       "id": "claim_fb004955a1b2494c8c72577f4cc50f20",
-      "statement": "Instantiating a ZeroHubClient makes no network connection; a connection is only opened when a hub entrypoint such as createHub or joinHub is called.",
+      "statement": "Instantiating a ZeroHubClient makes no network connection; a connection is only opened when a hub entrypoint such as createRandomHub or joinRandomHub is called.",
       "evidence": [
         {
           "resource": "repo://client/src/zeroHub.ts#L190-L230",
@@ -37,42 +37,50 @@
       "statement": "The Go signaling server listens on 0.0.0.0:8080 by default and requires APP_CLIENT_SECRET to be set, refusing to start otherwise.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/handler.go#L137-L149",
-          "version": "repo-lines-v1:sha256:37094b92ee24317319136016132242c0c360b6a015892cc3d5bc5ebdfd966dfc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5MmQ4ZmQ2NzA0ODBjYTA1MTE4YWFlYzM0YzM0OTg4NTNlY2E5YTY0OGY0NjMxZDUxMmYzNDRhYjNhOWQ1ZjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZiMDU3NTUxMDA4ZDUxNzI2NDYwMjQ1NWIwMGU5YmFlZGIwZjlkZjQ3ZGMwZWFkZGQwODg5OWM1NjNkNmU4N2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2YjYzMWQ0NGRiYWUyODRjZmI5NTc5MzA5MGU4ZDM1MzVhY2Q5YzBlNDYwN2Y5NzZlNTQ0ODA0NzMxNzFlNDgifQ=="
+          "resource": "repo://server/pkg/config/config.go#L27-L45",
+          "version": "repo-lines-v1:sha256:d34de20c4cbb0894574fdc50f2b71a2fd616e53d0e917c51088a349bba641e0e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmYWJkYTI2NGU5MDhhNDg0NmRmZDlhNDliNGE5ZDA5ZDgzYzY0ODI1ZmZhODY3YzllOTE5MTY5Zjk3NGY0NzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMjhlMTE0YTBiZjg5YjE4ZmUyODM2Zjc5MzI0ODJmMDJjODc1MTQ5MGVkZDczMmI3ODAzNzdiYzk4NmQ5NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcyNTgxYmMxYzdjNDljOWJiZjI1OTZhNDJmZmQ2MDdkY2NmOWYzMTg1ZDJmNmQ0MjI1ODg3MDAwNDdiOTA4ZWEifQ"
+        },
+        {
+          "resource": "repo://server/pkg/handler/handler.go#L155-L168",
+          "version": "repo-lines-v1:sha256:2947573de4270d3c8eacbf28d620c59408701070d5be0820837c238de7e47bf0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhOWEwMDI2OTVhY2JmNjViMTU3ZDY1NzlmNjQyNzkxYWQ4NDgwMWU3ZGE4MjY2OTU5MzcxMjg5NTA1MzMzMDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmN2FmODVhOTk1ZWY1YmY3ZWQ5MmIxMGJjOWM4Y2I3ZWJkYjBkZjQ4NzEzYzM0NDg5MjI5ZTBiNjc4OTliMTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzNmI0MGIxYTY4YTUzNjJlYTk5ODNlNGM3ZjZjMmQwYWQwMTJhMzc3YWQ5N2I5MTg1Mzc2NDk3NGZlMWFkYjcifQ"
         }
       ]
     },
     {
       "id": "claim_3b5cf199dd3a4770bdf30af1406d7859",
-      "statement": "The root Makefile provides make proto-gen to regenerate the shared client/server protobuf definitions, make test-all to run the full server + E2E test cycle, and make server-test / server-serve for server workflows.",
+      "statement": "The root Makefile provides make proto-gen to regenerate the shared client/server protobuf definitions, make test-all to run the server unit tests, the client vitest suite, and the E2E cycle (two live servers), and make server-test, server-serve and server-serve-2 for server workflows.",
       "evidence": [
         {
           "resource": "repo://Makefile",
-          "version": "repo-file-v1:sha256:88e925b14c788e4c2ea098abc8791c1ad186880027ba73f56c3c7d6ff0fcb8ab"
+          "version": "repo-file-v1:sha256:59c4a8253da448988d2a4ecc49f91f2b3567ed01b9a883757210b1f7f007b5ec"
         }
       ]
     },
     {
       "id": "claim_2c42fe6960e84b24ab6cfe916a4374f6",
-      "statement": "The test directory contains both the Playwright E2E suite (Svelte harness components driving the real ZeroHubClient against two live servers) and a set of unit specs that exercise client internals in a Playwright page through a unit harness (test/unit-harness/index.ts) with a mocked RTCPeerConnection and a globalThis MockWebSocket, requiring no live server or real WebRTC stack; running the suite via cd test && npm test builds both the E2E Svelte harness and the unit-spec harness via esbuild before invoking Playwright.",
+      "statement": "The test directory contains a Playwright E2E suite whose plain-TypeScript harness (test/harness/index.ts, bundled to test/dist/harness.js with esbuild) drives the real ZeroHubClient against two live servers, and unit specs that exercise client internals in a Playwright page through a unit harness (test/unit-harness/index.ts) with a mocked RTCPeerConnection and a globalThis MockWebSocket, requiring no live server or real WebRTC stack; cd test && npm test type-checks and builds both harnesses via esbuild in pretest before invoking Playwright, and the suite is pinned to workers: 1 (serial) because specs share the two live server processes.",
       "evidence": [
         {
+          "resource": "repo://test/harness/index.ts",
+          "version": "repo-file-v1:sha256:63e2c55f19f41220ccbad6e44aa61bc53a6f993f977811b5abac2573ac704178"
+        },
+        {
           "resource": "repo://test/package.json",
-          "version": "repo-file-v1:sha256:b0267776b479247664710982a114cd0550f260cbf429c8ffb2b6bf72e20e3ec4"
+          "version": "repo-file-v1:sha256:85683518c82c046f227b61a2a7a504eefe77c0f983ecf44a4e4f04e5d590deb3"
         },
         {
           "resource": "repo://test/playwright.config.ts",
-          "version": "repo-file-v1:sha256:a0e5f4efc37af724af8cac7f4d0361ca73b7db18f0ea5844ce679e874d5d6758"
+          "version": "repo-file-v1:sha256:2971c4c0273d8dd02ce6772aedd5df79e828ee2b93a7fbded39e22447a4a633d"
         },
         {
           "resource": "repo://test/unit-harness/index.ts",
-          "version": "repo-file-v1:sha256:43686dadf678577ec8bb43067d03885da044a8bc757b94f1ccfc596a3f96001d"
+          "version": "repo-file-v1:sha256:4b9bdf4c7d5bb0b131ccaf581fe630d66a2d4261476a96b45b58230a36424ef7"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-14T09:24:33.856Z"
+    "at": "2026-11-20T15:09:12.940Z"
   }
 }
