@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import {
   getCreateHubTestId,
   getCreatePeerStatusTestId,
@@ -43,11 +43,11 @@ test("disconnect tears down websocket and peer connections", async ({
   page,
 }) => {
   await prepareHarnessPage(page);
-  const componentId = uuidv4();
+  const componentId = randomUUID();
   const zeroHubHost = "localhost:8080";
   // The hub is seeded out-of-band (admin HTTP; the SDK has no static-hub
   // create) and the "creator" is just its first joiner.
-  const hubId = uuidv4();
+  const hubId = randomUUID();
   await seedStaticHub(hubId, zeroHubHost);
 
   await page.evaluate(
@@ -127,10 +127,10 @@ test("disconnect tears down websocket and peer connections", async ({
 test("peer disconnect tears down RTCPeerConnection and removes peer from map", async ({
   page,
 }) => {
-  const componentId = uuidv4();
+  const componentId = randomUUID();
   const joinComponentId = `${componentId}-joiner`;
   const zeroHubHost = "localhost:8080";
-  const hubId = uuidv4();
+  const hubId = randomUUID();
   await prepareHarnessPage(page);
   await seedStaticHub(hubId, zeroHubHost);
 
