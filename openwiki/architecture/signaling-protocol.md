@@ -4,6 +4,8 @@ title: Signaling Protocol & Peer Lifecycle
 description: The ZeroHub client/server protobuf wire format, the SDP offer/answer exchange and offer-collision rule, ICE candidate flushing, and the full PeerStatus lifecycle that drives peer negotiation.
 tags: [protobuf, signaling, webrtc, sdp, peer-lifecycle, protocol]
 sources:
+  - id: openwiki-source-df0d81c76704b851d02513e1
+    resource: repo://client/src/const.ts
   - id: openwiki-source-718b618612c033c4f36b3a45
     resource: repo://client/src/zeroHub.ts
   - id: openwiki-source-f883369ffaf926acfc02d144
@@ -12,10 +14,10 @@ sources:
     resource: repo://proto/zerohub/v1/server_message.proto
   - id: openwiki-source-da50555ad2e1dffee0054a4e
     resource: repo://server/pkg/hub/hub.go
-generated: { by: "hermes", at: "2026-10-13T03:37:16.218Z" }
+generated: { by: "hermes", at: "2026-11-20T20:39:20.288Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-10-14T09:24:33.856Z
+    at: 2026-11-20T20:39:20.288Z
 ---
 
 # Signaling Protocol & Peer Lifecycle
@@ -38,8 +40,7 @@ message:
 |---|---|
 | `send_offer_message` | `answer_peer_id`, `offer_sdp` |
 | `send_answer_message` | `offer_peer_id`, `answer_sdp` |
-| `send_ice_candidate_message` | `peer_id`, `candidate` (unused) |
-| `update_peer_metadata_message` | `peer_id`, `metadata` (unused in server handler) |
+| `send_ice_candidate_message` | `peer_id`, `candidate` (relayed to the target peer for trickle ICE) |
 
 **ServerMessage (server → client)**
 
@@ -50,7 +51,7 @@ message:
 | `peer_disconnected_message` | `peer_id` |
 | `offer_message` | `offer_peer_id`, `offer_sdp` |
 | `answer_message` | `answer_peer_id`, `answer_sdp` |
-| `ice_candidate_message` | `peer_id`, `candidate` (not used yet) |
+| `ice_candidate_message` | `peer_id`, `candidate` (relays a trickled ICE candidate to the target peer) |
 
 `Peer` is `{ id, metadata, join_time }` — a string ID plus a JSON-serialized
 metadata string (the client parses `metadata` with `JSON.parse`).
@@ -119,25 +120,34 @@ either mode.
 
 ## ICE candidate handling
 
-Rather than signaling individual ICE candidates (the
-`ice_candidate_message` / `send_ice_candidate_message` frames exist but are
-marked unused), ZeroHub relies on **trickle-avoidance via a timeout**. The
-duplicated wait-and-send logic from `sendOffer`/`sendAnswer` is extracted into
-the shared private helper `armSendOnIceReady(peerId, rtcConn, sendOnce)`, so
-the two paths can never diverge:
+ZeroHub signals ICE candidates two ways: it sends the SDP offer/answer
+**exactly once**, and it **trickles every individual candidate** to the remote
+peer as it arrives. The duplicated wait-and-send logic from
+`sendOffer`/`sendAnswer` is extracted into the shared private helper
+`armSendOnIceReady(peerId, rtcConn, sendOnce)`, so the two paths can never
+diverge:
 
-- Both `sendOffer`/`sendAnswer` delegate the ICE wait-and-send to the shared
-  `armSendOnIceReady(peerId, rtcConn, sendOnce)` helper: `onicecandidate` sends
-  the SDP to the server the moment `event.candidate` is null (gathering
-  finished) and no prior send happened, and a `setTimeout` of
+- The `onicecandidate` handler fires the SDP send exactly once on the first
+  candidate-less event (gathering finished), and a `setTimeout` of
   `waitIceCandidatesTimeout` (default **2000 ms**, from `DEFAULT_CONFIG`)
   fires as a fallback: if candidates are still pending, it flushes the current
   SDP anyway so negotiation is not blocked forever. The two paths share a
   single `isSent` guard inside the helper, so the SDP is sent exactly once even
   if a late candidate event and the timer race.
+- Every candidate-bearing `onicecandidate` event — including candidates that
+  trickle in **after** the SDP has gone out — is forwarded to the remote peer
+  via `sendIceCandidateToWebsocket`, which wraps it in a
+  `SendIceCandidateMessage`. The server relays it to the named peer
+  (`hub.SendIceCandidateToPeer`), and the receiver applies it with
+  `addIceCandidate` (the candidate is JSON-serialized by the sender and
+  `safeParseJson`-decoded on receipt, so a poisoned value degrades instead of
+  crashing the dispatcher). If the signaling socket is not open (e.g.
+  mid-reconnect) the candidate is dropped with a logged warning rather than
+  throwing out of the event handler.
 - Pending ICE timeout handles are tracked per peer in `iceTimeouts` and cleared
-  on `disconnect()`, so a timer can never write to a closed socket. The prior
-  handle for a peer is always cleared before arming a new one.
+  on `disconnect()` and per-peer removal, so a timer can never write to a
+  closed socket. The prior handle for a peer is always cleared before arming a
+  new one.
 
 ## Peer status lifecycle
 
@@ -159,11 +169,14 @@ Beyond the happy path there are three terminal/abnormal states:
   calls `restartIce()` on `iceConnectionState === "failed"`.
 - **`ZeroHubDisconnected`** — the server broadcast a
   `PeerDisconnectedMessage` (the peer left the hub). The local client fires
-  the status change, closes the peer's `RTCPeerConnection`, nulls its ICE/
-  connection handlers, and removes the peer from the `peers` map.
+  the status change, then tears the peer down through the shared `removePeer`
+  helper: it clears the peer's pending ICE-candidate fallback timer and
+  pending P2P-drop recovery timer, closes the peer's `RTCPeerConnection`,
+  nulls its ICE/connection handlers, and removes the peer from the `peers`
+  map.
 - **`Disconnected`** — the local client called `disconnect()`, closing the
   ZeroHub WebSocket and tearing down every peer. No peer can be restored until
-  the client reconnects via `createHub()`/`joinHub()`.
+  the client reconnects via a hub entrypoint (e.g. `joinStaticHub()`).
 
 The topology observes every transition through `onPeerStatusChange`, which is
 where `MeshTopology` triggers the offer (on `Pending`, if it is the offerer)

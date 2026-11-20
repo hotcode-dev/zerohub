@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:94bd773e020290bf3102e695603cbadb5482c9d2e9e8788017ac64e7c6a9a4b3",
+  "pageVersion": "sha256:6c7c9e03e68c17133c38b685237b8cd717ea4ef09c99c3b6b2fa13c1e23c3bde",
   "claims": [
     {
       "id": "claim_29b96b61359846dd9149060c8b57d3a3",
@@ -8,27 +8,31 @@
       "evidence": [
         {
           "resource": "repo://AGENTS.md",
-          "version": "repo-file-v1:sha256:3a5d338c9fe7c643d8b4ac966cacae92f1450c196628e112ec4d811ce71ecc1b"
+          "version": "repo-file-v1:sha256:a608ad960b8a1fda6d9249730d6f3d4a03d11644e5a025979935b6f69690b9ee"
         }
       ]
     },
     {
       "id": "claim_819db68304f043128f8fb1d793ec51b4",
-      "statement": "The client SDK's public surface is re-exported from client/src/index.ts: Peer, ZeroHubClient, the config consts/types, and the topology module.",
+      "statement": "The client SDK's public surface is re-exported from client/src/index.ts: Peer, ZeroHubClient, the config consts/types, the topology module, and the logger module (Logger/ZeroHubLogger types).",
       "evidence": [
         {
           "resource": "repo://client/src/index.ts",
-          "version": "repo-file-v1:sha256:77165a24ca4d3c9085e7d968f2f17ef096235f11831c6b203a2ae8506b756538"
+          "version": "repo-file-v1:sha256:9090ff649f0f1c35a17cff3066f4aaff115662ec3d820f05c58bd5506558a82b"
         }
       ]
     },
     {
       "id": "claim_fb004955a1b2494c8c72577f4cc50f20",
-      "statement": "Instantiating a ZeroHubClient makes no network connection; a connection is only opened when a hub entrypoint such as createHub or joinHub is called.",
+      "statement": "Instantiating a ZeroHubClient makes no network connection; a connection is only opened when a hub entrypoint (createRandomHub, joinRandomHub, joinStaticHub, or joinOrCreateIPHub) is called, and those entrypoints return a Promise that resolves when the signaling WebSocket opens.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L190-L230",
-          "version": "repo-lines-v1:sha256:3bdfdae235cd09d10c28dad36beaee613850626f954884b0d9533e691f491f1a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhNWRmODI2OGE5ZjcwMDM4OTQ1MTc5NTQ0N2RlYjUyZTRkMjBiNzUxMjMyNjJhYTcyNTA2MGRkZWZiMTk2ZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNiNzIzN2E5YTI5ZTZjMGFkMjdjZmJjNGM2MmZmOGI2YjFhY2Q2NDVmNjFjZDcwMzk3M2UzY2U2YzQ2YmIzMjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk1ZDEwMGEzMjEyZmIyMTVmMTFiNjM1Zjc0MTQ0OThlZGZmZDMwYzQxMWJhYzM4NGI5ODdkMTJlZWRjMzIxODQifQ"
+          "resource": "repo://client/src/zeroHub.ts#L1886-L1900",
+          "version": "repo-lines-v1:sha256:1dfe4cecfc25ae159b12bf549ddddc0fefb61aca63e5e5b61069383486f9208f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmM2U1YTc4OGM2ZDg5YjNhOTA5ODM0YjUyZjNkZDdmNmFhYjljMGUyZmJmOWZiMGU5ZjBiZTdlMmU1MzQ5NDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMzNzNmZjc0NGNmYzlkNWYwMTkyYjMwYTM1ZjcwZWVhODI3NGQ3NTgwY2Y0MGI4NDQzMDI2MjNiZDllNjE1ZTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU4NGYzODIwZDAyMjdkNTE0MDkyZDE1MjUxNTFkNjZkNTM3NGI0NTE1ZWJiZDQyZDM0NzFlZDk3ZWQ4MDMyN2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlmNTkxZDExZTI3OGYyNWMyMmY4ODFkNDQ0YzJkNjI3OGY5M2JlMjRmOTgwMDc5NjFiOTNmZTA2NGE2Y2E5YmYifQ"
+        },
+        {
+          "resource": "repo://client/src/zeroHub.ts#L278-L300",
+          "version": "repo-lines-v1:sha256:35a4454ec90550ce26fbcf32ce74e38ac653dac7859520bf1489cbb37a0e79a9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhNWRmODI2OGE5ZjcwMDM4OTQ1MTc5NTQ0N2RlYjUyZTRkMjBiNzUxMjMyNjJhYTcyNTA2MGRkZWZiMTk2ZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhNGU2OTNmN2FkY2Q4YmUzZmM3ZDUwNGZhZDQ2NTFhYzVhODgyNWRhNTQxOWFiMzdhNjQ3Y2ZjZWZlODhjODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNiNzIzN2E5YTI5ZTZjMGFkMjdjZmJjNGM2MmZmOGI2YjFhY2Q2NDVmNjFjZDcwMzk3M2UzY2U2YzQ2YmIzMjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYyNTFmOWYyNDgwMzE4ZTI2ZDJjM2NkNTY3ZWI5MmNmYTM4NWFiMjNiNTBlNmYwMjA2ZDk2MTAzZWJkYjZmZjEifQ"
         }
       ]
     },
@@ -37,42 +41,50 @@
       "statement": "The Go signaling server listens on 0.0.0.0:8080 by default and requires APP_CLIENT_SECRET to be set, refusing to start otherwise.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/handler.go#L137-L149",
-          "version": "repo-lines-v1:sha256:37094b92ee24317319136016132242c0c360b6a015892cc3d5bc5ebdfd966dfc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5MmQ4ZmQ2NzA0ODBjYTA1MTE4YWFlYzM0YzM0OTg4NTNlY2E5YTY0OGY0NjMxZDUxMmYzNDRhYjNhOWQ1ZjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZiMDU3NTUxMDA4ZDUxNzI2NDYwMjQ1NWIwMGU5YmFlZGIwZjlkZjQ3ZGMwZWFkZGQwODg5OWM1NjNkNmU4N2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2YjYzMWQ0NGRiYWUyODRjZmI5NTc5MzA5MGU4ZDM1MzVhY2Q5YzBlNDYwN2Y5NzZlNTQ0ODA0NzMxNzFlNDgifQ=="
+          "resource": "repo://server/pkg/config/config.go#L29-L30",
+          "version": "repo-lines-v1:sha256:139c04d8d8debb6c272a06242639af33ad2c6a232d85728b5d0a19030f429ca9:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjk4MGFlYzQzNmIxY2Y3ZjQzZjViZmQ1NDJiMmQ5YWI1YzIwOTFhZmMxYjliODJkOWEzYjkyMTlmZjgxOGE4NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzdjY2E0ZmRkYzNlOGI2YjBjZGVjMjc0M2Q4OThiN2VkMzhjMGJjNGI0YzM4ZjBkN2RiN2E1OWE0NTYwZjRhMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTlhZWMwMTI4ZWYzNzMyNTYzZjMzZDI3MWVlNjkyOWUwYjk5MWE4MzZhMDExZmVlMmJiMTBhYTBlMTZhZTFjNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjJhMTBlNGJkMDEyMTJkMjEzNjhhZDAxMDBmZGU2ZGJkZDAzNTJkYWMwYmE0M2QwMWE4MTE1Y2JkZWI1ZmI5NiJ9"
+        },
+        {
+          "resource": "repo://server/pkg/handler/handler.go#L155-L158",
+          "version": "repo-lines-v1:sha256:af305a46a22922406441e71df3d52e994b951ce8cfed1396dd2c7377bbaa853f:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmE5YTAwMjY5NWFjYmY2NWIxNTdkNjU3OWY2NDI3OTFhZDg0ODAxZTdkYTgyNjY5NTkzNzEyODk1MDUzMzMwMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdjZGE4MmRhNjA2MjM4ZTA1ZTYyMzk5NTY5YzVlZTAzOTkzNDE5NjQ4YWU1ZDQzYTJiZjhjZDYzNDdmODI2MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWY3YWY4NWE5OTVlZjViZjdlZDkyYjEwYmM5YzhjYjdlYmRiMGRmNDg3MTNjMzQ0ODkyMjllMGI2Nzg5OWIxOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzQxM2MwZDNhOWYxNDA2NGFlZmNjMzM4OTFkNjIwODQ2MDBjZjhkZmY2MjA4NTA0MDZiODUwMDk5ZWNjODNkMSJ9"
         }
       ]
     },
     {
       "id": "claim_3b5cf199dd3a4770bdf30af1406d7859",
-      "statement": "The root Makefile provides make proto-gen to regenerate the shared client/server protobuf definitions, make test-all to run the full server + E2E test cycle, and make server-test / server-serve for server workflows.",
+      "statement": "The root Makefile provides make proto-gen to regenerate the shared client/server protobuf definitions, make test-all to run the full test cycle (server unit tests, two-server E2E, and client type-check + vitest, in parallel), and make server-test / server-serve for server workflows.",
       "evidence": [
         {
           "resource": "repo://Makefile",
-          "version": "repo-file-v1:sha256:88e925b14c788e4c2ea098abc8791c1ad186880027ba73f56c3c7d6ff0fcb8ab"
+          "version": "repo-file-v1:sha256:59c4a8253da448988d2a4ecc49f91f2b3567ed01b9a883757210b1f7f007b5ec"
         }
       ]
     },
     {
       "id": "claim_2c42fe6960e84b24ab6cfe916a4374f6",
-      "statement": "The test directory contains both the Playwright E2E suite (Svelte harness components driving the real ZeroHubClient against two live servers) and a set of unit specs that exercise client internals in a Playwright page through a unit harness (test/unit-harness/index.ts) with a mocked RTCPeerConnection and a globalThis MockWebSocket, requiring no live server or real WebRTC stack; running the suite via cd test && npm test builds both the E2E Svelte harness and the unit-spec harness via esbuild before invoking Playwright.",
+      "statement": "The test directory contains both the Playwright E2E suite (a plain-TypeScript harness at test/harness/index.ts, bundled by esbuild to test/dist/harness.js and injected into a bare data: URL page, driving the real ZeroHubClient against two live servers) and a set of unit specs that exercise client internals in a Playwright page through a unit harness (test/unit-harness/index.ts) with a mocked RTCPeerConnection and a globalThis MockWebSocket, requiring no live server or real WebRTC stack; running the suite via cd test && npm test type-checks and bundles both harnesses in its pretest step, and Playwright runs serially (workers: 1) with the one-way migrate-latch spec named zz-migrate.spec.ts so it runs last.",
       "evidence": [
         {
+          "resource": "repo://test/harness/index.ts",
+          "version": "repo-file-v1:sha256:63e2c55f19f41220ccbad6e44aa61bc53a6f993f977811b5abac2573ac704178"
+        },
+        {
           "resource": "repo://test/package.json",
-          "version": "repo-file-v1:sha256:b0267776b479247664710982a114cd0550f260cbf429c8ffb2b6bf72e20e3ec4"
+          "version": "repo-file-v1:sha256:85683518c82c046f227b61a2a7a504eefe77c0f983ecf44a4e4f04e5d590deb3"
         },
         {
           "resource": "repo://test/playwright.config.ts",
-          "version": "repo-file-v1:sha256:a0e5f4efc37af724af8cac7f4d0361ca73b7db18f0ea5844ce679e874d5d6758"
+          "version": "repo-file-v1:sha256:2971c4c0273d8dd02ce6772aedd5df79e828ee2b93a7fbded39e22447a4a633d"
         },
         {
           "resource": "repo://test/unit-harness/index.ts",
-          "version": "repo-file-v1:sha256:43686dadf678577ec8bb43067d03885da044a8bc757b94f1ccfc596a3f96001d"
+          "version": "repo-file-v1:sha256:4b9bdf4c7d5bb0b131ccaf581fe630d66a2d4261476a96b45b58230a36424ef7"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-10-14T09:24:33.856Z"
+    "at": "2026-11-20T20:39:20.288Z"
   }
 }
