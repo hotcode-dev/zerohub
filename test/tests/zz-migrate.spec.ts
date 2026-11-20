@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import {
   getCreateHubTestId,
   getCreatePeerStatusTestId,
@@ -33,16 +33,16 @@ import {
  */
 test("migrate (latches :8080 permanently; must stay last in the suite)", async ({ page }) => {
   await prepareHarnessPage(page);
-  const creatorId = uuidv4();
-  const joinerId = uuidv4();
-  const creatorIdNew = uuidv4();
-  const joinerIdNew = uuidv4();
+  const creatorId = randomUUID();
+  const joinerId = randomUUID();
+  const creatorIdNew = randomUUID();
+  const joinerIdNew = randomUUID();
   const zeroHubHost = "localhost:8080";
   const zeroHubHostNew = "localhost:8081";
   const migrateURL = "http://localhost:8080/v1/admin/migrate";
   const clientSecret = "client_secret";
   // Hub 1: seeded on both hosts so it survives the migration redirect.
-  const hubId = uuidv4();
+  const hubId = randomUUID();
   await seedStaticHub(hubId, zeroHubHost);
   await seedStaticHub(hubId, zeroHubHostNew);
 
@@ -100,7 +100,7 @@ test("migrate (latches :8080 permanently; must stay last in the suite)", async (
 
   // A fresh joiner now dials 8080 after the latch: the 1001 redirect must
   // reconnect it to 8081, where the same hub id is joinable (seeded above).
-  const joinerIdMigrated = uuidv4();
+  const joinerIdMigrated = randomUUID();
   await page.evaluate(
     ({ componentId: id, zeroHubHost: host, hubId: joinHubId }) => {
       window.ZeroHubHarness.joinHub({
@@ -120,7 +120,7 @@ test("migrate (latches :8080 permanently; must stay last in the suite)", async (
 
   // Hub 2: on the new host only — the post-migration join path against the
   // instance that never latches.
-  const hubIdNew = uuidv4();
+  const hubIdNew = randomUUID();
   await seedStaticHub(hubIdNew, zeroHubHostNew);
   await page.evaluate(
     ({ componentId: id, zeroHubHostNew: host, hubId: joinHubId }) => {

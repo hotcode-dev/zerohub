@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import {
   getJoinStaticHubTestId,
   getJoinStaticPeerStatusTestId,
@@ -38,9 +38,9 @@ test("static hub create (HTTP) + join (WebSocket) connects", async ({
   // base64(APP_CLIENT_SECRET) used by the server's admin endpoints
   // (`make server-serve` sets APP_CLIENT_SECRET=client_secret).
   const adminAuth = Buffer.from("client_secret").toString("base64");
-  const hubId = uuidv4();
-  const creatorId = uuidv4();
-  const joinerId = uuidv4();
+  const hubId = randomUUID();
+  const creatorId = randomUUID();
+  const joinerId = randomUUID();
 
   await test.step("create static hub out-of-band via admin HTTP", async () => {
     const res = await fetch(

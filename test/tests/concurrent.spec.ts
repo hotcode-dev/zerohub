@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import {
   getCreateHubTestId,
   getCreatePeerStatusTestId,
@@ -11,13 +11,13 @@ import {
 
 test("multiple concurrent connections", async ({ page }) => {
   await prepareHarnessPage(page);
-  const creatorId = uuidv4();
+  const creatorId = randomUUID();
   const zeroHubHost = "localhost:8080";
   const numberOfConcurrentConnections = 10;
   const joinedComponentIds: string[] = [];
   // The hub is seeded out-of-band (admin HTTP; the SDK has no static-hub
   // create) and the "creator" is just its first joiner.
-  const hubId = uuidv4();
+  const hubId = randomUUID();
   await seedStaticHub(hubId, zeroHubHost);
 
   // Join the hub first
@@ -97,9 +97,9 @@ test("multiple concurrent hub creation and joining", async ({ page }) => {
   // (static hubs are admin-created; the "creator" is the first joiner)
   await test.step("create multiple hubs concurrently", async () => {
     for (let i = 0; i < numberOfHubs; i++) {
-      const creatorId = `creator-${uuidv4()}-${i}`;
+      const creatorId = `creator-${randomUUID()}-${i}`;
       creatorIds.push(creatorId);
-      const hubId = uuidv4();
+      const hubId = randomUUID();
       await seedStaticHub(hubId, zeroHubHost);
       hubIds.push(hubId);
 
@@ -133,7 +133,7 @@ test("multiple concurrent hub creation and joining", async ({ page }) => {
       const peerIdsForCurrentHub: string[] = [];
 
       for (let peerIndex = 0; peerIndex < peersPerHub; peerIndex++) {
-        const peerId = `joiner-${uuidv4()}-hub${hubIndex}-peer${peerIndex}`;
+        const peerId = `joiner-${randomUUID()}-hub${hubIndex}-peer${peerIndex}`;
         peerIdsForCurrentHub.push(peerId);
 
         await page.evaluate(

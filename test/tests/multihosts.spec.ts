@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import {
   getCreateHubTestId,
   getCreatePeerStatusTestId,
@@ -31,7 +31,7 @@ test("multi hosts", async ({ page }, testInfo) => {
   // sequence — the default 10s timeout is not enough.
   testInfo.setTimeout(60 * 1000);
   await prepareHarnessPage(page);
-  const componentId = uuidv4();
+  const componentId = randomUUID();
   // Nothing listens on 127.0.0.1:9 (the discard port — connection refused ->
   // code 1006), so it is an unreachable first host in every environment.
   // Do NOT use a name like `this_is_bad_host` here: it may be pinned to a
@@ -42,7 +42,7 @@ test("multi hosts", async ({ page }, testInfo) => {
   const zeroHubSecondGoodHost = "localhost:8081";
   // Static hubs are admin-created out-of-band (seedStaticHub): the
   // "creator" is the first joiner of the seeded hub.
-  const hubId = uuidv4();
+  const hubId = randomUUID();
   await seedStaticHub(hubId, zeroHubGoodHost);
 
   await page.evaluate(
@@ -157,8 +157,8 @@ test("multi hosts", async ({ page }, testInfo) => {
       // dead — which cannot be driven against this live server, so that path
       // is asserted in `unit-reconnect-error.spec.ts` /
       // `unit-reconnect-retry.spec.ts` against a mock socket.
-      const terminalComponentId = uuidv4();
-      const terminalHubId = uuidv4();
+      const terminalComponentId = randomUUID();
+      const terminalHubId = randomUUID();
       await seedStaticHub(terminalHubId, zeroHubGoodHost);
       await page.evaluate(
         ({ componentId: id, badHost, goodHost, hubId: joinHubId }) => {
