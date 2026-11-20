@@ -13,7 +13,7 @@ import { prepareUnitHarnessPage } from "./utils/unit-harness";
  *
  * Driven through the unit harness (`window.ZeroHubUnitHarness.sfuElection`),
  * which builds a real client whose topology is a default `SFUTopology` and
- * reads the topology's private `getSFUPeerId()` / `isSFU()`. No server, no
+ * reads the topology's private `getSFUPeerId()`. No server, no
  * real WebRTC stack.
  */
 
