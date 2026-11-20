@@ -82,6 +82,7 @@ npm run build    # Build static docs site
 - Built with Astro + `@astrojs/starlight` in `docs/`
 - Markdown content lives under `docs/src/content/docs/` (`.md` / `.mdx`)
 - Sidebar navigation is configured in `docs/astro.config.mjs`
+- `docs/package.json` pins the published SDK (`@zero-hub/client` in `devDependencies`) — whenever a new client SDK version is released, bump this pin to the new version and regenerate `docs/package-lock.json` (lockfile is npm's despite the `packageManager` field; yarn is not required) so docs build/type-check against the current SDK
 
 ### AsyncAPI Specification
 
