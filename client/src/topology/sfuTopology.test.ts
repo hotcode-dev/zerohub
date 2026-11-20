@@ -400,8 +400,9 @@ describe("SFUTopology — implicit numeric election (lowestPeerId)", () => {
   });
 
   it("the first peer in an empty hub is its own implicit SFU", () => {
-    // No other peers at all: isSFU() short-circuits true and getSFUPeerId()
-    // returns myPeerId. A Pending "other" peer can't happen in this state,
+    // No other peers at all: getSFUPeerId() returns myPeerId, so this peer
+    // is its own implicit SFU (iAmSFU is exactly "the elected SFU is me").
+    // A Pending "other" peer can't happen in this state,
     // but a Connected event on a late peer must be handled by the SFU
     // without offering (the SFU only sets up on Pending).
     const topology = new SFUTopology();

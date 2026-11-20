@@ -482,9 +482,10 @@ const ZeroHubUnitHarness = {
   /**
    * Exercises `SFUTopology`'s SFU election directly: builds a client whose
    * topology is a default `SFUTopology`, points `myPeerId` / `peers` at the
-   * given IDs, then returns what the topology's `getSFUPeerId()` /
-   * `isSFU()` (private, reached via a type cast — erased at bundle time)
-   * elect. This avoids needing a real WebSocket / WebRTC connection.
+   * given IDs, then returns what the topology's private `getSFUPeerId()`
+   * (reached via a type cast — erased at bundle time) elects. `iAmSFU` is
+   * derived the same way production does: the elected SFU is this peer.
+   * This avoids needing a real WebSocket / WebRTC connection.
    */
   sfuElection(myPeerId: string, peerIds: string[]): {
     sfuPeerId: string | undefined;
@@ -510,9 +511,10 @@ const ZeroHubUnitHarness = {
     }
     client.peers = peers;
     const sfu = client.topology as unknown as SFUTopology;
+    const sfuPeerId = (sfu as unknown as { getSFUPeerId(): string | undefined }).getSFUPeerId();
     return {
-      sfuPeerId: (sfu as unknown as { getSFUPeerId(): string | undefined }).getSFUPeerId(),
-      iAmSFU: (sfu as unknown as { isSFU(): boolean }).isSFU(),
+      sfuPeerId,
+      iAmSFU: sfuPeerId !== undefined && sfuPeerId === myPeerId,
     };
   },
 
