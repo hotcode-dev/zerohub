@@ -5,4 +5,5 @@
 /test-results/
 /playwright-report/
 /blob-report/
+/playwright.local.config.ts
 /playwright/.cache/
