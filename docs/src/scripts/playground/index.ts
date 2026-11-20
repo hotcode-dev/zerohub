@@ -24,10 +24,6 @@ export async function initializePlayground() {
     view: "split",
   });
 
-  playground.watch("code", (code) => {
-    console.log("Code changed:", code);
-  });
-
   createChatPlayground();
 
   const templateSelect = document.getElementById(
@@ -35,7 +31,6 @@ export async function initializePlayground() {
   ) as HTMLSelectElement;
 
   templateSelect.addEventListener("change", (event: Event) => {
-    console.log("Template changed:", (event.target as HTMLSelectElement).value);
     const selectedTemplate = (event.target as HTMLSelectElement)?.value;
     if (selectedTemplate === "chat") {
       // Recreate the playground with the chat template
@@ -47,7 +42,6 @@ export async function initializePlayground() {
   });
 
   function createChatPlayground() {
-    console.log("Creating chat playground");
     playground.setConfig({
       markup: {
         language: "html",
@@ -61,7 +55,6 @@ export async function initializePlayground() {
   }
 
   function createMediaPlayground() {
-    console.log("Creating media playground");
     playground.setConfig({
       markup: {
         language: "html",
