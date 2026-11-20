@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import {
   getCreatePeerStatusTestId,
   getJoinPeerStatusTestId,
@@ -14,12 +14,12 @@ test.slow();
 test("data channels open for creator and joiner", async ({ page }) => {
   await prepareHarnessPage(page);
 
-  const creatorId = uuidv4();
-  const joinerId = uuidv4();
+  const creatorId = randomUUID();
+  const joinerId = randomUUID();
   const zeroHubHost = "localhost:8080";
   // The hub is seeded out-of-band (admin HTTP; the SDK has no static-hub
   // create) and the "creator" is just its first joiner.
-  const hubId = uuidv4();
+  const hubId = randomUUID();
   await seedStaticHub(hubId, zeroHubHost);
 
   await page.evaluate(

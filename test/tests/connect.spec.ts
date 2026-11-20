@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import {
   getCreateHubTestId,
   getCreatePeerStatusTestId,
@@ -30,8 +30,8 @@ test("seed/join static hub", async ({ page }) => {
   });
   await prepareHarnessPage(page);
 
-  const creatorId = uuidv4();
-  const joinerId = uuidv4();
+  const creatorId = randomUUID();
+  const joinerId = randomUUID();
   const zeroHubHost = "localhost:8080";
   // The hub id is spec-provided (the creator's component id): a unique,
   // known value the harness returns verbatim on `onHubInfo`, so the join
