@@ -15,10 +15,7 @@ import (
 func startRateLimitedServer(t *testing.T, trustProxy bool) string {
 	t.Helper()
 
-	middleware, err := newRateLimitMiddleware(trustProxy)
-	if err != nil {
-		t.Fatalf("newRateLimitMiddleware(%v): %v", trustProxy, err)
-	}
+	middleware := newRateLimitMiddleware(trustProxy)
 
 	next := func(ctx *fasthttp.RequestCtx) {
 		ctx.SetBodyString("ok")

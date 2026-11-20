@@ -241,10 +241,7 @@ func ipFromForwardedHeader(ctx *fasthttp.RequestCtx) string {
 }
 
 func (h *handler) Serve() error {
-	rateLimitMiddleware, err := newRateLimitMiddleware(h.trustProxy)
-	if err != nil {
-		return err
-	}
+	rateLimitMiddleware := newRateLimitMiddleware(h.trustProxy)
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
 		log.Debug().Msgf("%s %s", ctx.Method(), ctx.RequestURI())

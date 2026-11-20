@@ -115,12 +115,12 @@ type rateLimitMiddleware struct {
 // value, which identifies the real client. Never enable trustProxy in
 // front of an untrusted hop: any client could then forge a fresh "IP" per
 // request and defeat the per-client DoS throttle.
-func newRateLimitMiddleware(trustProxy bool) (*rateLimitMiddleware, error) {
+func newRateLimitMiddleware(trustProxy bool) *rateLimitMiddleware {
 	keyGetter := remoteAddrKey
 	if trustProxy {
 		keyGetter = forwardedIPKey
 	}
-	return &rateLimitMiddleware{limiter: newRateLimiter(), keyGetter: keyGetter}, nil
+	return &rateLimitMiddleware{limiter: newRateLimiter(), keyGetter: keyGetter}
 }
 
 // Handle wraps next with rate limiting: requests that exceed the key's
