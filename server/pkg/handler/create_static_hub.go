@@ -1,12 +1,6 @@
 package handler
 
 import (
-	"errors"
-	"fmt"
-
-	hub "github.com/hotcode-dev/zerohub/pkg/hub"
-	"github.com/hotcode-dev/zerohub/pkg/zerohub"
-	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
 )
 
@@ -54,22 +48,9 @@ func (h *handler) CreateStaticHub(ctx *fasthttp.RequestCtx) error {
 	// the sibling instances and run CreateHubIfAbsent all while holding
 	// the lock — so a concurrent create of the same id in another mode
 	// can't interleave between the probe and the store.
-	newHub, err, rejected := h.claimUserChosenHubId(ctx, hubId, h.siblingInstances(h.zeroHubStatic),
-		func() (hub.Hub, error) {
-			return h.zeroHubStatic.CreateHubIfAbsent(hubId, string(ctx.QueryArgs().Peek("hubMetadata")), true)
-		})
-	if rejected {
-		// A sibling mode already holds this id; claimUserChosenHubId
-		// wrote the 409 Conflict, so stop without overwriting it.
+	newHub, ok := h.claimHubForCreate(ctx, h.zeroHubStatic, hubId, true)
+	if !ok {
 		return nil
-	}
-	if err != nil {
-		if errors.Is(err, zerohub.ErrHubAlreadyExists) {
-			log.Error().Err(fmt.Errorf("hub with id %s already exists", hubId)).Send()
-			return h.Response(ctx, fasthttp.StatusConflict, map[string]string{"error": "hub id already exists"})
-		}
-		log.Error().Err(err).Send()
-		return h.Response(ctx, fasthttp.StatusInternalServerError, map[string]string{"error": "create hub error"})
 	}
 
 	return h.Response(ctx, fasthttp.StatusOK, newHub)
