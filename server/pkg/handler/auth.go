@@ -18,7 +18,7 @@ var errAdminUnauthorized = errors.New("admin authorization failed")
 // CheckAdminAuth checks if the request is authorized to perform admin actions.
 // On failure it writes the 401 JSON body AND returns a non-nil error so the
 // caller can bail out without touching any state.
-func (h *handler) CheckAdminAuth(ctx *fasthttp.RequestCtx) error {
+func (h *Handler) CheckAdminAuth(ctx *fasthttp.RequestCtx) error {
 	authCode, err := base64.StdEncoding.DecodeString(string(ctx.Request.Header.Peek("Authorization")))
 	if err != nil {
 		log.Error().Err(fmt.Errorf("error decoding authorization code: %w", err)).Send()

@@ -27,7 +27,7 @@ func fnvHash64a(s string) string {
 // connections from one client IP share a hub; that is intentionally
 // different from the rate limiter, which keys by the full socket address
 // (IP:port) so each connection gets its own DoS budget. See clientIP.
-func (h *handler) JoinOrCreateHubIP(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
+func (h *Handler) JoinOrCreateHubIP(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 	if h.isMigrating.Load() {
 		return h.ForwardMigrate(ctx)
 	}

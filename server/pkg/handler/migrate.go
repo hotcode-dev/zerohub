@@ -24,7 +24,7 @@ import (
 // 4. Wait until no hub left.
 // 5. Graceful shutdown.
 // 6. redeploy the new version of server.
-func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
+func (h *Handler) Migrate(ctx *fasthttp.RequestCtx) error {
 	if err := h.CheckAdminAuth(ctx); err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (h *handler) Migrate(ctx *fasthttp.RequestCtx) error {
 	return nil
 }
 
-func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
+func (h *Handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
 	backupHost := h.getBackupHost()
 
 	// The 301 status is not working on multi library following the rfc6455
@@ -109,14 +109,14 @@ func (h *handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
 // attempting an upgrade would fail the handshake and surface as a 503
 // "websocket handshake". Plain-HTTP handlers must return this response
 // instead and must never call ForwardMigrate.
-func (h *handler) migrateHTTPResponse(ctx *fasthttp.RequestCtx) error {
+func (h *Handler) migrateHTTPResponse(ctx *fasthttp.RequestCtx) error {
 	return h.Response(ctx, fasthttp.StatusMovedPermanently,
 		map[string]string{"status": "migrating", "backupHost": h.getBackupHost()})
 }
 
 // getBackupHost returns the current backup host under a read lock so it is
 // safe to read concurrently with Migrate.
-func (h *handler) getBackupHost() string {
+func (h *Handler) getBackupHost() string {
 	h.migrateMu.RLock()
 	defer h.migrateMu.RUnlock()
 	return h.backupHost

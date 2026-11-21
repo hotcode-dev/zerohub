@@ -111,7 +111,7 @@ func TestCreateStaticHubRejectsOversizedHubMetadata(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	staticMock := zerohub.NewMockZeroHub(ctrl)
 	// No expectations: the 413 must be written before any hub-state access.
-	h := &handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
+	h := &Handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
 
 	ctx := newRequestCtx("http://127.0.0.1/v1/static-hubs/create?id=static-hub&hubMetadata=" + oversizedValue)
 	ctx.Request.Header.Set("Authorization", adminAuthHeader())
@@ -181,7 +181,7 @@ func TestOversizedIdRejected(t *testing.T) {
 		staticMock := zerohub.NewMockZeroHub(ctrl)
 		// The 413 for the oversized id must win over the cross-mode
 		// collision guard, so zeroHubRandom can stay nil.
-		h := &handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
+		h := &Handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
 
 		ctx := newRequestCtx("http://127.0.0.1/v1/static-hubs/create?id=" + oversizedID)
 		ctx.Request.Header.Set("Authorization", adminAuthHeader())

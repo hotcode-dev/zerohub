@@ -7,7 +7,7 @@ import (
 )
 
 // JoinHub joins an existing hub with the given ID.
-func (h *handler) JoinHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
+func (h *Handler) JoinHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 	hubId := string(ctx.QueryArgs().Peek("id"))
 	// Reject a missing/empty ID up front with 400 for consistency: before
 	// this, such a request degraded to 404 (or a migration forward).

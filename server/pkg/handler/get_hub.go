@@ -10,7 +10,7 @@ import (
 )
 
 // GetHub returns the hub with the given ID.
-func (h *handler) GetHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
+func (h *Handler) GetHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 	hubId := string(ctx.QueryArgs().Peek("id"))
 	// Reject a missing/empty ID up front with 400 for consistency with the
 	// other hub endpoints.
