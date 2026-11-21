@@ -21,8 +21,8 @@ const (
 
 // newTestHandler builds a handler with a known client secret, matching how
 // handler.go constructs the handler from the config's client secret.
-func newTestHandler() *handler {
-	return &handler{clientSecret: testClientSecret}
+func newTestHandler() *Handler {
+	return &Handler{clientSecret: testClientSecret}
 }
 
 // adminAuthHeader returns the base64-encoded admin authorization header value.
@@ -33,7 +33,7 @@ func adminAuthHeader() string {
 // startTestServer serves the handler's real migration endpoints on a random
 // local port. Requests therefore land in fasthttp worker goroutines, exactly
 // like production, which is what the regression test below hammers.
-func startTestServer(t *testing.T, h *handler) string {
+func startTestServer(t *testing.T, h *Handler) string {
 	t.Helper()
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {

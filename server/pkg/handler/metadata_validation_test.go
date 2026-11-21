@@ -101,7 +101,7 @@ func TestCreateStaticHubRejectsMalformedHubMetadata(t *testing.T) {
 	staticMock := zerohub.NewMockZeroHub(ctrl)
 	// No expectations: the 400 for malformed metadata must be written
 	// before any hub-state access (CreateHubIfAbsent).
-	h := &handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
+	h := &Handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
 
 	ctx := newRequestCtx("http://127.0.0.1/v1/static-hubs/create?id=static-hub&hubMetadata=not-json")
 	ctx.Request.Header.Set("Authorization", adminAuthHeader())

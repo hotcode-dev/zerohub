@@ -12,7 +12,7 @@ import (
 // create goes through the atomic CreateHubIfAbsent primitive, so
 // concurrent requests for the same ID never orphan a hub: exactly one wins
 // and the rest get 409.
-func (h *handler) CreateStaticHub(ctx *fasthttp.RequestCtx) error {
+func (h *Handler) CreateStaticHub(ctx *fasthttp.RequestCtx) error {
 	// Auth runs before the migration check so an unauthenticated request is
 	// answered with 401 instead of a WebSocket close whose reason is the
 	// internal backup host. No state is mutated between the two checks, so

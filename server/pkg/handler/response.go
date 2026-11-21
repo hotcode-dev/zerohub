@@ -8,7 +8,7 @@ import (
 )
 
 // Response is a helper function to write a JSON response to the client.
-func (h *handler) Response(ctx *fasthttp.RequestCtx, statusCode int, body interface{}) error {
+func (h *Handler) Response(ctx *fasthttp.RequestCtx, statusCode int, body interface{}) error {
 	data, err := json.Marshal(body)
 	if err != nil {
 		ctx.SetStatusCode(fasthttp.StatusInternalServerError)

@@ -30,7 +30,7 @@ func newWSHandshakeCtx(host string, origin string) *fasthttp.RequestCtx {
 // when the gate passes and the handshake completes (the hijacked connection
 // has no real network behind it in-process, but the 101 response is already
 // written at that point).
-func wsUpgradeStatus(t *testing.T, h *handler, host, origin string) int {
+func wsUpgradeStatus(t *testing.T, h *Handler, host, origin string) int {
 	t.Helper()
 	ctx := newWSHandshakeCtx(host, origin)
 	seed, _, err := h.zeroHubStatic.GetOrCreateHub("room", "", false)

@@ -14,7 +14,7 @@ import (
 // startGetHubTestServer serves the plain-HTTP hub-metadata read endpoint on a
 // random local port, mirroring the routing in handler.go:
 // /v1/random-hubs/get against the random instance.
-func startGetHubTestServer(t *testing.T, h *handler) string {
+func startGetHubTestServer(t *testing.T, h *Handler) string {
 	t.Helper()
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {

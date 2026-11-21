@@ -16,7 +16,7 @@ import (
 // anti-pattern, and is unnecessary here since the endpoint is open to all
 // origins anyway. The exposed data (status + backupHost) is considered
 // public.
-func (h *handler) Status(ctx *fasthttp.RequestCtx) error {
+func (h *Handler) Status(ctx *fasthttp.RequestCtx) error {
 	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
 	ctx.Response.Header.Add("Vary", "Origin")
 

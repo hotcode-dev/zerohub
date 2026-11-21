@@ -16,7 +16,7 @@ import (
 // migration endpoints) on a random local port so requests land in fasthttp
 // worker goroutines, exactly like production. This is what a real unauthenticated
 // WebSocket client would hit.
-func startStaticCreateTestServer(t *testing.T, h *handler) string {
+func startStaticCreateTestServer(t *testing.T, h *Handler) string {
 	t.Helper()
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
