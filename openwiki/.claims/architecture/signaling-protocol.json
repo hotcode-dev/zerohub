@@ -1,58 +1,54 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b18b4dde086c39631b1ed698de089b3688882038998eff5ccb4adeb99b75387f",
+  "pageVersion": "sha256:d163eb51d54a69283dc907799e29306ae58efe22135e7574246485a18ebbe7a3",
   "claims": [
     {
       "id": "claim_d5e17f0a4db84690bce7a57930a4a2e7",
-      "statement": "ClientMessage is a protobuf oneof envelope with three variants: send_offer_message (answer_peer_id, offer_sdp), send_answer_message (offer_peer_id, answer_sdp), and send_ice_candidate_message (peer_id, candidate, relayed to the target peer for trickle ICE). The former update_peer_metadata_message variant has been removed from the wire format.",
+      "statement": "ClientMessage is a protobuf oneof envelope with three variants: send_offer_message (answer_peer_id, offer_sdp), send_answer_message (offer_peer_id, answer_sdp), and send_ice_candidate_message (peer_id, candidate). The orphaned update_peer_metadata_message variant was removed from the wire format.",
       "evidence": [
         {
-          "resource": "repo://proto/zerohub/v1/client_message.proto#L34-L44",
-          "version": "repo-lines-v1:sha256:aa838a66431fa9952335620aa64b1f2c66388e894ebc5fc1184e31debac0efc2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzYmI5MGI5MThmNzcxZGI2MWJiOGYxYzFmMTY4OWI4YjFkOGIwYWY1ODIwYmI4YmFjNmYyYzRjODkwZjNhMzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVlMjExZGI1OWNiMTVkNTgxYTZkZmIxYTY2ZjExMjE5OTA2OGU2MWRiNzRkNzk5MTM1YjZhOTA3MjIxZTdiNzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://proto/zerohub/v1/client_message.proto#L35-L44",
+          "version": "repo-lines-v1:sha256:ad8f2360991730cf1ccff93868afd8a41f431c1685950348fac36d476939657b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwMGE2ZjA4Mzk3YWVlZGE2MzJkODZiM2Q5ODI4OTJhODI0Yjk0ZmYxY2JjNWY1MTliNDlhOGRhN2I0NDc4OWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMyMzMzNDE2NTg0NjBkODYyMzQ3ZGI2YTdkNTA5NGJkZDFmYjU3ZWUxMjFiZGY4ZjEyM2Q3YTc4M2UzMTNlZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_64deb4b4043c498d9ceed2e2532e332f",
-      "statement": "ServerMessage is a protobuf oneof envelope with six variants: hub_info_message, peer_joined_message, peer_disconnected_message, offer_message, answer_message, and ice_candidate_message (relays a trickled ICE candidate to the target peer).",
+      "statement": "ServerMessage is a protobuf oneof envelope with six variants: hub_info_message, peer_joined_message, peer_disconnected_message, offer_message, answer_message, and ice_candidate_message (not used yet).",
       "evidence": [
         {
-          "resource": "repo://proto/zerohub/v1/server_message.proto#L72-L88",
-          "version": "repo-lines-v1:sha256:4191833803392088ec1d9753e550546a7b703be50d419f2432bd6fc2a66b02d5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkNDZhNWJkN2U0ZjE0ZDUwZTMwNDI0NzdjM2I2M2VlZjE5YWIyNmIwNGFiMTY1NmQ0YjQ5ODE2Y2Y1YzI3N2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVlMjExZGI1OWNiMTVkNTgxYTZkZmIxYTY2ZjExMjE5OTA2OGU2MWRiNzRkNzk5MTM1YjZhOTA3MjIxZTdiNzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://proto/zerohub/v1/server_message.proto#L73-L87",
+          "version": "repo-lines-v1:sha256:087fc6034926678e02da5757c97e77ce62672d778f16a90c9b2ca5461422def9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3MzY1MDk5MDljYzlkZmFiNTgzZmNiOWIwZjRjZDdiOGMxZTQ5ZWY1OTJlOWVmNTc0MTcyNTM3YTg1YzExOWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0Y2MzNTlhMTU2ZGRjNTZkZDBjNTdhYjNmMGE4Zjc5NjhmYzAzYzI0ZGYzZjY4ODFhMjdlODY5MmI5OGNiMjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkzOGRlNzRiZTk3YmYzYWJhNzg3MmE2MWJhMGU0MjA4NDAwOGM4MWU4YTIwMmE2MTIxMzRjNzU1YWFmN2ZhMDYifQ=="
         }
       ]
     },
     {
       "id": "claim_cd9255bb1caf4d07ac07cf885713f8d2",
-      "statement": "The server hub routes a client SendOfferMessage to the named answer peer and a SendAnswerMessage to the named offer peer; the server relays SDP verbatim without inspecting its content.",
+      "statement": "The server hub routes a client SendOfferMessage to the named answer peer and a SendAnswerMessage to the named offer peer (and SendIceCandidateMessage to its target peer, warning on self-targeted frames); the server relays SDP verbatim without inspecting its content.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/hub/hub.go#L323-L347",
-          "version": "repo-lines-v1:sha256:20ebc00f25bbb81910b18347ec1d96251cafc293e34ec07fbc74991e00b94093:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxMGRjNDllMTViYmMyYjVkMTk3NTQzMWJkZTUzYzk1MmY1ZDZkYWU2NTI3ZTU1ZmU5NWVmMDc4MTcxMjA3YzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0ZWZjNDk0MThkMjZkY2YxMjliMjJhNmFhMjExMDhjZWVjMzc2NzdhMzJkMDhlOWQ1ZmVlMzVkZGE2NmJiOWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU0YmZkNTM5ZjE1Y2RlZjc3ZTcxNWMwMDlhODQzMTc2YzY3YTgzZTMyMmY0NDRjNWIyMmVhYWNiZjYzOGNkYTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFiZDdkYjA1ZDMzMTFkYTA2ZGVkOGNlNTU0NDUwOTczMDUzYmZjYzY0ZWRhYzgwZDQyMmZiZjU2YTBkNmFjMWUifQ"
+          "resource": "repo://server/pkg/hub/hub.go#L271-L348",
+          "version": "repo-lines-v1:sha256:437126408572db51ecda53919fa6ccf552dffe0a615e917609ca67504b024837:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzNTIyMTU5OWEyYjBhNzllM2QxNWJlMDNiOTRjYmE3YzYzMDdmOWYyNjZkNjA5MWQ2NTk0YTAzYjgyNTUzMzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFjOWE5MjY4NGI4Zjc1MzM0MjdkOGM4NzhiOTdjYzNkY2ZiM2M0OGU3MjUwYzViYTMwYjMyZTY3MTIzODZhYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRjZTc4ZmRiNWUwODRkNmY5MWQ3YjFjNWE5ZTRiYjBlZTcxZTkzOTM1NDFmZTBhMDM5MWZmODY3ZTEzNzEyOWYifQ"
         }
       ]
     },
     {
       "id": "claim_fc485b5fc851457b9c9fc2f63bbdf7e9",
-      "statement": "The SDP offer/answer is sent exactly once: sendOffer/sendAnswer call the shared armSendOnIceReady helper, whose onicecandidate handler fires the send on the first candidate-less event (gathering complete) and a waitIceCandidatesTimeout (default 2000 ms) timer fires it as a fallback, guarded by a single isSent flag; in addition every individual ICE candidate (including those arriving after the SDP went out) is trickled to the remote peer via sendIceCandidateToWebsocket / SendIceCandidateMessage and applied with addIceCandidate on receipt.",
+      "statement": "ICE candidates are individually signaled (trickle ICE): the shared armSendOnIceReady helper used by sendOffer/sendAnswer forwards every onicecandidate candidate via sendIceCandidateToWebsocket (including candidates arriving after the SDP went out), flushes the SDP on the gathering-complete event or as a fallback after the waitIceCandidatesTimeout timer (default 2000 ms), and uses a single isSent guard so the SDP itself is sent exactly once.",
       "evidence": [
         {
-          "resource": "repo://client/src/const.ts#L39-L51",
-          "version": "repo-lines-v1:sha256:e72614d259fb4a38815534354c42033508ac162405fc723b4353d5ac23054b4f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyNzg3ZGJiMjQzMGU3ZTg4OGZkNWZiMjgzODdkMDMxMzVkYTc2ODMzNmY5OTc5YTQ1MDQ0ZTg4ZTZhN2VhOGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhMWQxYTYzMzkwMjI5Yzc5ODM0N2U4M2EwNDA1NDQxYzk0MDAwMzUyODRhZDE2OGMxYmY2Y2RmMWQ3MGEzNzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFjN2NlNjA4MjhkZmY3NjhjYTIwMGQ1YjMyNTk5OGJlMGJjZTU1MjkxYjFkMWViOWE4MDk5ZmY5NTM0MWUwMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://client/src/const.ts#L43-L43",
+          "version": "repo-lines-v1:sha256:be7a4b59f31f5eb4b033b4dce9a8aef6dba7d9b1fcb53acc40bef78c066a1a96:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmU3YTRiNTlmMzFmNWViNGIwMzNiNGRjZTlhOGFlZjZkYmE3ZDliMWZjYjUzYWNjNDBiZWY3OGMwNjZhMWE5NiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmU3YTRiNTlmMzFmNWViNGIwMzNiNGRjZTlhOGFlZjZkYmE3ZDliMWZjYjUzYWNjNDBiZWY3OGMwNjZhMWE5NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTc5ZTllYTYyNjIxNTQ3MjFmNjU0NGZiODEzMWZmY2Q5Y2VkZDBlNzc3Y2M3YjcyNzI4M2JhOThjMGM0ZmRlZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzEyNzI2Y2QxZjYzZGJlM2MwOGI2NmU2Nzg4MmQ5ZTgwYWVkODllNzZlMmFjYTQ5MmMxZDRkMmRlMDQ5M2NkZCJ9"
         },
         {
-          "resource": "repo://client/src/zeroHub.ts#L1715-L1745",
-          "version": "repo-lines-v1:sha256:304824ea4e640de6699e47301bf336af88ab01836a4e5d569b94cc8aa4b96087:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzMmM2ZDZhMzYxMGFkOWRmMGVjODIyNmEzNTg0NThmN2UzYWMzMGQ0MTUzYzk1NzE5OWRlMzMxZDFhYTg0MTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkOWUxMjU0NjQyNTU3NmQzZGVhZThjOWI5ZGJmMTI4ZDVkNmRkYWY1ZDdmZTg1NzkzNDkyN2RlZmZhM2I5ZGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5ZjI1ZmEwYmVkN2FjOWZhZWQxOWZjYTJmZGJhZTBjZTQzZjhhNTNlNmU4ZDY3Mjg4ZGNjMDdkMDNlZWI4YzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM4MzlkZjBlZGViMjI4Yjg0NjI1YTNjMWNkMTMxNTVhNjc0MzY0OWY5YmU0N2Y1MzVlNWZmM2EwMzI4OWRlY2QifQ"
-        },
-        {
-          "resource": "repo://client/src/zeroHub.ts#L1753-L1761",
-          "version": "repo-lines-v1:sha256:2c510799089eadb682b417cb906fd4bd6e55b41772dbcbaf3664659caab02ab7:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzU5ZjEwZDEyZDc4MzEzOWVmNjJmZDllM2VlZjI4NDc4NWRhNjAyN2VhYTNmYjQzMDNlNGEzZDVmYzY1ZTVhMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMmU3NjQzOTg0MDgyY2I1MTY3MWI2NWFlZDczY2RhNTkwNTc4MDI2ZTM2Mzc0OTkxYjk0ODIyNWNmMDgzYmIyMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2RmZjcwNmRkYTliY2MwOWFhMGMxMmRiNjQ0OWJhNTNmOTI1NWIzYmVjN2ZmMjk5ZjM2MzQ1Yzg4ZjU5ZTExZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWE5MjkzZmQ4MDU0YjZlNDcyNDgzNzNmMzlmNGRkNzc4MDAxMDVlYjc1ODM0ODY4NzI1NDI4NWNkMTI4MmI3OCJ9"
+          "resource": "repo://client/src/zeroHub.ts#L1656-L1762",
+          "version": "repo-lines-v1:sha256:ef8eaba0fa647878eac16ce1becb992e19cc99022ac730a130f7b605dad872ec:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0ZjJhMmY5OTZmMDhlNjgwYmQyOTIxMzVhNmZhNDk3OGJkYTI2ZTYwMmQ4NGYzM2NiMWQ1OTQ3NzVkNDMwNGI1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyN2U1Nzg4ZDVkOWQ3M2QyNGE4MWRiYzBhNWE3NGJmYTgyYzljM2IzYWY5OWU1MmFmNzk2ZTkwYjQ2OGE4YTNkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxZGIzZTdjZDBjM2E2MjMwNDc2NjgxNjFkMTA0ZTk5ZDg2MjA5Y2EzZTc3NTRhMjViMTE5YTQ5MDc4NzgwNDI2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzMzM2MjVkMDMzMTIyZjgzYTM0MDE5YTgyMDJhOTdmNTEwZjg2NmViY2MwMDVmN2MxMjA0MjBmNmMyNWZmZTA2In0"
         }
       ]
     },
     {
       "id": "claim_fa365a6d78bb422f877ccfacdecfc391",
-      "statement": "When the server broadcasts a PeerDisconnectedMessage, the client fires the ZeroHubDisconnected status change and then tears the peer down through the shared removePeer helper, which clears the peer's pending ICE-candidate fallback timer and P2P-drop recovery timer, closes the peer RTCPeerConnection, nulls its connection and ICE handlers, and removes the peer from the peers map.",
+      "statement": "When the server broadcasts a PeerDisconnectedMessage, the client fires the ZeroHubDisconnected status change and then tears the peer down through the shared removePeer helper, which clears the peer's pending ICE and P2P-recovery timers, closes the peer RTCPeerConnection, nulls its connection and ICE handlers, and removes the peer from the peers map.",
       "evidence": [
         {
           "resource": "repo://client/src/zeroHub.ts#L940-L950",
@@ -66,8 +62,12 @@
     },
     {
       "id": "claim_af1687183859403b8088b23626e9132e",
-      "statement": "hub.HandleMessage's read loop terminates on read errors, non-binary frames, or protobuf unmarshal failures, and exits with the peer torn down.",
+      "statement": "hub.HandleMessage's read loop terminates on read errors, non-binary frames, or protobuf unmarshal failures (logging the exit error); after it returns, the WebSocket upgrade path closes the peer and runs RemovePeerIfLast to tear the peer down.",
       "evidence": [
+        {
+          "resource": "repo://server/pkg/handler/websocket.go#L217-L234",
+          "version": "repo-lines-v1:sha256:3ebc57185d964bcd84f0ebc2d992a0a07693be7065387c7a05b68c6f1305ecce:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwODM2NzRjMTQ1YWYwYzViYmViNmMxYjE3YjhlNzdiNDliYTNhODlkZTU0ODJkMmRhNzk1ZDQyNzQ5NjUzZDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI0M2U1ZGI4YjFlMWMxMzhjMDA3YWRhYzE1NGM4YmM2MGNhZDUzNWQ3YjZmOTE1OGNiYjQ2ZTY5YmNiYTEwYjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUxZTNlMDFkZGJkYzBkZjVjMzViNzI5NWQzYTNmZWNlMmQ2NTE3Y2U5ZTgzNjE0YTc3YmI3MjdhMjUwZGUxZWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ5NTE3YWUwZGE3N2NhZDcyNjg3NjFjZGQ3M2U4NzM0OGZhNTBhMTI5ZDIyOGJlMGNiYmVkOWZlYWNkYTJmZGEifQ"
+        },
         {
           "resource": "repo://server/pkg/hub/hub.go#L303-L353",
           "version": "repo-lines-v1:sha256:1d35b9bdb0e34b2193c1115006bbee902eb8aaa75ccfbaafbc9ce5081c574cb8:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMGY5NDgxZGIwZTBlYmFkYzY5MDg3ZWQ3NjA4MTQ2N2I1ZGEyZjY0NDU5ZTc5NjFhMDIzYjQ5NTdkMmZhNDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYyYjBhZTk3Y2ZkNTI5YWQzMjIxYTYwYmEwMmIyM2EwZGU1Y2ViYTg5ZDkxMTJjNTg5NWVlNzdkNmMwODQ5YTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
@@ -76,21 +76,25 @@
     },
     {
       "id": "claim_0c33f71cabdc4671a4bfda00589c427d",
-      "statement": "When autoAnswer is false the incoming offerMessage is surfaced to the application through the onOffer callback (peer in AnswerPending) and the application completes the exchange by calling sendAnswer(peer.id, offerSdp); when autoAcceptAnswer is false the incoming answerMessage is surfaced through the onAnswer callback (peer in AcceptPending) and the application calls acceptAnswer(peer.id, answerSdp). Both callbacks are guarded on the peer still existing in the peer map, so a dangling offer/answer for a torn-down peer is not surfaced. Both sendOffer and sendAnswer delegate the ICE-candidate wait-and-send to the shared armSendOnIceReady(peerId, rtcConn, sendOnce) helper, whose single isSent guard makes the SDP send exactly once across the onicecandidate-completion and waitIceCandidatesTimeout fallback paths, with the per-peer timer handle tracked in iceTimeouts[peerId] and re-armed (prior handle cleared) on each call.",
+      "statement": "When autoAnswer is false the incoming offerMessage is surfaced to the application through the onOffer callback (peer in AnswerPending, guarded on the peer still existing in the peers map) and the application completes the exchange by calling sendAnswer(peer.id, offerSdp); when autoAcceptAnswer is false the incoming answerMessage is surfaced through the onAnswer callback (peer in AcceptPending, same guard) and the application calls acceptAnswer(peer.id, answerSdp). Both sendOffer and sendAnswer delegate the ICE-candidate wait-and-send to the shared armSendOnIceReady(peerId, rtcConn, sendOnce) helper, whose single isSent guard makes the SDP send exactly once across the onicecandidate-completion and waitIceCandidatesTimeout fallback paths, with the per-peer timer handle tracked in iceTimeouts[peerId] and re-armed (prior handle cleared) on each call.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L1715-L1745",
-          "version": "repo-lines-v1:sha256:304824ea4e640de6699e47301bf336af88ab01836a4e5d569b94cc8aa4b96087:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzMmM2ZDZhMzYxMGFkOWRmMGVjODIyNmEzNTg0NThmN2UzYWMzMGQ0MTUzYzk1NzE5OWRlMzMxZDFhYTg0MTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkOWUxMjU0NjQyNTU3NmQzZGVhZThjOWI5ZGJmMTI4ZDVkNmRkYWY1ZDdmZTg1NzkzNDkyN2RlZmZhM2I5ZGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5ZjI1ZmEwYmVkN2FjOWZhZWQxOWZjYTJmZGJhZTBjZTQzZjhhNTNlNmU4ZDY3Mjg4ZGNjMDdkMDNlZWI4YzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM4MzlkZjBlZGViMjI4Yjg0NjI1YTNjMWNkMTMxNTVhNjc0MzY0OWY5YmU0N2Y1MzVlNWZmM2EwMzI4OWRlY2QifQ"
+          "resource": "repo://client/src/zeroHub.ts#L1656-L1762",
+          "version": "repo-lines-v1:sha256:ef8eaba0fa647878eac16ce1becb992e19cc99022ac730a130f7b605dad872ec:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0ZjJhMmY5OTZmMDhlNjgwYmQyOTIxMzVhNmZhNDk3OGJkYTI2ZTYwMmQ4NGYzM2NiMWQ1OTQ3NzVkNDMwNGI1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyN2U1Nzg4ZDVkOWQ3M2QyNGE4MWRiYzBhNWE3NGJmYTgyYzljM2IzYWY5OWU1MmFmNzk2ZTkwYjQ2OGE4YTNkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxZGIzZTdjZDBjM2E2MjMwNDc2NjgxNjFkMTA0ZTk5ZDg2MjA5Y2EzZTc3NTRhMjViMTE5YTQ5MDc4NzgwNDI2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzMzM2MjVkMDMzMTIyZjgzYTM0MDE5YTgyMDJhOTdmNTEwZjg2NmViY2MwMDVmN2MxMjA0MjBmNmMyNWZmZTA2In0"
         },
         {
-          "resource": "repo://client/src/zeroHub.ts#L840-L901",
-          "version": "repo-lines-v1:sha256:7cdf88a6b09e213116646c15766262bd6acfddd2a0d6babbe7fc1841e4a5608c:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlYjI4OTJlMDY2NDc5ZGFiODk2MDdjNWZhZWU4MmQ2YzczN2EzYzg2YzgzNDhlNzJkZjQ4NjJlZGExOWY5MmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmMmNjNzg1OGY1MjFkMzlmNDViNjg3MDQ4NDU4MGIzMjVhYzJjNDA5ZTIyNmQyMGFmYThmNzczMjM0OGUwZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFkNTlkYzgyNzhlMjU2NDgyZTVmNTIzNGViYzc2MGNhMmQ4OGUzNzI2ODg5Y2YxMDNlNmU2MjcyODBlNjRlZWMifQ"
+          "resource": "repo://client/src/zeroHub.ts#L248-L266",
+          "version": "repo-lines-v1:sha256:c1da00f1ddb1d4ac05046285fff6a9b4b7cdf79ac17bf805e0d90ca07e5a930f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1NDI5NmQzMmM5ODZhZTcyMDg1ZDYzNWM1MmIzNTk3YTVjNjYxOTY1ZTY1OWMyNjNmNGE0ODQ5NDQyOTIxMmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2YzgzNDE0ZDExMDlkYzE0ZTczYTIwOTdkZjYwOGZkZDUyM2Q2Njg5NDJjM2ZjYjY0NzNiZjYyOGU4ZGM3N2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQyODM5ZmUxZjM0OWE0MzcwZjYwNWQyOGE2YjZjYzcxMzM2NzIyMDNkMDJhMTEwNzY3ZTYxMjgzNjkyNDNhZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUzNTVhMzNhMDI0N2FkMDIyNzg0ZDMzMDE2MGU3NDJmNTRhOWI3ZWFmZTc0MzcyZmEwMjMxZmY0MzQ5NjQ3YzYifQ"
+        },
+        {
+          "resource": "repo://client/src/zeroHub.ts#L846-L898",
+          "version": "repo-lines-v1:sha256:db67bd49d635f293dc88e924d7f83470509db9bd37250f8dc7ac32c1a1e957f2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViZjllMDBlNmNkN2ZjNjkwOWU0YjA1ZmE1MGJmNjQzYmYxZDE5NDg1MWNjODg5YzI3ZDdhOTFkN2FmZDdkODYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkNTk4YTZkNTZhZDVhY2NiMzg2YTViOTJmOWQ4NTFhYmE5NDRjNWNjZmRlMWM3NTkwZWFmZTQ2ZjNkMGJkMTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI2MDUyNWZiOWRmYzQ3MmEzZTUzMjJhYzNhYWNhNTliM2I3Zjg0ZTAzYzZjYTBjNTRlYmI2YTdhMDlhODExNTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY0OTllODhhNDBmMjhhOTYxOTg2OTUyOWEzZDZlYmZiZWM5YzMzMTcwOGQ0ODIwOTUyNjQwOWFkMGM0Zjg3MzcifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-20T20:39:20.288Z"
+    "at": "2026-11-20T15:09:12.940Z"
   }
 }

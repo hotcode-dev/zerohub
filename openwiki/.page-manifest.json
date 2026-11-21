@@ -2,44 +2,44 @@
   "schemaVersion": 1,
   "pages": {
     "/openwiki/architecture/overview.md": {
-      "pageVersion": "sha256:f0d65c13022833a8f46f4197184f611dd88ce2b02a273c8f5f28e2f29a43aa1e",
+      "pageVersion": "sha256:e9db173c388e72be8c0b253d786fe2b53fa5d7f314a263fe701e47e187481398",
       "completedBy": "hermes",
-      "completedRunId": "e1f99995-8849-4c57-9884-653eab501034",
+      "completedRunId": "ce317b43-7dde-47c1-87e1-938392a159e3",
       "gitHead": "6e8eceda77cd2ea7d3266fa1238293995a65198b",
       "sourceFingerprint": "sha256:cecef9b96f8c3b95dcbe4b1e2a57a2eaf7f19501aad3477cbd3377ad79ef8729"
     },
     "/openwiki/architecture/signaling-protocol.md": {
-      "pageVersion": "sha256:b18b4dde086c39631b1ed698de089b3688882038998eff5ccb4adeb99b75387f",
+      "pageVersion": "sha256:d163eb51d54a69283dc907799e29306ae58efe22135e7574246485a18ebbe7a3",
       "completedBy": "hermes",
-      "completedRunId": "e1f99995-8849-4c57-9884-653eab501034",
+      "completedRunId": "ce317b43-7dde-47c1-87e1-938392a159e3",
       "gitHead": "6e8eceda77cd2ea7d3266fa1238293995a65198b",
       "sourceFingerprint": "sha256:cecef9b96f8c3b95dcbe4b1e2a57a2eaf7f19501aad3477cbd3377ad79ef8729"
     },
     "/openwiki/operations/development-testing.md": {
-      "pageVersion": "sha256:5f6ea535317ac0bb92a307263a84708ba7b6e5a8924782f579731e740348ed8d",
+      "pageVersion": "sha256:afa6b86843a0dbff84c4a1aa8c43c020a270101a5e166d4b484580cc1e271535",
       "completedBy": "hermes",
-      "completedRunId": "e1f99995-8849-4c57-9884-653eab501034",
+      "completedRunId": "ce317b43-7dde-47c1-87e1-938392a159e3",
       "gitHead": "6e8eceda77cd2ea7d3266fa1238293995a65198b",
       "sourceFingerprint": "sha256:cecef9b96f8c3b95dcbe4b1e2a57a2eaf7f19501aad3477cbd3377ad79ef8729"
     },
     "/openwiki/quickstart.md": {
-      "pageVersion": "sha256:6c7c9e03e68c17133c38b685237b8cd717ea4ef09c99c3b6b2fa13c1e23c3bde",
+      "pageVersion": "sha256:984a8acd4470194459c1d20515d0ba0e18c04525a2b1397e445f47ed6e2258f0",
       "completedBy": "hermes",
-      "completedRunId": "e1f99995-8849-4c57-9884-653eab501034",
+      "completedRunId": "ce317b43-7dde-47c1-87e1-938392a159e3",
       "gitHead": "6e8eceda77cd2ea7d3266fa1238293995a65198b",
       "sourceFingerprint": "sha256:cecef9b96f8c3b95dcbe4b1e2a57a2eaf7f19501aad3477cbd3377ad79ef8729"
     },
     "/openwiki/subsystems/client-sdk.md": {
-      "pageVersion": "sha256:39557c8c0ef9c6c9e53ed943580a1cbcf09dc1ce71211da29d4cacb47a224de2",
+      "pageVersion": "sha256:1d9852ca4b2464a2a66fff67f85b6a16c988b2bbaf85b3d3525633df764d628a",
       "completedBy": "hermes",
-      "completedRunId": "e1f99995-8849-4c57-9884-653eab501034",
+      "completedRunId": "ce317b43-7dde-47c1-87e1-938392a159e3",
       "gitHead": "6e8eceda77cd2ea7d3266fa1238293995a65198b",
       "sourceFingerprint": "sha256:cecef9b96f8c3b95dcbe4b1e2a57a2eaf7f19501aad3477cbd3377ad79ef8729"
     },
     "/openwiki/subsystems/server-signaling.md": {
-      "pageVersion": "sha256:92119551acc3819c6e673b533556495f29715d58fee10e1b107289946907a254",
+      "pageVersion": "sha256:98cbb4940e4957cfe32aa59d9f472f3125cc4294d346ed1ca1b81fb90f2adb5a",
       "completedBy": "hermes",
-      "completedRunId": "e1f99995-8849-4c57-9884-653eab501034",
+      "completedRunId": "ce317b43-7dde-47c1-87e1-938392a159e3",
       "gitHead": "6e8eceda77cd2ea7d3266fa1238293995a65198b",
       "sourceFingerprint": "sha256:cecef9b96f8c3b95dcbe4b1e2a57a2eaf7f19501aad3477cbd3377ad79ef8729"
     }

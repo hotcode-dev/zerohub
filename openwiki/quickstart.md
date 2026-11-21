@@ -24,10 +24,10 @@ sources:
     resource: repo://test/playwright.config.ts
   - id: openwiki-source-801ca2739d5984913a9ac0eb
     resource: repo://test/unit-harness/index.ts
-generated: { by: "hermes", at: "2026-11-20T20:39:20.288Z" }
+generated: { by: "hermes", at: "2026-11-20T15:09:12.940Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-20T20:39:20.288Z
+    at: 2026-11-20T15:09:12.940Z
 ---
 
 # ZeroHub Quickstart
@@ -56,7 +56,7 @@ orient, then follow the related pages for depth:
 | `client/` | TypeScript/JavaScript SDK, published as `@zero-hub/client` on npm |
 | `server/` | Go signaling server (`fasthttp`) |
 | `proto/` | Protobuf definitions for client↔server communication |
-| `test/` | E2E tests (Playwright driving a plain-TypeScript harness bundled by esbuild against two live servers), plus unit specs that exercise client internals with a mocked `WebSocket` and `RTCPeerConnection` |
+| `test/` | E2E tests (Playwright driving an esbuild-bundled TypeScript harness), plus unit specs that exercise client internals with a mocked `WebSocket` and `RTCPeerConnection` |
 | `docs/` | Astro-based documentation site |
 | `Makefile` | Root orchestration (run, test, proto-gen, e2e) |
 | `AGENTS.md` | Repository development guide |
@@ -76,10 +76,9 @@ go run cmd/server.go      # listens on 0.0.0.0:8080 by default
 ```
 
 `APP_CLIENT_SECRET` is required (the server refuses to start without it). See
-`server/.env.example` for `APP_TRUST_PROXY` and `APP_ALLOWED_ORIGINS`;
-`APP_PORT` (default `8080`) and the hub/peer storage backends (default
-`memory`) fall back to their config defaults. From the repo root you can also
-run `make server-serve` (or `make server-serve-2` for a second instance on 8081).
+`server/.env.example` for `APP_PORT`, `APP_HUB_STORAGE`, `APP_PEER_STORAGE`,
+and `APP_TRUST_PROXY`. From the repo root you can also run
+`make server-serve` (or `make server-serve-2` for a second instance on 8081).
 
 ## 2. Use the client
 
@@ -115,17 +114,18 @@ client.onPeerStatusChange = (peer) => {
 };
 
 // Create a random hub (the server picks the id) and establish the mesh:
-await client.createRandomHub({ name: 'Alice' });
-// ...or a second peer joins it by the id it got from onHubInfo:
+// await client.createRandomHub({ name: 'Alice' });
+// ...a second peer joins that hub by the id it got from onHubInfo:
 // await client.joinRandomHub(hubId, { name: 'Bob' });
 // Or join a static (named, never-expires) hub — static hubs are created
 // out-of-band via the admin-gated /v1/static-hubs/create endpoint:
 // await client.joinStaticHub('my-hub', { name: 'Bob' });
 ```
 
-For a second peer, call `joinRandomHub` (or `joinStaticHub`) with the same hub
-ID. The two clients negotiate over the server and establish a direct WebRTC
-data channel.
+For a second peer, call `joinRandomHub` with the hub ID from the first
+peer's `onHubInfo` callback (or `joinStaticHub` for a named, never-expires
+hub created out-of-band by an admin). The two clients
+negotiate over the server and establish a direct WebRTC data channel.
 
 > Manual SDP handling: set `autoAnswer: false` / `autoAcceptAnswer: false` to
 > surface incoming offers/answers via the `onOffer` / `onAnswer` callbacks and
@@ -134,8 +134,9 @@ data channel.
 
 ## 3. Core concepts (in one line each)
 
-- **Hub** — a room; peers enter via `createRandomHub` / `joinRandomHub` /
-  `joinStaticHub` / `joinOrCreateIPHub`.
+- **Hub** — a room; peers join it by hub ID (`createRandomHub` /
+  `joinRandomHub` for random hubs, `joinStaticHub` for named, never-expires
+  hubs, `joinOrCreateIPHub` for IP-keyed hubs).
 - **Peer** — a connected client, assigned a numeric ID by the server; the
   higher ID creates the offer to the lower ID to avoid collision.
 - **Metadata** — arbitrary JSON attached to each peer and to each hub,
@@ -148,14 +149,11 @@ data channel.
 ## 4. Common tasks
 
 - **Regenerate protobuf** after editing `proto/*.proto`: `make proto-gen`.
-- **Run the full test cycle** (server unit tests + two-server E2E + client
-  tests, in parallel): `make test-all`.
+- **Run the full test cycle** (server unit tests + E2E + client vitest):
+  `make test-all`.
 - **Run server unit tests**: `make server-test` (or `cd server && go test ./...`).
-- **Run E2E tests**: `cd test && npm test` (the `pretest` step type-checks
-  and bundles the plain-TypeScript E2E harness and the unit-spec harness with
-  esbuild; the suite runs serially (`workers: 1`) because the shared `:8080`
-  server's `/v1/admin/migrate` latch is one-way — the migrate spec is named
-  `zz-migrate.spec.ts` so it sorts and runs last; don't invoke
-  `npx playwright test` directly).
+- **Run E2E tests**: `cd test && npm test` (the `pretest` step type-checks and
+  builds both the E2E harness and the unit-spec harness via esbuild before
+  invoking Playwright; don't invoke `npx playwright test` directly).
 - **Factory precommit gate**: `./.zerofactory/precommit.sh` (format, build,
   test).

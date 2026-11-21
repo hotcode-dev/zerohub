@@ -5,7 +5,7 @@ description: End-to-end explanation of how ZeroHub's Go signaling server, TypeSc
 tags: [architecture, webrtc, signaling, server, client, protobuf]
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-20T20:39:20.288Z
+    at: 2026-11-20T15:09:12.940Z
 sources:
   - id: openwiki-source-df0d81c76704b851d02513e1
     resource: repo://client/src/const.ts
@@ -19,8 +19,6 @@ sources:
     resource: repo://server/cmd/server.go
   - id: openwiki-source-9ef7bf558ea5a77d41c4fa0b
     resource: repo://server/pkg/handler/claim_hub_for_create.go
-  - id: openwiki-source-91c8b5702e75b83f8531a612
-    resource: repo://server/pkg/handler/create_static_hub.go
   - id: openwiki-source-b985a45eeefdba7d9abbac00
     resource: repo://server/pkg/handler/validation.go
   - id: openwiki-source-3fcd30e2964f43d36d37064d
@@ -31,7 +29,7 @@ sources:
     resource: repo://server/pkg/storage/storage.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-11-20T20:39:20.288Z" }
+generated: { by: "hermes", at: "2026-11-20T15:09:12.940Z" }
 ---
 
 # Architecture Overview
@@ -49,10 +47,9 @@ components plus shared wire-format definitions:
 - **`proto/`** — Protobuf definitions for the client↔server wire format
   (`client_message.proto`, `server_message.proto`). These are the single source
   of truth, compiled into TypeScript for the client and Go for the server.
-- **`test/`** — E2E tests: Playwright specs that drive a plain-TypeScript
-  harness (bundled with esbuild) against two live server instances, plus unit
-  specs that exercise client internals with a mocked `RTCPeerConnection` and
-  WebSocket.
+- **`test/`** — E2E tests: a plain-TypeScript harness (bundled with esbuild)
+  driven by Playwright specs, plus a vitest unit-spec suite that runs the
+  client SDK in an in-page unit harness, against two live server instances.
 - **`docs/`** — an Astro-based documentation site.
 
 ## The three layers
@@ -60,7 +57,7 @@ components plus shared wire-format definitions:
 ```
 Browser / Node client                    Go signaling server                Wire
 ──────────────────────────────────────   ────────────────────────────      ────
-ZeroHubClient ──createHub/joinHub──▶    fasthttp handler ──upgrade──▶  WebSocket
+ZeroHubClient ──createRandomHub/joinRandomHub──▶  fasthttp handler ──upgrade──▶  WebSocket
    │  (HTTP GET, query params)              (hub routing)                 (protobuf)
    │                                           │
    └── ServerMessage ◀──── hub/peer broadcast ◀┘
@@ -81,24 +78,27 @@ and hands them to `handler.NewHandler`, which `Serve()`s the fasthttp server
 on `APP_HOST:APP_PORT` (default `0.0.0.0:8080`).
 
 The three instances matter because each hub mode has different ID semantics
-and expiry: static hubs are the never-expiring named hubs (`isPermanent=true`,
-created out-of-band by an admin over plain HTTP and joined over WebSocket),
-random hubs get a server-generated uuid, and IP hubs key by the caller's IP.
-See the Go Signaling Server page for the routing table.
+and expiry: static hubs are named and never expire, random hubs get a
+server-minted uuid, and IP hubs key off the client address. See the Go
+Signaling Server page for the routing table.
 
 ### 2. Hub join / create over HTTP→WebSocket
 
-A client calls one of the connection entrypoints (`joinStaticHub`,
-`createRandomHub`, `joinRandomHub`, `joinOrCreateIPHub`). Each opens a
-WebSocket to a typed path (e.g. `/v1/static-hubs/join`,
-`/v1/random-hubs/create`) with `id`, `peerMetadata`, `hubMetadata` as query
-parameters. The handler authenticates where needed, validates the query params
-up front — a missing/empty `id` or non-JSON metadata is rejected with `400`
-before the handshake — then resolves or creates the hub on the right `ZeroHub`
-instance and upgrades the HTTP connection to a WebSocket.
-Creates go through the atomic `CreateHubIfAbsent`
-primitive, so concurrent creates of the same ID collapse to a single hub
-(race winners create, the rest get `409`) instead of orphaning one.
+A client calls one of the connection entrypoints — `createRandomHub`,
+`joinRandomHub`, `joinStaticHub`, or `joinOrCreateIPHub` — each opening a
+WebSocket to a mode-typed path (`/v1/random-hubs/create`,
+`/v1/random-hubs/join`, `/v1/static-hubs/join`, `/v1/ip-hubs/join-or-create`)
+with `id`, `peerMetadata`, and `hubMetadata` as query parameters. (Static hubs
+are additionally created out-of-band by an admin over plain HTTP at
+`/v1/static-hubs/create` — a JSON response, no WebSocket upgrade.) The handler
+authenticates where needed and validates the query params up front via the
+shared `validateHubCreateParams` helper — an empty/whitespace `id` or non-JSON
+metadata is rejected with `400`, an oversized param with `413` — before the
+handshake. It then resolves or creates the hub on the right `ZeroHub` instance
+and upgrades the HTTP connection to a WebSocket. Creates go through the atomic
+`CreateHubIfAbsent` primitive under a cross-mode collision lock, so concurrent
+creates of the same ID collapse to a single hub (race winners create, the rest
+get `409`) instead of orphaning one.
 
 On upgrade (`handler.Upgrade`), the server wraps the socket in a
 `peer.Peer`, calls `hub.AddPeer`, and starts `hub.HandleMessage` — a read loop
@@ -110,7 +110,7 @@ All frames on the WebSocket are protobuf. The server sends `ServerMessage`
 (oneof: `hub_info_message`, `peer_joined_message`, `peer_disconnected_message`,
 `offer_message`, `answer_message`, `ice_candidate_message`); the client sends
 `ClientMessage` (oneof: `send_offer_message`, `send_answer_message`,
-`send_ice_candidate_message`, `update_peer_metadata_message`).
+`send_ice_candidate_message`).
 
 When a peer joins, the hub assigns it a monotonically increasing numeric ID,
 broadcasts a `PeerJoinedMessage` to existing peers, and sends the newcomer a

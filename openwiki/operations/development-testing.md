@@ -30,10 +30,10 @@ sources:
     resource: repo://test/tests/unit-ws-replacement.spec.ts
   - id: openwiki-source-801ca2739d5984913a9ac0eb
     resource: repo://test/unit-harness/index.ts
-generated: { by: "hermes", at: "2026-11-20T20:39:20.288Z" }
+generated: { by: "hermes", at: "2026-11-20T15:09:12.940Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-20T20:39:20.288Z
+    at: 2026-11-20T15:09:12.940Z
 ---
 
 # Development & Testing
@@ -49,14 +49,15 @@ The root `Makefile` is the primary orchestration point. Key targets:
 
 | Target | What it does |
 |---|---|
-| `server-serve` | Run the server (`APP_CLIENT_SECRET=client_secret go run ./cmd/server.go`) |
+| `server-serve` | Run the server (`APP_CLIENT_SECRET=client_secret APP_ALLOWED_ORIGINS=null go run ./cmd/server.go`) |
 | `server-serve-2` | Run a second server on `APP_PORT=8081` |
 | `server-test` | `go test -v ./...` in `server/` |
-| `client-test` | Typecheck the client (`npm run typecheck`), then run the client's vitest suite (`npm run test`) |
-| `e2e-test` | Kills ports, spawns two servers on 8080/8081, waits, runs `test/`, kills servers |
+| `client-typecheck` | `tsc` typecheck in `client/` |
+| `client-test` | Runs `client-typecheck`, then the client vitest suite (`npm run test`) |
+| `e2e-test` | Kills ports, spawns two servers on 8080/8081, waits, runs `test/`, kills servers, and exits with the Playwright status |
 | `test-all` | `server-test` + `e2e-test` + `client-test` in parallel (`-j3`) |
 | `proto-gen` | Runs `api-linter`, then regenerates TS + Go protobuf for both |
-| `server-mock` | Regenerate the gomock mock for `zerohub` |
+| `server-mock` | Regenerate the gomock mock for `zerohub` (the `hub`/`peer` mocks were removed as dead) |
 | `kill-server` | Kill whatever is LISTENing on 8080/8081 |
 
 ## Protobuf regeneration
@@ -94,64 +95,68 @@ In `server/`:
 - `go test -bench ./pkg/*** -benchmem` for benchmarks.
 
 Config comes from `.env` (copy `.env.example`); key vars are `APP_PORT`,
-`APP_CLIENT_SECRET`. Regenerate the mock (`make server-mock`) after interface
-changes in `pkg/zerohub/zerohub.go` (the generated `MockHub` / `MockPeer`
-mocks were removed — those interfaces no longer need mocks).
+`APP_CLIENT_SECRET`. Regenerate the zerohub mock (`make server-mock`) after
+interface changes in `pkg/zerohub/zerohub.go` — the target only generates the
+`zerohub` mock; the former `hub`/`peer` mockgen lines were removed as dead.
 
 ## E2E test suite
 
-The `test/` directory is a Playwright suite driven by a plain-TypeScript
-harness (bundled with esbuild) that instantiates the real `ZeroHubClient`
-(imported via relative path `../../client/src/index`):
+The `test/` directory is a Playwright suite whose E2E specs drive a
+plain-TypeScript harness (`test/harness/index.ts`, bundled with esbuild to
+`test/dist/harness.js`) that instantiates the real `ZeroHubClient` (imported
+via relative path `../../client/src/index`):
 
 - **Harness** (`test/harness/index.ts`) exposes a `window.ZeroHubHarness`
   that creates/joins hubs, logs peer status changes, and tracks data-channel
   state, keyed by `componentId`. Tests drive it via `page.evaluate`.
-- **Specs** (`test/tests/`): `connect.spec.ts` (create/join + peer status),
-  `data-channel.spec.ts`, `concurrent.spec.ts`, `disconnect.spec.ts`,
-  `zz-migrate.spec.ts` (zero-downtime migration; named `zz-` so it sorts and
-  runs LAST — it latches the shared `:8080` server into one-way migrate mode),
-  `multihosts.spec.ts`, `static-hub.spec.ts`, plus twenty-three
-  `unit-*.spec.ts` specs
+- **Specs** (`test/tests/`): seven E2E specs — `connect.spec.ts`
+  (create/join + peer status), `data-channel.spec.ts`, `concurrent.spec.ts`,
+  `disconnect.spec.ts`, `multihosts.spec.ts`, `static-hub.spec.ts` (out-of-band
+  admin HTTP create + `joinStaticHub` WebSocket against the live `:8081` backup
+  server), and `zz-migrate.spec.ts` (named last so its one-way migrate latch on
+  `:8080` runs after every other spec) — plus 23 `unit-*.spec.ts` specs
   (e.g. `unit-sfu-election.spec.ts`, `unit-reconnect-error.spec.ts`,
   `unit-malformed-metadata.spec.ts`, `unit-reconnect-peer-prune.spec.ts`,
-  `unit-ice-candidate-send.spec.ts`, `unit-trickle-ice-receive.spec.ts`,
-  `unit-manual-offer-handling.spec.ts`,
+  `unit-ice-candidate-send.spec.ts`, `unit-manual-offer-handling.spec.ts`,
   `unit-manual-answer-handling.spec.ts`, `unit-migration-redirect.spec.ts`,
-  `unit-static-hub-endpoints.spec.ts`, `unit-ws-replacement.spec.ts`)
-  that exercise client internals in a Playwright page through the unit
-  harness (`test/unit-harness/index.ts`) with a mocked `RTCPeerConnection`
-  and a `MockWebSocket` installed on `globalThis` (each mock socket is
-  instance-tagged and records `close()` codes, so specs can detect a leaked
-  or orphaned socket) — no live server or real WebRTC stack required. The
-  malformed-metadata spec pins the `safeParseJson` fallback, the
-  reconnect-peer-prune spec pins the `hubInfoMessage` roster reconciliation
-  that removes stale peers, the ice-candidate-send spec pins the shared
-  ICE-candidate wait-and-send behavior, the trickle-ice-receive spec pins
-  post-SDP candidate relay, the manual offer/answer specs pin the
-  `onOffer`/`onAnswer` manual-SDP paths, the migration-redirect spec pins the
-  1001 close-reason host validation (and the self-redirect stop plus the
-  `host`/`hostIndex` update on a valid redirect), the static-hub-endpoints
-  spec pins that `joinStaticHub` dials `/v1/static-hubs/join` with the
-  correct `id`/`peerMetadata` query params, and the ws-replacement spec pins
-  that a second entry-point call tears down the previous socket instead of
-  leaking it.
+  `unit-static-hub-endpoints.spec.ts`, `unit-ws-replacement.spec.ts`) that
+  exercise client internals in a Playwright page through the unit harness
+  (`test/unit-harness/index.ts`, bundled to `test/dist/unit-harness.js`) with a
+  mocked `RTCPeerConnection` and a `MockWebSocket` installed on `globalThis`
+  (each mock socket is instance-tagged and records `close()` codes, so specs
+  can detect a leaked or orphaned socket) — no live server or real WebRTC
+  stack required. The malformed-metadata spec pins the `safeParseJson`
+  fallback, the reconnect-peer-prune spec pins the `hubInfoMessage` roster
+  reconciliation that removes stale peers, the ice-candidate-send spec pins the
+  shared ICE-candidate wait-and-send behavior, the manual offer/answer specs
+  pin the `onOffer`/`onAnswer` manual-SDP paths, the migration-redirect spec
+  pins the 1001 close-reason host validation (and the self-redirect stop plus
+  the `host`/`hostIndex` update on a valid redirect), the
+  static-hub-endpoints spec pins that `joinStaticHub` dials
+  `/v1/static-hubs/join` with the correct `id`/`peerMetadata` query params
+  (static-hub create is deliberately NOT on the SDK — it is an admin-gated
+  plain-HTTP endpoint), and the ws-replacement spec pins that a second
+  entry-point call tears down the previous socket instead of leaking it.
 - **Dual servers**: `make e2e-test` spins up two signaling servers on 8080 and
   8081 (for multi-host/failover tests), sleeps 3s, then runs the suite.
 
 ### Running the E2E suite correctly
 
 - **Always run via `cd test && npm test`**, not `npx playwright test`
-  directly. `npm test` triggers `pretest`, which type-checks the specs
-  (`tsc -p tsconfig.json`), builds the E2E harness (`test/dist/harness.js`)
-  **and** the unit harness (`test/dist/unit-harness.js`), both via esbuild.
-  Invoking Playwright directly makes the specs fail with ENOENT on their
-  missing harness bundles.
-- The Playwright config runs **serially** (`fullyParallel: false`) with a 10s
-  per-test timeout, Chrome-only, and `workers: 1` pinned unconditionally: the
-  specs share two live server processes and `zz-migrate.spec.ts` permanently
-  latches `:8080` into migrate mode, so parallel runs would race that shared
-  state. Under `CI=1` it additionally sets `retries: 2` and `forbidOnly`.
+  directly. `npm test` triggers `pretest`, which runs the `tsc` typecheck
+  **and** `build:harness` (`test/dist/harness.js` for the E2E harness) **and**
+  the unit-harness bundle (`test/dist/unit-harness.js` for the unit specs),
+  both built via esbuild. Invoking Playwright directly makes the specs fail
+  with ENOENT on their missing harness bundles.
+- The Playwright config runs **serially**: `workers: 1` and
+  `fullyParallel: false` are always pinned (locally and on CI), with a 10s
+  per-test timeout on Google Chrome only. `retries` is `2` under `CI=1` and
+  `0` locally. The suite must stay single-worker because the specs share two
+  live server processes and `zz-migrate.spec.ts` permanently latches one of
+  them.
+- **Parallel e2e runs flake under load** on pre-existing specs. To distinguish
+  a real regression from load flakiness, run serially (`CI=1 npx playwright
+  test`) or run each spec individually.
 
 ## Zero Factory precommit gate
 
