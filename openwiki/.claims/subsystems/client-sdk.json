@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:770154933a04d900b38d4d6e509de0e35ebad951db05f5efa79fc333123bda3e",
+  "pageVersion": "sha256:bde0656666e0d821916f63ca8c779cb47e1318377c46e2d9d742f21a76b43e88",
   "claims": [
     {
       "id": "claim_f8eee7b4d94d405e8ae1cd7638c1d8cf",
@@ -38,15 +38,15 @@
     },
     {
       "id": "claim_bd4128b0cd9d456c8ec9c4355a36c977",
-      "statement": "SFUTopology routes all P2P traffic through a single SFU peer (the numerically lowest peer ID by default, or an explicitly set one — peer IDs are sequential decimal strings, so election sorts parseInt(id, 10) rather than lexicographically); the SFU offers to every client and non-SFU peers connect only to the SFU, trading a single point of failure for better large-group scalability. P2P drops are recovered only from the SFU side by re-sending an offer; an explicitly configured SFU is never re-elected.",
+      "statement": "SFUTopology routes all P2P traffic through a single SFU peer (the numerically lowest peer ID by default, or an explicitly set one - peer IDs are sequential decimal strings, so election sorts parseInt(id, 10) rather than lexicographically); the SFU offers to every client and non-SFU peers connect only to the SFU, trading a single point of failure for better large-group scalability. P2P drops are recovered only from the SFU side by re-sending an offer; an explicitly configured SFU is never re-elected.",
       "evidence": [
         {
-          "resource": "repo://client/src/topology/sfuTopology.ts#L184-L203",
-          "version": "repo-lines-v1:sha256:5322b863d3039ca461ff8460aee283bdd52c2fc019c9f5b224c431bbff7abd2b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxM2Q4MjU2YWQzMzk3Y2VlNmE4ZDlkMGY2MGNmNzdlM2I2OGI0NTQyYjZjNGUzMGZhYzQ0ODQ1YTEwMWI1MzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwMGI5NzZlNGM5OTMxYzVlMmJlYjBjMTI5MzAxMTA5YmE1ZWQ0NjYzY2VhMDAzODFkODZiNjAxYTlmNTNkNTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5NjZiYjQwZWNlZmY2NDJlNzUzYTJhMDM5ODA5NjcwNjdjMGMzNDdmYjdkODZiMDc2MjdiZDZmMmM3OTc2MDEifQ"
+          "resource": "repo://client/src/topology/sfuTopology.ts#L184-L204",
+          "version": "repo-lines-v1:sha256:7353c73c7da290e587490c663c3df7c149cbbd5a4460848521bf76468313ead1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxM2Q4MjU2YWQzMzk3Y2VlNmE4ZDlkMGY2MGNmNzdlM2I2OGI0NTQyYjZjNGUzMGZhYzQ0ODQ1YTEwMWI1MzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxNzQ4NTE3NzAyZTg3NWRkNWUyOWI3YmIwMjdhZjQ4MjI3NjcwY2I4YTQ4OGEyOTc0MGY1ZTlhYTg2OTAwMjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwMGI5NzZlNGM5OTMxYzVlMmJlYjBjMTI5MzAxMTA5YmE1ZWQ0NjYzY2VhMDAzODFkODZiNjAxYTlmNTNkNTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk3ZDg2MzJlNTRlOTI5OGFiYjk1ODcyN2UyZDUxNDA4YWJhZjEzNjYwMzUzNzkxMDE0MGFiZjY1YjMwYWI2MTMifQ"
         },
         {
-          "resource": "repo://client/src/topology/sfuTopology.ts#L88-L138",
-          "version": "repo-lines-v1:sha256:5a7bbaf1ae8be8e40b7467b3bd15880141a7846d966bf95813f7a9dd34896fbd:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkNjgyNWJiZjFlNjkxMzY2NTQxNWI2ZjE0MGZkYzI2Y2U1MWJmMzc4NDViNmRmNWVkYzU0MTZkZmFhNzI1ODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxNjUzMDAyZDYxNTQwMGEyNTlmZjZlYTIyOTljYzk1NDJkOGY3ZGI0OTdkNjZhZGQ1YTZlNjM1OWZhY2E4ODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1NmQ1NWMyMmU5ZTUxYWVhYWNlNmJkYmY2YThmZTJhOTU0NWM1MDc5YzBkOTEzNDllNjQxZWExMTE0Yjg0NGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3YzM4OTAzMzlmMjFiMDcxMDI1MGFlNTc2ZjlmMTMxNzk4NWFjYTBiNzNjZmUzMWU2Zjc0OGVkMTEwMWMwNTgifQ"
+          "resource": "repo://client/src/topology/sfuTopology.ts#L88-L116",
+          "version": "repo-lines-v1:sha256:4f8220281cebdf96bf279b4f0f70b728d70d0ff8bbeb247802a2ead3eb29d3ba:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkNjgyNWJiZjFlNjkxMzY2NTQxNWI2ZjE0MGZkYzI2Y2U1MWJmMzc4NDViNmRmNWVkYzU0MTZkZmFhNzI1ODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1NmQ1NWMyMmU5ZTUxYWVhYWNlNmJkYmY2YThmZTJhOTU0NWM1MDc5YzBkOTEzNDllNjQxZWExMTE0Yjg0NGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcwMzAwMjRmMzg2MTg5NjE2ZDBlODE0NTkxY2QwM2Q1ODhhNmYyN2Q4OTk3MzNkNWI3MjQ2OGMzZDI1OTJhZjIifQ"
         }
       ]
     },
@@ -55,8 +55,8 @@
       "statement": "MeshTopology delegates per-peer WebRTC wiring to the shared peerSetup helpers: on Pending, setupDataChannel makes the offerer create numberOfChannels data channels labeled '0','1',... while the answerer wires ondatachannel, and setupMediaChannel adds localStream tracks to the peer's RTCPeerConnection; the offerer then sends the offer.",
       "evidence": [
         {
-          "resource": "repo://client/src/topology/meshTopology.ts#L54-L68",
-          "version": "repo-lines-v1:sha256:4b005d639921aabc635b2d0fa5d861618d08b88301ef7dac0e8739fff07d6570:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4NmEyMTNkZWMxMzQxODI2MDgyZGJjZDcwZmRlMzc5YjNiNTA3ZWRmZDJlY2ZhMGFmM2ZkYzE2MzVjNzM4OTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmYzFjN2NiNDhlZGIwZmRkNWJkNjJkOWZkNzJjOTIzNzRiOTRlNGIzYzQ1ZTkzYjFhNDMwOTk0MjI4Y2MzNzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3NjBkNzA4NDczNzBjYWU3NWFjNWY1MDFjM2UxMGRmZTJmY2RjNThjMjE0NjI2MmU4ZjA5Nzk0MjFhZDkwYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwOTZkZjM4MzllZGNiZGMyMDZiYThkZDY2Nzc2NDFmNzgyOTJjNDRlNjcxOGY0NmUzYjhkYmFhNTkwNDk1OTcifQ"
+          "resource": "repo://client/src/topology/meshTopology.ts#L54-L69",
+          "version": "repo-lines-v1:sha256:1ab3bbd354239e5a7d671aca886480c5a7ee271dcd426625bb1c3e61edcd7936:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4NmEyMTNkZWMxMzQxODI2MDgyZGJjZDcwZmRlMzc5YjNiNTA3ZWRmZDJlY2ZhMGFmM2ZkYzE2MzVjNzM4OTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3NjBkNzA4NDczNzBjYWU3NWFjNWY1MDFjM2UxMGRmZTJmY2RjNThjMjE0NjI2MmU4ZjA5Nzk0MjFhZDkwYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5ODYzMzZjZjJkZmFkZDMxNzZiZTRlMGMwNzdjNTQ5NGRmMjE1NzEzNjJlMjZmMGQ3MGMyNmJhZTUwYzMzNTAifQ"
         },
         {
           "resource": "repo://client/src/topology/peerSetup.ts#L41-L127",
@@ -120,11 +120,11 @@
     },
     {
       "id": "claim_3d7994bff5cc4ef1aa3bd7aaf510d9a3",
-      "statement": "All five hub connection entrypoints (createRandomHub, joinRandomHub, joinStaticHub, joinOrCreateIPHub, joinIPHub) funnel into the private openHubConnection helper, which stores any supplied metadata, builds a URL from getWS(host, tls) with id/hubMetadata/peerMetadata query params as applicable, and calls connectToZeroHub. The former createHub/joinHub/joinOrCreateHub (named-hub) and createPermanentHub/joinPermanentHub entrypoints no longer exist — named hubs are now 'static hubs' whose creation is an admin-gated plain-HTTP endpoint. joinIPHub(hubId) joins an existing IP hub by its server-generated numeric id (delivered in onHubInfo after joinOrCreateIPHub) and dials /v1/ip-hubs/join.",
+      "statement": "All five hub connection entrypoints (createRandomHub, joinRandomHub, joinStaticHub, joinIPHub, joinOrCreateIPHub) funnel into the private openHubConnection helper, which builds a URL from getWS(host, tls) with id/hubMetadata/peerMetadata query params as applicable, and calls connectToZeroHub. The former createHub/joinHub/joinOrCreateHub (named-hub) and createPermanentHub/joinPermanentHub entrypoints no longer exist - named hubs are now 'static hubs' whose creation is an admin-gated plain-HTTP endpoint. joinIPHub(hubId) joins an existing IP-keyed hub by its derived id (the id published in hubInfo after a peer created the hub via joinOrCreateIPHub).",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L1782-L1922",
-          "version": "repo-lines-v1:sha256:3f06b56c742992cddd7971cc923d8403680c37237545bc1e078ff941a8df5243:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhY2ZhN2RmMWFkYTZmYTUyZThmMjg2Mzc0MDFlM2ViYzU4ODZjOGNhYzIzYzBkMjRhNTMwNDc4YjdmZWYxZmM5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJjNWY4ZDQxMWM2MzY1MzczYWM4ZjZkMmRlY2M0NjQ3MDc5OWE2MjM0ZTY2YjM3ZTE2Y2MwYjQyYjFmOWFkZTNjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://client/src/zeroHub.ts#L1782-L1901",
+          "version": "repo-lines-v1:sha256:7d81e5e6afa47954d392f03261d23aa650d69c4639f8f9b2528bd40d8ea4b6d4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhY2ZhN2RmMWFkYTZmYTUyZThmMjg2Mzc0MDFlM2ViYzU4ODZjOGNhYzIzYzBkMjRhNTMwNDc4YjdmZWYxZmM5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyN2U1Nzg4ZDVkOWQ3M2QyNGE4MWRiYzBhNWE3NGJmYTgyYzljM2IzYWY5OWU1MmFmNzk2ZTkwYjQ2OGE4YTNkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJjNWY4ZDQxMWM2MzY1MzczYWM4ZjZkMmRlY2M0NjQ3MDc5OWE2MjM0ZTY2YjM3ZTE2Y2MwYjQyYjFmOWFkZTNjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzNzkyOWU5MWUwZjk5YzNlODI1ZGU2OWI0MzVmYjY0ODRkMWIwYTFkZjJmNDY1NjFhYmYxYTI5ZjA0MTg4Yjg4In0"
         }
       ]
     },
@@ -213,8 +213,8 @@
           "version": "repo-lines-v1:sha256:dcdeb950e92cdb991ae5eb0fd3970da02acf1ca13e0c0783b2b4393a28ed51a6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkZmYzMTljNDkxOTM3M2MzZjE0MzJkZDRkNWRkNjNjYjQ3NjY5ZmVjNmIxNTA3YzBkZTRhMDRkYmRmOWM5MTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzNDQ0OTEwOGY5MjQ2Mzc3NzU3YmM4M2JhYWNmYjI1YjMyZGVhNGIyZDFhMzk5ZWMwYzIyNjhlZTYyY2E1ZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3ZWNmMWYwZjI4N2RhZTJlMjMzNWFkYTNlMDBjZGIyYzU4MGY4MWE5MjNmMjdmY2I5NzI4NTE0MWZmMTc3NGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiMTYyNWY2OGFiOWFmZmQyNDVhMzNmMzQ1Y2NkZjY1MDQzYTYzYWY0ZjdjOGViZjVlMDVlYzI0ZmJiNjc1ZjUifQ"
         },
         {
-          "resource": "repo://client/src/zeroHub.ts#L838-L870",
-          "version": "repo-lines-v1:sha256:04c1be4e7bafb8b50ef4b3ef452e4d3dc5e930639badd520955a32ed5d896633:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyZGVkNzc1YTRhNjUwYjFhZjYwNjljMmUyMTllOTNmODg1NTBiNzNlNzIxOWFkMWU1ZDFjMWYzNzExNGI0YjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQyMDA1MjI4NWFlN2ExNTYzNDM5MTNhM2U0NjIwYjQ1ZDc2OTA0MDhmNTRhZjhlMGRkODY1MzgxODAyYTkwYmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ4NWI5OGRiODM2OGIzNDIzODdkNGZhZWMzMGMzOTZmMmU5ODlmYTU4ZDgxZjA0YWFmMGMwNzYyYTBhMDU3YjcifQ"
+          "resource": "repo://client/src/zeroHub.ts#L832-L871",
+          "version": "repo-lines-v1:sha256:1a9581ddf9f58fdffacd118a1f9c5c870c65ea8f10f1b24f5dc0640e4559e4a6:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmMDliMjYxNDlhNzI0Y2E5ZGQ0ODJkOGZhMTc4YThiOGZhMDA0NzAzMjBhOGVlY2Y0YzRlZDU4Njk5ZTExNTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY5YjkwNTMxZjllOWE2ODFlNDAzZDRlMzk0OGVmZjE0NDM0OTM4ZWFmNGQxNTFmZDdhZjYzMDk0ZjA3Y2M4MGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFkNTlkYzgyNzhlMjU2NDgyZTVmNTIzNGViYzc2MGNhMmQ4OGUzNzI2ODg5Y2YxMDNlNmU2MjcyODBlNjRlZWMifQ"
         }
       ]
     },
@@ -227,10 +227,24 @@
           "version": "repo-lines-v1:sha256:2cd9b789a4617a04c14baca6d98062af4291d3c3ee967e16eb83b94f9f6de6a1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmMzcwZTFkOGE3YjU2OTU3NGNkZjc2Y2I1NDY0OWQzNTcwM2YwNzY4ZjUwM2VlZGRlMGIyNmU1Yjg2MjA0MjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5Njc1MjBiODgxNmU5Yjk4ZGFkMmQyMjU0YzIwZGI3NDBhMGEwZGI3N2JmMzcwMzY1MDk4M2NjOTU3ZWM0YjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI3ZTY5Y2NmZDcwN2MzODY3YzQ2ZWYxYTZmODU5NGIwZGExMDk0YjFmMDE2YTk2MDZlMDViZjJmMGM2MDJiOGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI0YWUwZWU0OTEwMTU1NDQ3YjkxZDBmNDRhYTIxZjE2MzI5YTNlNTk4ZGIwNTdkZjE2MWVkYTQ2MDZiYzYyMWIifQ"
         }
       ]
+    },
+    {
+      "id": "claim_9b407866e7434332beed8c7c50594856",
+      "statement": "User-supplied callbacks are isolated from the signaling dispatch by shared guarded-call helpers: the private safeInvoke in zeroHub.ts wraps every user callback (onPeerStatusChange, onPeerError, onHubInfo, onOffer, onAnswer, onZeroHubError, and topology.onPeerStatusChange), and the module-level guardCallback in peerSetup.ts wraps the user-facing onDataChannel and onTrack callbacks, so a throwing handler is logged and isolated instead of aborting the event handler that invoked it.",
+      "evidence": [
+        {
+          "resource": "repo://client/src/topology/peerSetup.ts#L5-L19",
+          "version": "repo-lines-v1:sha256:43637e49d49dcacf8947045815045d1b21e07a3bb2cbda78addc130f56457d72:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhhZGNmZTFlOTYzNzM2MzZkNjViNmZiYzZkMWVlOTIzYjE1MzM4MDhmMTBiZjgwMTVlNjcwNmQwNWU4ODI3MDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYxMjJlNWQxYzY4MWQwNTM2ZTJiNDljMjJkNmE0N2Q4MTE4MjQ5MTk1Y2NmYTJiNDEyMjgzOTMyMGQwZjViN2EifQ"
+        },
+        {
+          "resource": "repo://client/src/zeroHub.ts#L443-L454",
+          "version": "repo-lines-v1:sha256:7006afa6c758c3ed27a3b1645a1c80b8a7ce90024ea73cc205a4c02357adb540:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmMmEyZjk5NmYwOGU2ODBiZDI5MjEzNWE2ZmE0OTc4YmRhMjZlNjAyZDg0ZjMzY2IxZDU5NDc3NWQ0MzA0YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFkYjNlN2NkMGMzYTYyMzA0NzY2ODE2MWQxMDRlOTlkODYyMDljYTNlNzc1NGEyNWIxMTlhNDkwNzg3ODA0MjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwNjA5NzQ3MDYzMGQwZDdjOTFhZTNjYTg2ZWQ2NGQwODBhNWZkYmRhMTcwZDk5Njg0YjZiMjUwNWZlZDE5YTMifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-21T17:53:39.242Z"
+    "at": "2026-11-21T16:26:45.303Z"
   }
 }

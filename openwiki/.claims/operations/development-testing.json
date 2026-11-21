@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f16e857bd999993bec44eea44f201a777540f92618111b9b85da25db2e3fbe71",
+  "pageVersion": "sha256:9cfe6a7f382aac37d8b5223ccd2ede542dcee2cc6b9e0de9fbc18548b88982ed",
   "claims": [
     {
       "id": "claim_9b265d25c6ea46ffb5cbb15403e8cd85",
@@ -28,7 +28,7 @@
     },
     {
       "id": "claim_2c2b053579db481d9a8df809eea0b057",
-      "statement": "The E2E test/ suite is driven via `cd test && npm test`, whose pretest step runs the tsc typecheck followed by a single build:harness step that bundles both the E2E harness (test/dist/harness.js) and the unit-harness bundle (test/dist/unit-harness.js) via a parameterized esbuild loop in test/scripts/build-harness.mjs; invoking npx playwright test directly makes the specs fail with ENOENT on their missing harness bundles.",
+      "statement": "The E2E test/ suite is driven via `cd test && npm test`, whose pretest step runs the tsc typecheck then a single parameterized build:harness esbuild script (test/scripts/build-harness.mjs) that produces both test/dist/harness.js and test/dist/unit-harness.js; invoking npx playwright test directly makes the specs fail with ENOENT on their missing harness bundles.",
       "evidence": [
         {
           "resource": "repo://test/package.json#L7-L12",
@@ -111,30 +111,10 @@
           "version": "repo-file-v1:sha256:cd37527a44ed824fcf43d1e2dea79030dd73a5ae09c76f90f316b4cb0ea8f08d"
         }
       ]
-    },
-    {
-      "id": "claim_ae745bcf11c74da389e77484b623ebf9",
-      "statement": "The E2E test harness (test/harness/index.ts) exposes joinOrCreateIPHub and joinIPHub on window.ZeroHubHarness, and the new ip-hub.spec.ts E2E spec exercises the share.zerohub.dev IP-hub workflow: tab 1 opens /v1/ip-hubs/join-or-create via joinOrCreateIPHub and receives the server-generated numeric IP hub id in onHubInfo, tab 2 joins that hub by id via joinIPHub (dialing /v1/ip-hubs/join), and both peers reach the connected WebRTC state.",
-      "evidence": [
-        {
-          "resource": "repo://test/harness/index.ts#L384-L412",
-          "version": "repo-lines-v1:sha256:39ecf96370d5bf6fde40d4a6a5aa377fc7cd779984e5bf0b3aa7de931ca03b1f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkNzhhMTA1NjYzNzg1OGQ5ODgwZGM0YmVmODg1Yzg0N2Q0Y2EyMDYyOTk1ZGYzZDZmM2M1MDE3ODdlMDJhMjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhM2U0NmY5NDI3NmI2ZjZmNGVkMWYwMmFmNzhiZWY2YTJlZTFjNDM5ZGQ1NTg0Yjk3Mzk0ODMxMzIxNGQyYjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJkMGYyZDNhM2FhZGEyNzU4NjQ1NzhkMGE0MzkxNTYzOGQ1NDNmZWNhMmM5NDg1OGRiOTQxMjExZTg2Y2VmMmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdmNWIwNTg0NTQ0NzRlODRhMzQ2MTg2ZTc1MDYyY2RiN2IzZWJhNzBjMjlhZmRiYmMxZTBiMWVmNmM5NDA2NjEifQ"
-        }
-      ]
-    },
-    {
-      "id": "claim_aa60781e2b784b42a4aa2df2ae69fb66",
-      "statement": "The Playwright config runs serially (fullyParallel: false, workers: 1 pinned locally and on CI) with a 10s per-test timeout on Google Chrome only, launched with --disable-features=LocalNetworkAccessChecks so specs can reach the local signaling servers; retries is 2 under CI=1 and 0 locally.",
-      "evidence": [
-        {
-          "resource": "repo://test/playwright.config.ts#L4-L28",
-          "version": "repo-lines-v1:sha256:4b728dae804d61047ab78a2b0d4e0378239833e33c62ac250fd150eb607249ac:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzMGQ3NjJjMzAwZmFhNzgxOTA0YzY0MzdkOTFiMjBmOTVlNmYyMGQ4YzhlZmY3M2YxYTY1MTBiZGRmOThjNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5NzhlMjUwM2I4Y2YzN2EwNmY3ZDZmMGEzYTZiNmZlMzU2OTFmYmNhYjUwYjg3NzVjYWI2ZmFiYzcxYzU5MmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFhMTdmYTMxMWFlNDBkMTIxMjA0ZGI0NjA0M2IxZGNkZjNmMmQ0ZWRkNjBkMTk3ZGQ4ZTgwMzc0MjJlY2UwYWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhmYjZmYTgyNmY5YTc4ZTdjZmEwMDc1ZTIyN2MwYzFhMjk3YjZkMjg2Y2QxMDk3Y2VjZmJjODA1OWYxOTZmYzIifQ"
-        }
-      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-21T17:53:39.242Z"
+    "at": "2026-11-21T16:26:45.303Z"
   }
 }

@@ -16,10 +16,10 @@ sources:
     resource: repo://client/src/utils.ts
   - id: openwiki-source-718b618612c033c4f36b3a45
     resource: repo://client/src/zeroHub.ts
-generated: { by: "hermes", at: "2026-11-21T17:53:39.242Z" }
+generated: { by: "hermes", at: "2026-11-21T16:26:45.303Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-21T17:53:39.242Z
+    at: 2026-11-21T16:26:45.303Z
 ---
 
 # TypeScript Client SDK
@@ -59,7 +59,7 @@ connection is made until an entrypoint is called.
 
 All connection entrypoints funnel into the private
 `openHubConnection(path, hubId?, peerMetadata?, hubMetadata?)` helper, which
-stores any supplied metadata on the client, builds a `URL` from
+builds a `URL` from
 `getWS(host, tls)` (client/src/utils.ts — `wss://` when `tls`, else `ws://`)
 with `id`, `hubMetadata`, `peerMetadata` as query params, and calls
 `connectToZeroHub(url)`:
@@ -70,7 +70,7 @@ with `id`, `hubMetadata`, `peerMetadata` as query params, and calls
 | `joinRandomHub(hubId, peerMetadata?)` | `/v1/random-hubs/join` | join an existing random hub by id |
 | `joinStaticHub(hubId, peerMetadata?)` | `/v1/static-hubs/join` | join a static (never-expires, named) hub; creation is an admin-gated plain-HTTP endpoint (`/v1/static-hubs/create`) deliberately NOT exposed on the SDK, because the browser WebSocket API cannot send the `Authorization` header |
 | `joinOrCreateIPHub(peerMetadata?, hubMetadata?)` | `/v1/ip-hubs/join-or-create` | IP-keyed join-or-create; the hub id is derived by the server from the caller's IP |
-| `joinIPHub(hubId, peerMetadata?)` | `/v1/ip-hubs/join` | join an existing IP hub by the numeric id the server generates (delivered in `onHubInfo` after `joinOrCreateIPHub`, shareable as an invite link) |
+| `joinIPHub(hubId, peerMetadata?)` | `/v1/ip-hubs/join` | join an existing IP-keyed hub by its derived id (the id published in `hubInfo` after a peer created the hub via `joinOrCreateIPHub`) |
 
 All entry points return `Promise<void>` — they resolve when the signaling
 WebSocket opens and reject when the connection attempt fails. The older
@@ -78,9 +78,9 @@ WebSocket opens and reject when the connection attempt fails. The older
 `createPermanentHub`/`joinPermanentHub` entry points no longer exist: named
 hubs are now "static hubs" and creating one is not a client-side operation
 (browser WebSocket clients cannot carry the admin `Authorization` header).
-`joinIPHub(hubId)` joins an existing IP hub by its server-generated numeric
-id — the id `joinOrCreateIPHub` receives in `onHubInfo` and can share back as
-an invite link — and dials `/v1/ip-hubs/join`.
+`joinIPHub(hubId)` joins an existing IP-keyed hub by its derived id — the id
+the server minted from the peer that first created the hub via
+`joinOrCreateIPHub`, published to that peer in `hubInfo`.
 
 ## WebSocket lifecycle & message dispatch
 
@@ -164,6 +164,14 @@ add or remove a peer can never diverge:
   gone. Used by `disconnect()`, the `peerDisconnectedMessage` broadcast, and
   the `hubInfoMessage` roster-prune pass. The caller emits the appropriate
   status first (it differs per path).
+- **`safeInvoke(label, fn)`** — the shared user-callback isolation helper in
+  `zeroHub.ts`: every user-supplied callback (`onPeerStatusChange`,
+  `onPeerError`, `onHubInfo`, `onOffer`, `onAnswer`, `onZeroHubError`, and
+  the topology's `onPeerStatusChange`) is invoked through it, so a throwing
+  handler is isolated into an error log instead of aborting the signaling
+  dispatch that invoked it. The user-facing `onDataChannel`/`onTrack`
+  callbacks in `peerSetup.ts` are isolated the same way through the
+  module-level `guardCallback` helper.
 
 P2P-drop recovery: when a live peer's `RTCPeerConnection` reports
 `disconnected`/`failed` while the signaling socket is still up,
@@ -324,10 +332,7 @@ switch the exchange from automatic to application-driven, documented in
   with `acceptAnswer(peer.id, answerSdp)`.
 
 Both callbacks are public fields on `ZeroHubClient`, so applications can
-inspect/modify the SDP before completing the exchange. Both are dispatched
-through the private `safeInvoke` helper, which isolates a throwing user
-callback into an error log instead of letting it escape the `onmessage`
-dispatcher (and never misroutes it to `onZeroHubError`).
+inspect/modify the SDP before completing the exchange.
 
 ## Topology system
 
@@ -365,10 +370,7 @@ Both topologies delegate the per-peer WebRTC wiring to the shared helpers in
 `ondatachannel`) and `setupMediaChannel` (adds `localStream` tracks, wires
 `ontrack`) — with optional log callbacks so each topology keeps its own
 logging. The media helper requires call sites to pass the level-gated
-`ZeroHubClient.logger`, not the raw user `config.logger`. User callbacks
-(`onDataChannel`, `onTrack`) are wrapped in the `guardCallback` helper so a
-throwing handler is isolated to an error log rather than escaping the
-`RTCPeerConnection` event handler.
+`ZeroHubClient.logger`, not the raw user `config.logger`.
 
 Both topologies treat `ZeroHubDisconnected` and `Disconnected` as no-ops.
 

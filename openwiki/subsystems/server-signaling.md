@@ -43,10 +43,10 @@ sources:
     resource: repo://server/pkg/storage/gache.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-11-21T17:53:39.242Z" }
+generated: { by: "hermes", at: "2026-11-21T16:26:45.303Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-21T17:53:39.242Z
+    at: 2026-11-21T16:26:45.303Z
 ---
 
 
@@ -81,7 +81,7 @@ admin endpoints would otherwise be open to unauthenticated requests.
 
 ## The three hub modes & routing
 
-`Handler.Serve` builds a fasthttp server and dispatches on `ctx.Path()`:
+`handler.Serve` builds a fasthttp server and dispatches on `ctx.Path()`:
 
 | Path | Handler | ZeroHub instance | Notes |
 |---|---|---|---|
@@ -93,7 +93,6 @@ admin endpoints would otherwise be open to unauthenticated requests.
 | `/v1/random-hubs/get` | `GetHub` | random | metadata only |
 | `/v1/random-hubs/join` | `JoinHub` | random | |
 | `/v1/ip-hubs/join-or-create` | `JoinOrCreateHubIP` | IP | hub ID = FNV-1a hash of the client IP |
-| `/v1/ip-hubs/join` | `JoinHub` | IP | join an existing IP hub by its server-generated numeric id |
 
 Unknown paths return 404; other handler errors return 503 — **except**
 `errAdminUnauthorized`, which `CheckAdminAuth` has already rendered as a 401
@@ -136,7 +135,7 @@ while migrating.
   lookup-and-send helper. `HandleMessage` is the per-socket read loop; it
   relays offer/answer/ICE-candidate messages and ignores self-targeted sends.
 
-**Hub teardown** happens in two places inside `Handler.Upgrade`: the socket's
+**Hub teardown** happens in two places inside `handler.Upgrade`: the socket's
 close handler (`peer.Close()` + `hub.RemovePeerIfLast`), and a fallback right
 after `hub.HandleMessage` returns (fires when the read loop exited before the
 close handler ran, e.g. a read error). Both paths are safe to race because
@@ -147,13 +146,13 @@ and is joined before the upgrade callback returns so fasthttp can safely
 recycle the hijacked connection.
 
 **Upgrade-failure cleanup** plugs an orphaned-hub leak. `Upgrade` reports a
-failed connection two ways: a non-nil error (a real handshake error) or
+failed connection two ways: a non-nil error — classified by the shared
+`wrapUpgradeError` helper, which turns a `websocket.HandshakeError` into a
+`websocket handshake` error and everything else into a generic upgrade error
+(`ForwardMigrate` routes its upgrade failures through the same helper, so
+both upgrade paths report failures identically) — or
 `responseWritten=true` (the up-front `peerMetadata` rejection that already
-wrote a `400` for malformed JSON or `413` for an oversized value). The error
-label is produced by the shared `wrapUpgradeError` helper (in `websocket.go`),
-used by both `Upgrade` and `ForwardMigrate`, which distinguishes a
-`websocket.HandshakeError` ("websocket handshake") from any other upgrade
-failure ("websocket upgrade error"). `AddPeer`
+wrote a `400` for malformed JSON or `413` for an oversized value). `AddPeer`
 only runs inside the upgrade callback, so whenever `Upgrade` does not fully
 succeed, no peer was added for this request and the hub is empty.
 `CreateHubByID` and `JoinOrCreateHubByID` therefore route the failure through

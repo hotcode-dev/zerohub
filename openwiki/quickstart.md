@@ -24,10 +24,10 @@ sources:
     resource: repo://test/playwright.config.ts
   - id: openwiki-source-801ca2739d5984913a9ac0eb
     resource: repo://test/unit-harness/index.ts
-generated: { by: "hermes", at: "2026-11-21T17:53:39.242Z" }
+generated: { by: "hermes", at: "2026-11-21T16:26:45.303Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-21T17:53:39.242Z
+    at: 2026-11-21T16:26:45.303Z
 ---
 
 # ZeroHub Quickstart
@@ -45,8 +45,10 @@ orient, then follow the related pages for depth:
   storage fit together end to end.
 - **Signaling Protocol & Peer Lifecycle** — the protobuf wire format and the
   `PeerStatus` state machine.
-- **Go Signaling Server** — the server subsystem in detail.
-- **TypeScript Client SDK** — the `@zero-hub/client` SDK in detail.
+- **Go Signaling Server** — the server subsystem in detail (including
+  IP-based hub routing via `JoinOrCreateHubIP`).
+- **TypeScript Client SDK** — the `@zero-hub/client` SDK in detail (including
+  the `joinIPHub` client method for IP-keyed hubs).
 - **Development & Testing** — build, test, and proto-generation workflows.
 
 ## Monorepo layout
@@ -136,8 +138,7 @@ negotiate over the server and establish a direct WebRTC data channel.
 
 - **Hub** — a room; peers join it by hub ID (`createRandomHub` /
   `joinRandomHub` for random hubs, `joinStaticHub` for named, never-expires
-  hubs, `joinOrCreateIPHub` to create/join an IP-keyed hub, or `joinIPHub`
-  to join an existing IP hub by id).
+  hubs, `joinOrCreateIPHub` for IP-keyed hubs).
 - **Peer** — a connected client, assigned a numeric ID by the server; the
   higher ID creates the offer to the lower ID to avoid collision.
 - **Metadata** — arbitrary JSON attached to each peer and to each hub,
@@ -154,7 +155,8 @@ negotiate over the server and establish a direct WebRTC data channel.
   `make test-all`.
 - **Run server unit tests**: `make server-test` (or `cd server && go test ./...`).
 - **Run E2E tests**: `cd test && npm test` (the `pretest` step type-checks and
-  builds both the E2E harness and the unit-spec harness via esbuild before
+  builds both the E2E harness and the unit-spec harness with the single
+  parameterized esbuild script (`test/scripts/build-harness.mjs`) before
   invoking Playwright; don't invoke `npx playwright test` directly).
 - **Factory precommit gate**: `./.zerofactory/precommit.sh` (format, build,
   test).

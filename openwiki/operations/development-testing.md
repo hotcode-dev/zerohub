@@ -8,8 +8,6 @@ sources:
     resource: repo://.zerofactory/precommit.sh
   - id: openwiki-source-012f2c78e3b1446dfc35803f
     resource: repo://Makefile
-  - id: openwiki-source-93a30dd3c2c7599eb46400a4
-    resource: repo://test/harness/index.ts
   - id: openwiki-source-b7181b4d7359d016a13b092d
     resource: repo://test/package.json
   - id: openwiki-source-bb910847e63080c9ced0e830
@@ -34,10 +32,10 @@ sources:
     resource: repo://test/tests/unit-ws-replacement.spec.ts
   - id: openwiki-source-801ca2739d5984913a9ac0eb
     resource: repo://test/unit-harness/index.ts
-generated: { by: "hermes", at: "2026-11-21T17:53:39.242Z" }
+generated: { by: "hermes", at: "2026-11-21T16:26:45.303Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-21T17:53:39.242Z
+    at: 2026-11-21T16:26:45.303Z
 ---
 
 # Development & Testing
@@ -111,18 +109,16 @@ plain-TypeScript harness (`test/harness/index.ts`, bundled with esbuild to
 via relative path `../../client/src/index`):
 
 - **Harness** (`test/harness/index.ts`) exposes a `window.ZeroHubHarness`
-  that creates/joins hubs — including the IP-hub pair `joinOrCreateIPHub` /
-  `joinIPHub` — logs peer status changes, and tracks data-channel state, keyed
-  by `componentId`. Tests drive it via `page.evaluate`.
+  that creates/joins hubs, logs peer status changes, and tracks data-channel
+  state, keyed by `componentId`. Tests drive it via `page.evaluate`.
 - **Specs** (`test/tests/`): eight E2E specs — `connect.spec.ts`
-  (create/join + peer status), `data-channel.spec.ts`, `concurrent.spec.ts`,
-  `disconnect.spec.ts`, `ip-hub.spec.ts` (join-or-create an IP hub then join it
-  by id via `joinIPHub`, both peers reach `connected`), `multihosts.spec.ts`,
-  `static-hub.spec.ts` (out-of-band
-  admin HTTP create + `joinStaticHub` WebSocket against the live `:8081` backup
-  server), and `zz-migrate.spec.ts` (named last so its one-way migrate latch on
-  `:8080` runs after every other spec) — plus 22 `unit-*.spec.ts` specs
-  (e.g. `unit-sfu-election.spec.ts`, `unit-reconnect-error.spec.ts`,
+  (create/join + peer status), `data-channel.spec.ts`, `ip-hub.spec.ts`,
+  `concurrent.spec.ts`, `disconnect.spec.ts`, `multihosts.spec.ts`,
+  `static-hub.spec.ts` (out-of-band admin HTTP create + `joinStaticHub`
+  WebSocket against the live `:8081` backup server), and `zz-migrate.spec.ts`
+  (named last so its one-way migrate latch on `:8080` runs after every other
+  spec) — plus 22 `unit-*.spec.ts` specs
+  (e.g. `unit-peer-wiring.spec.ts`, `unit-sfu-election.spec.ts`, `unit-reconnect-error.spec.ts`,
   `unit-malformed-metadata.spec.ts`, `unit-reconnect-peer-prune.spec.ts`,
   `unit-ice-candidate-send.spec.ts`, `unit-manual-offer-handling.spec.ts`,
   `unit-manual-answer-handling.spec.ts`, `unit-migration-redirect.spec.ts`,
@@ -151,17 +147,14 @@ via relative path `../../client/src/index`):
 
 - **Always run via `cd test && npm test`**, not `npx playwright test`
   directly. `npm test` triggers `pretest`, which runs the `tsc` typecheck
-  and then a single `build:harness` step: `test/scripts/build-harness.mjs`
-  is parameterized over both entry points and bundles the E2E harness
-  (`test/dist/harness.js`) and the unit-harness bundle
-  (`test/dist/unit-harness.js`) in one esbuild pass. Invoking Playwright
-  directly makes the specs fail with ENOENT on their missing harness
-  bundles.
+  **and** a single parameterized `build:harness` esbuild script
+  (`test/scripts/build-harness.mjs`) that produces both `test/dist/harness.js`
+  (the E2E harness) and `test/dist/unit-harness.js` (the unit specs).
+  Invoking Playwright directly makes the specs fail with ENOENT on their
+  missing harness bundles.
 - The Playwright config runs **serially**: `workers: 1` and
   `fullyParallel: false` are always pinned (locally and on CI), with a 10s
-  per-test timeout on Google Chrome only (launched with
-  `--disable-features=LocalNetworkAccessChecks`). `retries` is `2` under
-  `CI=1` and
+  per-test timeout on Google Chrome only. `retries` is `2` under `CI=1` and
   `0` locally. The suite must stay single-worker because the specs share two
   live server processes and `zz-migrate.spec.ts` permanently latches one of
   them.
