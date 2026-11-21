@@ -64,6 +64,16 @@ client.joinOrCreateIPHub(
 );
 ```
 
+### Joining a Specific IP Hub
+
+```typescript
+// Join an existing IP-based hub using the hubInfo.id shared by a peer
+client.joinIPHub(
+  "6988719201831834183", // IP hub ID from hubInfo.id
+  { username: "remote_user", device: "mobile" } // Peer metadata
+);
+```
+
 ### Use Cases
 
 - **Local network communication**: Connect devices on the same network

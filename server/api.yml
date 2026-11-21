@@ -140,6 +140,22 @@ channels:
       ws:
         method: GET
 
+  ipHubsJoin:
+    address: /v1/ip-hubs/join
+    description: |
+      Join an existing IP-based hub by id.
+      Query params:
+      - id (required): hub id
+      - peerMetadata (optional): stringified peer metadata
+    messages:
+      clientMessage:
+        $ref: '#/components/messages/ClientMessage'
+      serverMessage:
+        $ref: '#/components/messages/ServerMessage'
+    bindings:
+      ws:
+        method: GET
+
   permanentHubsJoin:
     address: /v1/static-hubs/join
     description: |
@@ -303,6 +319,20 @@ operations:
       $ref: '#/channels/ipHubsJoinOrCreate'
     messages:
       - $ref: '#/channels/ipHubsJoinOrCreate/messages/serverMessage'
+
+  clientSendOnIpHubsJoin:
+    action: send
+    channel:
+      $ref: '#/channels/ipHubsJoin'
+    messages:
+      - $ref: '#/channels/ipHubsJoin/messages/clientMessage'
+
+  clientReceiveOnIpHubsJoin:
+    action: receive
+    channel:
+      $ref: '#/channels/ipHubsJoin'
+    messages:
+      - $ref: '#/channels/ipHubsJoin/messages/serverMessage'
 
   clientSendOnPermanentHubsJoin:
     action: send
