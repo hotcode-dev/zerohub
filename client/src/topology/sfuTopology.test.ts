@@ -4,6 +4,7 @@ import { ZeroHubClient } from "../zeroHub";
 import { PeerStatus, type Config } from "../types";
 import type { ZeroHubLogger } from "../logger";
 import { SFUTopology } from "./sfuTopology";
+import { FakeLogger, makePeer } from "./test/fakes";
 
 /**
  * Unit tests for `SFUTopology.onPeerStatusChange` state-machine decisions.
@@ -34,63 +35,6 @@ import { SFUTopology } from "./sfuTopology";
  * self-contained; the Playwright harness specs pin the same behavior through
  * a live two-server harness.
  */
-
-class FakeLogger {
-  public log = vi.fn();
-  public warn = vi.fn();
-  public error = vi.fn();
-}
-
-class FakeRTCDataChannel {
-  public label: string;
-  public initOpts: RTCDataChannelInit | undefined;
-
-  constructor(label: string, initOpts?: RTCDataChannelInit) {
-    this.label = label;
-    this.initOpts = initOpts;
-  }
-}
-
-/** Minimal `RTCPeerConnection` fake: only the members peerSetup touches. */
-class FakeRTCPeerConnection {
-  public createdChannels: {
-    label: string;
-    init: RTCDataChannelInit | undefined;
-  }[] = [];
-  public addedTracks: unknown[] = [];
-  public ondatachannel:
-    | ((ev: { channel?: FakeRTCDataChannel | null }) => void)
-    | null = null;
-  public ontrack: ((ev: { streams?: unknown[] }) => void) | null = null;
-
-  createDataChannel(
-    label: string,
-    init?: RTCDataChannelInit
-  ): FakeRTCDataChannel {
-    this.createdChannels.push({ label, init });
-    return new FakeRTCDataChannel(label, init);
-  }
-
-  addTrack(_track: unknown, _stream?: unknown): unknown {
-    this.addedTracks.push(_track);
-    return {};
-  }
-}
-
-function makePeer(
-  id: string,
-  status: PeerStatus = PeerStatus.Pending
-): { peer: Peer; rtc: FakeRTCPeerConnection } {
-  const rtc = new FakeRTCPeerConnection();
-  const peer = new Peer(
-    id,
-    status,
-    {},
-    new Date(),
-    rtc as unknown as RTCPeerConnection
-  );
-  return { peer, rtc };
-}
 
 function makeConfig(overrides: Partial<Config> = {}): Config {
   return {

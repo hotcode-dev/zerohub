@@ -4,6 +4,7 @@ import { ZeroHubClient } from "../zeroHub";
 import { PeerStatus, type Config } from "../types";
 import type { ZeroHubLogger } from "../logger";
 import { MeshTopology } from "./meshTopology";
+import { FakeLogger, makePeer } from "./test/fakes";
 
 /**
  * Unit tests for `MeshTopology.onPeerStatusChange` state-machine decisions.
@@ -18,63 +19,6 @@ import { MeshTopology } from "./meshTopology";
  * The comparison is numeric (peer ids are sequential decimal strings like
  * "1", "2", ..., "10"); a lexicographic one would disagree on "2" vs "10".
  */
-
-class FakeLogger {
-  public log = vi.fn();
-  public warn = vi.fn();
-  public error = vi.fn();
-}
-
-class FakeRTCDataChannel {
-  public label: string;
-  public initOpts: RTCDataChannelInit | undefined;
-
-  constructor(label: string, initOpts?: RTCDataChannelInit) {
-    this.label = label;
-    this.initOpts = initOpts;
-  }
-}
-
-/** Minimal `RTCPeerConnection` fake: only the members peerSetup touches. */
-class FakeRTCPeerConnection {
-  public createdChannels: {
-    label: string;
-    init: RTCDataChannelInit | undefined;
-  }[] = [];
-  public addedTracks: unknown[] = [];
-  public ondatachannel:
-    | ((ev: { channel?: FakeRTCDataChannel | null }) => void)
-    | null = null;
-  public ontrack: ((ev: { streams?: unknown[] }) => void) | null = null;
-
-  createDataChannel(
-    label: string,
-    init?: RTCDataChannelInit
-  ): FakeRTCDataChannel {
-    this.createdChannels.push({ label, init });
-    return new FakeRTCDataChannel(label, init);
-  }
-
-  addTrack(_track: unknown, _stream?: unknown): unknown {
-    this.addedTracks.push(_track);
-    return {};
-  }
-}
-
-function makePeer(
-  id: string,
-  status: PeerStatus = PeerStatus.Pending
-): { peer: Peer; rtc: FakeRTCPeerConnection } {
-  const rtc = new FakeRTCPeerConnection();
-  const peer = new Peer(
-    id,
-    status,
-    {},
-    new Date(),
-    rtc as unknown as RTCPeerConnection
-  );
-  return { peer, rtc };
-}
 
 function makeConfig(overrides: Partial<Config> = {}): Config {
   return {
@@ -285,8 +229,12 @@ describe("MeshTopology.onPeerStatusChange — Pending setup", () => {
 
     topology.onPeerStatusChange(peer);
 
-    // Both local tracks were added to the peer connection.
-    expect(rtc.addedTracks).toEqual([trackA, trackB]);
+    // Both local tracks were added to the peer connection, each with the
+    // stream itself (not a copy) as the stream argument.
+    expect(rtc.addedTracks).toEqual([
+      { track: trackA, stream: localStream },
+      { track: trackB, stream: localStream },
+    ]);
     // The ontrack handler is installed; firing it reaches the user callback.
     expect(rtc.ontrack).toBeDefined();
     const event = { streams: [{}] } as never;

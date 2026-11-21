@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { Peer } from "../peer";
-import { PeerStatus, type Config } from "../types";
+import { type Config } from "../types";
 import type { ZeroHubLogger } from "../logger";
 import { setupDataChannel, setupMediaChannel } from "./peerSetup";
+import { FakeLogger, FakeRTCDataChannel, makePeer } from "./test/fakes";
 
 /**
  * Unit tests for the shared channel-setup helpers in `peerSetup.ts`.
@@ -10,62 +10,6 @@ import { setupDataChannel, setupMediaChannel } from "./peerSetup";
  * helpers only ever call `createDataChannel`, `addTrack`, and install the
  * `ondatachannel`/`ontrack` handlers.
  */
-
-class FakeLogger {
-  public log = vi.fn();
-  public warn = vi.fn();
-  public error = vi.fn();
-}
-
-class FakeRTCDataChannel {
-  public label: string;
-  public initOpts: RTCDataChannelInit | undefined;
-
-  constructor(label: string, initOpts?: RTCDataChannelInit) {
-    this.label = label;
-    this.initOpts = initOpts;
-  }
-}
-
-class FakeRTCPeerConnection {
-  public createdChannels: {
-    label: string;
-    init: RTCDataChannelInit | undefined;
-  }[] = [];
-  public addedTracks: { track: unknown; stream: unknown }[] = [];
-  public ondatachannel:
-    | ((ev: { channel?: FakeRTCDataChannel | null }) => void)
-    | null = null;
-  public ontrack: ((ev: { streams?: unknown[] }) => void) | null = null;
-
-  createDataChannel(
-    label: string,
-    init?: RTCDataChannelInit
-  ): FakeRTCDataChannel {
-    this.createdChannels.push({ label, init });
-    return new FakeRTCDataChannel(label, init);
-  }
-
-  addTrack(track: unknown, stream?: unknown): unknown {
-    this.addedTracks.push({ track, stream });
-    return {};
-  }
-}
-
-function makePeer(
-  id: string,
-  status: PeerStatus = PeerStatus.Pending
-): { peer: Peer; rtc: FakeRTCPeerConnection } {
-  const rtc = new FakeRTCPeerConnection();
-  const peer = new Peer(
-    id,
-    status,
-    {},
-    new Date(),
-    rtc as unknown as RTCPeerConnection
-  );
-  return { peer, rtc };
-}
 
 function makeConfig(overrides: Partial<Config> = {}): Config {
   return {
