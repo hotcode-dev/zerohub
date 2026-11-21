@@ -16,10 +16,10 @@ sources:
     resource: repo://client/src/utils.ts
   - id: openwiki-source-718b618612c033c4f36b3a45
     resource: repo://client/src/zeroHub.ts
-generated: { by: "hermes", at: "2026-11-21T15:10:39.237Z" }
+generated: { by: "hermes", at: "2026-11-21T17:53:39.242Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-21T15:10:39.237Z
+    at: 2026-11-21T17:53:39.242Z
 ---
 
 # TypeScript Client SDK
@@ -70,6 +70,7 @@ with `id`, `hubMetadata`, `peerMetadata` as query params, and calls
 | `joinRandomHub(hubId, peerMetadata?)` | `/v1/random-hubs/join` | join an existing random hub by id |
 | `joinStaticHub(hubId, peerMetadata?)` | `/v1/static-hubs/join` | join a static (never-expires, named) hub; creation is an admin-gated plain-HTTP endpoint (`/v1/static-hubs/create`) deliberately NOT exposed on the SDK, because the browser WebSocket API cannot send the `Authorization` header |
 | `joinOrCreateIPHub(peerMetadata?, hubMetadata?)` | `/v1/ip-hubs/join-or-create` | IP-keyed join-or-create; the hub id is derived by the server from the caller's IP |
+| `joinIPHub(hubId, peerMetadata?)` | `/v1/ip-hubs/join` | join an existing IP hub by the numeric id the server generates (delivered in `onHubInfo` after `joinOrCreateIPHub`, shareable as an invite link) |
 
 All entry points return `Promise<void>` — they resolve when the signaling
 WebSocket opens and reject when the connection attempt fails. The older
@@ -77,9 +78,9 @@ WebSocket opens and reject when the connection attempt fails. The older
 `createPermanentHub`/`joinPermanentHub` entry points no longer exist: named
 hubs are now "static hubs" and creating one is not a client-side operation
 (browser WebSocket clients cannot carry the admin `Authorization` header).
-The `joinIPHub(hubId)` entry point was also removed: an IP hub's id is derived
-from the caller's IP by the server, so a client-supplied hub id can never
-resolve to an IP hub. Use `joinOrCreateIPHub` instead.
+`joinIPHub(hubId)` joins an existing IP hub by its server-generated numeric
+id — the id `joinOrCreateIPHub` receives in `onHubInfo` and can share back as
+an invite link — and dials `/v1/ip-hubs/join`.
 
 ## WebSocket lifecycle & message dispatch
 

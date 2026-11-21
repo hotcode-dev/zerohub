@@ -24,10 +24,10 @@ sources:
     resource: repo://test/playwright.config.ts
   - id: openwiki-source-801ca2739d5984913a9ac0eb
     resource: repo://test/unit-harness/index.ts
-generated: { by: "hermes", at: "2026-11-20T15:09:12.940Z" }
+generated: { by: "hermes", at: "2026-11-21T17:53:39.242Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-21T15:10:39.237Z
+    at: 2026-11-21T17:53:39.242Z
 ---
 
 # ZeroHub Quickstart
@@ -136,7 +136,8 @@ negotiate over the server and establish a direct WebRTC data channel.
 
 - **Hub** — a room; peers join it by hub ID (`createRandomHub` /
   `joinRandomHub` for random hubs, `joinStaticHub` for named, never-expires
-  hubs, `joinOrCreateIPHub` for IP-keyed hubs).
+  hubs, `joinOrCreateIPHub` to create/join an IP-keyed hub, or `joinIPHub`
+  to join an existing IP hub by id).
 - **Peer** — a connected client, assigned a numeric ID by the server; the
   higher ID creates the offer to the lower ID to avoid collision.
 - **Metadata** — arbitrary JSON attached to each peer and to each hub,

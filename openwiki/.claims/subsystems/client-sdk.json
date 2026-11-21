@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d66359f871aa2ef8bb3105bfcad463e4a165c4cbeba624682b20cf728d11a172",
+  "pageVersion": "sha256:770154933a04d900b38d4d6e509de0e35ebad951db05f5efa79fc333123bda3e",
   "claims": [
     {
       "id": "claim_f8eee7b4d94d405e8ae1cd7638c1d8cf",
@@ -120,11 +120,11 @@
     },
     {
       "id": "claim_3d7994bff5cc4ef1aa3bd7aaf510d9a3",
-      "statement": "All four hub connection entrypoints (createRandomHub, joinRandomHub, joinStaticHub, joinOrCreateIPHub) funnel into the private openHubConnection helper, which stores any supplied metadata, builds a URL from getWS(host, tls) with id/hubMetadata/peerMetadata query params as applicable, and calls connectToZeroHub. The former createHub/joinHub/joinOrCreateHub (named-hub) and createPermanentHub/joinPermanentHub entrypoints no longer exist — named hubs are now 'static hubs' whose creation is an admin-gated plain-HTTP endpoint — and joinIPHub was removed because a client-supplied id can never resolve to an IP hub.",
+      "statement": "All five hub connection entrypoints (createRandomHub, joinRandomHub, joinStaticHub, joinOrCreateIPHub, joinIPHub) funnel into the private openHubConnection helper, which stores any supplied metadata, builds a URL from getWS(host, tls) with id/hubMetadata/peerMetadata query params as applicable, and calls connectToZeroHub. The former createHub/joinHub/joinOrCreateHub (named-hub) and createPermanentHub/joinPermanentHub entrypoints no longer exist — named hubs are now 'static hubs' whose creation is an admin-gated plain-HTTP endpoint. joinIPHub(hubId) joins an existing IP hub by its server-generated numeric id (delivered in onHubInfo after joinOrCreateIPHub) and dials /v1/ip-hubs/join.",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L1812-L1913",
-          "version": "repo-lines-v1:sha256:0edd2cf6792b4f7b4438e3c69d1032162355429c19ee4ac65231d78726abbc91:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhY2ZhN2RmMWFkYTZmYTUyZThmMjg2Mzc0MDFlM2ViYzU4ODZjOGNhYzIzYzBkMjRhNTMwNDc4YjdmZWYxZmM5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyN2U1Nzg4ZDVkOWQ3M2QyNGE4MWRiYzBhNWE3NGJmYTgyYzljM2IzYWY5OWU1MmFmNzk2ZTkwYjQ2OGE4YTNkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJjNWY4ZDQxMWM2MzY1MzczYWM4ZjZkMmRlY2M0NjQ3MDc5OWE2MjM0ZTY2YjM3ZTE2Y2MwYjQyYjFmOWFkZTNjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzNzkyOWU5MWUwZjk5YzNlODI1ZGU2OWI0MzVmYjY0ODRkMWIwYTFkZjJmNDY1NjFhYmYxYTI5ZjA0MTg4Yjg4In0"
+          "resource": "repo://client/src/zeroHub.ts#L1782-L1922",
+          "version": "repo-lines-v1:sha256:3f06b56c742992cddd7971cc923d8403680c37237545bc1e078ff941a8df5243:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhY2ZhN2RmMWFkYTZmYTUyZThmMjg2Mzc0MDFlM2ViYzU4ODZjOGNhYzIzYzBkMjRhNTMwNDc4YjdmZWYxZmM5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJjNWY4ZDQxMWM2MzY1MzczYWM4ZjZkMmRlY2M0NjQ3MDc5OWE2MjM0ZTY2YjM3ZTE2Y2MwYjQyYjFmOWFkZTNjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -231,6 +231,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-21T15:10:39.237Z"
+    "at": "2026-11-21T17:53:39.242Z"
   }
 }

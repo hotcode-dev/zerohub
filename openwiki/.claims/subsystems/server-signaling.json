@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:26ad65fc07b06b68dc320d41abc7bb42e39f67ee9e1441db247b2c798e509e1d",
+  "pageVersion": "sha256:567076cc740222629a706bac81efcbd70945700d856ed65173b8701d8fb67f4d",
   "claims": [
     {
       "id": "claim_1d82fd64055a4062925029c4ae4e6575",
@@ -233,10 +233,20 @@
           "version": "repo-lines-v1:sha256:276b85bd8f3604af11c17b3f21fcc42f1b827c863e89e685640a3bdbed521764:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjJlZTQxNTgzNzRiNzcyNTliYzg3MTlhZTgxNDUyZTNlNTQ1ZDEyZWNiNzM0Y2M4NDIxNGRhNjliMDBiNDFmZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdjZGE4MmRhNjA2MjM4ZTA1ZTYyMzk5NTY5YzVlZTAzOTkzNDE5NjQ4YWU1ZDQzYTJiZjhjZDYzNDdmODI2MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODM5YmMxYzYzNzk3ZWU5OTc3OGU5NTJkMjc3ZWNiOGFjNmZmMTMzOGIwNTM4ZmQxZDlhMmU4YTZkNmVkMGE1MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGE4ZjEzZGRhZGVmNjgzM2Y5ODhjZThlYTgxNDFkNGNiYTg0OWIzMWJjMTYzNTE2YjM5YjUxNmQyNTg5ZTg5ZCJ9"
         }
       ]
+    },
+    {
+      "id": "claim_86e2410f27fe4383be4e506ad914d501",
+      "statement": "The routing switch in Handler.Serve includes a /v1/ip-hubs/join case that dispatches JoinHub against the IP ZeroHub instance (zeroHubIP), allowing a client to join an existing IP hub by its server-generated numeric hub id (added alongside the client's joinIPHub entry point).",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/handler/handler.go#L240-L263",
+          "version": "repo-lines-v1:sha256:1f9861cacf46db4d834dcd4408d9cfc5b765fdfa35fb0b07eed1c051200238aa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgxN2UyODQ5YjhmYTcxNjEyZmMyYTdmZThiNzhmYmVhMGY2YjUzOTFhOTgyODEzNDhlODUxMWY0OTQ0YmI3YTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlNWYyZWM2ZjNmYjE5MGZmNTJiYzA1ZmQ0MDM1ODQ5MThkZjRmNjY3MmQ0OGI2Nzk1Mzk0ZmIxZWFhYjcyMTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmYTBiNjQxYjFhNWRiNTBkMTg3MjI5YjUzZGMyM2FmMDRlOGY3ZGU5ZTNlNWJlNmZjZWM1NzNkYTBmY2U2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU0YmZjOWU4MWE2MDAwMzQyYzNiZTA3OTc5YTQzNzdkODlmMTNjZmNjZTUzMGE1NDY2MWNiYTdjOTRhN2YzZTMifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-21T15:10:39.237Z"
+    "at": "2026-11-21T17:53:39.242Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7d4c5b7cd51654f826de6acfdd21bc8a930fa5b720621017294d7d313452b9bb",
+  "pageVersion": "sha256:774d3839246afc2ffa9c5f5688c8f8a8d08d42a9407847e26401ac060c0f94b3",
   "claims": [
     {
       "id": "claim_29b96b61359846dd9149060c8b57d3a3",
@@ -62,7 +62,7 @@
       "evidence": [
         {
           "resource": "repo://test/harness/index.ts",
-          "version": "repo-file-v1:sha256:63e2c55f19f41220ccbad6e44aa61bc53a6f993f977811b5abac2573ac704178"
+          "version": "repo-file-v1:sha256:a6a602d2da48a65421eba0f7e6ae657d67984fb2d4042255174087702b525df8"
         },
         {
           "resource": "repo://test/package.json",
@@ -70,7 +70,7 @@
         },
         {
           "resource": "repo://test/playwright.config.ts",
-          "version": "repo-file-v1:sha256:2971c4c0273d8dd02ce6772aedd5df79e828ee2b93a7fbded39e22447a4a633d"
+          "version": "repo-file-v1:sha256:79c00c5572251ffa1958870f3d976f2c30dec90666880125bba6aa8470475c90"
         },
         {
           "resource": "repo://test/unit-harness/index.ts",
@@ -81,6 +81,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-21T15:10:39.237Z"
+    "at": "2026-11-21T17:53:39.242Z"
   }
 }

@@ -43,10 +43,10 @@ sources:
     resource: repo://server/pkg/storage/gache.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-11-21T15:10:39.237Z" }
+generated: { by: "hermes", at: "2026-11-21T17:53:39.242Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-21T15:10:39.237Z
+    at: 2026-11-21T17:53:39.242Z
 ---
 
 
@@ -93,6 +93,7 @@ admin endpoints would otherwise be open to unauthenticated requests.
 | `/v1/random-hubs/get` | `GetHub` | random | metadata only |
 | `/v1/random-hubs/join` | `JoinHub` | random | |
 | `/v1/ip-hubs/join-or-create` | `JoinOrCreateHubIP` | IP | hub ID = FNV-1a hash of the client IP |
+| `/v1/ip-hubs/join` | `JoinHub` | IP | join an existing IP hub by its server-generated numeric id |
 
 Unknown paths return 404; other handler errors return 503 — **except**
 `errAdminUnauthorized`, which `CheckAdminAuth` has already rendered as a 401
