@@ -17,6 +17,8 @@ type BaseOptions = {
 type CreateHubOptions = BaseOptions & { hubId: string };
 type JoinHubOptions = BaseOptions & { hubId: string };
 type JoinStaticHubOptions = BaseOptions & { hubId: string };
+type JoinOrCreateIPHubOptions = BaseOptions;
+type JoinIPHubOptions = BaseOptions & { hubId: string };
 type DisconnectOptions = Pick<BaseOptions, "componentId">;
 type ReuseCreateHubOptions = Pick<BaseOptions, "componentId">;
 
@@ -379,6 +381,37 @@ function joinStaticHub(options: JoinStaticHubOptions) {
   });
 }
 
+function joinOrCreateIPHub(options: JoinOrCreateIPHubOptions) {
+  const { componentId, zeroHubHosts, testName } = options;
+  buildHubClient({
+    componentId,
+    zeroHubHosts,
+    testName,
+    label: "Join Or Create IP Hub",
+    hubIdTestId: `join-or-create-ip-hub-id-${componentId}`,
+    peerStatusTestId: `join-or-create-ip-peer-status-${componentId}`,
+    invoke: (zeroHub) => {
+      zeroHub.joinOrCreateIPHub({ name: "test" });
+    },
+  });
+}
+
+function joinIPHub(options: JoinIPHubOptions) {
+  const { componentId, zeroHubHosts, testName, hubId } = options;
+  buildHubClient({
+    componentId,
+    zeroHubHosts,
+    testName,
+    label: "Join IP Hub",
+    hubIdLabel: `Hub ID: ${hubId}`,
+    hubIdTestId: `join-ip-hub-id-${componentId}`,
+    peerStatusTestId: `join-ip-peer-status-${componentId}`,
+    invoke: (zeroHub) => {
+      zeroHub.joinIPHub(hubId, { name: "test" });
+    },
+  });
+}
+
 function disconnect(options: DisconnectOptions) {
   const { componentId } = options;
   const instance = instances.get(componentId);
@@ -437,6 +470,8 @@ const ZeroHubHarness = {
   createHub,
   joinHub,
   joinStaticHub,
+  joinOrCreateIPHub,
+  joinIPHub,
   disconnect,
   reuseCreateHub,
   getDataChannelStatus,

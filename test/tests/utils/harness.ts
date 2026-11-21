@@ -64,6 +64,22 @@ export function getJoinStaticPeerStatusTestId(componentId: string) {
   return `join-static-peer-status-${componentId}`;
 }
 
+export function getJoinOrCreateIPHubTestId(componentId: string) {
+  return `join-or-create-ip-hub-id-${componentId}`;
+}
+
+export function getJoinOrCreateIPPeerStatusTestId(componentId: string) {
+  return `join-or-create-ip-peer-status-${componentId}`;
+}
+
+export function getJoinIPHubTestId(componentId: string) {
+  return `join-ip-hub-id-${componentId}`;
+}
+
+export function getJoinIPPeerStatusTestId(componentId: string) {
+  return `join-ip-peer-status-${componentId}`;
+}
+
 export function getDisconnectStatusTestId(componentId: string) {
   return `disconnect-status-${componentId}`;
 }

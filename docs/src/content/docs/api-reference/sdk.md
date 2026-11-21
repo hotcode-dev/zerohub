@@ -115,7 +115,7 @@ For genuinely custom strategies, implement the `Topology` interface (see `client
 ## Hub lifecycle
 
 - `createRandomHub(peerMetadata?, hubMetadata?)` / `joinRandomHub(hubId, peerMetadata?)` - random hub APIs
-- `joinOrCreateIPHub(peerMetadata?, hubMetadata?)` - IP hub API (hub id is derived from the caller's IP)
+- `joinOrCreateIPHub(peerMetadata?, hubMetadata?)` / `joinIPHub(hubId, peerMetadata?)` - IP hub APIs (hub id is derived from the creator's IP and can be joined by id via `joinIPHub`)
 - `joinStaticHub(hubId, peerMetadata?)` - join an existing static (never-expires) hub
 
 These entry points all return `Promise<void>`: the Promise resolves when the

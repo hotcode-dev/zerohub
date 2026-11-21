@@ -154,7 +154,7 @@ func TestMemoryStorageHubAddPeer(t *testing.T) {
 	}
 
 	for i := 0; i < 1000; i++ {
-		h.AddPeer(peer.NewPeer(nil, "metadata"))
+		h.AddPeer(&fakePeer{})
 	}
 }
 
@@ -172,7 +172,7 @@ func TestGacheStorageHubAddPeer(t *testing.T) {
 	}
 
 	for i := 0; i < 1000; i++ {
-		h.AddPeer(peer.NewPeer(nil, "metadata"))
+		h.AddPeer(&fakePeer{})
 	}
 }
 
@@ -199,7 +199,7 @@ func BenchmarkHubMarshal(b *testing.B) {
 		}
 
 		for i := 0; i < v; i++ {
-			h.AddPeer(peer.NewPeer(nil, "metadata"))
+			h.AddPeer(&fakePeer{})
 		}
 
 		b.Run(fmt.Sprintf("hub_marshal_peer_size_%d", v), func(b *testing.B) {
@@ -227,7 +227,7 @@ func BenchmarkMemoryStorageHubAddPeer(b *testing.B) {
 
 	b.Run("benchmark_hub_add_peer", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			h.AddPeer(peer.NewPeer(nil, "metadata"))
+			h.AddPeer(&fakePeer{})
 		}
 	})
 }
@@ -249,7 +249,7 @@ func BenchmarkGacheStorageHubAddPeer(b *testing.B) {
 
 	b.Run("benchmark_hub_add_peer", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			h.AddPeer(peer.NewPeer(nil, "metadata"))
+			h.AddPeer(&fakePeer{})
 		}
 	})
 }

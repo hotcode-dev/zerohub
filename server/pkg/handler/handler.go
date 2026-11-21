@@ -26,6 +26,7 @@
 //	/v1/random-hubs/join                       GET        Random      Join an existing random-hub
 //	/v1/random-hubs/get                        GET        Random      Get hub metadata
 //	/v1/ip-hubs/join-or-create                 GET        IP          Join or create an IP-keyed hub
+//	/v1/ip-hubs/join                           GET        IP          Join an existing IP-keyed hub by id
 //
 // All non-status endpoints require an HTTP GET with a query parameter `id`
 // (or `peerMetadata` / `hubMetadata`). After the HTTP handshake, the
@@ -52,7 +53,7 @@ import (
 // Handler is the HTTP handler for the signaling server. It exposes the
 // HTTP route set documented in the package comment
 // (/v1/status, /v1/admin/migrate, /v1/static-hubs/{create,join},
-// /v1/random-hubs/{create,get,join}, /v1/ip-hubs/join-or-create). The
+// /v1/random-hubs/{create,get,join}, /v1/ip-hubs/{join-or-create,join}). The
 // per-route handlers are wired inside Serve.
 type Handler struct {
 	// address is the address to listen on.
@@ -257,6 +258,8 @@ func (h *Handler) Serve() error {
 			err = h.JoinHub(ctx, h.zeroHubRandom)
 		case "/v1/ip-hubs/join-or-create":
 			err = h.JoinOrCreateHubIP(ctx, h.zeroHubIP)
+		case "/v1/ip-hubs/join":
+			err = h.JoinHub(ctx, h.zeroHubIP)
 		default:
 			ctx.Error("unsupported path", fasthttp.StatusNotFound)
 			return
