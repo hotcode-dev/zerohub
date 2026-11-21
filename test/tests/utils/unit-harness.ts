@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { gotoStubPage } from "./stub-page";
 
 /**
- * In-page unit harness bundle (built by `test/scripts/build-unit-harness.mjs`
+ * In-page unit harness bundle (built by `test/scripts/build-harness.mjs`
  * via `pretest`). Lives one directory below the spec files, so resolve
  * `test/dist/unit-harness.js` relative to this module's own URL.
  */

@@ -1,7 +1,7 @@
 /**
  * Unit-test harness for the ZeroHub client.
  *
- * This module is bundled (see `test/scripts/build-unit-harness.mjs`) and
+ * This module is bundled (see `test/scripts/build-harness.mjs`) and
  * injected into a Playwright page via `page.addInitScript`. It:
  *
  *  1. Installs a mock `RTCPeerConnection` on the global scope *before* the
