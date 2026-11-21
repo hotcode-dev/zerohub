@@ -1,6 +1,6 @@
 ---
 title: Get Started
-description: Get Started to use ZeroHUb
+description: Get started to use ZeroHub
 ---
 
 ## What is ZeroHub?
@@ -12,7 +12,7 @@ By offering an intuitive interface to the WebRTC protocol, ZeroHub simplifies th
 ## Features
 
 - Multipeers WebRTC signaling server
-- Signaling over WebSockets (RFC6455) or WebTransport
+- Signaling over WebSockets (RFC6455)
 - TypeScript/JavaScript client SDK
 - Peer Metadata for customize use cases
 - Automatic transfer Session Description Protocol (SDP)

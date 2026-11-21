@@ -1,11 +1,11 @@
 # Zerohub
 
-A WebRTC signaling server for trading session between peers design for minimal and simple.
+A WebRTC signaling server for trading sessions between peers, designed for minimalism and simplicity.
 
 ## Features
 
 - Multipeers WebRTC signaling server
-- Signaling over WebSockets (RFC6455) and WebTransport
+- Signaling over WebSockets (RFC6455)
 - Transfers Session Description Protocol (SDP)
 - TypeScript/JavaScript client SDK
 - Peer Meta data for customize use cases
