@@ -7,7 +7,7 @@ import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
  * `ZeroHubClient.handleZeroHubMessage`.
  *
  * These run without a server or a real WebRTC stack: the client is bundled
- * (test/scripts/build-unit-harness.mjs) with a mocked `RTCPeerConnection` and
+ * (test/scripts/build-harness.mjs) with a mocked `RTCPeerConnection` and
  * a no-op topology, and driven through `handleZeroHubMessage` with the raw
  * message shapes the client would receive from the signaling server.
  *

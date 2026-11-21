@@ -7,7 +7,7 @@
   "scripts": {
     "build:harness": "node ./scripts/build-harness.mjs",
     "typecheck": "tsc -p tsconfig.json",
-    "pretest": "npm run typecheck && npm run build:harness && node ./scripts/build-unit-harness.mjs",
+    "pretest": "npm run typecheck && npm run build:harness",
     "test": "playwright test"
   },
   "license": "MIT",
