@@ -88,10 +88,7 @@ func (h *Handler) ForwardMigrate(ctx *fasthttp.RequestCtx) error {
 	})
 
 	if err != nil {
-		if _, ok := err.(websocket.HandshakeError); ok {
-			return fmt.Errorf("websocket handshake: %v", err)
-		}
-		return fmt.Errorf("websocket upgrade error: %v", err)
+		return wrapUpgradeError(err)
 	}
 
 	return nil

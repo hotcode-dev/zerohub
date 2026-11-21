@@ -72,6 +72,16 @@ func (h *Handler) newWSUpgrader() *websocket.FastHTTPUpgrader {
 	}
 }
 
+// wrapUpgradeError classifies a WebSocket upgrade failure: a
+// websocket.HandshakeError means the handshake request was malformed;
+// anything else is a generic upgrade error.
+func wrapUpgradeError(err error) error {
+	if _, ok := err.(websocket.HandshakeError); ok {
+		return fmt.Errorf("websocket handshake: %v", err)
+	}
+	return fmt.Errorf("websocket upgrade error: %v", err)
+}
+
 // Upgrade upgrades the connection to a websocket connection. An oversized
 // or malformed `peerMetadata` is rejected up front with a 413/400
 // (returned as a nil error with responseWritten=true); any other failure is
@@ -235,10 +245,7 @@ func (h *Handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 	})
 
 	if upgradeErr != nil {
-		if _, ok := upgradeErr.(websocket.HandshakeError); ok {
-			return fmt.Errorf("websocket handshake: %v", upgradeErr), false
-		}
-		return fmt.Errorf("websocket upgrade error: %v", upgradeErr), false
+		return wrapUpgradeError(upgradeErr), false
 	}
 
 	return nil, false
