@@ -3,6 +3,22 @@ import { Peer } from "../peer";
 import { Config } from "../types";
 
 /**
+ * Invoke a user-supplied callback, isolating any throw into an error log
+ * so a throwing handler never escapes the calling event handler.
+ */
+function guardCallback(
+  label: string,
+  logger: ZeroHubLogger,
+  fn: () => void
+): void {
+  try {
+    fn();
+  } catch (err) {
+    logger.error(`${label} handler threw`, err);
+  }
+}
+
+/**
  * Sets up data channel handling for a peer's RTCPeerConnection, shared by all
  * topologies.
  *
@@ -53,11 +69,9 @@ export function setupDataChannel<T>(
     peer.rtcConn.ondatachannel = (event) => {
       if (event.channel) {
         logOnDataChannel?.();
-        try {
-          onDataChannel(peer, event.channel, false);
-        } catch (err) {
-          logger.error("onDataChannel handler threw", err);
-        }
+        guardCallback("onDataChannel", logger, () =>
+          onDataChannel(peer, event.channel, false)
+        );
       }
     };
   }
@@ -106,10 +120,8 @@ export function setupMediaChannel<T>(
   // RTCPeerConnection event handler.
   peer.rtcConn.ontrack = (event) => {
     logOnTrack?.(logger, peer);
-    try {
-      mediaChannelConfig.onTrack(peer, event);
-    } catch (err) {
-      logger.error("onTrack handler threw", err);
-    }
+    guardCallback("onTrack", logger, () =>
+      mediaChannelConfig.onTrack(peer, event)
+    );
   };
 }

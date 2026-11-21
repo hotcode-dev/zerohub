@@ -430,25 +430,26 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     }
 
     peer.status = status;
-    // User-supplied callbacks (topology handler, onPeerStatusChange) must not
-    // take down the signaling dispatch that is notifying them: a throwing
-    // handler must be isolated, consistent with reportPeerError. Without
-    // these guards a single throwing user callback would abort
-    // handleZeroHubMessage mid-stream and skip the remaining work for that
-    // message (e.g. roster pruning, status updates for other peers).
-    if (this.topology?.onPeerStatusChange) {
-      try {
-        this.topology.onPeerStatusChange(peer);
-      } catch (err) {
-        this.logger.error("topology.onPeerStatusChange handler threw", err);
-      }
-    }
-    if (this.onPeerStatusChange) {
-      try {
-        this.onPeerStatusChange(peer);
-      } catch (err) {
-        this.logger.error("onPeerStatusChange handler threw", err);
-      }
+    // User-supplied callbacks must not take down the signaling dispatch:
+    // a throwing handler would abort handleZeroHubMessage mid-stream.
+    this.safeInvoke("topology.onPeerStatusChange", () =>
+      this.topology?.onPeerStatusChange(peer)
+    );
+    this.safeInvoke("onPeerStatusChange", () =>
+      this.onPeerStatusChange?.(peer)
+    );
+  }
+
+  /**
+   * Invoke a user-supplied callback, isolating any throw into an error log.
+   * Prevents a throwing user handler from aborting the signaling dispatch
+   * that invokes it.
+   */
+  private safeInvoke(label: string, fn: () => void): void {
+    try {
+      fn();
+    } catch (err) {
+      this.logger.error(`${label} handler threw`, err);
     }
   }
 
@@ -470,13 +471,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     if (!peer) {
       return;
     }
-    if (this.onPeerError) {
-      try {
-        this.onPeerError(peer, error);
-      } catch (err) {
-        this.logger.error("onPeerError handler threw", err);
-      }
-    }
+    this.safeInvoke("onPeerError", () => this.onPeerError?.(peer, error));
   }
 
   /**
@@ -490,14 +485,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * returned by `createRandomHub()`/`joinStaticHub()`/etc. unsettled forever.
    */
   private reportZeroHubError(error: Error): void {
-    if (!this.onZeroHubError) {
-      return;
-    }
-    try {
-      this.onZeroHubError(error);
-    } catch (err) {
-      this.logger.error("onZeroHubError handler threw", err);
-    }
+    this.safeInvoke("onZeroHubError", () => this.onZeroHubError?.(error));
   }
 
   /**
@@ -786,20 +774,14 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       this.isInitialConnection = false;
 
       this.myPeerId = hubInfoMsg.myPeerId;
-      this.hubInfo = {
+      const hubInfo: HubInfo<HubMetadata> = {
         id: hubInfoMsg.id,
         metadata: this.safeParseJson(hubInfoMsg.hubMetadata, {}) as HubMetadata,
         createTime: hubInfoMsg.createTime || new Date(),
       };
-      if (this.onHubInfo) {
-        try {
-          this.onHubInfo(this.hubInfo);
-        } catch (err) {
-          // A throwing user callback must not abort the dispatch: the peer
-          // roster reconciliation below still has to run for this message.
-          this.logger.error("onHubInfo handler threw", err);
-        }
-      }
+      this.hubInfo = hubInfo;
+      // Isolate so roster reconciliation below still runs.
+      this.safeInvoke("onHubInfo", () => this.onHubInfo?.(hubInfo));
 
       // Reconcile the peer roster against the authoritative roster carried in
       // the hubInfo. The server sends the full current roster on every
@@ -855,15 +837,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         // `AnswerPending` status above fires before this callback.
         const peer = this.peers[offerPeerId];
         if (peer && this.onOffer) {
-          // A throwing user callback must not escape the dispatch: isolate
-          // it and log it. (It must NOT be routed to `onZeroHubError` — a
-          // user-callback failure is not a signaling-link failure, and the
-          // outer onmessage catch would misclassify it as one.)
-          try {
-            this.onOffer(peer, offerSdp);
-          } catch (err) {
-            this.logger.error("onOffer handler threw", err);
-          }
+          // Isolate: a user-callback failure is not a signaling-link
+          // failure; the outer onmessage catch would misclassify it.
+          this.safeInvoke("onOffer", () => this.onOffer?.(peer, offerSdp));
         }
       }
     } else if (serverMessage.answerMessage) {
@@ -888,15 +864,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         // `AcceptPending` status above fires before this callback.
         const peer = this.peers[answerPeerId];
         if (peer && this.onAnswer) {
-          // A throwing user callback must not escape the dispatch: isolate
-          // it and log it. (It must NOT be routed to `onZeroHubError` — a
-          // user-callback failure is not a signaling-link failure, and the
-          // outer onmessage catch would misclassify it as one.)
-          try {
-            this.onAnswer(peer, answerSdp);
-          } catch (err) {
-            this.logger.error("onAnswer handler threw", err);
-          }
+          // Isolate: a user-callback failure is not a signaling-link
+          // failure; the outer onmessage catch would misclassify it.
+          this.safeInvoke("onAnswer", () => this.onAnswer?.(peer, answerSdp));
         }
       }
     } else if (serverMessage.iceCandidateMessage) {
