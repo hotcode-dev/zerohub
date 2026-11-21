@@ -1,6 +1,7 @@
 import { ZeroHubLogger } from "../logger";
 import { Peer } from "../peer";
 import { Config } from "../types";
+import type { ZeroHubClient } from "../zeroHub";
 
 /**
  * Invoke a user-supplied callback, isolating any throw into an error log
@@ -124,4 +125,33 @@ export function setupMediaChannel<T>(
       mediaChannelConfig.onTrack(peer, event)
     );
   };
+}
+
+/**
+ * Sends a WebRTC offer to a peer and logs the error if it fails, shared by
+ * all topologies. This is the single source of truth for the
+ * offer-send-and-log pattern that was previously duplicated in
+ * `MeshTopology` and `SFUTopology`.
+ *
+ * A no-op when `zeroHub` is unset. The offer is sent with the client's
+ * configured `rtcOfferOptions`; a rejection is logged through the gated
+ * `ZeroHubClient.logger` (a `ZeroHubLogger`) rather than thrown.
+ *
+ * @param zeroHub - The ZeroHub client to send the offer through, or
+ *   `undefined` when not yet initialized.
+ * @param peer - The peer to send the offer to.
+ * @param context - A short label describing the failure situation, used in
+ *   the error log message.
+ */
+export function sendOfferToPeer<T, H>(
+  zeroHub: ZeroHubClient<T, H> | undefined,
+  peer: Peer<T>,
+  context: string
+): void {
+  if (!zeroHub) {
+    return;
+  }
+  zeroHub.sendOffer(peer.id, zeroHub.config.rtcOfferOptions).catch((err) => {
+    zeroHub.logger.error(context, peer.id, err);
+  });
 }
