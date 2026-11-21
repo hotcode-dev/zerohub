@@ -13,7 +13,7 @@ export async function initializePlayground() {
       description: "Try ZeroHub online via code playground.",
       activeEditor: "script",
       scripts: [
-        "https://cdn.jsdelivr.net/npm/@zero-hub/client@0.0.17/dist/bundle/bundle.js",
+        "https://cdn.jsdelivr.net/npm/@zero-hub/client@0.0.20/dist/bundle/bundle.js",
       ],
       processors: ["tailwindcss"],
       style: {
