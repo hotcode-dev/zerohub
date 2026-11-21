@@ -181,11 +181,7 @@ describe("hub entry points — awaitable connect contract", () => {
       (c) => c.joinOrCreateIPHub({ p: 1 }, { m: 1 }),
       "/v1/ip-hubs/join-or-create",
     ],
-    [
-      "joinIPHub",
-      (c) => c.joinIPHub("h", { p: 1 }),
-      "/v1/ip-hubs/join",
-    ],
+    ["joinIPHub", (c) => c.joinIPHub("h", { p: 1 }), "/v1/ip-hubs/join"],
     [
       "createRandomHub",
       (c) => c.createRandomHub({ p: 1 }, { m: 1 }),

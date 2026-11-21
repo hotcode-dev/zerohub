@@ -5,7 +5,7 @@ description: End-to-end explanation of how ZeroHub's Go signaling server, TypeSc
 tags: [architecture, webrtc, signaling, server, client, protobuf]
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-20T15:09:12.940Z
+    at: 2026-11-21T16:26:45.303Z
 sources:
   - id: openwiki-source-df0d81c76704b851d02513e1
     resource: repo://client/src/const.ts
@@ -29,7 +29,7 @@ sources:
     resource: repo://server/pkg/storage/storage.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-11-20T15:09:12.940Z" }
+generated: { by: "hermes", at: "2026-11-21T16:26:45.303Z" }
 ---
 
 # Architecture Overview
@@ -85,10 +85,11 @@ Signaling Server page for the routing table.
 ### 2. Hub join / create over HTTP→WebSocket
 
 A client calls one of the connection entrypoints — `createRandomHub`,
-`joinRandomHub`, `joinStaticHub`, or `joinOrCreateIPHub` — each opening a
-WebSocket to a mode-typed path (`/v1/random-hubs/create`,
-`/v1/random-hubs/join`, `/v1/static-hubs/join`, `/v1/ip-hubs/join-or-create`)
-with `id`, `peerMetadata`, and `hubMetadata` as query parameters. (Static hubs
+`joinRandomHub`, `joinStaticHub`, `joinOrCreateIPHub`, or `joinIPHub` —
+each opening a WebSocket to a mode-typed path
+(`/v1/random-hubs/create`, `/v1/random-hubs/join`, `/v1/static-hubs/join`,
+`/v1/ip-hubs/join-or-create`, `/v1/ip-hubs/join`) with `id`, `peerMetadata`,
+and `hubMetadata` as query parameters. (Static hubs
 are additionally created out-of-band by an admin over plain HTTP at
 `/v1/static-hubs/create` — a JSON response, no WebSocket upgrade.) The handler
 authenticates where needed and validates the query params up front via the
