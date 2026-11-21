@@ -9,5 +9,5 @@
     // only output d.ts files and not JavaScript files.
     "emitDeclarationOnly": true
   },
-  "exclude": ["**/*.test.ts"]
+  "exclude": ["**/*.test.ts", "**/test/**/*.ts"]
 }
