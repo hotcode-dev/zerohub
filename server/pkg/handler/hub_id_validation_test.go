@@ -29,7 +29,7 @@ func TestCreateStaticHubRejectsEmptyHubId(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	staticMock := zerohub.NewMockZeroHub(ctrl)
 	// No expectations: the 400 must be written before CreateHubIfAbsent.
-	h := &handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
+	h := &Handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
 
 	ctx := newRequestCtx("http://127.0.0.1/v1/static-hubs/create?id=")
 	ctx.Request.Header.Set("Authorization", adminAuthHeader())
@@ -44,7 +44,7 @@ func TestCreateStaticHubRejectsEmptyHubId(t *testing.T) {
 func TestCreateStaticHubAuthPrecedenceOverInvalidId(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	staticMock := zerohub.NewMockZeroHub(ctrl)
-	h := &handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
+	h := &Handler{clientSecret: testClientSecret, zeroHubStatic: staticMock}
 
 	ctx := newRequestCtx("http://127.0.0.1/v1/static-hubs/create")
 	// No Authorization header.

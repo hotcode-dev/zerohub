@@ -11,7 +11,7 @@ import (
 // exactly one wins and the rest get 409. Random-hub callers pass a fresh
 // uuid that cannot collide, so the 409 branch is unreachable there — the
 // shared path just stays safe.
-func (h *handler) CreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string) error {
+func (h *Handler) CreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string) error {
 	// Static callers pass the `id` param verbatim; random-hub callers pass
 	// a generated uuid. The shared validation helper rejects an
 	// empty/whitespace id and oversized params before any hub state is

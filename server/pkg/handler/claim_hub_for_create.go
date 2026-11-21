@@ -16,7 +16,7 @@ import (
 // "hub id already exists", any other error -> 500 "create hub error".
 // Returns (nil, false) whenever a response has already been written and the
 // caller must stop; (hub, true) on success.
-func (h *handler) claimHubForCreate(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string, isPermanent bool) (hub.Hub, bool) {
+func (h *Handler) claimHubForCreate(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string, isPermanent bool) (hub.Hub, bool) {
 	hubMetadata := string(ctx.QueryArgs().Peek("hubMetadata"))
 	newHub, err, rejected := h.claimUserChosenHubId(ctx, hubId, h.siblingInstances(zh),
 		func() (hub.Hub, error) {

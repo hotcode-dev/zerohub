@@ -61,7 +61,7 @@ func sameOriginOrAllowed(ctx *fasthttp.RequestCtx, allowedOrigins []string) bool
 
 // newWSUpgrader builds the shared WebSocket upgrader with origin validation
 // wired to the configured APP_ALLOWED_ORIGINS allow-list.
-func (h *handler) newWSUpgrader() *websocket.FastHTTPUpgrader {
+func (h *Handler) newWSUpgrader() *websocket.FastHTTPUpgrader {
 	return &websocket.FastHTTPUpgrader{
 		HandshakeTimeout: config.WSHandshakeTimeout,
 		ReadBufferSize:   config.WSReadBufferSize,
@@ -77,7 +77,7 @@ func (h *handler) newWSUpgrader() *websocket.FastHTTPUpgrader {
 // (returned as a nil error with responseWritten=true); any other failure is
 // a handshake error. When responseWritten is true the caller must not write
 // another response.
-func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.Hub) (error, bool) {
+func (h *Handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.Hub) (error, bool) {
 	// Reject an oversized `peerMetadata` before the handshake: it would
 	// otherwise be stored on the peer and re-broadcast to every existing
 	// peer, amplifying a single value O(N) across the hub. Once upgraded,
@@ -248,7 +248,7 @@ func (h *handler) Upgrade(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hub hub.
 // optional state rollback, error logging, the responseWritten guard
 // (the up-front peerMetadata 400/413 must not be overwritten with a 500),
 // and the 500 fallback.  `rollback` is nil when no state needs cleanup.
-func (h *handler) finishUpgradeFailure(
+func (h *Handler) finishUpgradeFailure(
 	ctx *fasthttp.RequestCtx, err error, responseWritten bool, rollback func(),
 ) error {
 	if rollback != nil {

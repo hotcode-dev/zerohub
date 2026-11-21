@@ -43,7 +43,7 @@ func captureHubKey(t *testing.T, got *string) zerohub.ZeroHub {
 // joinOrCreateHubIPRequest assembles a handler-level request with the given
 // socket peer address and optional X-Forwarded-For value, then invokes
 // JoinOrCreateHubIP on it, returning the hub ID the handler derived.
-func joinOrCreateHubIPRequest(t *testing.T, h *handler, got *string, socketIP, xff string) string {
+func joinOrCreateHubIPRequest(t *testing.T, h *Handler, got *string, socketIP, xff string) string {
 	t.Helper()
 
 	ctx := &fasthttp.RequestCtx{}

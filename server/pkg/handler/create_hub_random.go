@@ -7,7 +7,7 @@ import (
 )
 
 // CreateHubRandom creates a new hub with a random ID.
-func (h *handler) CreateHubRandom(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
+func (h *Handler) CreateHubRandom(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 	if h.isMigrating.Load() {
 		return h.ForwardMigrate(ctx)
 	}

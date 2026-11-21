@@ -49,19 +49,12 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// Handler is the entrypoint contract for the signaling server. It exposes
-// the HTTP route set documented in the package comment
+// Handler is the HTTP handler for the signaling server. It exposes the
+// HTTP route set documented in the package comment
 // (/v1/status, /v1/admin/migrate, /v1/static-hubs/{create,join},
 // /v1/random-hubs/{create,get,join}, /v1/ip-hubs/join-or-create). The
-// per-route handlers live on the unexported handler type and are wired
-// inside Serve.
-type Handler interface {
-	// Serve starts the fasthttp server on the configured address.
-	Serve() error
-}
-
-// handler implements the Handler interface.
-type handler struct {
+// per-route handlers are wired inside Serve.
+type Handler struct {
 	// address is the address to listen on.
 	address string
 	// clientSecret is the client secret to use for authentication.
@@ -132,14 +125,14 @@ type handler struct {
 // idleTimeout / pingInterval return the effective probe timings, falling
 // back to the config defaults when the handler was built by NewHandler
 // (which leaves the fields at zero).
-func (h *handler) idleTimeout() time.Duration {
+func (h *Handler) idleTimeout() time.Duration {
 	if h.wsIdleTimeout > 0 {
 		return h.wsIdleTimeout
 	}
 	return config.WSIdleTimeout
 }
 
-func (h *handler) pingInterval() time.Duration {
+func (h *Handler) pingInterval() time.Duration {
 	if h.wsPingInterval > 0 {
 		return h.wsPingInterval
 	}
@@ -151,12 +144,12 @@ func (h *handler) pingInterval() time.Duration {
 	return config.WSIdleTimeout / 4
 }
 
-// NewHandler create a new handler
-func NewHandler(cfg *config.Config, zeroHubStatic zerohub.ZeroHub, zeroHubRandom zerohub.ZeroHub, zeroHubIP zerohub.ZeroHub) (Handler, error) {
+// NewHandler creates a new Handler.
+func NewHandler(cfg *config.Config, zeroHubStatic zerohub.ZeroHub, zeroHubRandom zerohub.ZeroHub, zeroHubIP zerohub.ZeroHub) (*Handler, error) {
 	if cfg.App.ClientSecret == "" {
 		return nil, fmt.Errorf("APP_CLIENT_SECRET must not be empty: an empty secret would leave admin endpoints open to unauthenticated requests")
 	}
-	return &handler{
+	return &Handler{
 		address:        fmt.Sprintf("%s:%s", cfg.App.Host, cfg.App.Port),
 		clientSecret:   cfg.App.ClientSecret,
 		trustProxy:     cfg.App.TrustProxy,
@@ -186,7 +179,7 @@ func NewHandler(cfg *config.Config, zeroHubStatic zerohub.ZeroHub, zeroHubRandom
 // SECURITY: safe only behind a proxy that strips or replaces
 // X-Forwarded-For; in front of an untrusted hop any client could forge a
 // fresh hub IP per request.
-func (h *handler) clientIP(ctx *fasthttp.RequestCtx) string {
+func (h *Handler) clientIP(ctx *fasthttp.RequestCtx) string {
 	if h.trustProxy {
 		if ip := ipFromForwardedHeader(ctx); ip != "" {
 			return ip
@@ -240,7 +233,7 @@ func ipFromForwardedHeader(ctx *fasthttp.RequestCtx) string {
 	return ip.String()
 }
 
-func (h *handler) Serve() error {
+func (h *Handler) Serve() error {
 	rateLimitMiddleware := newRateLimitMiddleware(h.trustProxy)
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {

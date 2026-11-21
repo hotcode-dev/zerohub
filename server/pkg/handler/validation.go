@@ -29,7 +29,7 @@ func validHubId(hubId string) bool {
 // rejectInvalidHubIdParam writes the 400 for a missing/empty `id` query
 // parameter. It reuses Response (which returns nil on success) so the
 // caller's 503 error fallback in Serve cannot overwrite the 400 body.
-func (h *handler) rejectInvalidHubIdParam(ctx *fasthttp.RequestCtx) error {
+func (h *Handler) rejectInvalidHubIdParam(ctx *fasthttp.RequestCtx) error {
 	return h.Response(ctx, fasthttp.StatusBadRequest,
 		map[string]string{"error": "id query parameter is required"})
 }
@@ -50,7 +50,7 @@ func validMetadataSize(raw string, max int) bool {
 // rejectOversizedParam writes the 413 for a query parameter that exceeds
 // the size cap. It reuses Response (which returns nil on success) so the
 // caller's 503 error fallback in Serve cannot overwrite the 413 body.
-func (h *handler) rejectOversizedParam(ctx *fasthttp.RequestCtx, param string, max int) error {
+func (h *Handler) rejectOversizedParam(ctx *fasthttp.RequestCtx, param string, max int) error {
 	return h.Response(ctx, fasthttp.StatusRequestEntityTooLarge,
 		map[string]string{"error": param + " query parameter exceeds the maximum size of " + strconv.Itoa(max) + " bytes"})
 }
@@ -71,7 +71,7 @@ func validJSONQueryParam(ctx *fasthttp.RequestCtx, param string) bool {
 // rejectInvalidJSONParam writes the 400 for a malformed JSON query
 // parameter. It reuses Response (which returns nil on success) so the
 // caller's 503 error fallback cannot overwrite the 400 body.
-func (h *handler) rejectInvalidJSONParam(ctx *fasthttp.RequestCtx, param string) error {
+func (h *Handler) rejectInvalidJSONParam(ctx *fasthttp.RequestCtx, param string) error {
 	return h.Response(ctx, fasthttp.StatusBadRequest,
 		map[string]string{"error": "invalid " + param + " query parameter: must be JSON"})
 }
@@ -100,7 +100,7 @@ func (h *handler) rejectInvalidJSONParam(ctx *fasthttp.RequestCtx, param string)
 // it is stored and re-sent to every joiner, and the size guard answers an
 // oversized blob with 413 without running json.Valid on a large payload —
 // the cheaper path, and the real DoS guard.
-func (h *handler) validateHubCreateParams(ctx *fasthttp.RequestCtx, hubId string) bool {
+func (h *Handler) validateHubCreateParams(ctx *fasthttp.RequestCtx, hubId string) bool {
 	if !validHubId(hubId) {
 		_ = h.rejectInvalidHubIdParam(ctx)
 		return true
@@ -128,7 +128,7 @@ func (h *handler) validateHubCreateParams(ctx *fasthttp.RequestCtx, hubId string
 // sibling instances. Callers run it and the subsequent create under
 // h.hubIdCrossModeMu so the cross-mode check-and-store is mutually
 // exclusive.
-func (h *handler) probeSiblingsForCollision(ctx *fasthttp.RequestCtx, hubId string, siblings []zerohub.ZeroHub) bool {
+func (h *Handler) probeSiblingsForCollision(ctx *fasthttp.RequestCtx, hubId string, siblings []zerohub.ZeroHub) bool {
 	for _, instance := range siblings {
 		if instance == nil {
 			continue
@@ -163,7 +163,7 @@ func (h *handler) probeSiblingsForCollision(ctx *fasthttp.RequestCtx, hubId stri
 // same-mode ErrHubAlreadyExists) is passed through with rejected=false.
 // A nil sibling holds no hubs and is skipped, keeping the guard usable
 // from call sites that only have some of the sibling instances.
-func (h *handler) claimUserChosenHubId(ctx *fasthttp.RequestCtx, hubId string, siblings []zerohub.ZeroHub, create func() (hub.Hub, error)) (newHub hub.Hub, err error, rejected bool) {
+func (h *Handler) claimUserChosenHubId(ctx *fasthttp.RequestCtx, hubId string, siblings []zerohub.ZeroHub, create func() (hub.Hub, error)) (newHub hub.Hub, err error, rejected bool) {
 	h.hubIdCrossModeMu.Lock()
 	defer h.hubIdCrossModeMu.Unlock()
 	if h.probeSiblingsForCollision(ctx, hubId, siblings) {
@@ -179,7 +179,7 @@ func (h *handler) claimUserChosenHubId(ctx *fasthttp.RequestCtx, hubId string, s
 // h.hubIdCrossModeMu — so a join-or-create that would mint a new hub can't
 // race a create in another mode into storing two hubs under one public id.
 // The 409/rejected contract matches claimUserChosenHubId.
-func (h *handler) claimGetOrCreateHub(ctx *fasthttp.RequestCtx, hubId string, siblings []zerohub.ZeroHub, getOrCreate func() (hub.Hub, bool, error)) (newHub hub.Hub, created bool, err error, rejected bool) {
+func (h *Handler) claimGetOrCreateHub(ctx *fasthttp.RequestCtx, hubId string, siblings []zerohub.ZeroHub, getOrCreate func() (hub.Hub, bool, error)) (newHub hub.Hub, created bool, err error, rejected bool) {
 	h.hubIdCrossModeMu.Lock()
 	defer h.hubIdCrossModeMu.Unlock()
 	if h.probeSiblingsForCollision(ctx, hubId, siblings) {
@@ -196,7 +196,7 @@ func (h *handler) claimGetOrCreateHub(ctx *fasthttp.RequestCtx, hubId string, si
 // tests) where only some of the instances are present. Excluding self
 // avoids a self-probe that would 409 its own just-created hub; same-mode
 // duplicates are already caught atomically by the create primitive.
-func (h *handler) siblingInstances(self zerohub.ZeroHub) []zerohub.ZeroHub {
+func (h *Handler) siblingInstances(self zerohub.ZeroHub) []zerohub.ZeroHub {
 	siblings := []zerohub.ZeroHub{}
 	for _, instance := range []zerohub.ZeroHub{h.zeroHubStatic, h.zeroHubRandom, h.zeroHubIP} {
 		if instance == nil || instance == self {

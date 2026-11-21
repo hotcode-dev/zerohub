@@ -10,7 +10,7 @@ import (
 // JoinOrCreateHubByID joins an existing hub with the given ID or creates a new one if it does not exist.
 // The get-or-create is atomic at the ZeroHub layer, so concurrent join-or-create
 // calls for the same ID always land in the same hub.
-func (h *handler) JoinOrCreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string) error {
+func (h *Handler) JoinOrCreateHubByID(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub, hubId string) error {
 	// Static callers pass the `id` param verbatim; IP-hub callers pass a
 	// generated FNV hash. The shared validation helper rejects an
 	// empty/whitespace id and oversized params before any hub state is
