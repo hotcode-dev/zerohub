@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:afa6b86843a0dbff84c4a1aa8c43c020a270101a5e166d4b484580cc1e271535",
+  "pageVersion": "sha256:96ef796092dc9eaf590458c4202b78834ca38ddf887f0d2a927e845f86058802",
   "claims": [
     {
       "id": "claim_9b265d25c6ea46ffb5cbb15403e8cd85",
@@ -28,11 +28,15 @@
     },
     {
       "id": "claim_2c2b053579db481d9a8df809eea0b057",
-      "statement": "The E2E test/ suite is driven via `cd test && npm test`, whose pretest step runs the tsc typecheck, build:harness, and the unit-harness esbuild script to produce test/dist/harness.js and test/dist/unit-harness.js; invoking npx playwright test directly makes the specs fail with ENOENT on their missing harness bundles.",
+      "statement": "The E2E test/ suite is driven via `cd test && npm test`, whose pretest step runs the tsc typecheck followed by a single build:harness step that bundles both the E2E harness (test/dist/harness.js) and the unit-harness bundle (test/dist/unit-harness.js) via a parameterized esbuild loop in test/scripts/build-harness.mjs; invoking npx playwright test directly makes the specs fail with ENOENT on their missing harness bundles.",
       "evidence": [
         {
           "resource": "repo://test/package.json#L7-L12",
-          "version": "repo-lines-v1:sha256:1f7463db41187db93844b0868087f55297f2eda179f9c1ae0664d536fd99801b:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzQ4MzNkNTk0OWMwM2E0MGNhOTUyNDkxNjEwYTY2NTk2NDRiM2FhNDY2MzYyZjc5OTAyMGRiZjE5ODE1NDdkYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGQ1Y2QyZmI0ZjNkZjg4NDUxNTI1NWIzOTUyM2YyZjhiNTQ3MmJlZWE5ZjU2NmZmY2EyMDRkYjgwMjU2MTA0MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmFkNTI4ZGJmZmQzNTRkNjhjM2Q3Y2E1MzdhOWZhMDE5N2IzNmY2MDVjM2RiZjIzZWJjNThmZDI2ZjA1ZDYxMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2YxZjE3ZDg5ZmRhNjdhOWQzNzEzZWZmYmM0YjgwMjkxMTc1NWI0Yzc4YWRmZjZlNWRlZDIzODI5ZTlkOGIzNyJ9"
+          "version": "repo-lines-v1:sha256:24298a5e91cd8e0f1ced3a17a212ca18b00ecbdd74caa9ee3d2e5f9bd88b878d:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzQ4MzNkNTk0OWMwM2E0MGNhOTUyNDkxNjEwYTY2NTk2NDRiM2FhNDY2MzYyZjc5OTAyMGRiZjE5ODE1NDdkYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGQ1Y2QyZmI0ZjNkZjg4NDUxNTI1NWIzOTUyM2YyZjhiNTQ3MmJlZWE5ZjU2NmZmY2EyMDRkYjgwMjU2MTA0MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmFkNTI4ZGJmZmQzNTRkNjhjM2Q3Y2E1MzdhOWZhMDE5N2IzNmY2MDVjM2RiZjIzZWJjNThmZDI2ZjA1ZDYxMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2YxZjE3ZDg5ZmRhNjdhOWQzNzEzZWZmYmM0YjgwMjkxMTc1NWI0Yzc4YWRmZjZlNWRlZDIzODI5ZTlkOGIzNyJ9"
+        },
+        {
+          "resource": "repo://test/scripts/build-harness.mjs",
+          "version": "repo-file-v1:sha256:c17b773083cdaac20dd4fd955685d75cf89e092a19c391c253a4b54ef42e3fe0"
         }
       ]
     },
@@ -104,13 +108,13 @@
         },
         {
           "resource": "repo://test/unit-harness/index.ts",
-          "version": "repo-file-v1:sha256:4b9bdf4c7d5bb0b131ccaf581fe630d66a2d4261476a96b45b58230a36424ef7"
+          "version": "repo-file-v1:sha256:cd37527a44ed824fcf43d1e2dea79030dd73a5ae09c76f90f316b4cb0ea8f08d"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-20T15:09:12.940Z"
+    "at": "2026-11-21T15:10:39.237Z"
   }
 }

@@ -16,10 +16,10 @@ sources:
     resource: repo://client/src/utils.ts
   - id: openwiki-source-718b618612c033c4f36b3a45
     resource: repo://client/src/zeroHub.ts
-generated: { by: "hermes", at: "2026-11-20T15:09:12.940Z" }
+generated: { by: "hermes", at: "2026-11-21T15:10:39.237Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-20T15:09:12.940Z
+    at: 2026-11-21T15:10:39.237Z
 ---
 
 # TypeScript Client SDK
@@ -323,7 +323,10 @@ switch the exchange from automatic to application-driven, documented in
   with `acceptAnswer(peer.id, answerSdp)`.
 
 Both callbacks are public fields on `ZeroHubClient`, so applications can
-inspect/modify the SDP before completing the exchange.
+inspect/modify the SDP before completing the exchange. Both are dispatched
+through the private `safeInvoke` helper, which isolates a throwing user
+callback into an error log instead of letting it escape the `onmessage`
+dispatcher (and never misroutes it to `onZeroHubError`).
 
 ## Topology system
 
@@ -361,7 +364,10 @@ Both topologies delegate the per-peer WebRTC wiring to the shared helpers in
 `ondatachannel`) and `setupMediaChannel` (adds `localStream` tracks, wires
 `ontrack`) — with optional log callbacks so each topology keeps its own
 logging. The media helper requires call sites to pass the level-gated
-`ZeroHubClient.logger`, not the raw user `config.logger`.
+`ZeroHubClient.logger`, not the raw user `config.logger`. User callbacks
+(`onDataChannel`, `onTrack`) are wrapped in the `guardCallback` helper so a
+throwing handler is isolated to an error log rather than escaping the
+`RTCPeerConnection` event handler.
 
 Both topologies treat `ZeroHubDisconnected` and `Disconnected` as no-ops.
 

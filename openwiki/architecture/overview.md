@@ -5,7 +5,7 @@ description: End-to-end explanation of how ZeroHub's Go signaling server, TypeSc
 tags: [architecture, webrtc, signaling, server, client, protobuf]
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-20T15:09:12.940Z
+    at: 2026-11-21T15:10:39.237Z
 sources:
   - id: openwiki-source-df0d81c76704b851d02513e1
     resource: repo://client/src/const.ts
@@ -29,7 +29,7 @@ sources:
     resource: repo://server/pkg/storage/storage.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-11-20T15:09:12.940Z" }
+generated: { by: "hermes", at: "2026-11-21T15:10:39.237Z" }
 ---
 
 # Architecture Overview
@@ -100,7 +100,7 @@ and upgrades the HTTP connection to a WebSocket. Creates go through the atomic
 creates of the same ID collapse to a single hub (race winners create, the rest
 get `409`) instead of orphaning one.
 
-On upgrade (`handler.Upgrade`), the server wraps the socket in a
+On upgrade (`Handler.Upgrade`), the server wraps the socket in a
 `peer.Peer`, calls `hub.AddPeer`, and starts `hub.HandleMessage` — a read loop
 that decodes `ClientMessage` protobuf frames.
 

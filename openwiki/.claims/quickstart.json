@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:984a8acd4470194459c1d20515d0ba0e18c04525a2b1397e445f47ed6e2258f0",
+  "pageVersion": "sha256:7d4c5b7cd51654f826de6acfdd21bc8a930fa5b720621017294d7d313452b9bb",
   "claims": [
     {
       "id": "claim_29b96b61359846dd9149060c8b57d3a3",
@@ -38,11 +38,11 @@
       "evidence": [
         {
           "resource": "repo://server/pkg/config/config.go#L27-L45",
-          "version": "repo-lines-v1:sha256:d34de20c4cbb0894574fdc50f2b71a2fd616e53d0e917c51088a349bba641e0e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmYWJkYTI2NGU5MDhhNDg0NmRmZDlhNDliNGE5ZDA5ZDgzYzY0ODI1ZmZhODY3YzllOTE5MTY5Zjk3NGY0NzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMjhlMTE0YTBiZjg5YjE4ZmUyODM2Zjc5MzI0ODJmMDJjODc1MTQ5MGVkZDczMmI3ODAzNzdiYzk4NmQ5NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcyNTgxYmMxYzdjNDljOWJiZjI1OTZhNDJmZmQ2MDdkY2NmOWYzMTg1ZDJmNmQ0MjI1ODg3MDAwNDdiOTA4ZWEifQ"
+          "version": "repo-lines-v1:sha256:34d580a9e44be49b8977c8567aafb11548751e39e811cec9be98ec47cb5cf486:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5ODBhZWM0MzZiMWNmN2Y0M2Y1YmZkNTQyYjJkOWFiNWMyMDkxYWZjMWI5YjgyZDlhM2I5MjE5ZmY4MThhODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczMWIxNjVlYmE2ODc4NGVjMjU5ZmQ3Yzg0YzJiNWJhMjIxMTYyYzc4NjY0OGYyZGUzY2NhOTkwNWZjNTQ0OTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5YWVjMDEyOGVmMzczMjU2M2YzM2QyNzFlZTY5MjllMGI5OTFhODM2YTAxMWZlZTJiYjEwYWEwZTE2YWUxYzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0YmM3YWM5MjA0MDJlM2JmOTQ3NTQ0MDQzZDM4NTBkYjQwMGQ2ZDc4M2IzNjA4OGM3YTdmZDEzMmMyMDc0OWIifQ"
         },
         {
-          "resource": "repo://server/pkg/handler/handler.go#L155-L168",
-          "version": "repo-lines-v1:sha256:2947573de4270d3c8eacbf28d620c59408701070d5be0820837c238de7e47bf0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhOWEwMDI2OTVhY2JmNjViMTU3ZDY1NzlmNjQyNzkxYWQ4NDgwMWU3ZGE4MjY2OTU5MzcxMjg5NTA1MzMzMDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmN2FmODVhOTk1ZWY1YmY3ZWQ5MmIxMGJjOWM4Y2I3ZWJkYjBkZjQ4NzEzYzM0NDg5MjI5ZTBiNjc4OTliMTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzNmI0MGIxYTY4YTUzNjJlYTk5ODNlNGM3ZjZjMmQwYWQwMTJhMzc3YWQ5N2I5MTg1Mzc2NDk3NGZlMWFkYjcifQ"
+          "resource": "repo://server/pkg/handler/handler.go#L148-L155",
+          "version": "repo-lines-v1:sha256:d66dd4fd1d6e3a3e13cde31ca521034550027bb330daec0d2c5e42833caae1e0:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWE0NDI0NDUzNzhlNzdlMzEzOWI4OTEzNzU4ZGU3YjIyM2IyNzE3MGYxZDdkYzUwZGEzNzE1ZDIwNzdjYmE2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDAwODAzYjZkYmM5YTJhNTRkZjRhNDExZWNjZDIyMGRjMWNiOTkwYmQ5M2Y1MzZmMjg1OWRkNDgwY2I4YzFmMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGRhZTU3ZDhiMzNiNzc2YzJmYzQzY2U0MDU3OTUwNGQwYmM4ZWE2MmE0M2MwMmM1ODJhMmU1YmFhZjNjNmNhZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDhhMGUzMGVhMTYxMzA1MDNmZjI5MzQ1OGVhMDZiOGIxYzgyZmJmM2UzOWM4MTNhN2VlYjkwN2QwNmE2Y2U4NCJ9"
         }
       ]
     },
@@ -66,7 +66,7 @@
         },
         {
           "resource": "repo://test/package.json",
-          "version": "repo-file-v1:sha256:85683518c82c046f227b61a2a7a504eefe77c0f983ecf44a4e4f04e5d590deb3"
+          "version": "repo-file-v1:sha256:9ec75b10c948edd69991f5be5a637d35464fc0243afb729a87b6ac4babf91d01"
         },
         {
           "resource": "repo://test/playwright.config.ts",
@@ -74,13 +74,13 @@
         },
         {
           "resource": "repo://test/unit-harness/index.ts",
-          "version": "repo-file-v1:sha256:4b9bdf4c7d5bb0b131ccaf581fe630d66a2d4261476a96b45b58230a36424ef7"
+          "version": "repo-file-v1:sha256:cd37527a44ed824fcf43d1e2dea79030dd73a5ae09c76f90f316b4cb0ea8f08d"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-20T15:09:12.940Z"
+    "at": "2026-11-21T15:10:39.237Z"
   }
 }

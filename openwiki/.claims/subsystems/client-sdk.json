@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1d9852ca4b2464a2a66fff67f85b6a16c988b2bbaf85b3d3525633df764d628a",
+  "pageVersion": "sha256:d66359f871aa2ef8bb3105bfcad463e4a165c4cbeba624682b20cf728d11a172",
   "claims": [
     {
       "id": "claim_f8eee7b4d94d405e8ae1cd7638c1d8cf",
@@ -41,12 +41,12 @@
       "statement": "SFUTopology routes all P2P traffic through a single SFU peer (the numerically lowest peer ID by default, or an explicitly set one — peer IDs are sequential decimal strings, so election sorts parseInt(id, 10) rather than lexicographically); the SFU offers to every client and non-SFU peers connect only to the SFU, trading a single point of failure for better large-group scalability. P2P drops are recovered only from the SFU side by re-sending an offer; an explicitly configured SFU is never re-elected.",
       "evidence": [
         {
-          "resource": "repo://client/src/topology/sfuTopology.ts#L183-L193",
-          "version": "repo-lines-v1:sha256:778dd7b3661c146e3facf8c67f662266cab6ffd8e4960dc18d98d634fb3512a0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxNjUzMDAyZDYxNTQwMGEyNTlmZjZlYTIyOTljYzk1NDJkOGY3ZGI0OTdkNjZhZGQ1YTZlNjM1OWZhY2E4ODIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY5ODdjZWNjY2U4NzFjMWVmMzg3NWFjYTJjMDMyZjhlYTU4NGE2OTA1MDNhMTJkOWViNmE0NTBmZGQ0ZGJiOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5NjZiYjQwZWNlZmY2NDJlNzUzYTJhMDM5ODA5NjcwNjdjMGMzNDdmYjdkODZiMDc2MjdiZDZmMmM3OTc2MDEifQ"
+          "resource": "repo://client/src/topology/sfuTopology.ts#L184-L203",
+          "version": "repo-lines-v1:sha256:5322b863d3039ca461ff8460aee283bdd52c2fc019c9f5b224c431bbff7abd2b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxM2Q4MjU2YWQzMzk3Y2VlNmE4ZDlkMGY2MGNmNzdlM2I2OGI0NTQyYjZjNGUzMGZhYzQ0ODQ1YTEwMWI1MzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwMGI5NzZlNGM5OTMxYzVlMmJlYjBjMTI5MzAxMTA5YmE1ZWQ0NjYzY2VhMDAzODFkODZiNjAxYTlmNTNkNTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5NjZiYjQwZWNlZmY2NDJlNzUzYTJhMDM5ODA5NjcwNjdjMGMzNDdmYjdkODZiMDc2MjdiZDZmMmM3OTc2MDEifQ"
         },
         {
-          "resource": "repo://client/src/topology/sfuTopology.ts#L64-L137",
-          "version": "repo-lines-v1:sha256:0f24bd273414e0aa111c54b83b3b107e7d27c075f4d4d8ebe7ced10580690192:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmMmEyZjk5NmYwOGU2ODBiZDI5MjEzNWE2ZmE0OTc4YmRhMjZlNjAyZDg0ZjMzY2IxZDU5NDc3NWQ0MzA0YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxNzQ4NTE3NzAyZTg3NWRkNWUyOWI3YmIwMjdhZjQ4MjI3NjcwY2I4YTQ4OGEyOTc0MGY1ZTlhYTg2OTAwMjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJkNWQ4ZjU0MGU2ODE1YzdmMDA1ODA0ZjgwYTYyODM5ZmU5NjlkOTAyOGY1YTcxNGFiOWFkNmYyZjQ5OTRiM2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU0NTI2YTNjODkzOTQ1NjJmNDQ1YjBmNTI3M2M4MjJlMTJjZDY3MTZjOWFmMmE5YWJkNTc4MWU2YTI3YzQxMjIifQ"
+          "resource": "repo://client/src/topology/sfuTopology.ts#L88-L138",
+          "version": "repo-lines-v1:sha256:5a7bbaf1ae8be8e40b7467b3bd15880141a7846d966bf95813f7a9dd34896fbd:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkNjgyNWJiZjFlNjkxMzY2NTQxNWI2ZjE0MGZkYzI2Y2U1MWJmMzc4NDViNmRmNWVkYzU0MTZkZmFhNzI1ODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxNjUzMDAyZDYxNTQwMGEyNTlmZjZlYTIyOTljYzk1NDJkOGY3ZGI0OTdkNjZhZGQ1YTZlNjM1OWZhY2E4ODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1NmQ1NWMyMmU5ZTUxYWVhYWNlNmJkYmY2YThmZTJhOTU0NWM1MDc5YzBkOTEzNDllNjQxZWExMTE0Yjg0NGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3YzM4OTAzMzlmMjFiMDcxMDI1MGFlNTc2ZjlmMTMxNzk4NWFjYTBiNzNjZmUzMWU2Zjc0OGVkMTEwMWMwNTgifQ"
         }
       ]
     },
@@ -55,12 +55,12 @@
       "statement": "MeshTopology delegates per-peer WebRTC wiring to the shared peerSetup helpers: on Pending, setupDataChannel makes the offerer create numberOfChannels data channels labeled '0','1',... while the answerer wires ondatachannel, and setupMediaChannel adds localStream tracks to the peer's RTCPeerConnection; the offerer then sends the offer.",
       "evidence": [
         {
-          "resource": "repo://client/src/topology/meshTopology.ts#L54-L69",
-          "version": "repo-lines-v1:sha256:1ab3bbd354239e5a7d671aca886480c5a7ee271dcd426625bb1c3e61edcd7936:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4NmEyMTNkZWMxMzQxODI2MDgyZGJjZDcwZmRlMzc5YjNiNTA3ZWRmZDJlY2ZhMGFmM2ZkYzE2MzVjNzM4OTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3NjBkNzA4NDczNzBjYWU3NWFjNWY1MDFjM2UxMGRmZTJmY2RjNThjMjE0NjI2MmU4ZjA5Nzk0MjFhZDkwYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5ODYzMzZjZjJkZmFkZDMxNzZiZTRlMGMwNzdjNTQ5NGRmMjE1NzEzNjJlMjZmMGQ3MGMyNmJhZTUwYzMzNTAifQ"
+          "resource": "repo://client/src/topology/meshTopology.ts#L54-L68",
+          "version": "repo-lines-v1:sha256:4b005d639921aabc635b2d0fa5d861618d08b88301ef7dac0e8739fff07d6570:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4NmEyMTNkZWMxMzQxODI2MDgyZGJjZDcwZmRlMzc5YjNiNTA3ZWRmZDJlY2ZhMGFmM2ZkYzE2MzVjNzM4OTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmYzFjN2NiNDhlZGIwZmRkNWJkNjJkOWZkNzJjOTIzNzRiOTRlNGIzYzQ1ZTkzYjFhNDMwOTk0MjI4Y2MzNzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3NjBkNzA4NDczNzBjYWU3NWFjNWY1MDFjM2UxMGRmZTJmY2RjNThjMjE0NjI2MmU4ZjA5Nzk0MjFhZDkwYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwOTZkZjM4MzllZGNiZGMyMDZiYThkZDY2Nzc2NDFmNzgyOTJjNDRlNjcxOGY0NmUzYjhkYmFhNTkwNDk1OTcifQ"
         },
         {
-          "resource": "repo://client/src/topology/peerSetup.ts#L25-L115",
-          "version": "repo-lines-v1:sha256:d2575b83b179c30c09f238bee6c7795f9e8727ce92b0dc710b6b78b4f6f7d81c:eyJzZWxlY3RlZExpbmVDb3VudCI6OTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhOWRkNTFmNzY3Nzg4MTlhM2Y3ZjcyMTQzNzBiYTFjZmY2MzI1NjJlNDJiMTljYWM1ZjA3ZjdiMmMxMDEyNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUzMjI1NGRjMjFjZjVmZjUzY2I1NWFiOWFiZDY2MjliNDJlZTQ5ZjA2NjM2YjE3Yjc3ZWRkNmI0MGNhNmU4NDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://client/src/topology/peerSetup.ts#L41-L127",
+          "version": "repo-lines-v1:sha256:2a47f2d5722588078ff2e944d026cccf4f2b17b817ee70f3747869cf68516feb:eyJzZWxlY3RlZExpbmVDb3VudCI6ODcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhOWRkNTFmNzY3Nzg4MTlhM2Y3ZjcyMTQzNzBiYTFjZmY2MzI1NjJlNDJiMTljYWM1ZjA3ZjdiMmMxMDEyNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUzMjI1NGRjMjFjZjVmZjUzY2I1NWFiOWFiZDY2MjliNDJlZTQ5ZjA2NjM2YjE3Yjc3ZWRkNmI0MGNhNmU4NDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -199,8 +199,8 @@
       "statement": "With autoAnswer: false, the offerMessage branch does not call sendAnswer; it moves the peer to AnswerPending and then invokes the public onOffer(peer, offerSdp) callback (guarded on the peer existing in the peers map) so the application completes the exchange via sendAnswer(peer.id, offerSdp). With autoAcceptAnswer: false, the answerMessage branch likewise moves the peer to AcceptPending and invokes the public onAnswer(peer, answerSdp) callback so the application completes the exchange via acceptAnswer(peer.id, answerSdp).",
       "evidence": [
         {
-          "resource": "repo://client/src/zeroHub.ts#L840-L901",
-          "version": "repo-lines-v1:sha256:7cdf88a6b09e213116646c15766262bd6acfddd2a0d6babbe7fc1841e4a5608c:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlYjI4OTJlMDY2NDc5ZGFiODk2MDdjNWZhZWU4MmQ2YzczN2EzYzg2YzgzNDhlNzJkZjQ4NjJlZGExOWY5MmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmMmNjNzg1OGY1MjFkMzlmNDViNjg3MDQ4NDU4MGIzMjVhYzJjNDA5ZTIyNmQyMGFmYThmNzczMjM0OGUwZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFkNTlkYzgyNzhlMjU2NDgyZTVmNTIzNGViYzc2MGNhMmQ4OGUzNzI2ODg5Y2YxMDNlNmU2MjcyODBlNjRlZWMifQ"
+          "resource": "repo://client/src/zeroHub.ts#L832-L871",
+          "version": "repo-lines-v1:sha256:1a9581ddf9f58fdffacd118a1f9c5c870c65ea8f10f1b24f5dc0640e4559e4a6:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmMDliMjYxNDlhNzI0Y2E5ZGQ0ODJkOGZhMTc4YThiOGZhMDA0NzAzMjBhOGVlY2Y0YzRlZDU4Njk5ZTExNTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY5YjkwNTMxZjllOWE2ODFlNDAzZDRlMzk0OGVmZjE0NDM0OTM4ZWFmNGQxNTFmZDdhZjYzMDk0ZjA3Y2M4MGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFkNTlkYzgyNzhlMjU2NDgyZTVmNTIzNGViYzc2MGNhMmQ4OGUzNzI2ODg5Y2YxMDNlNmU2MjcyODBlNjRlZWMifQ"
         }
       ]
     },
@@ -213,8 +213,8 @@
           "version": "repo-lines-v1:sha256:dcdeb950e92cdb991ae5eb0fd3970da02acf1ca13e0c0783b2b4393a28ed51a6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkZmYzMTljNDkxOTM3M2MzZjE0MzJkZDRkNWRkNjNjYjQ3NjY5ZmVjNmIxNTA3YzBkZTRhMDRkYmRmOWM5MTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzNDQ0OTEwOGY5MjQ2Mzc3NzU3YmM4M2JhYWNmYjI1YjMyZGVhNGIyZDFhMzk5ZWMwYzIyNjhlZTYyY2E1ZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3ZWNmMWYwZjI4N2RhZTJlMjMzNWFkYTNlMDBjZGIyYzU4MGY4MWE5MjNmMjdmY2I5NzI4NTE0MWZmMTc3NGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiMTYyNWY2OGFiOWFmZmQyNDVhMzNmMzQ1Y2NkZjY1MDQzYTYzYWY0ZjdjOGViZjVlMDVlYzI0ZmJiNjc1ZjUifQ"
         },
         {
-          "resource": "repo://client/src/zeroHub.ts#L856-L899",
-          "version": "repo-lines-v1:sha256:a7f8e1dc97c0724979fd6eddb4596437d2b784a155c2f2fb793a4eaf9caf643a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyZGVkNzc1YTRhNjUwYjFhZjYwNjljMmUyMTllOTNmODg1NTBiNzNlNzIxOWFkMWU1ZDFjMWYzNzExNGI0YjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4MDA1ZDU3MTA2YTM2MmViMDAwZGFmM2RhNDY3NGM4MmI1MThmZjVhMmUyZjY3ZWU4ZTc1N2EzMzNjMmFmNjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQyMDA1MjI4NWFlN2ExNTYzNDM5MTNhM2U0NjIwYjQ1ZDc2OTA0MDhmNTRhZjhlMGRkODY1MzgxODAyYTkwYmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNhNmUyNWE0N2EyOWE4NTMyMWNiN2IxYjk0ZDIxNTZlOTNkMzZmODdmNDRjY2QyMGM4ZmMwOTk1YTYxZjVkMGUifQ"
+          "resource": "repo://client/src/zeroHub.ts#L838-L870",
+          "version": "repo-lines-v1:sha256:04c1be4e7bafb8b50ef4b3ef452e4d3dc5e930639badd520955a32ed5d896633:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyZGVkNzc1YTRhNjUwYjFhZjYwNjljMmUyMTllOTNmODg1NTBiNzNlNzIxOWFkMWU1ZDFjMWYzNzExNGI0YjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQyMDA1MjI4NWFlN2ExNTYzNDM5MTNhM2U0NjIwYjQ1ZDc2OTA0MDhmNTRhZjhlMGRkODY1MzgxODAyYTkwYmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ4NWI5OGRiODM2OGIzNDIzODdkNGZhZWMzMGMzOTZmMmU5ODlmYTU4ZDgxZjA0YWFmMGMwNzYyYTBhMDU3YjcifQ"
         }
       ]
     },
@@ -231,6 +231,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-20T15:09:12.940Z"
+    "at": "2026-11-21T15:10:39.237Z"
   }
 }

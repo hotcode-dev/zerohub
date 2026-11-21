@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e9db173c388e72be8c0b253d786fe2b53fa5d7f314a263fe701e47e187481398",
+  "pageVersion": "sha256:042ac33cc311b564b7e00bacb0e88f8e56402662cb12ffb6972153328923a4b7",
   "claims": [
     {
       "id": "claim_937b0d08bd3849b4b3ddd56a5664ca43",
@@ -85,12 +85,12 @@
       "statement": "Hub creation on the Go server is performed through the atomic CreateHubIfAbsent primitive on zerohub.ZeroHub (run under a cross-mode collision lock), so concurrent create requests for the same hub ID collapse to a single hub: the race winner creates and the rest receive ErrHubAlreadyExists (surfaced as HTTP 409) instead of orphaning a hub.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/claim_hub_for_create.go#L17-L41",
-          "version": "repo-lines-v1:sha256:0df50966e728cd57dee498be7041584b96ca0552697e3f1393b4bfc57eacbf54:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiOGYyYzQ3NjI5ZDk4NGMyNDllZTc4YTc4OGMwZWFmZWFlODBhNGQ1Njg5NzkzZGY1OTFiNjk0YWE2YTAwZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkZDRhMWY1NTMwNzMxYzQzNmYzNmFkMWZjZDMwMDFhMDI3MzVjNThkYTYwMDllMTYzMDQ2YTMwODMzYWNmZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4OWIwODJmZTUwMmNjYzllMjhiOTg4OGNkNzg4NWExMTk5ODgyMWMwMjQ2NmY2NDc2YWQwZjk3ZTRlNTJhMWUifQ"
+          "resource": "repo://server/pkg/handler/claim_hub_for_create.go#L19-L43",
+          "version": "repo-lines-v1:sha256:a815783dc924d8784560c6d4c563f0ca8cfe4ca7ddcefb5b510f7728344b07cc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkMTMwNDk3NDJiOGY4YTk3ODJkY2FlYzNmZGZkYzM0MjE5OTdiZjIyNzI2OTc3MzUyOTUxZTQyMjYwYWMyYTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc4ODBlYWU4MGIwNjZkYjVjMTU1ZGQ1YjZmYmRiNzYyZjY1ODgyMzFkYzBkODgxMTkwN2VhYTdkNWIzZDUzYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://server/pkg/zerohub/zerohub.go#L88-L104",
-          "version": "repo-lines-v1:sha256:99406c980dcb181ceb713be1ad274ca686a647e3ac2afb50d031495555e308ec:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1MmQ5ZGM2NDQ3YmVjZTA1Y2ZmNTI2ZGM3NjY3OGZmODJhYThhNzRiZmU3Nzg2YTdmNmI4OGUzODJkZTJkZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNlNGU0MmY3MDQwMTdiZmYxMWViODYxODQ1ZDMyYTA0MjRhNjc4OGJhMWU3NDQyOGFiMTI2MDJjOGEzZmEyZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc0ZjI1ZWI1ZmQ4YzVlYjg3MWE3MWFmMjZjNDk2NmNlYWYxM2EzZDkyYmY3NTY3N2YwNGJhYzhmNWE0YzRjOTUifQ"
+          "resource": "repo://server/pkg/zerohub/zerohub.go#L92-L104",
+          "version": "repo-lines-v1:sha256:007a0d921a16ec7d358329059fd6617c1e2f41e72b6ff5153e7f9b36bd33cd57:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiM2I4N2FiZWU3YzA3YWNhN2U5ZDg3NDZjNjgzZTAzN2IyZWI5NjAzMGE4Nzg0MGU0ZDk3NTVkMjc0NDAwNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3Mzc5N2RlMmRiMTEyMWE1Y2MyYjY2N2ZmYWEzZWMwNmQwZWRlZjc5MjdlYzcwMGRmYTc0MWQ0ZDMxYWJlOTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc0ZjI1ZWI1ZmQ4YzVlYjg3MWE3MWFmMjZjNDk2NmNlYWYxM2EzZDkyYmY3NTY3N2YwNGJhYzhmNWE0YzRjOTUifQ"
         }
       ]
     },
@@ -99,18 +99,18 @@
       "statement": "The Go signaling server validates hub-endpoint query parameters before the WebSocket handshake via the shared validateHubCreateParams helper: a missing/empty/whitespace id or non-JSON hubMetadata is rejected with HTTP 400 and an oversized id/hubMetadata with 413; peerMetadata is size- and shape-checked at Upgrade. An empty-id request can no longer create a junk hub under the empty-string key and oversized or malformed metadata is not stored or re-broadcast.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/validation.go#L79-L113",
-          "version": "repo-lines-v1:sha256:fe3a5f349af90f44bdbb749e4d8d78828ef7ca2c30dce2f7d1285982907cced2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzZmRkOTQyMWQ2NjQ2YTI2YzFhNmEyZmRlMmVlNWVlNGE0ZWQ2YTg5MDkxZWRiMTliM2JlMWE2NDA2ZjVkOTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0YzI0NWI2ODUwOTEzOWE4MmViMDJlZjBlNTdlZGY4ZjU4OGFjYmJmZDg5Nzc0NmE3MWYxNmJjZDBjNDBjNGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwNGYxOTFhY2UxM2JlNWU3Yjk5ZTgyNWQ0MTc3MDBhZTg1MTJmNzRkODUxYTQyNWI2YjE1ZDRlZmI2MGM2OGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjZjFjNjUwMzI4ZjcyYmM2MGIwZjUwMWU2ODVkYzdjODYwYjU3ZGU4M2JlM2ExNDI5NmFhY2I4MGJjNjAzOTcifQ"
+          "resource": "repo://server/pkg/handler/validation.go#L79-L121",
+          "version": "repo-lines-v1:sha256:82ca2c2700b4d7a041cf1922b64667008609621876bcc370d2284c13c9b78cdd:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzZmRkOTQyMWQ2NjQ2YTI2YzFhNmEyZmRlMmVlNWVlNGE0ZWQ2YTg5MDkxZWRiMTliM2JlMWE2NDA2ZjVkOTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwNGYxOTFhY2UxM2JlNWU3Yjk5ZTgyNWQ0MTc3MDBhZTg1MTJmNzRkODUxYTQyNWI2YjE1ZDRlZmI2MGM2OGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0ZDkwNjc1ZDlmM2ZiNjJjZTEyMzFmMTY3ODU5MmNlNDY5N2E3NjcxODYyNzEwMWMxY2ZiMWJjZjAxODgzYmYifQ"
         },
         {
-          "resource": "repo://server/pkg/handler/websocket.go#L80-L105",
-          "version": "repo-lines-v1:sha256:ce602dd435b9d480f7b710706f3c4f8ea0f4c2f4633a8f4ad38168add19a7f08:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMTcyMTkzNTU1YmExZjAwMjhhNzllZTZhZjc2N2UwNzUxZTdlYTk2OWQ1NDYzZTE1MDhiYzJlNWJkNmI5OWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiZGMwNGY2Mzc4NGNlYzM0ZWM3MTk2ODYyZGQwYTIwZGYxNjgyNzAxNGM4Mzg4NTUxYTA4OTUzMzk1OTI0MWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5NGIxOGE0OWNlZmYyNTFmZWYzMzgyYTE3MWUyZDQ2MTcxM2E4NWE5NjFlMTZkN2FkZjY4NGI4MjQyMmMwM2MifQ"
+          "resource": "repo://server/pkg/handler/websocket.go#L90-L115",
+          "version": "repo-lines-v1:sha256:1140fa4401cd4d2d22290e20d133525bb55c4b193d2f4d6522bb3b60a417d78d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0ZmY1YzNkMzlhYmJiNWVhZWFlYTUwYzY0OWMwMTc1MjE4MzNmMTc1ZTIwZjE3Nzk3OGRmMTgzOGE5Y2FiZmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiZGMwNGY2Mzc4NGNlYzM0ZWM3MTk2ODYyZGQwYTIwZGYxNjgyNzAxNGM4Mzg4NTUxYTA4OTUzMzk1OTI0MWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5NGIxOGE0OWNlZmYyNTFmZWYzMzgyYTE3MWUyZDQ2MTcxM2E4NWE5NjFlMTZkN2FkZjY4NGI4MjQyMmMwM2MifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-20T15:09:12.940Z"
+    "at": "2026-11-21T15:10:39.237Z"
   }
 }

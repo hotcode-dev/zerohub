@@ -43,10 +43,10 @@ sources:
     resource: repo://server/pkg/storage/gache.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-11-20T15:09:12.940Z" }
+generated: { by: "hermes", at: "2026-11-21T15:10:39.237Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-20T15:09:12.940Z
+    at: 2026-11-21T15:10:39.237Z
 ---
 
 
@@ -81,7 +81,7 @@ admin endpoints would otherwise be open to unauthenticated requests.
 
 ## The three hub modes & routing
 
-`handler.Serve` builds a fasthttp server and dispatches on `ctx.Path()`:
+`Handler.Serve` builds a fasthttp server and dispatches on `ctx.Path()`:
 
 | Path | Handler | ZeroHub instance | Notes |
 |---|---|---|---|
@@ -135,7 +135,7 @@ while migrating.
   lookup-and-send helper. `HandleMessage` is the per-socket read loop; it
   relays offer/answer/ICE-candidate messages and ignores self-targeted sends.
 
-**Hub teardown** happens in two places inside `handler.Upgrade`: the socket's
+**Hub teardown** happens in two places inside `Handler.Upgrade`: the socket's
 close handler (`peer.Close()` + `hub.RemovePeerIfLast`), and a fallback right
 after `hub.HandleMessage` returns (fires when the read loop exited before the
 close handler ran, e.g. a read error). Both paths are safe to race because
@@ -148,7 +148,11 @@ recycle the hijacked connection.
 **Upgrade-failure cleanup** plugs an orphaned-hub leak. `Upgrade` reports a
 failed connection two ways: a non-nil error (a real handshake error) or
 `responseWritten=true` (the up-front `peerMetadata` rejection that already
-wrote a `400` for malformed JSON or `413` for an oversized value). `AddPeer`
+wrote a `400` for malformed JSON or `413` for an oversized value). The error
+label is produced by the shared `wrapUpgradeError` helper (in `websocket.go`),
+used by both `Upgrade` and `ForwardMigrate`, which distinguishes a
+`websocket.HandshakeError` ("websocket handshake") from any other upgrade
+failure ("websocket upgrade error"). `AddPeer`
 only runs inside the upgrade callback, so whenever `Upgrade` does not fully
 succeed, no peer was added for this request and the hub is empty.
 `CreateHubByID` and `JoinOrCreateHubByID` therefore route the failure through
