@@ -75,7 +75,7 @@ func TestLoadConfigEnvOverrides(t *testing.T) {
 	}
 
 	want := AppConfig{
-		Environment:    ProductionEnvironment,
+		Environment:    Environment("prod"),
 		Host:           "127.0.0.1",
 		Port:           "9091",
 		ClientSecret:   "s3cret",
