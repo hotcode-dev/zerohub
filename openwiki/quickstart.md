@@ -89,7 +89,9 @@ npm install @zero-hub/client
 ```
 
 Instantiating a client makes **no network connection** — call one of the hub
-entrypoints to connect:
+entrypoints to connect. They return `Promise<void>` that resolves when the
+signaling WebSocket opens (hub state like `myPeerId`/`peers` fills in when
+`onHubInfo` fires):
 
 ```typescript
 import { ZeroHubClient, PeerStatus, LogLevel } from '@zero-hub/client';
@@ -111,11 +113,13 @@ client.onPeerStatusChange = (peer) => {
   }
 };
 
-// Connect and establish the mesh: the server generates the hub id,
-// which this client learns through onHubInfo.
-client.createRandomHub({ name: 'Alice' });
-// ...a second peer joins that hub by its id:
-// client.joinRandomHub('<hub id>', { name: 'Bob' });
+// Create a random hub (the server picks the id) and establish the mesh:
+// await client.createRandomHub({ name: 'Alice' });
+// ...a second peer joins that hub by the id it got from onHubInfo:
+// await client.joinRandomHub(hubId, { name: 'Bob' });
+// Or join a static (named, never-expires) hub — static hubs are created
+// out-of-band via the admin-gated /v1/static-hubs/create endpoint:
+// await client.joinStaticHub('my-hub', { name: 'Bob' });
 ```
 
 For a second peer, call `joinRandomHub` with the hub ID from the first

@@ -95,8 +95,9 @@ In `server/`:
 - `go test -bench ./pkg/*** -benchmem` for benchmarks.
 
 Config comes from `.env` (copy `.env.example`); key vars are `APP_PORT`,
-`APP_CLIENT_SECRET`. Regenerate mocks (`make server-mock`) after interface
-changes in `pkg/zerohub/zerohub.go`, `pkg/hub/hub.go`, or `pkg/peer/peer.go`.
+`APP_CLIENT_SECRET`. Regenerate the zerohub mock (`make server-mock`) after
+interface changes in `pkg/zerohub/zerohub.go` — the target only generates the
+`zerohub` mock; the former `hub`/`peer` mockgen lines were removed as dead.
 
 ## E2E test suite
 
