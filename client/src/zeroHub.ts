@@ -1821,10 +1821,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    *   (`myPeerId`, `peers`, `hubInfo`) is populated when the `onHubInfo`
    *   callback fires.
    */
-  public joinIPHub(
-    hubId: string,
-    peerMetadata?: PeerMetadata
-  ): Promise<void> {
+  public joinIPHub(hubId: string, peerMetadata?: PeerMetadata): Promise<void> {
     return this.openHubConnection("/v1/ip-hubs/join", hubId, peerMetadata);
   }
 

@@ -12,6 +12,8 @@ sources:
     resource: repo://test/package.json
   - id: openwiki-source-bb910847e63080c9ced0e830
     resource: repo://test/playwright.config.ts
+  - id: openwiki-source-e85623174fcaf46639032098
+    resource: repo://test/scripts/build-harness.mjs
   - id: openwiki-source-36a6408534491a7638f8089e
     resource: repo://test/tests/unit-ice-candidate-send.spec.ts
   - id: openwiki-source-1c91996f1afbceb960c6d3b4
@@ -30,10 +32,10 @@ sources:
     resource: repo://test/tests/unit-ws-replacement.spec.ts
   - id: openwiki-source-801ca2739d5984913a9ac0eb
     resource: repo://test/unit-harness/index.ts
-generated: { by: "hermes", at: "2026-11-20T15:09:12.940Z" }
+generated: { by: "hermes", at: "2026-11-21T16:26:45.303Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-20T15:09:12.940Z
+    at: 2026-11-21T16:26:45.303Z
 ---
 
 # Development & Testing
@@ -109,13 +111,14 @@ via relative path `../../client/src/index`):
 - **Harness** (`test/harness/index.ts`) exposes a `window.ZeroHubHarness`
   that creates/joins hubs, logs peer status changes, and tracks data-channel
   state, keyed by `componentId`. Tests drive it via `page.evaluate`.
-- **Specs** (`test/tests/`): seven E2E specs — `connect.spec.ts`
-  (create/join + peer status), `data-channel.spec.ts`, `concurrent.spec.ts`,
-  `disconnect.spec.ts`, `multihosts.spec.ts`, `static-hub.spec.ts` (out-of-band
-  admin HTTP create + `joinStaticHub` WebSocket against the live `:8081` backup
-  server), and `zz-migrate.spec.ts` (named last so its one-way migrate latch on
-  `:8080` runs after every other spec) — plus 23 `unit-*.spec.ts` specs
-  (e.g. `unit-sfu-election.spec.ts`, `unit-reconnect-error.spec.ts`,
+- **Specs** (`test/tests/`): eight E2E specs — `connect.spec.ts`
+  (create/join + peer status), `data-channel.spec.ts`, `ip-hub.spec.ts`,
+  `concurrent.spec.ts`, `disconnect.spec.ts`, `multihosts.spec.ts`,
+  `static-hub.spec.ts` (out-of-band admin HTTP create + `joinStaticHub`
+  WebSocket against the live `:8081` backup server), and `zz-migrate.spec.ts`
+  (named last so its one-way migrate latch on `:8080` runs after every other
+  spec) — plus 22 `unit-*.spec.ts` specs
+  (e.g. `unit-peer-wiring.spec.ts`, `unit-sfu-election.spec.ts`, `unit-reconnect-error.spec.ts`,
   `unit-malformed-metadata.spec.ts`, `unit-reconnect-peer-prune.spec.ts`,
   `unit-ice-candidate-send.spec.ts`, `unit-manual-offer-handling.spec.ts`,
   `unit-manual-answer-handling.spec.ts`, `unit-migration-redirect.spec.ts`,
@@ -144,10 +147,11 @@ via relative path `../../client/src/index`):
 
 - **Always run via `cd test && npm test`**, not `npx playwright test`
   directly. `npm test` triggers `pretest`, which runs the `tsc` typecheck
-  **and** `build:harness` (`test/dist/harness.js` for the E2E harness) **and**
-  the unit-harness bundle (`test/dist/unit-harness.js` for the unit specs),
-  both built via esbuild. Invoking Playwright directly makes the specs fail
-  with ENOENT on their missing harness bundles.
+  **and** a single parameterized `build:harness` esbuild script
+  (`test/scripts/build-harness.mjs`) that produces both `test/dist/harness.js`
+  (the E2E harness) and `test/dist/unit-harness.js` (the unit specs).
+  Invoking Playwright directly makes the specs fail with ENOENT on their
+  missing harness bundles.
 - The Playwright config runs **serially**: `workers: 1` and
   `fullyParallel: false` are always pinned (locally and on CI), with a 10s
   per-test timeout on Google Chrome only. `retries` is `2` under `CI=1` and

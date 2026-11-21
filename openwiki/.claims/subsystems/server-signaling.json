@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:98cbb4940e4957cfe32aa59d9f472f3125cc4294d346ed1ca1b81fb90f2adb5a",
+  "pageVersion": "sha256:9d310c510b156c3fec1b35536862fb9edf8b2da2a0b57caa112c2107ab13b216",
   "claims": [
     {
       "id": "claim_1d82fd64055a4062925029c4ae4e6575",
@@ -31,8 +31,8 @@
       "statement": "handler.NewHandler refuses to start when APP_CLIENT_SECRET is empty, because the admin endpoint would otherwise be open to unauthenticated requests.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/handler.go#L155-L168",
-          "version": "repo-lines-v1:sha256:2947573de4270d3c8eacbf28d620c59408701070d5be0820837c238de7e47bf0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhOWEwMDI2OTVhY2JmNjViMTU3ZDY1NzlmNjQyNzkxYWQ4NDgwMWU3ZGE4MjY2OTU5MzcxMjg5NTA1MzMzMDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmN2FmODVhOTk1ZWY1YmY3ZWQ5MmIxMGJjOWM4Y2I3ZWJkYjBkZjQ4NzEzYzM0NDg5MjI5ZTBiNjc4OTliMTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzNmI0MGIxYTY4YTUzNjJlYTk5ODNlNGM3ZjZjMmQwYWQwMTJhMzc3YWQ5N2I5MTg1Mzc2NDk3NGZlMWFkYjcifQ"
+          "resource": "repo://server/pkg/handler/handler.go#L149-L162",
+          "version": "repo-lines-v1:sha256:4f9fab459ef4fc93563cff9854deb4866869dd16276516f1aeb0f54a071aaae8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhNDQyNDQ1Mzc4ZTc3ZTMxMzliODkxMzc1OGRlN2IyMjNiMjcxNzBmMWQ3ZGM1MGRhMzcxNWQyMDc3Y2JhNmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkYWU1N2Q4YjMzYjc3NmMyZmM0M2NlNDA1Nzk1MDRkMGJjOGVhNjJhNDNjMDJjNTgyYTJlNWJhYWYzYzZjYWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzNmI0MGIxYTY4YTUzNjJlYTk5ODNlNGM3ZjZjMmQwYWQwMTJhMzc3YWQ5N2I5MTg1Mzc2NDk3NGZlMWFkYjcifQ"
         }
       ]
     },
@@ -79,12 +79,12 @@
       "statement": "The server applies an in-package token-bucket rate limiter (rateLimitMiddleware in pkg/handler/ratelimit.go) at 60 requests/minute with continuous refill, answering 429 to excess requests; keys idle longer than 2 minutes are reclaimed by a sweep running at most every 32s. It is keyed by the socket peer address (IP:port, unspoofable) by default, or by the outermost X-Forwarded-For IP only when APP_TRUST_PROXY is set (which must only be enabled behind a proxy that strips or replaces that header). The separate clientIP() helper, which drops the port so all connections from one client IP share a hub, derives the hub ID for IP-keyed hubs, so behind a trusted proxy the IP-hub ID tracks the real client IP rather than the proxy socket address.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/handler.go#L189-L241",
-          "version": "repo-lines-v1:sha256:145e3a1827df611976450bc8c970aaec380f1d3c79ae03dd11125521a40b5b08:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzODA5ZDUyMzI5OTc0MjcyMDMxNTBkZmNkY2VhZWIxNjYwYzM3ZWVjNjE1M2JjMzBkYTI5ZjhmY2VmOWQyYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5ZDc3NTNjM2ZmNjlmNmI5ZTliOGM5ZmRkMzQwMzQ3ZTk0MTNmNDU5YWQ2ZGQ5NTRhNmMzYWZkYmI4Zjg0ZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBkODFhN2ZhYTI3MGUwOGVhNGFlMmQ3MGEwZWU5NmJiY2U4YjVjMWUyOGUwZGJlYWVlN2ZmNDc4NDc3YjRlNjkifQ"
+          "resource": "repo://server/pkg/handler/handler.go#L183-L236",
+          "version": "repo-lines-v1:sha256:c28b77802d6fd44553e005dac5f3189f3a9062fa994ac99aec815f6a2bbe9948:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2NjAyZmUzMTVhNTBlYzA0MzVmZTlkYTM4MzcwMDJmZTIxZDUwMjdhOTdjZjcwZDJkNDczNjA3NWRlZTAwOGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5ZDc3NTNjM2ZmNjlmNmI5ZTliOGM5ZmRkMzQwMzQ3ZTk0MTNmNDU5YWQ2ZGQ5NTRhNmMzYWZkYmI4Zjg0ZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZmYTBiNjQxYjFhNWRiNTBkMTg3MjI5YjUzZGMyM2FmMDRlOGY3ZGU5ZTNlNWJlNmZjZWM1NzNkYTBmY2U2ZGMifQ"
         },
         {
           "resource": "repo://server/pkg/handler/join_or_create_hub_ip.go#L15-L35",
-          "version": "repo-lines-v1:sha256:632fce18f03e3c54e330994f05848cb1b34a6ca79c3f079624ef4f1a72ecf22b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NmQzOGRmYmYzODk4OWRiMmNjOTA1ODY4YWJiNGJiZGUzNWJlNzZiNzk2MDRhMzI0ZjA4NTlkZjE1NGQxYmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhZmUyZGY5MGIwMTk3NGM1N2Q3NmJkYmRkMjEwMDU4ZmNkNWUxZGE3MWM2MjljNzg1NDQ0NDY3ZGYwNjE5MzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3M2ZjZmEwZDFhOWE0M2NjOTMzOTBmNzkxOWUyOTlmMWZiNWU5NzQ5ZTg2ZWVkOGVjMjhiZDlkNjk3ZDBhOWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+          "version": "repo-lines-v1:sha256:f9da88112366f175472425253ba6204f68ad3bbaeaa6b05a4420b988ad8ec7b5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NmQzOGRmYmYzODk4OWRiMmNjOTA1ODY4YWJiNGJiZGUzNWJlNzZiNzk2MDRhMzI0ZjA4NTlkZjE1NGQxYmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhZmUyZGY5MGIwMTk3NGM1N2Q3NmJkYmRkMjEwMDU4ZmNkNWUxZGE3MWM2MjljNzg1NDQ0NDY3ZGYwNjE5MzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3M2ZjZmEwZDFhOWE0M2NjOTMzOTBmNzkxOWUyOTlmMWZiNWU5NzQ5ZTg2ZWVkOGVjMjhiZDlkNjk3ZDBhOWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
         },
         {
           "resource": "repo://server/pkg/handler/ratelimit.go#L10-L25",
@@ -101,16 +101,16 @@
       "statement": "Zero-downtime migration: an authenticated /v1/admin/migrate?host=<new> call first validates the host with validateBackupHost (a bare host or host:port, rejecting any scheme, //, path, query, fragment, userinfo, or out-of-range port with a 400 without touching state), then sets backupHost under a read-write mutex and atomically flips isMigrating; while migrating, create/join-or-create requests are rejected via ForwardMigrate, which upgrades the connection and sends a going-away close (code 1001) whose reason is the backup host so clients reconnect to the new host.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/migrate.go#L131-L171",
+          "resource": "repo://server/pkg/handler/migrate.go#L128-L168",
           "version": "repo-lines-v1:sha256:dbbbd4fac8312d1feb73e67668086551b1958a728e14da9dc391754781034878:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwZDc4NzcwYWMxOTBhNWE2NjQ3ZjIxOWIxMWNiMTlkOGFhY2I4N2NhMDY4N2IyOTRiNDIwNGRlZDczYzk4NzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg0M2ZiODZlNTlmNmQzNGRmOWZiZWE5MjM2YzJiY2Y5MTgwYjBmYWQ3MGNjMjYyYWM2NGY5YWEzZTc1ZTVlY2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://server/pkg/handler/migrate.go#L27-L58",
-          "version": "repo-lines-v1:sha256:25c4fe50355c2b330abb396e45bbb7fe563dcf54345deb8431d94c2beddf775a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4YmFmMmYwYzMzNjMxYTg3MThiZmQ5OTdhOGRkZmJjOTgyYzM2ZTQxOThmOTgwMWIwZTkzZTQyZTZjMWJiMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI5MmQ2ZjFlMTUyNmMyNmY0NTRmMWE4YWVkM2FlYjU4ODZhMGU4YTJkZjYxYjZjZTRmNDdkNzg5M2MyZmI1OGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI2NWQ2Yzc1NDdmOGJjZDg1NDEwMDZhZDYzMGI4YmE0NGMzNmZiNDAwNmJhOTMyMTM1ZWYxNDNiYzhjMGMwMTAifQ"
+          "version": "repo-lines-v1:sha256:4bad56a74e310faacad9bb09167dd47c12911b2a1ec2430b7bbdccbfa6ca91ab:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFiOWZjYjM4NDc2MDBhZGZkZjQxM2I4YmZmOTM5NWU2NDkzMWQyMDgwMzFkNzkyMGMzOTJkM2NkNmViZmZkYTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI5MmQ2ZjFlMTUyNmMyNmY0NTRmMWE4YWVkM2FlYjU4ODZhMGU4YTJkZjYxYjZjZTRmNDdkNzg5M2MyZmI1OGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkyMmZjODU4YjUzODEwNGJiZWEyZmIzYThhOTFlZTg4MWIxY2VlNGRmNWExMmQ2ZTIxODM1ZGMwZjg5MmU2Y2YifQ"
         },
         {
           "resource": "repo://server/pkg/handler/migrate.go#L60-L98",
-          "version": "repo-lines-v1:sha256:7bf88b7164614246a8b87c3a40cb13f76ca4b4e473bc86d6c9939d974d526310:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5MDRhZDYxMTcwZjY2OTk4MDBmN2Y3MzRkNjQ1OWU0MTg4MzkzNzY1ZWMxMDdjMTIyMTU5Njc0OTAxNGRkZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE2MzFiNmUyY2EwN2Q4YmFmMGViNDRlNzQ5ZGJmNDkwYjM5MmUzYTUzNGVmNjEwMjI3NzExNDZjZGY5YWYxYTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFmNGZlMjA3YzY4MjkxOTZkYzkzZjMzMTcxYjlhYTM2Y2IzYTBiNmYzZjUwMWRmMTFmZDAwNjdiZTYxMDAzNTYifQ"
+          "version": "repo-lines-v1:sha256:7d107b4d95514da4580e6cb1713c4dd741ca03f2e85011a07788e1fe36999cd9:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4NDViZTViYmQzYTNiOTgxM2UzMzgyNzk5MzIxZmY5N2RiZDUyYjg4NDY5ZTBiYzM1ZjU3NjBmOGY5NzIxYTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlNjEyNDA2ZDE0ZWI0Zjc5NTdkNGY1NjE1OTBmYjFmNGYyMjkyNmQwMWZhZjc5MjViZTUwOGJhZjc2MGIxZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE2MzFiNmUyY2EwN2Q4YmFmMGViNDRlNzQ5ZGJmNDkwYjM5MmUzYTUzNGVmNjEwMjI3NzExNDZjZGY5YWYxYTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc1NTA5YTg5NzllZjUwNGQ0MzkxNDFjNmE0OTUyNDdiM2RlMDEwOTE3ZGE0YjYxZWRhOWIwYzc5MWYzNjY4M2QifQ"
         }
       ]
     },
@@ -143,8 +143,8 @@
       "statement": "CheckAdminAuth compares the base64-decoded Authorization header against APP_CLIENT_SECRET using crypto/subtle.ConstantTimeCompare, which closes the timing side-channel that a plain non-constant-time string comparison would leave open; on failure it writes a 401 JSON body and returns errAdminUnauthorized so callers perform no state mutation after an auth failure.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/auth.go#L21-L38",
-          "version": "repo-lines-v1:sha256:7ecbbd4e0f945d8ceb6ef92a6c806cc98634b9e46c7c18665c324cd2ceb1900d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkYTEyODNhOWRiNzAyMjc1YWUzMWZkZDBlMzRkMDIzNTMxYmM0NTIwNjE3ZWJiZDcxOWRiM2YyODRiMjE5MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ0ZDgzYjgwYzM3NjNhMWIzM2ZjNGM4ZDk3ZjliM2NiMTI1ODZhYTk5NDQ3MTM3ZmY1YmM1OTYzMjNiMmVjODgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIifQ=="
+          "resource": "repo://server/pkg/handler/auth.go#L18-L38",
+          "version": "repo-lines-v1:sha256:8a02579e0ee4ba30f05694e21573e2cdd853ada9b74fddf3bb3996fc7f649150:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkNDZiMTE3NzdjYzc1MDhmYTM4MjVmNTNiMjhkYzJhODU0ZDUyZWQ4MWM5MWNhM2RiZTdmMjFkZWM5MzNiOWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhiODMxYTNlMjI3ZjZjYzVmOGIwMGE1ZjUyMzE3MGJhMjZmZjI1MGUxNzFkMjY0ZDdlZGYxNGE1ODNkYTdlNjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -153,8 +153,8 @@
       "statement": "/v1/status is a public read-only health and migration endpoint that answers with a static Access-Control-Allow-Origin: * plus Vary: Origin, a constant rather than a reflection of the request Origin header, because reflecting an arbitrary origin is the classic CORS anti-pattern and is unnecessary when the endpoint is open to all origins; the exposed status and backupHost data is considered public.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/status.go#L7-L28",
-          "version": "repo-lines-v1:sha256:c51794d6b07f3deb1a52d71f056a69079608765b0827695d32d048e3a75858b5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjNTViMmViMzE4YzRhZTE3OTQxYmVjNjExMjQ3NjA2YWMxZTg1ZWYzZmIyMmJjNzNhMzZhM2E4MTRkZWZiZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNmNWM4MTI2OTkyYmRiZjM1MjQyOGM3ODE4N2RmZjQyM2FlMDAxNDc0MTJhYjM3NGJlYjYxYTk0NWQ1OGVkZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://server/pkg/handler/status.go#L9-L28",
+          "version": "repo-lines-v1:sha256:15f48c9217f5ee61b26afbe2251f9ec8f7ce1dbfe7dbbb7afddb97115189bc07:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3OTFhYzExNTYwYTExZTgzOGIyN2NmNTA0YTNhYzBjZDY0YWEyNDRjMzg4MTg4OTBlYzM2Y2RlMzhkMmQ3NjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEzNzZjOTgzZTg1NjIxZDAwNmRhNTc2YWMyNmMzZTkxZjY0ZDE5ZTQ0ZDhjODdmMjljMjhmOTcxYzNmZTFjNTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -163,8 +163,8 @@
       "statement": "When the WebSocket upgrade does not fully succeed (a handshake error, or the up-front peerMetadata rejection that already wrote a 400/413 with responseWritten=true) AddPeer never ran, so the hub holds no peer for this request and is empty; CreateHubByID and JoinOrCreateHubByID therefore pass a rollback to the shared finishUpgradeFailure epilogue that calls zh.RemoveHubById on that hub to prevent an unbounded empty-hub leak on memory storage. JoinOrCreateHubByID removes the hub only when this call created it, since a pre-existing hub may hold live peers, and when responseWritten is true the already-written 400/413 is returned as nil instead of being overwritten by a 500.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/create_hub_by_id.go#L8-L39",
-          "version": "repo-lines-v1:sha256:987c7492681e34c87df59ff2c7ede5a95021575420daff4e01a1264befb3c7b7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5MWY2Y2VhMDM3MmVhMmQyYWIyOTM0MjMzNjY5N2FlZjc2MzNkMzMwZGU2MzYxMDE3OTQ4Y2M1MGI5OGNhZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNmNWM4MTI2OTkyYmRiZjM1MjQyOGM3ODE4N2RmZjQyM2FlMDAxNDc0MTJhYjM3NGJlYjYxYTk0NWQ1OGVkZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUyYjE5MjJjZTExMzUyNGEzOWFkZGM5YzY3ZDBlNzBiZTFjNDdlNzNhODE1OTA0YjA3Y2RhZTc4YzU0NTg5YmEifQ"
+          "resource": "repo://server/pkg/handler/create_hub_by_id.go#L13-L42",
+          "version": "repo-lines-v1:sha256:946e33a72857e09f341cfbfcd5a4f0c3a763544d389aca22fa062a36c40f5200:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdiMmZjYTgyMDdlYTI0MGNhMjI4YmI5MzJmODkyZDdkOWM2ZGEwNzI1MjgxNWNlYTZjOTk1YjBlZTg5YThlNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY5MThmYzU1OWQzYmQ3NmE1MmU3YjVlMTA4ZGUwYTcxZWIzZWQ2NTIzOGFjZmYyZjkxMTM2OTJmNTNmMWY3OWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://server/pkg/handler/join_or_create_hub_by_id.go#L44-L51",
@@ -175,8 +175,8 @@
           "version": "repo-lines-v1:sha256:43d758688c30b670b79d6bb331c42c6d15b08ec7a165023a5a5949ed73437ce7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzYmY4NWM4NWU4YjBkMmY3MDRhOGIwNThhMWM0MThmNmNiMjAyNzkyOTJjODI1ZTA4ZWI5ZTI1MTM5ZWRkOGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3YjI3NmFkNjRlYmQ1OTU4ZDJhOTdhYWM4YzFhYjQ3ZTI4OTIxMjgyYzdmNGFhYjIyYjMxYjQzZWE2OGQ2NDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMyOGE5MDg1OTUxZmI3ZDlmODdhYzQ4MTFkMjA4MjZhZmQ4NzhjYWFhMWY3M2E1NDExOGJmOWUzZWY1YmQwMzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyOTY0MDc5YzNjNWM4MTUyMGVmMzNhMmI5ZDJlMTVhMWI4NGQ3MjgwZGI4NTkwZGNkNjU3NDdlM2UwMTJhNDAifQ"
         },
         {
-          "resource": "repo://server/pkg/handler/websocket.go#L247-L265",
-          "version": "repo-lines-v1:sha256:fe7da2a377544cb54499153052c34cf9b6ed514a1910d1f8c88e189cd02cb423:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkMWU3ZmIyZDY3ODA5NjhhMWExMDI1MGUxODdlODhjNmIxNjNjN2Y0NjdkZTBmNzgyMGRiYWZmYmEwYjdjZWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQzNmEwMTBkMjNmYmEwY2ZhNzVlZTdlZTA2ZTgwNzFmYmEyZTFiZmVhZjU5MzU0MWVlODFmYjA4ZjIzNjM0ZmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://server/pkg/handler/websocket.go#L247-L272",
+          "version": "repo-lines-v1:sha256:f9d87fe83a5f50f4051e93e3e6c5c7ced39b3bb743a16890b9f4250be88c5fef:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkMmNhY2YzZmYxNzk0YmE3ZWNiODVkYmE5YjQyMTQ3MTI2NzNmYmQwNWY5MGQzNGI3M2QzNjJlMjNhZmZkZWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxYWQ2NWNmNjhmOTc5YjE0NzViOTAzZWViYzI5NTFhYmU5OTg1MGZhM2UzODViMWQ3NTgzNmRmZjMyNGZkYWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -186,19 +186,19 @@
       "evidence": [
         {
           "resource": "repo://server/pkg/config/config.go#L39-L44",
-          "version": "repo-lines-v1:sha256:c67150ec03f4820a0b7ba2c5b06f20808e73f6697724b3b3563f23a030ad0237:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTUwNTZjNWRlNDRkOGYxOTQ2ZmNmNDk1MzA0MTQ0NDViMzU2OTg0OTZmMDQ0NmQzMmZiN2UzYmQ2MzRmZDlhNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTQ4NjMzMmM3ZGNiN2JiMGI2Mjc1OGY3MmExZjM1ZjMyN2RkMmVkYzhkZDVlNGY2OGUxNWFkYzA2YzZlMjY1YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2RlNGE5NTU3MmVjOGYzZDlmZTlhZGY2MDEyMDdjMDQ3MmZmMmM4ZTZiZWIwYTI2YjhiYjY5ZTkzYzEzNjYyOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTA2OGM5MTdjZTEwN2VmMjMzM2U2YjhiYmQ4MDBlMDZlMWE2MThjNmNhNmRjYjU4ZGVhZmI4MDhlMzIwZjRiMSJ9"
+          "version": "repo-lines-v1:sha256:7cf2433c16aefc27796a8b20b6e7363b9b437d502057f87cf18199c2320bd000:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWU5OTg4MTYyZGVkYjRhMjc3NTAwNDJkZTg5NjA4Zjc2NTk3MmNkOTA0MjA1ZmU5YzBkMmY1ZjQ0YTJhNzFmYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTk5ZGQ2MGE4MjQ2MmQyODhhOGNhZDU2ZjI5NGJjYjAzMjIxNmNkNzBhYTY1MGVmNWU3YTMyMTgyODc0NWFiNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTlhM2YzZWFiNDJjZmVhMTcxOTE5YjI2NTU1ZTJhMDZhMmJjYmI2ZTRhYzZhMmUyN2I0OWViYzU1YjY3ZTE0NyJ9"
         },
         {
           "resource": "repo://server/pkg/config/consts.go#L36-L46",
           "version": "repo-lines-v1:sha256:e33936044893c8739e0ffc7497fb4a14a01ab1394fcbcd52ab47edb580dfa691:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcyYzU5Mzc0M2VkNTM4M2I0YmJhNzQ5ZGEzNTRjNzY4ZGQ4YTFlNDRiM2Q3ZDI5MTBhMWNhMTNhMzk3ZmZiNjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmZWQyYzVjN2E4OTBjYjU1NzZmN2NmMGFkMDIyNzhmYjIzMTYxZjQ4ZWNmZGFmNDg3OGU3NTg2YTMxODRmOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVkMDA5OWJhZTdmM2EyOTk4N2I2NWJiOGY3OTMwOTY5MmI0ZjU1NDg2ZDhlNWY4MzkzZDBjYjM5MDg0NDViY2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZhZmJhMDUyN2MzOTUzYzRiNmUwZTViNTczOWJhODM2MTJmODA1M2JjZGM5NDY2NzMwMTkzY2QxZDU5MGI0MDgifQ"
         },
         {
-          "resource": "repo://server/pkg/handler/websocket.go#L107-L114",
-          "version": "repo-lines-v1:sha256:6533ef29a9af0375e34c5465db2791b8b810f986f38789298c38ba70d81efcce:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDQ1N2YzMTQyZTg3MWUyYTI3ODViZmViNzYwZmEwODcyOWUzZDU3OGU2OTY4YjM1ODBhZWUzYzMwYmUyZmU2NiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWYxMmMxOGJiM2UxOGFlODEzYjEzMTY2M2RkZTAxNDMwNzNiMmI1MjQ0Nzc0NDExNjUyNzE2NjhhMjE4Yjc0NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDQzNzMzNzk5ODI1YWI0YzA2N2QxNzQzYThiNDE2YzBkMDcwNjQ1MDljMWQ3MmM3M2QzZTllNTFhMjA5M2NkMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDRlODc4ODcyMjQwYWFkOTFjNjlhNGJiMTA4ZGU1ZGYwYTE4YWY4MjRjNjJkOWFiMDFlOTJlNmQzMDkxZjI4YSJ9"
+          "resource": "repo://server/pkg/handler/websocket.go#L119-L125",
+          "version": "repo-lines-v1:sha256:07a4210ae283693103ba14bac50cd72a8573aae0ff26e2649e9135679cf3ee04:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzQ1ODgwZjk2MGQwYjNiZGJhMzYzZGE0MTI0MmMyNzc5M2Q3NzFhYzNiMjc1ZjVjZDNhYjUzMzBmN2ZjZDUzOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDk0YjE4YTQ5Y2VmZjI1MWZlZjMzODJhMTcxZTJkNDYxNzEzYTg1YTk2MWUxNmQ3YWRmNjg0YjgyNDIyYzAzYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGFmMmQ2YWIxY2VkOTBkNjE0MzQ5NzQxMWI5MmI5OWEwZDdjYmVjMDNlZjBkMTQ4OWE4NWRhYjhhZTcxMGFkMyJ9"
         },
         {
-          "resource": "repo://server/pkg/handler/websocket.go#L32-L73",
-          "version": "repo-lines-v1:sha256:1c0318871909485439a85bb95f13735e78a5f6befb6ccb926eeff520d5aa8132:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlZGQxN2RjNmZjNWEyMWE4Yjg2YTFhYmMzZTcxNTdjYmQyNmM1ZjM1ZDlkYjljYWYwMzMzYzc4ZGI5MTM0NDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2OWFlMTNmYTJjZDliNGFmYzIwYTcyYjJlMjRkOTQwNzU3ZDk2NmY4MGNlZmQwZmJhYzZjNjZlM2NlMzQ0NzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1NzY4ODBhYTQ2MTVmMmI5ZTRjMWU1ZGEzODVjMDlhMDdlODg2N2M4NjNhZTIxN2MwNDY4ZWIyYmM3ZDYzZTYifQ"
+          "resource": "repo://server/pkg/handler/websocket.go#L22-L73",
+          "version": "repo-lines-v1:sha256:aef0c98a07405f75cced5b1373db82c43f3608d17cd3e7f00c538c9870d31456:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3MzdkMDMwYWI0NTAzOTFkMWExNzQ4Y2U5ODMxODQ3MjkyMTUwZDlmYmEzZDFkOWZjYzFmN2QxNjlmNDUzZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZhOTFlZDJlZDcwODk5Y2UwOTA2NWFjZDI3NDNhZWRiMTBiZTM1MzFkODk3ZTQ2OTNjODMxNzZiYmNjMTBkZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQxZmVhMzQyMWU1ZjM3MThjNjY5YzdiNWRiOWRiYzBkNDVjYjRjNTFkMDBhZmMzNzQxYjZjYjgzMDM5ZDMyNzIifQ"
         }
       ]
     },
@@ -207,16 +207,16 @@
       "statement": "Every user-chosen-hub-ID path (CreateStaticHub, CreateHubByID, JoinOrCreateHubByID) holds h.hubIdCrossModeMu across the shared claimHubForCreate/claimGetOrCreateHub helpers, which probe the sibling hub modes' storage and claim the ID under one lock, answering 409 when a sibling already holds the ID; generated IDs (random UUID, IP FNV hash) also take the lock, but their probe always misses so the guard is a no-op there.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/claim_hub_for_create.go#L13-L43",
-          "version": "repo-lines-v1:sha256:2976e2b93581e27c3093b88950dcda975c2a9ff63522558e7bf7a0f69bee0b80:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgxMWFhM2FlNmMxOTc1NmM5MDVhZWZiMTQ1OGZlYjg5YjM4MWFjODQ3MmYxMDM2ODZlNDAzZjJkYzMwYTBiZTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNmNWM4MTI2OTkyYmRiZjM1MjQyOGM3ODE4N2RmZjQyM2FlMDAxNDc0MTJhYjM3NGJlYjYxYTk0NWQ1OGVkZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://server/pkg/handler/claim_hub_for_create.go#L19-L43",
+          "version": "repo-lines-v1:sha256:a815783dc924d8784560c6d4c563f0ca8cfe4ca7ddcefb5b510f7728344b07cc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkMTMwNDk3NDJiOGY4YTk3ODJkY2FlYzNmZGZkYzM0MjE5OTdiZjIyNzI2OTc3MzUyOTUxZTQyMjYwYWMyYTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc4ODBlYWU4MGIwNjZkYjVjMTU1ZGQ1YjZmYmRiNzYyZjY1ODgyMzFkYzBkODgxMTkwN2VhYTdkNWIzZDUzYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://server/pkg/handler/handler.go#L110-L129",
-          "version": "repo-lines-v1:sha256:eb603d35be316e68c2f66b0be7ee5f9f24ad5799c574e54264e64085f7be1cfe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkODA1NWM1ZmI4YzU0NTZkOTVjYmQ4NGRhZWJiYWUyNGIyYjQ1NWRjMzI4NjMyOGJiYWJlMjYxYTc3NzkwMGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0NThlNWY0Mzc1YTdjYWU3NzczMzAyZDE4ZGNkZjhjNzBkZDMzMDViNDMwZjQzZjA0ZjU4OWI1NGUxYWViMTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVkZjE2YTYzZjE5ZjhjNTEyMTIwNTFhYzVjYmQ0YTc5N2JmNmY0MTdkMTQ5NTJjMzliZmFlMDc1ODViOTY0OWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2ZjAzOWRkMDYzNzA1NjA1ZTdmOTNmNGRhYzI1ZDlhYTUxYzAzNDU5MTk4NGY2NTdiMWYzYTNkYzZkNzI2NDYifQ"
+          "resource": "repo://server/pkg/handler/handler.go#L100-L123",
+          "version": "repo-lines-v1:sha256:2ef0889ea5949c2fd5de732e34c39bf632efb69a0bdecf0aacb65afe4eb50888:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkNmEyNGIxZDU5ZGY3MjdiYTViNmM0MzE4NTUyNzk4YzcyMjAzNzJkNmFiYmM1OWU3YzAwMjhjNTRjMWY5ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0NThlNWY0Mzc1YTdjYWU3NzczMzAyZDE4ZGNkZjhjNzBkZDMzMDViNDMwZjQzZjA0ZjU4OWI1NGUxYWViMTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM5ZDdjMWM2ZDc5NDk4MjkwNjg5YjYwZTU5ODg0MGQ0N2RmOTk3M2M1NzRlZTFlNGQyYmMzNmU3NGM4N2NjZTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2ZjAzOWRkMDYzNzA1NjA1ZTdmOTNmNGRhYzI1ZDlhYTUxYzAzNDU5MTk4NGY2NTdiMWYzYTNkYzZkNzI2NDYifQ"
         },
         {
           "resource": "repo://server/pkg/handler/validation.go#L124-L141",
-          "version": "repo-lines-v1:sha256:de1decf171d4a326b289fdbdd78a7861720a2382c4a623ba4a76daf89c159540:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5ODI2NjJiMjBkZDkxYWNmNmE5ZDNlMTUxMGM1YWVmMmEzNWFlNjc4NzU0ZjljZWU3ZTUzYzc5OTBjMjhkMDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiZTEzZTYxYTc5OWE5ZDJjNjAwY2MzMDMxZGRiYzFkMzhmOTlkMTdlZTlmMjU2NjMxNjQ5YTlhY2EwN2MzZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1MGM0ZjkxYTU3NGIzNjEyZjAwMWRkNWYyZWNmOGM5MDZkYjliNzFkMGUxMDQ2YzI5NzE1ZWY5ZDc4MzgyNWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkNzFjNjJlOWRjODBkNDRlMWYxOGM4MjBiMDljMjRlYTEyNmFkZGUzN2VhNDc4M2U3YTZhYzc4YzNjYzE4YzkifQ"
+          "version": "repo-lines-v1:sha256:965d3175f9f0c9a0e0211ef495823fd5b24cc9a77aa464d3fd119840ea4a1ee3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5ODI2NjJiMjBkZDkxYWNmNmE5ZDNlMTUxMGM1YWVmMmEzNWFlNjc4NzU0ZjljZWU3ZTUzYzc5OTBjMjhkMDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiZTEzZTYxYTc5OWE5ZDJjNjAwY2MzMDMxZGRiYzFkMzhmOTlkMTdlZTlmMjU2NjMxNjQ5YTlhY2EwN2MzZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1MGM0ZjkxYTU3NGIzNjEyZjAwMWRkNWYyZWNmOGM5MDZkYjliNzFkMGUxMDQ2YzI5NzE1ZWY5ZDc4MzgyNWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkNzFjNjJlOWRjODBkNDRlMWYxOGM4MjBiMDljMjRlYTEyNmFkZGUzN2VhNDc4M2U3YTZhYzc4YzNjYzE4YzkifQ"
         }
       ]
     },
@@ -229,8 +229,8 @@
           "version": "repo-lines-v1:sha256:96542a0f520a019fc7345dd5bb66c7f2ce7e82c14a99f41bfb46193655fe602b:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzIzNTlmY2VhMTcwOThiMDZhMDM2MWJkZDA0ZTk1ZmVjNTAxZjNiODVlMmVkMGZlNTNiYzRmMWViNDYyNzUzOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdjZGE4MmRhNjA2MjM4ZTA1ZTYyMzk5NTY5YzVlZTAzOTkzNDE5NjQ4YWU1ZDQzYTJiZjhjZDYzNDdmODI2MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTg2YzU5OWRjMjQzMWRjZTI0ZjcwNmNhNWNiYTFmMjgxZjU5NTk1NzFhZmEwNGMyMWI2ZjU1ZTkyYzUyMGQ4MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWVhYWZlYjdmNGNiYjVmY2JlNzY1ZDk0OWRhMjc3M2ZiOTMwNTA0M2IzZTM2OTg0MTY2MTk2ZTYyNWRlZGEzOCJ9"
         },
         {
-          "resource": "repo://server/pkg/handler/migrate.go#L100-L115",
-          "version": "repo-lines-v1:sha256:e880561d49c330c8f36522e69d69cf9ed1db4ebabd2ea31a4a9047c64cc498cd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyZTUzMzVkNmE0NmY2ODY5YWI2MDAxMzY5OGRhNDM4ZGUyOTcyZGM4OWE3MGZlNDI3MzVlYWExNGQzMjI1OTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE2MzFiNmUyY2EwN2Q4YmFmMGViNDRlNzQ5ZGJmNDkwYjM5MmUzYTUzNGVmNjEwMjI3NzExNDZjZGY5YWYxYTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFjZWEwODg1YTg1YjM1YzE2NWI4ZTI5MWYwNmE2YTRjN2MxNjg4ZTk0NDdiNzIyNzQxMTQ2YmY0MDc0MjEzMzUifQ"
+          "resource": "repo://server/pkg/handler/migrate.go#L97-L112",
+          "version": "repo-lines-v1:sha256:6be30ae6fda418d4fc4ce71c55dd39dc07e16c77e3cc84da9cf1696644cfb0d9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyZTUzMzVkNmE0NmY2ODY5YWI2MDAxMzY5OGRhNDM4ZGUyOTcyZGM4OWE3MGZlNDI3MzVlYWExNGQzMjI1OTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE2MzFiNmUyY2EwN2Q4YmFmMGViNDRlNzQ5ZGJmNDkwYjM5MmUzYTUzNGVmNjEwMjI3NzExNDZjZGY5YWYxYTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFjZWEwODg1YTg1YjM1YzE2NWI4ZTI5MWYwNmE2YTRjN2MxNjg4ZTk0NDdiNzIyNzQxMTQ2YmY0MDc0MjEzMzUifQ"
         },
         {
           "resource": "repo://server/pkg/handler/status.go#L23-L25",
@@ -241,6 +241,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-20T15:09:12.940Z"
+    "at": "2026-11-21T16:26:45.303Z"
   }
 }

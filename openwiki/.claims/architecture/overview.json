@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e9db173c388e72be8c0b253d786fe2b53fa5d7f314a263fe701e47e187481398",
+  "pageVersion": "sha256:955078203a2f4d5830cb4d98a814b223c2de8ce0e5ea7716da8d6f5763ac3a47",
   "claims": [
     {
       "id": "claim_937b0d08bd3849b4b3ddd56a5664ca43",
@@ -85,8 +85,8 @@
       "statement": "Hub creation on the Go server is performed through the atomic CreateHubIfAbsent primitive on zerohub.ZeroHub (run under a cross-mode collision lock), so concurrent create requests for the same hub ID collapse to a single hub: the race winner creates and the rest receive ErrHubAlreadyExists (surfaced as HTTP 409) instead of orphaning a hub.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/claim_hub_for_create.go#L17-L41",
-          "version": "repo-lines-v1:sha256:0df50966e728cd57dee498be7041584b96ca0552697e3f1393b4bfc57eacbf54:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiOGYyYzQ3NjI5ZDk4NGMyNDllZTc4YTc4OGMwZWFmZWFlODBhNGQ1Njg5NzkzZGY1OTFiNjk0YWE2YTAwZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkZDRhMWY1NTMwNzMxYzQzNmYzNmFkMWZjZDMwMDFhMDI3MzVjNThkYTYwMDllMTYzMDQ2YTMwODMzYWNmZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4OWIwODJmZTUwMmNjYzllMjhiOTg4OGNkNzg4NWExMTk5ODgyMWMwMjQ2NmY2NDc2YWQwZjk3ZTRlNTJhMWUifQ"
+          "resource": "repo://server/pkg/handler/claim_hub_for_create.go#L19-L43",
+          "version": "repo-lines-v1:sha256:a815783dc924d8784560c6d4c563f0ca8cfe4ca7ddcefb5b510f7728344b07cc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkMTMwNDk3NDJiOGY4YTk3ODJkY2FlYzNmZGZkYzM0MjE5OTdiZjIyNzI2OTc3MzUyOTUxZTQyMjYwYWMyYTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc4ODBlYWU4MGIwNjZkYjVjMTU1ZGQ1YjZmYmRiNzYyZjY1ODgyMzFkYzBkODgxMTkwN2VhYTdkNWIzZDUzYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://server/pkg/zerohub/zerohub.go#L88-L104",
@@ -99,18 +99,18 @@
       "statement": "The Go signaling server validates hub-endpoint query parameters before the WebSocket handshake via the shared validateHubCreateParams helper: a missing/empty/whitespace id or non-JSON hubMetadata is rejected with HTTP 400 and an oversized id/hubMetadata with 413; peerMetadata is size- and shape-checked at Upgrade. An empty-id request can no longer create a junk hub under the empty-string key and oversized or malformed metadata is not stored or re-broadcast.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/validation.go#L79-L113",
-          "version": "repo-lines-v1:sha256:fe3a5f349af90f44bdbb749e4d8d78828ef7ca2c30dce2f7d1285982907cced2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzZmRkOTQyMWQ2NjQ2YTI2YzFhNmEyZmRlMmVlNWVlNGE0ZWQ2YTg5MDkxZWRiMTliM2JlMWE2NDA2ZjVkOTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0YzI0NWI2ODUwOTEzOWE4MmViMDJlZjBlNTdlZGY4ZjU4OGFjYmJmZDg5Nzc0NmE3MWYxNmJjZDBjNDBjNGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwNGYxOTFhY2UxM2JlNWU3Yjk5ZTgyNWQ0MTc3MDBhZTg1MTJmNzRkODUxYTQyNWI2YjE1ZDRlZmI2MGM2OGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjZjFjNjUwMzI4ZjcyYmM2MGIwZjUwMWU2ODVkYzdjODYwYjU3ZGU4M2JlM2ExNDI5NmFhY2I4MGJjNjAzOTcifQ"
+          "resource": "repo://server/pkg/handler/validation.go#L79-L121",
+          "version": "repo-lines-v1:sha256:82ca2c2700b4d7a041cf1922b64667008609621876bcc370d2284c13c9b78cdd:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzZmRkOTQyMWQ2NjQ2YTI2YzFhNmEyZmRlMmVlNWVlNGE0ZWQ2YTg5MDkxZWRiMTliM2JlMWE2NDA2ZjVkOTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwNGYxOTFhY2UxM2JlNWU3Yjk5ZTgyNWQ0MTc3MDBhZTg1MTJmNzRkODUxYTQyNWI2YjE1ZDRlZmI2MGM2OGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0ZDkwNjc1ZDlmM2ZiNjJjZTEyMzFmMTY3ODU5MmNlNDY5N2E3NjcxODYyNzEwMWMxY2ZiMWJjZjAxODgzYmYifQ"
         },
         {
-          "resource": "repo://server/pkg/handler/websocket.go#L80-L105",
-          "version": "repo-lines-v1:sha256:ce602dd435b9d480f7b710706f3c4f8ea0f4c2f4633a8f4ad38168add19a7f08:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMTcyMTkzNTU1YmExZjAwMjhhNzllZTZhZjc2N2UwNzUxZTdlYTk2OWQ1NDYzZTE1MDhiYzJlNWJkNmI5OWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiZGMwNGY2Mzc4NGNlYzM0ZWM3MTk2ODYyZGQwYTIwZGYxNjgyNzAxNGM4Mzg4NTUxYTA4OTUzMzk1OTI0MWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5NGIxOGE0OWNlZmYyNTFmZWYzMzgyYTE3MWUyZDQ2MTcxM2E4NWE5NjFlMTZkN2FkZjY4NGI4MjQyMmMwM2MifQ"
+          "resource": "repo://server/pkg/handler/websocket.go#L85-L115",
+          "version": "repo-lines-v1:sha256:10a7ab09d26a79af4586a916054d0f406ae0b78da7d3ae360847921208e3fc40:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiNWRiZWIyMTE2NTE4MmUyMzhiYmFjOGU1NDE1NjdjNmZkN2Y1NzA3NGMxNjRhZTk2NjY0NDJmOTYwNmI2NDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3Y2RhODJkYTYwNjIzOGUwNWU2MjM5OTU2OWM1ZWUwMzk5MzQxOTY0OGFlNWQ0M2EyYmY4Y2Q2MzQ3ZjgyNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIzNjJiMGJmNjFlMjQyMGVkYmI2ZTZkMzUyYzkyMDQ2OWIwNzBiYjQ3ZDYxM2I1NzEzMDZkZDFmMDFmNmU1Y2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5NGIxOGE0OWNlZmYyNTFmZWYzMzgyYTE3MWUyZDQ2MTcxM2E4NWE5NjFlMTZkN2FkZjY4NGI4MjQyMmMwM2MifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-20T15:09:12.940Z"
+    "at": "2026-11-21T16:26:45.303Z"
   }
 }
