@@ -14,8 +14,6 @@ type Environment string
 const (
 	// DevelopEnvironment is the development environment.
 	DevelopEnvironment Environment = "dev"
-	// ProductionEnvironment is the production environment.
-	ProductionEnvironment Environment = "prod"
 )
 
 // Config represents configurations.
