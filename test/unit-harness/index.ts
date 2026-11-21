@@ -24,7 +24,6 @@ import {
   Peer,
   PeerStatus,
 } from "../../client/src/index";
-import { getWS } from "../../client/src/utils";
 import { ClientMessage } from "../../client/src/proto/zerohub/v1/client_message";
 import { ServerMessage } from "../../client/src/proto/zerohub/v1/server_message";
 
@@ -386,11 +385,6 @@ function zhFakeState(): {
 }
 
 const ZeroHubUnitHarness = {
-  /** Pure helper under test: return the WS URL for a host + tls flag. */
-  wsUrl(host: string, tls: boolean): string {
-    return getWS(host, tls);
-  },
-
   /** Create a client with a no-op topology; returns an opaque numeric id. */
   createClient(): number {
     const id = ++nextClientId;
