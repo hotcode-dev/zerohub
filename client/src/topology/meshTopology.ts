@@ -2,7 +2,11 @@ import { Peer } from "../peer";
 import { PeerStatus } from "../types";
 import { ZeroHubClient } from "../zeroHub";
 import { Topology } from ".";
-import { setupDataChannel, setupMediaChannel } from "./peerSetup";
+import {
+  sendOfferToPeer,
+  setupDataChannel,
+  setupMediaChannel,
+} from "./peerSetup";
 
 /**
  * MeshTopology implements a full mesh WebRTC topology.
@@ -23,21 +27,6 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
 
   init(zeroHub: ZeroHubClient<PeerMetadata, HubMetadata>) {
     this.zeroHub = zeroHub;
-  }
-
-  /**
-   * Send an offer to a peer and log the error if it fails.
-   * `context` describes the failure situation in the log message.
-   */
-  private sendOfferToPeer(peer: Peer<PeerMetadata>, context: string) {
-    if (!this.zeroHub) {
-      return;
-    }
-    this.zeroHub
-      .sendOffer(peer.id, this.zeroHub.config.rtcOfferOptions)
-      .catch((err) => {
-        this.zeroHub?.logger.error(context, peer.id, err);
-      });
   }
 
   onPeerStatusChange(peer: Peer<PeerMetadata>) {
@@ -65,7 +54,7 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
 
         // offer should send after create data channel and add track
         if (isOfferer) {
-          this.sendOfferToPeer(peer, "failed to send offer to peer");
+          sendOfferToPeer(this.zeroHub, peer, "failed to send offer to peer");
         }
         break;
       case PeerStatus.ZeroHubDisconnected:
@@ -87,7 +76,11 @@ export class MeshTopology<PeerMetadata = object, HubMetadata = object>
         // creating duplicate channels with the same labels would hand the
         // application two channels named "0".
         if (isOfferer) {
-          this.sendOfferToPeer(peer, "failed to re-send offer to dropped peer");
+          sendOfferToPeer(
+            this.zeroHub,
+            peer,
+            "failed to re-send offer to dropped peer"
+          );
         }
         // The answerer does nothing here: it recovers when the offerer's
         // new offer arrives and is auto-answered through the existing

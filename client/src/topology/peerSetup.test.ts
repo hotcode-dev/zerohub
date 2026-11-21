@@ -1,7 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, type Mock } from "vitest";
 import { type Config } from "../types";
 import type { ZeroHubLogger } from "../logger";
-import { setupDataChannel, setupMediaChannel } from "./peerSetup";
+import type { ZeroHubClient } from "../zeroHub";
+import {
+  sendOfferToPeer,
+  setupDataChannel,
+  setupMediaChannel,
+} from "./peerSetup";
 import { FakeLogger, FakeRTCDataChannel, makePeer } from "./test/fakes";
 
 /**
@@ -320,5 +325,72 @@ describe("setupMediaChannel", () => {
     expect(rtc.ontrack).toBeDefined();
     rtc.ontrack?.({} as never);
     expect(onTrack).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("sendOfferToPeer", () => {
+  const rtcOfferOptions = { offerToReceiveAudio: false };
+
+  /**
+   * A minimal stand-in exposing exactly the members `sendOfferToPeer`
+   * touches. Typed with its natural inferred shape (not `ZeroHubClient`)
+   * so the `expect(zh.sendOffer)` assertions don't trip the unbound-method
+   * rule; the cast to `ZeroHubClient` happens only at the call sites.
+   */
+  function makeFakeZeroHub(
+    overrides: { sendOffer?: Mock; logger?: FakeLogger } = {}
+  ) {
+    return {
+      config: { rtcOfferOptions },
+      logger: overrides.logger ?? new FakeLogger(),
+      sendOffer: overrides.sendOffer ?? vi.fn(() => Promise.resolve()),
+    };
+  }
+
+  it("is a no-op when zeroHub is undefined", () => {
+    const { peer } = makePeer("7");
+    expect(() =>
+      sendOfferToPeer(undefined, peer, "failed to send offer")
+    ).not.toThrow();
+  });
+
+  it("sends the offer with the peer id and the client's rtcOfferOptions", () => {
+    const zh = makeFakeZeroHub();
+    const { peer } = makePeer("7");
+
+    sendOfferToPeer(
+      zh as unknown as ZeroHubClient,
+      peer,
+      "failed to send offer to peer"
+    );
+
+    expect(zh.sendOffer).toHaveBeenCalledTimes(1);
+    expect(zh.sendOffer).toHaveBeenCalledWith("7", rtcOfferOptions);
+    expect(zh.logger.error).not.toHaveBeenCalled();
+  });
+
+  it("logs a rejected offer via logger.error(context, peerId, err) and does not throw", async () => {
+    const logger = new FakeLogger();
+    const zh = makeFakeZeroHub({
+      logger,
+      sendOffer: vi.fn(() => Promise.reject(new Error("ws closed"))),
+    });
+    const { peer } = makePeer("7");
+
+    expect(() =>
+      sendOfferToPeer(
+        zh as unknown as ZeroHubClient,
+        peer,
+        "failed to re-send offer to dropped peer"
+      )
+    ).not.toThrow();
+    // Flush the rejection so the .catch handler runs.
+    await Promise.resolve();
+    expect(zh.sendOffer).toHaveBeenCalledTimes(1);
+    expect(logger.error).toHaveBeenCalledWith(
+      "failed to re-send offer to dropped peer",
+      "7",
+      expect.anything()
+    );
   });
 });
