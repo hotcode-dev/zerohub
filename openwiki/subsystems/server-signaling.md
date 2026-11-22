@@ -45,10 +45,10 @@ sources:
     resource: repo://server/pkg/storage/gache.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-11-22T02:25:29.470Z" }
+generated: { by: "hermes", at: "2026-11-22T15:12:07.899Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-22T02:25:29.470Z
+    at: 2026-11-22T15:12:07.899Z
 ---
 
 
@@ -225,10 +225,14 @@ own budget.
 Before any WebSocket upgrade the handler rejects malformed query params
 with `400`/`413` (once upgraded, no HTTP status can be sent):
 
-- **Hub ID** — `validHubId` requires a non-empty, non-whitespace `id`; a
-  missing/empty ID is rejected up front instead of silently creating a junk
-  hub under the empty-string key. The check is a no-op for server-generated
-  IDs (UUID for random hubs, FNV-1a hash for IP hubs).
+- **Hub ID** — the shared `validateHubIdParam` helper runs the ordered id
+  checks (empty/whitespace `id` → 400, oversized `id` → 413) on every hub
+  endpoint: it is embedded in `validateHubCreateParams` for the
+  create/join-or-create paths and called directly by the read/join paths
+  (`JoinHub`, `GetHub`). A missing/empty ID is rejected up front instead of
+  silently creating or joining a junk hub under the empty-string key. The
+  checks are no-ops for server-generated IDs (UUID for random hubs, FNV-1a
+  hash for IP hubs).
 - **Metadata JSON** — `validJSONQueryParam` rejects a `hubMetadata` /
   `peerMetadata` query param that is not valid JSON; `validMetadataSize`
   answers an oversized `id`/`hubMetadata`/`peerMetadata` with 413 before the

@@ -16,10 +16,10 @@ sources:
     resource: repo://client/src/utils.ts
   - id: openwiki-source-718b618612c033c4f36b3a45
     resource: repo://client/src/zeroHub.ts
-generated: { by: "hermes", at: "2026-11-22T02:25:29.470Z" }
+generated: { by: "hermes", at: "2026-11-22T15:12:07.899Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-22T02:25:29.470Z
+    at: 2026-11-22T15:12:07.899Z
 ---
 
 # TypeScript Client SDK
@@ -246,12 +246,13 @@ starting at `reconnectBaseBackoffMs` (default 250 ms, doubling per attempt via
 
 1. Sets `isDisconnected = true`.
 2. Cancels any queued same-host retry timer and resets the sweep round
-   (`clearReconnectRetryState()` + `reconnectRound = 0`), clears all pending
-   `iceTimeouts`, and clears all pending `webRtcRecoveryTimeouts`, so no timer
-   can fire after teardown and dial a stray socket or re-negotiate a dead peer.
-   (`isInitialConnection` is deliberately *not* reset: a reused client has
-   already connected once, so a later dial failure is treated as a reconnect,
-   not an initial failover.)
+   (`clearReconnectRetryState()` + `reconnectRound = 0`). Pending per-peer
+   `iceTimeouts` / `webRtcRecoveryTimeouts` are not bulk-cleared here — they
+   are cancelled individually by the `removePeer()` teardown in step 4, so no
+   timer can fire after teardown and dial a stray socket or re-negotiate a
+   dead peer. (`isInitialConnection` is deliberately *not* reset: a reused
+   client has already connected once, so a later dial failure is treated as a
+   reconnect, not an initial failover.)
 3. Calls the shared `closeActiveSocket()` helper, which detaches all WebSocket
    handlers (`onclose`/`onerror`/`onmessage`/`onopen`) so the close does
    **not** trigger auto-reconnect, then closes the socket with code 1000.

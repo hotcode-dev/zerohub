@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:61ca8dcb620ddfd5405914f99abbeae013d9d86739020e571c3aec956e11d00f",
+  "pageVersion": "sha256:5c2aabe5d4c336cc1ee7c08f80f8ffd383cc09a7f14abb9f1b8004863aa41cd1",
   "claims": [
     {
       "id": "claim_937b0d08bd3849b4b3ddd56a5664ca43",
@@ -96,11 +96,11 @@
     },
     {
       "id": "claim_2c43b5311acc47ee9d484447edca9b51",
-      "statement": "The Go signaling server validates hub-endpoint query parameters before the WebSocket handshake via the shared validateHubCreateParams helper: a missing/empty/whitespace id or non-JSON hubMetadata is rejected with HTTP 400 and an oversized id/hubMetadata with 413; peerMetadata is size- and shape-checked at Upgrade. An empty-id request can no longer create a junk hub under the empty-string key and oversized or malformed metadata is not stored or re-broadcast.",
+      "statement": "The Go signaling server validates hub-endpoint query parameters before the WebSocket handshake via two shared helpers in validation.go: validateHubIdParam (used directly by the read/join paths JoinHub and GetHub, and embedded by validateHubCreateParams for every create/join-or-create endpoint) rejects an empty/whitespace id with 400 and an oversized id with 413; validateHubCreateParams additionally rejects an oversized hubMetadata with 413 and a non-JSON hubMetadata with 400; peerMetadata is size- and shape-checked at Upgrade. An empty-id request can no longer create a junk hub under the empty-string key and oversized or malformed metadata is not stored or re-broadcast.",
       "evidence": [
         {
-          "resource": "repo://server/pkg/handler/validation.go#L79-L121",
-          "version": "repo-lines-v1:sha256:82ca2c2700b4d7a041cf1922b64667008609621876bcc370d2284c13c9b78cdd:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzZmRkOTQyMWQ2NjQ2YTI2YzFhNmEyZmRlMmVlNWVlNGE0ZWQ2YTg5MDkxZWRiMTliM2JlMWE2NDA2ZjVkOTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwNGYxOTFhY2UxM2JlNWU3Yjk5ZTgyNWQ0MTc3MDBhZTg1MTJmNzRkODUxYTQyNWI2YjE1ZDRlZmI2MGM2OGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0ZDkwNjc1ZDlmM2ZiNjJjZTEyMzFmMTY3ODU5MmNlNDY5N2E3NjcxODYyNzEwMWMxY2ZiMWJjZjAxODgzYmYifQ"
+          "resource": "repo://server/pkg/handler/validation.go#L79-L135",
+          "version": "repo-lines-v1:sha256:8ce53682bb308ca53bb9f0c06ae072bfeb4b19b38b61bfe788e21abc222c10ba:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUyN2Y1NGFiMzEyMWI3YjJhMTI4NjcyZWZmZTg2ODczNjY2NTAzNWJlOWQ1N2JiMzE2MzNhNzdkZWQ1NWI2MzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwNGYxOTFhY2UxM2JlNWU3Yjk5ZTgyNWQ0MTc3MDBhZTg1MTJmNzRkODUxYTQyNWI2YjE1ZDRlZmI2MGM2OGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0ZDkwNjc1ZDlmM2ZiNjJjZTEyMzFmMTY3ODU5MmNlNDY5N2E3NjcxODYyNzEwMWMxY2ZiMWJjZjAxODgzYmYifQ"
         },
         {
           "resource": "repo://server/pkg/handler/websocket.go#L85-L115",
@@ -111,6 +111,6 @@
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-22T02:25:29.470Z"
+    "at": "2026-11-22T15:12:07.899Z"
   }
 }

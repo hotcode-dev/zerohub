@@ -5,7 +5,7 @@ description: End-to-end explanation of how ZeroHub's Go signaling server, TypeSc
 tags: [architecture, webrtc, signaling, server, client, protobuf]
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-22T02:25:29.470Z
+    at: 2026-11-22T15:12:07.899Z
 sources:
   - id: openwiki-source-df0d81c76704b851d02513e1
     resource: repo://client/src/const.ts
@@ -29,7 +29,7 @@ sources:
     resource: repo://server/pkg/storage/storage.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-11-21T16:26:45.303Z" }
+generated: { by: "hermes", at: "2026-11-22T15:12:07.899Z" }
 ---
 
 # Architecture Overview
@@ -92,10 +92,12 @@ each opening a WebSocket to a mode-typed path
 and `hubMetadata` as query parameters. (Static hubs
 are additionally created out-of-band by an admin over plain HTTP at
 `/v1/static-hubs/create` — a JSON response, no WebSocket upgrade.) The handler
-authenticates where needed and validates the query params up front via the
-shared `validateHubCreateParams` helper — an empty/whitespace `id` or non-JSON
-metadata is rejected with `400`, an oversized param with `413` — before the
-handshake. It then resolves or creates the hub on the right `ZeroHub` instance
+authenticates where needed and validates the query params up front via two
+shared helpers — `validateHubIdParam` (empty/whitespace `id` → `400`, oversized
+`id` → `413`), used directly by the read/join paths (`JoinHub`, `GetHub`) and
+embedded in `validateHubCreateParams`, which additionally rejects an oversized
+or non-JSON `hubMetadata` with `413`/`400` on every create/join-or-create
+path — before the handshake. It then resolves or creates the hub on the right `ZeroHub` instance
 and upgrades the HTTP connection to a WebSocket. Creates go through the atomic
 `CreateHubIfAbsent` primitive under a cross-mode collision lock, so concurrent
 creates of the same ID collapse to a single hub (race winners create, the rest
