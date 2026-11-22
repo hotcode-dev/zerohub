@@ -653,10 +653,6 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     //    still holds.
     const isLastConfigured = this.hostIndex >= this.hosts.length - 1;
     if (this.inConfiguredHosts && !isLastConfigured) {
-      if (this.isDisconnected) {
-        this.logger.log("ZeroHub was disconnected during reconnect, aborting");
-        return;
-      }
       this.hostIndex = this.hostIndex + 1;
       const nextHost = this.hosts[this.hostIndex];
       this.logger.warn(
@@ -688,10 +684,6 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     const isWrapCandidate =
       !this.inConfiguredHosts || (isLastConfigured && this.hosts.length > 1);
     if (isWrapCandidate && this.reconnectRound < maxRounds) {
-      if (this.isDisconnected) {
-        this.logger.log("ZeroHub was disconnected during reconnect, aborting");
-        return;
-      }
       this.logger.warn(
         `ZeroHub \`${this.host}\` retry budget exhausted, wrapping to the first host \`${this.hosts[0]}\` (round ${this.reconnectRound + 1}/${maxRounds})`
       );
