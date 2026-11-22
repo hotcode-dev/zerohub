@@ -19,6 +19,8 @@ sources:
     resource: repo://server/pkg/handler/create_static_hub.go
   - id: openwiki-source-e27a23c64f72b7d3d77630c6
     resource: repo://server/pkg/handler/handler.go
+  - id: openwiki-source-3c52325a8fc10ab26c610646
+    resource: repo://server/pkg/handler/join_hub.go
   - id: openwiki-source-9df2276596bc3c7c9f0676fd
     resource: repo://server/pkg/handler/join_or_create_hub_by_id.go
   - id: openwiki-source-260d31194d7a0cb2a0aa776c
@@ -43,10 +45,10 @@ sources:
     resource: repo://server/pkg/storage/gache.go
   - id: openwiki-source-0eb2a9b2acf717d5c99e9894
     resource: repo://server/pkg/zerohub/zerohub.go
-generated: { by: "hermes", at: "2026-11-21T16:26:45.303Z" }
+generated: { by: "hermes", at: "2026-11-22T02:25:29.470Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-21T16:26:45.303Z
+    at: 2026-11-22T02:25:29.470Z
 ---
 
 
@@ -93,6 +95,7 @@ admin endpoints would otherwise be open to unauthenticated requests.
 | `/v1/random-hubs/get` | `GetHub` | random | metadata only |
 | `/v1/random-hubs/join` | `JoinHub` | random | |
 | `/v1/ip-hubs/join-or-create` | `JoinOrCreateHubIP` | IP | hub ID = FNV-1a hash of the client IP |
+| `/v1/ip-hubs/join` | `JoinHub` | IP | join an existing IP hub by its server-generated numeric id |
 
 Unknown paths return 404; other handler errors return 503 — **except**
 `errAdminUnauthorized`, which `CheckAdminAuth` has already rendered as a 401

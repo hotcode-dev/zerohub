@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9d310c510b156c3fec1b35536862fb9edf8b2da2a0b57caa112c2107ab13b216",
+  "pageVersion": "sha256:44caeed2e28842a10316765e3ec940540ff280ef40325b6d9b412004e0ca0c07",
   "claims": [
     {
       "id": "claim_1d82fd64055a4062925029c4ae4e6575",
@@ -237,10 +237,24 @@
           "version": "repo-lines-v1:sha256:276b85bd8f3604af11c17b3f21fcc42f1b827c863e89e685640a3bdbed521764:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjJlZTQxNTgzNzRiNzcyNTliYzg3MTlhZTgxNDUyZTNlNTQ1ZDEyZWNiNzM0Y2M4NDIxNGRhNjliMDBiNDFmZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdjZGE4MmRhNjA2MjM4ZTA1ZTYyMzk5NTY5YzVlZTAzOTkzNDE5NjQ4YWU1ZDQzYTJiZjhjZDYzNDdmODI2MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODM5YmMxYzYzNzk3ZWU5OTc3OGU5NTJkMjc3ZWNiOGFjNmZmMTMzOGIwNTM4ZmQxZDlhMmU4YTZkNmVkMGE1MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGE4ZjEzZGRhZGVmNjgzM2Y5ODhjZThlYTgxNDFkNGNiYTg0OWIzMWJjMTYzNTE2YjM5YjUxNmQyNTg5ZTg5ZCJ9"
         }
       ]
+    },
+    {
+      "id": "claim_b2bde20f30c24f20b415a02748201855",
+      "statement": "The /v1/ip-hubs/join route dispatches to JoinHub on the IP ZeroHub instance so a peer can join an existing IP-keyed hub by its server-generated numeric id (the FNV-1a-derived id published in hubInfo by join-or-create); JoinHub rejects a missing/empty id with 400 and an oversized id with 413, returns 404 when the hub does not exist, forwards the request to the backup host while migrating, and upgrades the WebSocket on success.",
+      "evidence": [
+        {
+          "resource": "repo://server/pkg/handler/handler.go#L259-L263",
+          "version": "repo-lines-v1:sha256:ba45ba20e379d394586a56a9fa93b6d76eae3e84e44749782f93d3253c723aee:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjQ2YzQxM2VlOTEwMjgyMjkwNWUzNzJlMGM4NjMxZmI3OTZlN2Y3NmE5OTZhYWQ2MDVhYTJiM2JjMmJjNjEzYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMGU1ZjJlYzZmM2ZiMTkwZmY1MmJjMDVmZDQwMzU4NDkxOGRmNGY2NjcyZDQ4YjY3OTUzOTRmYjFlYWFiNzIxNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjQ3OGY1MzQ2MDNhYzAyZTUzNDVmZjE4MWM1NzdlNWM4ODU1YWRhNGI1MjVjZjVlZjM5YmYzYzllMWEyZTIxZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTRiZmM5ZTgxYTYwMDAzNDJjM2JlMDc5NzlhNDM3N2Q4OWYxM2NmY2NlNTMwYTU0NjYxY2JhN2M5NGE3ZjNlMyJ9"
+        },
+        {
+          "resource": "repo://server/pkg/handler/join_hub.go#L10-L39",
+          "version": "repo-lines-v1:sha256:ae0fa71dbcbfa4fdcb477cf696b0822a17b8b329c11428e9c75042de84ab83ee:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMDU1MGY0YjZmYmYxZDc5YzJlMTE0YjAyMmZmOGRiOGUxNGVhN2M1YzgxMjhiYWQ0NGNhODc3MGU0OTVmZGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIyNGJjNTVmMjY4MTE1NDY3ZjhhMGFmMDA5NjBkNDg2MjMyNzc5MmU3MGE5YzIyNWI1MGQ3Mzg4NzFlM2JkOWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-21T16:26:45.303Z"
+    "at": "2026-11-22T02:25:29.470Z"
   }
 }
