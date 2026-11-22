@@ -76,6 +76,25 @@ func (h *Handler) rejectInvalidJSONParam(ctx *fasthttp.RequestCtx, param string)
 		map[string]string{"error": "invalid " + param + " query parameter: must be JSON"})
 }
 
+// validateHubIdParam runs the ordered id validation shared by the create
+// path (validateHubCreateParams) and the read/join paths (JoinHub, GetHub):
+// empty/whitespace id (400), then oversized id (413). It returns true
+// (having written the 4xx rejection) when a check fails so the caller must
+// stop; false when valid. Each rejection goes through the shared reject*
+// helpers, which write the response and return nil so the caller's 503
+// fallback in Serve cannot overwrite the written body.
+func (h *Handler) validateHubIdParam(ctx *fasthttp.RequestCtx, hubId string) bool {
+	if !validHubId(hubId) {
+		_ = h.rejectInvalidHubIdParam(ctx)
+		return true
+	}
+	if !validMetadataSize(hubId, config.MaxMetadataSize) {
+		_ = h.rejectOversizedParam(ctx, "id", config.MaxMetadataSize)
+		return true
+	}
+	return false
+}
+
 // validateHubCreateParams runs the ordered hub-parameter validation shared
 // by every create / join-or-create endpoint (static + random creates,
 // static + IP join-or-create, and the admin permanent create): empty/
@@ -101,12 +120,7 @@ func (h *Handler) rejectInvalidJSONParam(ctx *fasthttp.RequestCtx, param string)
 // oversized blob with 413 without running json.Valid on a large payload —
 // the cheaper path, and the real DoS guard.
 func (h *Handler) validateHubCreateParams(ctx *fasthttp.RequestCtx, hubId string) bool {
-	if !validHubId(hubId) {
-		_ = h.rejectInvalidHubIdParam(ctx)
-		return true
-	}
-	if !validMetadataSize(hubId, config.MaxMetadataSize) {
-		_ = h.rejectOversizedParam(ctx, "id", config.MaxMetadataSize)
+	if h.validateHubIdParam(ctx, hubId) {
 		return true
 	}
 	if !validMetadataSize(string(ctx.QueryArgs().Peek("hubMetadata")), config.MaxMetadataSize) {
