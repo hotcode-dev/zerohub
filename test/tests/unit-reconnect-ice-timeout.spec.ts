@@ -14,7 +14,8 @@ import {
  * Before the fix, `connectToZeroHub()` unconditionally reset
  * `this.iceTimeouts = {}`, ORPHANING any timer armed on the previous
  * socket: the handle was no longer reachable, so neither `disconnect()`
- * (which clears `this.iceTimeouts`) nor a re-armed
+ * (which clears `this.iceTimeouts` via the per-peer `removePeer` teardown)
+ * nor a re-armed
  * `armSendOnIceReady` (which clears the prior handle for the peer) could
  * cancel it. Two observable defects followed:
  *
