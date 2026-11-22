@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hotcode-dev/zerohub/pkg/config"
 	hub "github.com/hotcode-dev/zerohub/pkg/hub"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/valyala/fasthttp"
@@ -20,6 +21,65 @@ func checkInvalidHubIdResponse(t *testing.T, ctx *fasthttp.RequestCtx, label str
 	if body := string(ctx.Response.Body()); !strings.Contains(body, "id query parameter is required") {
 		t.Fatalf("%s: body = %q, want 'id query parameter is required' error", label, body)
 	}
+}
+
+// TestValidateHubIdParam pins the shared id-param guard used by the create
+// path (validateHubCreateParams) and the read/join paths (JoinHub, GetHub):
+// empty/whitespace id -> 400, oversized id -> 413, valid id -> false with
+// no response written. Pinning the helper directly keeps the ordering and
+// the 4xx contract stable regardless of which endpoint is exercised.
+func TestValidateHubIdParam(t *testing.T) {
+	h := newTestHandler()
+
+	t.Run("empty id -> 400 rejection", func(t *testing.T) {
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join")
+		if !h.validateHubIdParam(ctx, "") {
+			t.Fatal("empty id: helper returned false, want true (rejection written)")
+		}
+		checkInvalidHubIdResponse(t, ctx, "validateHubIdParam empty id")
+	})
+
+	t.Run("whitespace-only id -> 400 rejection", func(t *testing.T) {
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join")
+		if !h.validateHubIdParam(ctx, "   ") {
+			t.Fatal("whitespace id: helper returned false, want true (rejection written)")
+		}
+		checkInvalidHubIdResponse(t, ctx, "validateHubIdParam whitespace id")
+	})
+
+	t.Run("oversized id -> 413 rejection", func(t *testing.T) {
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join")
+		if !h.validateHubIdParam(ctx, strings.Repeat("a", config.MaxMetadataSize+1)) {
+			t.Fatal("oversized id: helper returned false, want true (rejection written)")
+		}
+		if got := ctx.Response.StatusCode(); got != fasthttp.StatusRequestEntityTooLarge {
+			t.Fatalf("status = %d, want 413", got)
+		}
+		if body := string(ctx.Response.Body()); !strings.Contains(body, "id") {
+			t.Fatalf("body = %q, want an error naming 'id'", body)
+		}
+	})
+
+	t.Run("id at cap passes with no response written", func(t *testing.T) {
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join")
+		if h.validateHubIdParam(ctx, strings.Repeat("a", config.MaxMetadataSize)) {
+			t.Fatalf("cap-sized id: helper returned true, want false; status=%d body=%q",
+				ctx.Response.StatusCode(), string(ctx.Response.Body()))
+		}
+		if len(ctx.Response.Body()) != 0 {
+			t.Fatalf("cap-sized id: expected no written body, got %q", string(ctx.Response.Body()))
+		}
+	})
+
+	t.Run("normal id passes", func(t *testing.T) {
+		ctx := newRequestCtx("http://127.0.0.1/v1/random-hubs/join")
+		if h.validateHubIdParam(ctx, "ok-hub") {
+			t.Fatal("normal id: helper returned true, want false")
+		}
+		if len(ctx.Response.Body()) != 0 {
+			t.Fatalf("normal id: expected no written body, got %q", string(ctx.Response.Body()))
+		}
+	})
 }
 
 // TestCreateStaticHubRejectsEmptyHubId covers the admin-gated static hub

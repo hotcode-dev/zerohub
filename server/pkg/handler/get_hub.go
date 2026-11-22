@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 
-	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
@@ -12,16 +11,11 @@ import (
 // GetHub returns the hub with the given ID.
 func (h *Handler) GetHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 	hubId := string(ctx.QueryArgs().Peek("id"))
-	// Reject a missing/empty ID up front with 400 for consistency with the
-	// other hub endpoints.
-	if !validHubId(hubId) {
-		return h.rejectInvalidHubIdParam(ctx)
-	}
-	// A user-chosen id over the size cap would have been rejected at
-	// creation; rejecting it here keeps the read path consistent with the
-	// write path.
-	if !validMetadataSize(hubId, config.MaxMetadataSize) {
-		return h.rejectOversizedParam(ctx, "id", config.MaxMetadataSize)
+	// Reject a missing/empty or oversized ID up front with 400/413 for
+	// consistency with the other hub endpoints: a user-chosen id over the
+	// size cap would have been rejected at creation.
+	if h.validateHubIdParam(ctx, hubId) {
+		return nil
 	}
 
 	// This endpoint is plain HTTP (JSON), not a WebSocket signaling channel,

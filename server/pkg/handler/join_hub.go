@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"github.com/hotcode-dev/zerohub/pkg/config"
 	"github.com/hotcode-dev/zerohub/pkg/zerohub"
 	"github.com/valyala/fasthttp"
 )
@@ -9,16 +8,12 @@ import (
 // JoinHub joins an existing hub with the given ID.
 func (h *Handler) JoinHub(ctx *fasthttp.RequestCtx, zh zerohub.ZeroHub) error {
 	hubId := string(ctx.QueryArgs().Peek("id"))
-	// Reject a missing/empty ID up front with 400 for consistency: before
-	// this, such a request degraded to 404 (or a migration forward).
-	if !validHubId(hubId) {
-		return h.rejectInvalidHubIdParam(ctx)
-	}
-	// A user-chosen id over the size cap would have been rejected at
-	// creation; rejecting it here keeps the join path consistent with the
-	// create path and the migration forward.
-	if !validMetadataSize(hubId, config.MaxMetadataSize) {
-		return h.rejectOversizedParam(ctx, "id", config.MaxMetadataSize)
+	// Reject a missing/empty or oversized ID up front with 400/413 for
+	// consistency: before this, a missing id degraded to 404 (or a
+	// migration forward), and an oversized user-chosen id would have been
+	// rejected at creation.
+	if h.validateHubIdParam(ctx, hubId) {
+		return nil
 	}
 
 	hub := zh.GetHubById(hubId)
