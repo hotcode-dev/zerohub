@@ -2,7 +2,11 @@ import { Peer } from "../peer";
 import { PeerStatus } from "../types";
 import { ZeroHubClient } from "../zeroHub";
 import { Topology } from ".";
-import { setupDataChannel, setupMediaChannel } from "./peerSetup";
+import {
+  sendOfferToPeer,
+  setupDataChannel,
+  setupMediaChannel,
+} from "./peerSetup";
 
 /**
  * SFUTopology implements a Selective Forwarding Unit topology.
@@ -59,21 +63,6 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
 
   init(zeroHub: ZeroHubClient<PeerMetadata, HubMetadata>) {
     this.zeroHub = zeroHub;
-  }
-
-  /**
-   * Send an offer to a peer and log the error if it fails.
-   * `context` describes the failure situation in the log message.
-   */
-  private sendOfferToPeer(peer: Peer<PeerMetadata>, context: string) {
-    if (!this.zeroHub) {
-      return;
-    }
-    this.zeroHub
-      .sendOffer(peer.id, this.zeroHub.config.rtcOfferOptions)
-      .catch((err) => {
-        this.zeroHub?.logger.error(context, peer.id, err);
-      });
   }
 
   /**
@@ -196,7 +185,8 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
         // refreshes the ICE/DTLS transport on the existing RTCPeerConnection
         // while the established channels and transceivers persist.
         if (iAmSFU) {
-          this.sendOfferToPeer(
+          sendOfferToPeer(
+            this.zeroHub,
             peer,
             "SFU: failed to re-send offer to dropped client"
           );
@@ -288,7 +278,7 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
     );
 
     // Send the offer
-    this.sendOfferToPeer(peer, "SFU: Failed to send offer to client");
+    sendOfferToPeer(this.zeroHub, peer, "SFU: Failed to send offer to client");
   }
 
   /**
