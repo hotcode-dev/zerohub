@@ -1,5 +1,49 @@
-import { describe, expect, it } from "vitest";
-import { getWS, isWellFormedHost } from "./utils";
+import { describe, expect, it, vi } from "vitest";
+import { getWS, guardCallback, isWellFormedHost } from "./utils";
+import { ZeroHubLogger } from "./logger";
+import { LogLevel } from "./types";
+
+function makeLogger() {
+  const mock = { log: vi.fn(), warn: vi.fn(), error: vi.fn() };
+  return { mock, logger: new ZeroHubLogger(mock, LogLevel.Error) };
+}
+
+describe("guardCallback", () => {
+  it("invokes the callback and logs nothing when it succeeds", () => {
+    const { mock, logger } = makeLogger();
+    let called = false;
+    guardCallback("onThing", logger, () => {
+      called = true;
+    });
+    expect(called).toBe(true);
+    expect(mock.error).not.toHaveBeenCalled();
+  });
+
+  it("isolates a throwing callback and logs '<label> handler threw' with the error", () => {
+    const { mock, logger } = makeLogger();
+    const boom = new Error("boom");
+    // Must not rethrow out of guardCallback.
+    expect(() =>
+      guardCallback("onHubInfo", logger, () => {
+        throw boom;
+      })
+    ).not.toThrow();
+    expect(mock.error).toHaveBeenCalledTimes(1);
+    expect(mock.error).toHaveBeenCalledWith("onHubInfo handler threw", boom);
+  });
+
+  it("isolates arbitrary Error types (e.g. TypeError) too", () => {
+    const { mock, logger } = makeLogger();
+    const typeErr = new TypeError("bad type");
+    expect(() =>
+      guardCallback("onOffer", logger, () => {
+        throw typeErr;
+      })
+    ).not.toThrow();
+    expect(mock.error).toHaveBeenCalledTimes(1);
+    expect(mock.error).toHaveBeenCalledWith("onOffer handler threw", typeErr);
+  });
+});
 
 describe("getWS", () => {
   it("uses wss:// when tls is enabled", () => {
