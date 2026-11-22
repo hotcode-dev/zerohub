@@ -1365,18 +1365,6 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     this.clearReconnectRetryState();
     this.reconnectRound = 0;
 
-    // clear pending ICE candidate timeouts so they cannot send to a closed socket
-    Object.values(this.iceTimeouts).forEach((timeout) => {
-      clearTimeout(timeout);
-    });
-    this.iceTimeouts = {};
-
-    // clear pending P2P-drop recovery timers for the same reason
-    Object.values(this.webRtcRecoveryTimeouts).forEach((timeout) => {
-      clearTimeout(timeout);
-    });
-    this.webRtcRecoveryTimeouts = {};
-
     // close the WebSocket without triggering the auto-reconnect onclose handler
     this.closeActiveSocket();
 
