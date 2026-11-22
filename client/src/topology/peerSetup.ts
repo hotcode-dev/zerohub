@@ -1,23 +1,8 @@
 import { ZeroHubLogger } from "../logger";
 import { Peer } from "../peer";
 import { Config } from "../types";
+import { guardCallback } from "../utils";
 import type { ZeroHubClient } from "../zeroHub";
-
-/**
- * Invoke a user-supplied callback, isolating any throw into an error log
- * so a throwing handler never escapes the calling event handler.
- */
-function guardCallback(
-  label: string,
-  logger: ZeroHubLogger,
-  fn: () => void
-): void {
-  try {
-    fn();
-  } catch (err) {
-    logger.error(`${label} handler threw`, err);
-  }
-}
 
 /**
  * Sets up data channel handling for a peer's RTCPeerConnection, shared by all

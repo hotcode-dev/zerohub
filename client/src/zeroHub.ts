@@ -10,7 +10,7 @@ import { ClientMessage } from "./proto/zerohub/v1/client_message";
 import { ServerMessage } from "./proto/zerohub/v1/server_message";
 import { MeshTopology, Topology } from "./topology";
 import { PeerStatus, type Config, type HubInfo } from "./types";
-import { getWS, isWellFormedHost } from "./utils";
+import { getWS, guardCallback, isWellFormedHost } from "./utils";
 
 /**
  * ZeroHubClient manages the full lifecycle of connecting to a ZeroHub
@@ -432,25 +432,12 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     peer.status = status;
     // User-supplied callbacks must not take down the signaling dispatch:
     // a throwing handler would abort handleZeroHubMessage mid-stream.
-    this.safeInvoke("topology.onPeerStatusChange", () =>
+    guardCallback("topology.onPeerStatusChange", this.logger, () =>
       this.topology?.onPeerStatusChange(peer)
     );
-    this.safeInvoke("onPeerStatusChange", () =>
+    guardCallback("onPeerStatusChange", this.logger, () =>
       this.onPeerStatusChange?.(peer)
     );
-  }
-
-  /**
-   * Invoke a user-supplied callback, isolating any throw into an error log.
-   * Prevents a throwing user handler from aborting the signaling dispatch
-   * that invokes it.
-   */
-  private safeInvoke(label: string, fn: () => void): void {
-    try {
-      fn();
-    } catch (err) {
-      this.logger.error(`${label} handler threw`, err);
-    }
   }
 
   /**
@@ -471,7 +458,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
     if (!peer) {
       return;
     }
-    this.safeInvoke("onPeerError", () => this.onPeerError?.(peer, error));
+    guardCallback("onPeerError", this.logger, () =>
+      this.onPeerError?.(peer, error)
+    );
   }
 
   /**
@@ -485,7 +474,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
    * returned by `createRandomHub()`/`joinStaticHub()`/etc. unsettled forever.
    */
   private reportZeroHubError(error: Error): void {
-    this.safeInvoke("onZeroHubError", () => this.onZeroHubError?.(error));
+    guardCallback("onZeroHubError", this.logger, () =>
+      this.onZeroHubError?.(error)
+    );
   }
 
   /**
@@ -781,7 +772,7 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
       };
       this.hubInfo = hubInfo;
       // Isolate so roster reconciliation below still runs.
-      this.safeInvoke("onHubInfo", () => this.onHubInfo?.(hubInfo));
+      guardCallback("onHubInfo", this.logger, () => this.onHubInfo?.(hubInfo));
 
       // Reconcile the peer roster against the authoritative roster carried in
       // the hubInfo. The server sends the full current roster on every
@@ -839,7 +830,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         if (peer && this.onOffer) {
           // Isolate: a user-callback failure is not a signaling-link
           // failure; the outer onmessage catch would misclassify it.
-          this.safeInvoke("onOffer", () => this.onOffer?.(peer, offerSdp));
+          guardCallback("onOffer", this.logger, () =>
+            this.onOffer?.(peer, offerSdp)
+          );
         }
       }
     } else if (serverMessage.answerMessage) {
@@ -866,7 +859,9 @@ export class ZeroHubClient<PeerMetadata = object, HubMetadata = object> {
         if (peer && this.onAnswer) {
           // Isolate: a user-callback failure is not a signaling-link
           // failure; the outer onmessage catch would misclassify it.
-          this.safeInvoke("onAnswer", () => this.onAnswer?.(peer, answerSdp));
+          guardCallback("onAnswer", this.logger, () =>
+            this.onAnswer?.(peer, answerSdp)
+          );
         }
       }
     } else if (serverMessage.iceCandidateMessage) {

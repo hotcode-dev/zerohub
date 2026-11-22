@@ -1,3 +1,33 @@
+import { ZeroHubLogger } from "./logger";
+
+/**
+ * Invoke a user-supplied callback, isolating any throw into an error log
+ * so a throwing handler never escapes the calling event handler.
+ *
+ * The single source of truth for user-callback isolation in the client:
+ * signaling dispatch handlers and RTCPeerConnection event handlers both
+ * route user callbacks through this guard so one bad handler cannot take
+ * down the rest of the connection lifecycle.
+ *
+ * @param label - The callback's name, used in the error log message
+ *   (`"<label> handler threw"`).
+ * @param logger - The log-level-gated logger to log through. Call sites
+ *   must pass the gated `ZeroHubClient.logger`, not the raw user
+ *   `config.logger`, so log-level gating is preserved.
+ * @param fn - The user-supplied callback to invoke.
+ */
+export function guardCallback(
+  label: string,
+  logger: ZeroHubLogger,
+  fn: () => void
+): void {
+  try {
+    fn();
+  } catch (err) {
+    logger.error(`${label} handler threw`, err);
+  }
+}
+
 /**
  * Get the WebSocket URL based on the host and TLS flag.
  *
