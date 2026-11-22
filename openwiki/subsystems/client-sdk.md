@@ -16,10 +16,10 @@ sources:
     resource: repo://client/src/utils.ts
   - id: openwiki-source-718b618612c033c4f36b3a45
     resource: repo://client/src/zeroHub.ts
-generated: { by: "hermes", at: "2026-11-21T16:26:45.303Z" }
+generated: { by: "hermes", at: "2026-11-22T02:25:29.470Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-21T16:26:45.303Z
+    at: 2026-11-22T02:25:29.470Z
 ---
 
 # TypeScript Client SDK
@@ -164,14 +164,14 @@ add or remove a peer can never diverge:
   gone. Used by `disconnect()`, the `peerDisconnectedMessage` broadcast, and
   the `hubInfoMessage` roster-prune pass. The caller emits the appropriate
   status first (it differs per path).
-- **`safeInvoke(label, fn)`** — the shared user-callback isolation helper in
-  `zeroHub.ts`: every user-supplied callback (`onPeerStatusChange`,
-  `onPeerError`, `onHubInfo`, `onOffer`, `onAnswer`, `onZeroHubError`, and
-  the topology's `onPeerStatusChange`) is invoked through it, so a throwing
-  handler is isolated into an error log instead of aborting the signaling
-  dispatch that invoked it. The user-facing `onDataChannel`/`onTrack`
-  callbacks in `peerSetup.ts` are isolated the same way through the
-  module-level `guardCallback` helper.
+- **`guardCallback(label, logger, fn)`** — the shared user-callback isolation
+  helper in `client/src/utils.ts`: every user-supplied callback
+  (`onPeerStatusChange`, `onPeerError`, `onHubInfo`, `onOffer`, `onAnswer`,
+  `onZeroHubError`, and the topology's `onPeerStatusChange`) is invoked
+  through it in `zeroHub.ts`, so a throwing handler is isolated into an error
+  log instead of aborting the signaling dispatch that invoked it. The
+  user-facing `onDataChannel`/`onTrack` callbacks in `peerSetup.ts` are
+  isolated the same way through the same shared `guardCallback` helper.
 
 P2P-drop recovery: when a live peer's `RTCPeerConnection` reports
 `disconnected`/`failed` while the signaling socket is still up,
