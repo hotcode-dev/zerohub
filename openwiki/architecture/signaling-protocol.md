@@ -19,7 +19,7 @@ sources:
 generated: { by: "hermes", at: "2026-11-20T15:09:12.940Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-22T02:25:29.470Z
+    at: 2026-11-22T15:12:07.899Z
 ---
 
 # Signaling Protocol & Peer Lifecycle
