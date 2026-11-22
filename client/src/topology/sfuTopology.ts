@@ -95,12 +95,10 @@ export class SFUTopology<PeerMetadata = object, HubMetadata = object>
       return this.sfuPeerId;
     }
 
-    // Otherwise, determine the lowest peer ID
+    // Otherwise, determine the lowest peer ID. With an empty roster the
+    // list is just [myPeerId], and lowestPeerId of a single element is
+    // that element — so an empty-roster hub naturally elects itself.
     const allPeerIds = Object.keys(this.zeroHub.peers);
-    if (allPeerIds.length === 0) {
-      return this.zeroHub.myPeerId;
-    }
-
     return this.lowestPeerId([this.zeroHub.myPeerId, ...allPeerIds]);
   }
 
