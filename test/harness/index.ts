@@ -3,6 +3,7 @@ import {
   Peer,
   ZeroHubClient,
 } from "../../client/src/index";
+import { TESTIDS } from "../shared/testids";
 
 type PeerMetadata = {
   name: string;
@@ -327,8 +328,8 @@ function createHub(options: CreateHubOptions) {
     testName,
     label: "Create Hub",
     hubIdLabel: `Hub ID: ${hubId}`,
-    hubIdTestId: `create-hub-id-${componentId}`,
-    peerStatusTestId: `create-peer-status-${componentId}`,
+    hubIdTestId: TESTIDS.createHubId(componentId),
+    peerStatusTestId: TESTIDS.createPeerStatus(componentId),
     invoke: (zeroHub) => {
       // The "creator" joins the static hub the spec seeded out-of-band via
       // the admin HTTP endpoint (seedStaticHub in tests/utils/harness.ts):
@@ -350,8 +351,8 @@ function joinHub(options: JoinHubOptions) {
     testName,
     label: "Join Hub",
     hubIdLabel: `Hub ID: ${hubId}`,
-    hubIdTestId: `join-hub-id-${componentId}`,
-    peerStatusTestId: `join-peer-status-${componentId}`,
+    hubIdTestId: TESTIDS.joinHubId(componentId),
+    peerStatusTestId: TESTIDS.joinPeerStatus(componentId),
     invoke: (zeroHub) => {
       zeroHub.joinStaticHub(hubId, { name: "test" });
     },
@@ -373,8 +374,8 @@ function joinStaticHub(options: JoinStaticHubOptions) {
     testName,
     label: "Join Static Hub",
     hubIdLabel: `Hub ID: ${hubId}`,
-    hubIdTestId: `join-static-hub-id-${componentId}`,
-    peerStatusTestId: `join-static-peer-status-${componentId}`,
+    hubIdTestId: TESTIDS.joinStaticHubId(componentId),
+    peerStatusTestId: TESTIDS.joinStaticPeerStatus(componentId),
     invoke: (zeroHub) => {
       zeroHub.joinStaticHub(hubId, { name: "test" });
     },
@@ -388,8 +389,8 @@ function joinOrCreateIPHub(options: JoinOrCreateIPHubOptions) {
     zeroHubHosts,
     testName,
     label: "Join Or Create IP Hub",
-    hubIdTestId: `join-or-create-ip-hub-id-${componentId}`,
-    peerStatusTestId: `join-or-create-ip-peer-status-${componentId}`,
+    hubIdTestId: TESTIDS.joinOrCreateIPHubId(componentId),
+    peerStatusTestId: TESTIDS.joinOrCreateIPPeerStatus(componentId),
     invoke: (zeroHub) => {
       zeroHub.joinOrCreateIPHub({ name: "test" });
     },
@@ -404,8 +405,8 @@ function joinIPHub(options: JoinIPHubOptions) {
     testName,
     label: "Join IP Hub",
     hubIdLabel: `Hub ID: ${hubId}`,
-    hubIdTestId: `join-ip-hub-id-${componentId}`,
-    peerStatusTestId: `join-ip-peer-status-${componentId}`,
+    hubIdTestId: TESTIDS.joinIPHubId(componentId),
+    peerStatusTestId: TESTIDS.joinIPPeerStatus(componentId),
     invoke: (zeroHub) => {
       zeroHub.joinIPHub(hubId, { name: "test" });
     },
@@ -438,7 +439,7 @@ function disconnect(options: DisconnectOptions) {
     (rtcConn) => rtcConn.connectionState === "closed"
   );
 
-  const statusDiv = createDataDiv(`disconnect-status-${componentId}`);
+  const statusDiv = createDataDiv(TESTIDS.disconnectStatus(componentId));
   statusDiv.textContent = `status:${statuses},ws:${
     wsClosed ? "closed" : "open"
   },peers:${peersClosed ? "closed" : "open"},count:${
@@ -454,7 +455,7 @@ function reuseCreateHub(options: ReuseCreateHubOptions) {
     throw new Error(`no instance found for componentId: ${componentId}`);
   }
 
-  const reuseDiv = createDataDiv(`reuse-hub-id-${componentId}`);
+  const reuseDiv = createDataDiv(TESTIDS.reuseHubId(componentId));
   instance.container.appendChild(reuseDiv);
 
   // Point the hub-info handler at the reuse div so the new hub id proves
