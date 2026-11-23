@@ -1598,40 +1598,6 @@ const ZeroHubUnitHarness = {
   },
 
   /**
-   * Flushes pending microtasks in-page (the unit harness runs inside the
-   * browser page; a Node-side `page.evaluate` that awaits the client's
-   * Promise chains would need this to settle rejections like a
-   * failover-dial failure).
-   */
-  async flushMicrotasks(): Promise<void> {
-    for (let i = 0; i < 10; i += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
-  },
-
-  /**
-   * Drives `joinStaticHub("room")` and reports how its connect Promise
-   * settled:
-   * `"resolved"` when a dial's `onopen` fires, `"rejected"` when the FIRST
-   * dial's refusal settles it (the Promise is one-shot: later failover
-   * dials do not re-settle it, so with every host down the entry point is
-   * rejected exactly once even though the reconnect loop keeps dialing).
-   * Specs must settle the dials that follow via `settleOpen()`.
-   */
-  async settleEntryPoint(id: number): Promise<"resolved" | "rejected"> {
-    const entry = clients.get(id);
-    if (!entry) {
-      throw new Error(`no client ${id}`);
-    }
-    try {
-      await entry.client.joinStaticHub("room");
-      return "resolved";
-    } catch {
-      return "rejected";
-    }
-  },
-
-  /**
    * Real-time in-page wait. Lets specs outlast the client's P2P-drop recovery
    * delay (private `WEBRTC_RECOVERY_DELAY_MS`) and its 2s
    * `waitIceCandidatesTimeout` fallback without `page.waitForTimeout` on the
