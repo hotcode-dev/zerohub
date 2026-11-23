@@ -16,6 +16,7 @@
     "include": [
         "tests/**/*.ts",
         "harness/**/*.ts",
+        "shared/**/*.ts",
         "unit-harness/**/*.ts",
         "scripts/**/*.mjs"
     ]

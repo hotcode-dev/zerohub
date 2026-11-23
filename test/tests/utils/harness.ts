@@ -2,6 +2,7 @@ import { Page, expect } from "@playwright/test";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { gotoStubPage } from "./stub-page";
+import { TESTIDS } from "../../shared/testids";
 
 const harnessPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -41,49 +42,49 @@ export async function seedStaticHub(hubId: string, host: string): Promise<string
 }
 
 export function getCreateHubTestId(componentId: string) {
-  return `create-hub-id-${componentId}`;
+  return TESTIDS.createHubId(componentId);
 }
 
 export function getCreatePeerStatusTestId(componentId: string) {
-  return `create-peer-status-${componentId}`;
+  return TESTIDS.createPeerStatus(componentId);
 }
 
 export function getJoinHubTestId(componentId: string) {
-  return `join-hub-id-${componentId}`;
+  return TESTIDS.joinHubId(componentId);
 }
 
 export function getJoinPeerStatusTestId(componentId: string) {
-  return `join-peer-status-${componentId}`;
+  return TESTIDS.joinPeerStatus(componentId);
 }
 
 export function getJoinStaticHubTestId(componentId: string) {
-  return `join-static-hub-id-${componentId}`;
+  return TESTIDS.joinStaticHubId(componentId);
 }
 
 export function getJoinStaticPeerStatusTestId(componentId: string) {
-  return `join-static-peer-status-${componentId}`;
+  return TESTIDS.joinStaticPeerStatus(componentId);
 }
 
 export function getJoinOrCreateIPHubTestId(componentId: string) {
-  return `join-or-create-ip-hub-id-${componentId}`;
+  return TESTIDS.joinOrCreateIPHubId(componentId);
 }
 
 export function getJoinOrCreateIPPeerStatusTestId(componentId: string) {
-  return `join-or-create-ip-peer-status-${componentId}`;
+  return TESTIDS.joinOrCreateIPPeerStatus(componentId);
 }
 
 export function getJoinIPHubTestId(componentId: string) {
-  return `join-ip-hub-id-${componentId}`;
+  return TESTIDS.joinIPHubId(componentId);
 }
 
 export function getJoinIPPeerStatusTestId(componentId: string) {
-  return `join-ip-peer-status-${componentId}`;
+  return TESTIDS.joinIPPeerStatus(componentId);
 }
 
 export function getDisconnectStatusTestId(componentId: string) {
-  return `disconnect-status-${componentId}`;
+  return TESTIDS.disconnectStatus(componentId);
 }
 
 export function getReuseHubTestId(componentId: string) {
-  return `reuse-hub-id-${componentId}`;
+  return TESTIDS.reuseHubId(componentId);
 }
