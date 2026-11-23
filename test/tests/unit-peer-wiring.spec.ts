@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
+import { createUnitDriver, prepareUnitHarnessPage, type PeerSnapshot } from "./utils/unit-harness";
 
 /**
  * Unit tests for the `peerJoinedMessage` (mid-session join) vs
@@ -24,19 +24,6 @@ import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
  *  3. The `hubInfoMessage` and `peerJoinedMessage` paths produce equivalent
  *     `Peer` wiring (both connection-state handlers present) — regression.
  */
-
-type PeerSnapshot = {
-  status: string;
-  rtcConnId: number;
-  hasConnStateHandler: boolean;
-  hasIceHandler: boolean;
-  restartIceCount: number;
-  connClosed: boolean;
-  connectionState: string;
-  iceConnectionState: string;
-  metadata: string;
-  joinTimeMs: number;
-};
 
 test.describe("ZeroHubClient peer wiring (hubInfo vs peerJoined)", () => {
   test("mid-session joiner gets the full wiring and restarts ICE on failure", async ({

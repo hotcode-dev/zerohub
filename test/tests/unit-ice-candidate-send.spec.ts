@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
+import { createUnitDriver, prepareUnitHarnessPage, type SdpIceSend } from "./utils/unit-harness";
 
 /**
  * Unit tests for the shared `armSendOnIceReady` helper extracted out of
@@ -31,13 +31,6 @@ import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
  *      same helper: same send-once semantics, same trickle forwarding.
  */
 
-type Send = {
-  kind: "offer" | "answer" | "iceCandidate";
-  peerId: string;
-  sdp?: string;
-  candidate?: string;
-};
-
 /** Short fallback window used by the no-candidate tests. */
 const FALLBACK_TIMEOUT_MS = 300;
 /** Long enough that, by the time we check after this wait, the fallback
@@ -68,7 +61,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
     await test.step("the first in-flight candidate fires the SDP send exactly once", async () => {
       await h.fireIceCandidate(id, "2", { candidate: HOST_CANDIDATE });
       await page.waitForTimeout(30);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       const sdpSends = sends.filter((s) => s.kind !== "iceCandidate");
       expect(sdpSends).toHaveLength(1);
       expect(sdpSends[0].kind).toBe("offer");
@@ -84,7 +77,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
     await test.step("candidates trickled in AFTER the SDP are forwarded, not re-sent", async () => {
       await h.fireIceCandidate(id, "2", { candidate: SRFLX_CANDIDATE });
       await page.waitForTimeout(30);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       // still exactly ONE SDP send
       expect(sends.filter((s) => s.kind !== "iceCandidate")).toHaveLength(1);
       // both candidates were forwarded
@@ -98,10 +91,10 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
       await h.fireIceCandidate(id, "2", null);
       await page.waitForTimeout(20);
       expect(
-        ((await h.getSends(id)) as Send[]).filter((s) => s.kind !== "iceCandidate"),
+        ((await h.getSends(id)) as SdpIceSend[]).filter((s) => s.kind !== "iceCandidate"),
       ).toHaveLength(1);
       expect(
-        ((await h.getSends(id)) as Send[]).filter((s) => s.kind === "iceCandidate"),
+        ((await h.getSends(id)) as SdpIceSend[]).filter((s) => s.kind === "iceCandidate"),
       ).toHaveLength(2);
     });
   });
@@ -121,7 +114,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
     await test.step("the first in-flight candidate fires the answer send exactly once", async () => {
       await h.fireIceCandidate(id, "2", { candidate: HOST_CANDIDATE });
       await page.waitForTimeout(30);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       expect(sends.filter((s) => s.kind !== "iceCandidate")).toHaveLength(1);
       expect(sends[0].kind).toBe("answer");
       expect(sends[0].peerId).toBe("2");
@@ -131,7 +124,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
     await test.step("a candidate trickled in AFTER the SDP is forwarded", async () => {
       await h.fireIceCandidate(id, "2", { candidate: SRFLX_CANDIDATE });
       await page.waitForTimeout(30);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       expect(sends.filter((s) => s.kind !== "iceCandidate")).toHaveLength(1);
       const candidates = sends.filter((s) => s.kind === "iceCandidate");
       expect(candidates).toHaveLength(2);
@@ -159,7 +152,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
 
     await test.step("the fallback timer sends the offer exactly once", async () => {
       await page.waitForTimeout(WAIT_AFTER_SEND_MS);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       expect(sends).toHaveLength(1);
       expect(sends[0].kind).toBe("offer");
       expect(sends[0].sdp).toBe("offer-sdp");
@@ -168,7 +161,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
     await test.step("a candidate trickled in after the timeout is forwarded, not re-sent", async () => {
       await h.fireIceCandidate(id, "2", { candidate: HOST_CANDIDATE });
       await page.waitForTimeout(30);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       expect(sends.filter((s) => s.kind !== "iceCandidate")).toHaveLength(1);
       const candidates = sends.filter((s) => s.kind === "iceCandidate");
       expect(candidates).toHaveLength(1);
@@ -191,7 +184,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
 
     await test.step("the fallback timer sends the answer exactly once", async () => {
       await page.waitForTimeout(WAIT_AFTER_SEND_MS);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       expect(sends).toHaveLength(1);
       expect(sends[0].kind).toBe("answer");
       expect(sends[0].sdp).toBe("answer-sdp");
@@ -215,7 +208,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
       await h.fireIceCandidate(id, "2", { candidate: "cand-a" });
       await h.fireIceCandidate(id, "3", { candidate: "cand-b" });
       await page.waitForTimeout(30);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       const offers = sends.filter((s) => s.kind === "offer");
       const answers = sends.filter((s) => s.kind === "answer");
       expect(offers).toHaveLength(1);
@@ -228,7 +221,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
       await h.fireIceCandidate(id, "2", { candidate: "cand-a-2" });
       await h.fireIceCandidate(id, "3", { candidate: "cand-b-2" });
       await page.waitForTimeout(30);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       expect(sends.filter((s) => s.kind === "offer")).toHaveLength(1);
       expect(sends.filter((s) => s.kind === "answer")).toHaveLength(1);
       expect(
@@ -246,7 +239,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
     await test.step("re-firing the gathering-complete event does not add more SDP sends", async () => {
       await h.fireIceCandidate(id, "2", null);
       await h.fireIceCandidate(id, "3", null);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       expect(sends.filter((s) => s.kind !== "iceCandidate")).toHaveLength(2);
     });
   });
@@ -305,7 +298,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
       }, { clientId: id, peerId: "2", legacyCandidate: LEGACY_CANDIDATE });
       await page.waitForTimeout(30);
 
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       const candidates = sends.filter((s) => s.kind === "iceCandidate");
       expect(candidates).toHaveLength(1);
       const parsed = JSON.parse(candidates[0].candidate as string);
@@ -328,7 +321,7 @@ test.describe("ZeroHubClient armSendOnIceReady (send-once + trickle ICE)", () =>
       await h.fireIceCandidate(id, "2", plain);
       await page.waitForTimeout(30);
 
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       const candidates = sends.filter((s) => s.kind === "iceCandidate");
       expect(candidates).toHaveLength(2);
       const parsed = JSON.parse(candidates[1].candidate as string);

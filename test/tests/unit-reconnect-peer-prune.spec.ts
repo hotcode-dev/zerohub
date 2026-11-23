@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
+import { createUnitDriver, prepareUnitHarnessPage, type PeerSnapshot } from "./utils/unit-harness";
 
 /**
  * Regression test: on (re)connect, `hubInfoMessage` must RECONCILE the peer
@@ -25,19 +25,6 @@ import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
  *  4. An empty roster prunes every peer but leaves the map empty and
  *     `myPeerId` intact.
  */
-
-type PeerSnapshot = {
-  status: string;
-  rtcConnId: number;
-  hasConnStateHandler: boolean;
-  hasIceHandler: boolean;
-  restartIceCount: number;
-  connClosed: boolean;
-  connectionState: string;
-  iceConnectionState: string;
-  metadata: string;
-  joinTimeMs: number;
-};
 
 type ConnSnapshot = {
   closed: boolean;
