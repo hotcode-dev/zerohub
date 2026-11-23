@@ -293,6 +293,14 @@ interface PeerSnapshot {
   joinTimeMs: number;
 }
 
+/** A recorded SDP/ICE send captured from a stubbed socket (see `recordSend`). */
+export interface SdpIceSend {
+  kind: "offer" | "answer" | "iceCandidate";
+  peerId: string;
+  sdp?: string;
+  candidate?: string;
+}
+
 interface ClientState {
   client: ZeroHubClient;
   createdAtConnSeq: number;
@@ -309,12 +317,7 @@ interface ClientState {
   /** `logger.warn` messages captured when built via `createClientWithLogger`. */
   warns?: string[];
   /** SDP/ICE sends captured when the socket is stubbed via `stubSocket`. */
-  sends?: Array<{
-    kind: "offer" | "answer" | "iceCandidate";
-    peerId: string;
-    sdp?: string;
-    candidate?: string;
-  }>;
+  sends?: Array<SdpIceSend>;
 }
 
 const clients = new Map<number, ClientState>();
@@ -1145,14 +1148,7 @@ const ZeroHubUnitHarness = {
   },
 
   /** The SDP/ICE sends captured for this client (since `stubSocket`). */
-  getSends(
-    id: number
-  ): Array<{
-    kind: "offer" | "answer" | "iceCandidate";
-    peerId: string;
-    sdp?: string;
-    candidate?: string;
-  }> {
+  getSends(id: number): Array<SdpIceSend> {
     const entry = clients.get(id);
     if (!entry) {
       throw new Error(`no client ${id}`);
@@ -1161,14 +1157,7 @@ const ZeroHubUnitHarness = {
   },
 
   /** Returns and clears the captured SDP/ICE sends for this client. */
-  drainSends(
-    id: number
-  ): Array<{
-    kind: "offer" | "answer" | "iceCandidate";
-    peerId: string;
-    sdp?: string;
-    candidate?: string;
-  }> {
+  drainSends(id: number): Array<SdpIceSend> {
     const entry = clients.get(id);
     if (!entry) {
       throw new Error(`no client ${id}`);
