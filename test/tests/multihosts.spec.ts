@@ -1,13 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import {
-  getCreateHubTestId,
-  getCreatePeerStatusTestId,
-  getJoinHubTestId,
-  getJoinPeerStatusTestId,
-  prepareHarnessPage,
-  seedStaticHub,
-} from "./utils/harness";
+import { prepareHarnessPage, seedStaticHub } from "./utils/harness";
+import { TESTIDS } from "../shared/testids";
 
 type ClientInfo = {
   host: string;
@@ -70,7 +64,7 @@ test("multi hosts", async ({ page }, testInfo) => {
   );
 
   await test.step("create hub success", async () => {
-    const hubIdLoc = page.getByTestId(getCreateHubTestId(componentId)).first();
+    const hubIdLoc = page.getByTestId(TESTIDS.createHubId(componentId)).first();
     await expect(hubIdLoc).toHaveText(hubId);
   });
 
@@ -117,7 +111,7 @@ test("multi hosts", async ({ page }, testInfo) => {
   );
   await test.step("join hub success", async () => {
     await expect(
-      page.getByTestId(getJoinHubTestId(componentId)).first()
+      page.getByTestId(TESTIDS.joinHubId(componentId)).first()
     ).toHaveText(hubId);
   });
 
@@ -134,10 +128,10 @@ test("multi hosts", async ({ page }, testInfo) => {
 
   await test.step("peer status connected", async () => {
     await expect(
-      page.getByTestId(getCreatePeerStatusTestId(componentId)).first()
+      page.getByTestId(TESTIDS.createPeerStatus(componentId)).first()
     ).toContainText("connected");
     await expect(
-      page.getByTestId(getJoinPeerStatusTestId(componentId)).first()
+      page.getByTestId(TESTIDS.joinPeerStatus(componentId)).first()
     ).toContainText("connected");
   });
 
@@ -179,7 +173,7 @@ test("multi hosts", async ({ page }, testInfo) => {
 
       await test.step("initial connection succeeds after one host skip", async () => {
         const hubIdLoc = page
-          .getByTestId(getCreateHubTestId(terminalComponentId))
+          .getByTestId(TESTIDS.createHubId(terminalComponentId))
           .first();
         // The first host (`127.0.0.1:9`) is unreachable, so the initial
         // connection must fail (connection refusal -> code 1006) before

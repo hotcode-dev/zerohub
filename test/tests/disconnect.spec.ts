@@ -1,15 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import {
-  getCreateHubTestId,
-  getCreatePeerStatusTestId,
-  getDisconnectStatusTestId,
-  getJoinHubTestId,
-  getJoinPeerStatusTestId,
-  getReuseHubTestId,
-  prepareHarnessPage,
-  seedStaticHub,
-} from "./utils/harness";
+import { prepareHarnessPage, seedStaticHub } from "./utils/harness";
+import { TESTIDS } from "../shared/testids";
 
 type PeersInfo = {
   peerIds: string[];
@@ -63,7 +55,7 @@ test("disconnect tears down websocket and peer connections", async ({
   );
 
   await test.step("create hub success", async () => {
-    const hubIdLoc = page.getByTestId(getCreateHubTestId(componentId)).first();
+    const hubIdLoc = page.getByTestId(TESTIDS.createHubId(componentId)).first();
     await expect(hubIdLoc).toHaveText(hubId);
   });
 
@@ -81,7 +73,7 @@ test("disconnect tears down websocket and peer connections", async ({
 
   await test.step("peer status connected before disconnect", async () => {
     await expect(
-      page.getByTestId(getCreatePeerStatusTestId(componentId)).first()
+      page.getByTestId(TESTIDS.createPeerStatus(componentId)).first()
     ).toHaveText("connected");
   });
 
@@ -96,13 +88,13 @@ test("disconnect tears down websocket and peer connections", async ({
 
   await test.step("websocket and peer connection are closed", async () => {
     await expect(
-      page.getByTestId(getDisconnectStatusTestId(componentId)).first()
+      page.getByTestId(TESTIDS.disconnectStatus(componentId)).first()
     ).toHaveText("status:disconnected,ws:closed,peers:closed,count:1");
   });
 
   // keep the joined client alive so the hub does not fully drain during the test
   await expect(
-    page.getByTestId(getJoinHubTestId(componentId)).first()
+    page.getByTestId(TESTIDS.joinHubId(componentId)).first()
   ).toHaveText(hubId);
 
   await test.step("client is reusable after disconnect", async () => {
@@ -117,7 +109,7 @@ test("disconnect tears down websocket and peer connections", async ({
     // client must open a live connection: the server responds with a new
     // HubInfoMessage (a fresh random hub) and the client is NOT stuck with
     // a dead socket (which would leave the new hub id unset).
-    const reuseLoc = page.getByTestId(getReuseHubTestId(componentId)).first();
+    const reuseLoc = page.getByTestId(TESTIDS.reuseHubId(componentId)).first();
     await expect(reuseLoc).toHaveText(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
     );
@@ -148,7 +140,7 @@ test("peer disconnect tears down RTCPeerConnection and removes peer from map", a
   );
 
   await test.step("create hub success", async () => {
-    const hubIdLoc = page.getByTestId(getCreateHubTestId(componentId)).first();
+    const hubIdLoc = page.getByTestId(TESTIDS.createHubId(componentId)).first();
     await expect(hubIdLoc).toHaveText(hubId);
   });
 
@@ -167,16 +159,16 @@ test("peer disconnect tears down RTCPeerConnection and removes peer from map", a
 
   await test.step("join hub success", async () => {
     await expect(
-      page.getByTestId(getJoinHubTestId(joinComponentId)).first()
+      page.getByTestId(TESTIDS.joinHubId(joinComponentId)).first()
     ).toHaveText(hubId);
   });
 
   await test.step("both peers connected", async () => {
     await expect(
-      page.getByTestId(getCreatePeerStatusTestId(componentId)).first()
+      page.getByTestId(TESTIDS.createPeerStatus(componentId)).first()
     ).toHaveText("connected", { timeout: 15000 });
     await expect(
-      page.getByTestId(getJoinPeerStatusTestId(joinComponentId)).first()
+      page.getByTestId(TESTIDS.joinPeerStatus(joinComponentId)).first()
     ).toHaveText("connected", { timeout: 15000 });
   });
 

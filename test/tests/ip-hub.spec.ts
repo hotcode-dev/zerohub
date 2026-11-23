@@ -1,12 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import {
-  getJoinIPHubTestId,
-  getJoinIPPeerStatusTestId,
-  getJoinOrCreateIPHubTestId,
-  getJoinOrCreateIPPeerStatusTestId,
-  prepareHarnessPage,
-} from "./utils/harness";
+import { prepareHarnessPage } from "./utils/harness";
+import { TESTIDS } from "../shared/testids";
 
 /**
  * Exercises the IP hub workflow used by share.zerohub.dev:
@@ -43,7 +38,7 @@ test("ip hub join-or-create + join by id connects", async ({
   let ipHubId = "";
   await test.step("creator receives non-empty IP hub id", async () => {
     const creatorHubLoc = page
-      .getByTestId(getJoinOrCreateIPHubTestId(creatorId))
+      .getByTestId(TESTIDS.joinOrCreateIPHubId(creatorId))
       .first();
     await expect(creatorHubLoc).toHaveText(/^\d+$/);
     ipHubId = (await creatorHubLoc.textContent()) ?? "";
@@ -64,17 +59,17 @@ test("ip hub join-or-create + join by id connects", async ({
     );
 
     await expect(
-      page.getByTestId(getJoinIPHubTestId(joinerId)).first()
+      page.getByTestId(TESTIDS.joinIPHubId(joinerId)).first()
     ).toHaveText(ipHubId);
   });
 
   await test.step("both peers reach connected WebRTC status", async () => {
     await expect(
-      page.getByTestId(getJoinOrCreateIPPeerStatusTestId(creatorId)).first()
+      page.getByTestId(TESTIDS.joinOrCreateIPPeerStatus(creatorId)).first()
     ).toHaveText("connected", { timeout: 30 * 1000 });
 
     await expect(
-      page.getByTestId(getJoinIPPeerStatusTestId(joinerId)).first()
+      page.getByTestId(TESTIDS.joinIPPeerStatus(joinerId)).first()
     ).toHaveText("connected", { timeout: 30 * 1000 });
   });
 });

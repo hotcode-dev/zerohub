@@ -1,13 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import {
-  getCreateHubTestId,
-  getCreatePeerStatusTestId,
-  getJoinHubTestId,
-  getJoinPeerStatusTestId,
-  prepareHarnessPage,
-  seedStaticHub,
-} from "./utils/harness";
+import { prepareHarnessPage, seedStaticHub } from "./utils/harness";
+import { TESTIDS } from "../shared/testids";
 
 test("seed/join static hub", async ({ page }) => {
   // Endpoint pinning: capture every WebSocket URL the page dials so the
@@ -58,7 +52,7 @@ test("seed/join static hub", async ({ page }) => {
   );
 
   await test.step("creator join success", async () => {
-    const hubIdLoc = page.getByTestId(getCreateHubTestId(creatorId)).first();
+    const hubIdLoc = page.getByTestId(TESTIDS.createHubId(creatorId)).first();
     await expect(hubIdLoc).toHaveText(hubId);
   });
 
@@ -76,7 +70,7 @@ test("seed/join static hub", async ({ page }) => {
 
   await test.step("join hub success", async () => {
     await expect(
-      page.getByTestId(getJoinHubTestId(joinerId)).first()
+      page.getByTestId(TESTIDS.joinHubId(joinerId)).first()
     ).toHaveText(hubId);
   });
 
@@ -95,11 +89,11 @@ test("seed/join static hub", async ({ page }) => {
 
   await test.step("peer status connected", async () => {
     await expect(
-      page.getByTestId(getCreatePeerStatusTestId(creatorId)).first()
+      page.getByTestId(TESTIDS.createPeerStatus(creatorId)).first()
     ).toHaveText("connected");
 
     await expect(
-      page.getByTestId(getJoinPeerStatusTestId(joinerId)).first()
+      page.getByTestId(TESTIDS.joinPeerStatus(joinerId)).first()
     ).toHaveText("connected");
   });
 });

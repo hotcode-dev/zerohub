@@ -1,13 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import {
-  getCreatePeerStatusTestId,
-  getJoinPeerStatusTestId,
-  prepareHarnessPage,
-  getCreateHubTestId,
-  getJoinHubTestId,
-  seedStaticHub,
-} from "./utils/harness";
+import { prepareHarnessPage, seedStaticHub } from "./utils/harness";
+import { TESTIDS } from "../shared/testids";
 
 test.slow();
 
@@ -34,7 +28,7 @@ test("data channels open for creator and joiner", async ({ page }) => {
     { creatorId, zeroHubHost, hubId }
   );
 
-  const hubIdLocator = page.getByTestId(getCreateHubTestId(creatorId)).first();
+  const hubIdLocator = page.getByTestId(TESTIDS.createHubId(creatorId)).first();
   await expect(hubIdLocator).toHaveText(hubId);
 
   await page.evaluate(
@@ -50,16 +44,16 @@ test("data channels open for creator and joiner", async ({ page }) => {
   );
 
   await expect(
-    page.getByTestId(getJoinHubTestId(joinerId)).first()
+    page.getByTestId(TESTIDS.joinHubId(joinerId)).first()
   ).toHaveText(hubId);
 
   const waitForConnected = { timeout: 30000 } as const;
 
   await expect(
-    page.getByTestId(getCreatePeerStatusTestId(creatorId)).first()
+    page.getByTestId(TESTIDS.createPeerStatus(creatorId)).first()
   ).toHaveText("connected", waitForConnected);
   await expect(
-    page.getByTestId(getJoinPeerStatusTestId(joinerId)).first()
+    page.getByTestId(TESTIDS.joinPeerStatus(joinerId)).first()
   ).toHaveText("connected", waitForConnected);
 
   const creatorContainer = page.locator(
