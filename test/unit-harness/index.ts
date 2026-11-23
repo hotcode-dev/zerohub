@@ -332,6 +332,37 @@ const mediaOnTrackLogs = new Map<
 /** The fake `localStream` object installed per media client (by id). */
 const mediaLocalStreams = new Map<number, unknown>();
 
+/**
+ * Decodes an encoded `ClientMessage` and records its SDP/ICE payload in the
+ * per-client `sends` buffer (retrievable via `getSends` / `drainSends`).
+ * Shared by `stubSocket` and `captureSocket` so the two capture paths stay in
+ * sync when send-recording semantics change.
+ */
+function recordSend(entry: ClientState, data: unknown): void {
+  const msg = ClientMessage.decode(data as Uint8Array);
+  if (msg.sendOfferMessage) {
+    entry.sends?.push({
+      kind: "offer",
+      peerId: msg.sendOfferMessage.answerPeerId,
+      sdp: msg.sendOfferMessage.offerSdp,
+    });
+  }
+  if (msg.sendAnswerMessage) {
+    entry.sends?.push({
+      kind: "answer",
+      peerId: msg.sendAnswerMessage.offerPeerId,
+      sdp: msg.sendAnswerMessage.answerSdp,
+    });
+  }
+  if (msg.sendIceCandidateMessage) {
+    entry.sends?.push({
+      kind: "iceCandidate",
+      peerId: msg.sendIceCandidateMessage.peerId,
+      candidate: msg.sendIceCandidateMessage.candidate,
+    });
+  }
+}
+
 /** Serialisable view of a single peer + its live connection. */
 function snapshotPeer(client: ZeroHubClient, peerId: string): PeerSnapshot {
   const peer = client.peers[peerId];
@@ -1073,28 +1104,7 @@ const ZeroHubUnitHarness = {
       readyState: 1,
       close() {},
       send(data: unknown) {
-        const msg = ClientMessage.decode(data as Uint8Array);
-        if (msg.sendOfferMessage) {
-          entry.sends?.push({
-            kind: "offer",
-            peerId: msg.sendOfferMessage.answerPeerId,
-            sdp: msg.sendOfferMessage.offerSdp,
-          });
-        }
-        if (msg.sendAnswerMessage) {
-          entry.sends?.push({
-            kind: "answer",
-            peerId: msg.sendAnswerMessage.offerPeerId,
-            sdp: msg.sendAnswerMessage.answerSdp,
-          });
-        }
-        if (msg.sendIceCandidateMessage) {
-          entry.sends?.push({
-            kind: "iceCandidate",
-            peerId: msg.sendIceCandidateMessage.peerId,
-            candidate: msg.sendIceCandidateMessage.candidate,
-          });
-        }
+        recordSend(entry, data);
       },
     } as unknown as WebSocket;
   },
@@ -1289,30 +1299,7 @@ const ZeroHubUnitHarness = {
     // below is what actually runs (a CONNECTING socket would still route
     // through the original mock `send` and throw before reaching this).
     ws.readyState = 1;
-    ws.send = function (data: unknown) {
-      const msg = ClientMessage.decode(data as Uint8Array);
-      if (msg.sendOfferMessage) {
-        entry.sends?.push({
-          kind: "offer",
-          peerId: msg.sendOfferMessage.answerPeerId,
-          sdp: msg.sendOfferMessage.offerSdp,
-        });
-      }
-      if (msg.sendAnswerMessage) {
-        entry.sends?.push({
-          kind: "answer",
-          peerId: msg.sendAnswerMessage.offerPeerId,
-          sdp: msg.sendAnswerMessage.answerSdp,
-        });
-      }
-      if (msg.sendIceCandidateMessage) {
-        entry.sends?.push({
-          kind: "iceCandidate",
-          peerId: msg.sendIceCandidateMessage.peerId,
-          candidate: msg.sendIceCandidateMessage.candidate,
-        });
-      }
-    };
+    ws.send = (data: unknown) => recordSend(entry, data);
   },
 
   /**
