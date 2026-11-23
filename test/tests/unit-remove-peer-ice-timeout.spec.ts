@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
+import {
+  createUnitDriver,
+  prepareUnitHarnessPage,
+  type SdpIceSend,
+} from "./utils/unit-harness";
 
 /**
  * Regression test: `removePeer` (the shared per-peer teardown path) must
@@ -44,8 +48,6 @@ import { createUnitDriver, prepareUnitHarnessPage } from "./utils/unit-harness";
  *      fallback timer when the window elapses (the timer is only cleared on
  *      teardown, never preemptively).
  */
-
-type Send = { kind: "offer" | "answer"; peerId: string; sdp: string };
 
 test.describe("ZeroHubClient removePeer clears the pending ICE-candidate timer", () => {
   test("peerDisconnectedMessage clears the timer and no SDP fires after the window", async ({
@@ -140,7 +142,7 @@ test.describe("ZeroHubClient removePeer clears the pending ICE-candidate timer",
 
       // The peer stays in the hub: the timer must fire and send the offer.
       await page.waitForTimeout(300);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       expect(sends).toHaveLength(1);
       expect(sends[0].kind).toBe("offer");
       expect(sends[0].peerId).toBe("2");

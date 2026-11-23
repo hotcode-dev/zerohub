@@ -3,6 +3,7 @@ import {
   createUnitDriver,
   flushMicrotasks,
   prepareUnitHarnessPage,
+  type SdpIceSend,
 } from "./utils/unit-harness";
 
 /**
@@ -45,8 +46,6 @@ import {
  *  (b) a manual `disconnect()` after a reconnect still clears the pending
  *     ICE send: no SDP leaks onto a socket opened by a later `joinStaticHub()`.
  */
-
-type Send = { kind: "offer" | "answer"; peerId: string; sdp: string };
 
 /**
  * Long ICE window: comfortably past the reconnect + re-arm latency so the
@@ -119,7 +118,7 @@ test.describe("ZeroHubClient ICE-candidate timer bookkeeping across reconnect", 
 
     await test.step("the re-armed timer sends the offer on the new socket", async () => {
       await page.waitForTimeout(1600);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       expect(sends).toHaveLength(1);
       expect(sends[0].kind).toBe("offer");
       expect(sends[0].peerId).toBe("2");
@@ -131,7 +130,7 @@ test.describe("ZeroHubClient ICE-candidate timer bookkeeping across reconnect", 
       // fire (it was armed with a 5000ms window before the drop) and the
       // application's re-sent offer would be duplicated.
       await page.waitForTimeout(FIRST_ICE_TIMEOUT_MS);
-      expect((await h.getSends(id)) as Send[]).toHaveLength(1);
+      expect((await h.getSends(id)) as SdpIceSend[]).toHaveLength(1);
     });
   });
 
