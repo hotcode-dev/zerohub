@@ -204,10 +204,6 @@ class MockRTCPeerConnection {
     this.__addedTracks.push({ track, stream });
   }
 
-  addTransceiver(): void {
-    // no-op
-  }
-
   createDataChannel(label: string): { label: string } {
     return { label };
   }
