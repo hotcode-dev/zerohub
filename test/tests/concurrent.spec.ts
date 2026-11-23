@@ -1,13 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import {
-  getCreateHubTestId,
-  getCreatePeerStatusTestId,
-  getJoinHubTestId,
-  getJoinPeerStatusTestId,
-  prepareHarnessPage,
-  seedStaticHub,
-} from "./utils/harness";
+import { prepareHarnessPage, seedStaticHub } from "./utils/harness";
+import { TESTIDS } from "../shared/testids";
 
 test("multiple concurrent connections", async ({ page }) => {
   await prepareHarnessPage(page);
@@ -34,7 +28,7 @@ test("multiple concurrent connections", async ({ page }) => {
   );
 
   await test.step("create hub success", async () => {
-    const hubIdLoc = page.getByTestId(getCreateHubTestId(creatorId)).first();
+    const hubIdLoc = page.getByTestId(TESTIDS.createHubId(creatorId)).first();
     await expect(hubIdLoc).toHaveText(hubId);
   });
 
@@ -61,7 +55,7 @@ test("multiple concurrent connections", async ({ page }) => {
       );
 
       await expect(
-        page.getByTestId(getJoinHubTestId(joinComponentId)).first()
+        page.getByTestId(TESTIDS.joinHubId(joinComponentId)).first()
       ).toHaveText(hubId);
     }
   });
@@ -70,14 +64,14 @@ test("multiple concurrent connections", async ({ page }) => {
   await test.step("verify all peers are connected", async () => {
     // Check that the creator is connected to all peers
     await expect(
-      page.getByTestId(getCreatePeerStatusTestId(creatorId)).first()
+      page.getByTestId(TESTIDS.createPeerStatus(creatorId)).first()
     ).toHaveText("connected", { timeout: 15000 });
 
     // Check that all joiners are connected
     for (let i = 0; i < numberOfConcurrentConnections; i++) {
       await expect(
         page
-          .getByTestId(getJoinPeerStatusTestId(joinedComponentIds[i]))
+          .getByTestId(TESTIDS.joinPeerStatus(joinedComponentIds[i]))
           .first()
       ).toHaveText("connected", { timeout: 15000 });
     }
@@ -118,7 +112,7 @@ test("multiple concurrent hub creation and joining", async ({ page }) => {
       // The hub id is spec-provided and returned verbatim by the
       // static-hub join handler.
       const hubIdLoc = page
-        .getByTestId(getCreateHubTestId(creatorId))
+        .getByTestId(TESTIDS.createHubId(creatorId))
         .first();
 
       await expect(hubIdLoc).toHaveText(hubId);
@@ -156,7 +150,7 @@ test("multiple concurrent hub creation and joining", async ({ page }) => {
 
         // Verify the peer joined the correct hub
         await expect(
-          page.getByTestId(getJoinHubTestId(peerId)).first()
+          page.getByTestId(TESTIDS.joinHubId(peerId)).first()
         ).toHaveText(hubIds[hubIndex]);
       }
 
@@ -170,7 +164,7 @@ test("multiple concurrent hub creation and joining", async ({ page }) => {
     for (let hubIndex = 0; hubIndex < numberOfHubs; hubIndex++) {
       await expect(
         page
-          .getByTestId(getCreatePeerStatusTestId(creatorIds[hubIndex]))
+          .getByTestId(TESTIDS.createPeerStatus(creatorIds[hubIndex]))
           .first()
       ).toHaveText("connected", { timeout: 15000 });
 
@@ -179,7 +173,7 @@ test("multiple concurrent hub creation and joining", async ({ page }) => {
         await expect(
           page
             .getByTestId(
-              getJoinPeerStatusTestId(hubPeerIds[hubIndex][peerIndex])
+              TESTIDS.joinPeerStatus(hubPeerIds[hubIndex][peerIndex])
             )
             .first()
         ).toHaveText("connected", { timeout: 15000 });

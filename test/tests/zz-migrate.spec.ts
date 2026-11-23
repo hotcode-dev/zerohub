@@ -1,13 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import {
-  getCreateHubTestId,
-  getCreatePeerStatusTestId,
-  getJoinHubTestId,
-  getJoinPeerStatusTestId,
-  prepareHarnessPage,
-  seedStaticHub,
-} from "./utils/harness";
+import { prepareHarnessPage, seedStaticHub } from "./utils/harness";
+import { TESTIDS } from "../shared/testids";
 
 /**
  * Heads-up: this spec permanently mutates shared server state.
@@ -58,7 +52,7 @@ test("migrate (latches :8080 permanently; must stay last in the suite)", async (
     { componentId: creatorId, zeroHubHost, hubId }
   );
   await test.step("create hub success", async () => {
-    const hubIdLoc = page.getByTestId(getCreateHubTestId(creatorId)).first();
+    const hubIdLoc = page.getByTestId(TESTIDS.createHubId(creatorId)).first();
     await expect(hubIdLoc).toHaveText(hubId);
   });
 
@@ -75,16 +69,16 @@ test("migrate (latches :8080 permanently; must stay last in the suite)", async (
   );
   await test.step("join hub success", async () => {
     const joinHubIdLoc = page
-      .getByTestId(getJoinHubTestId(joinerId))
+      .getByTestId(TESTIDS.joinHubId(joinerId))
       .first();
     await expect(joinHubIdLoc).toHaveText(hubId);
   });
   await test.step("peer status connected", async () => {
     await expect(
-      page.getByTestId(getCreatePeerStatusTestId(creatorId)).first()
+      page.getByTestId(TESTIDS.createPeerStatus(creatorId)).first()
     ).toHaveText("connected");
     await expect(
-      page.getByTestId(getJoinPeerStatusTestId(joinerId)).first()
+      page.getByTestId(TESTIDS.joinPeerStatus(joinerId)).first()
     ).toHaveText("connected");
   });
 
@@ -114,7 +108,7 @@ test("migrate (latches :8080 permanently; must stay last in the suite)", async (
   );
   await test.step("post-migrate join via 8080 redirects to 8081", async () => {
     await expect(
-      page.getByTestId(getJoinHubTestId(joinerIdMigrated)).first()
+      page.getByTestId(TESTIDS.joinHubId(joinerIdMigrated)).first()
     ).toHaveText(hubId);
   });
 
@@ -135,7 +129,7 @@ test("migrate (latches :8080 permanently; must stay last in the suite)", async (
   );
   await test.step("new-host create success", async () => {
     const hubIdLoc = page
-      .getByTestId(getCreateHubTestId(creatorIdNew))
+      .getByTestId(TESTIDS.createHubId(creatorIdNew))
       .first();
     await expect(hubIdLoc).toHaveText(hubIdNew);
   });
@@ -153,15 +147,15 @@ test("migrate (latches :8080 permanently; must stay last in the suite)", async (
   );
   await test.step("new-host join success", async () => {
     await expect(
-      page.getByTestId(getJoinHubTestId(joinerIdNew)).first()
+      page.getByTestId(TESTIDS.joinHubId(joinerIdNew)).first()
     ).toHaveText(hubIdNew);
   });
   await test.step("new-host peer status connected", async () => {
     await expect(
-      page.getByTestId(getCreatePeerStatusTestId(creatorIdNew)).first()
+      page.getByTestId(TESTIDS.createPeerStatus(creatorIdNew)).first()
     ).toHaveText("connected");
     await expect(
-      page.getByTestId(getJoinPeerStatusTestId(joinerIdNew)).first()
+      page.getByTestId(TESTIDS.joinPeerStatus(joinerIdNew)).first()
     ).toHaveText("connected");
   });
 });

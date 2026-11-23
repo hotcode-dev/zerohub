@@ -1,10 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import {
-  getJoinStaticHubTestId,
-  getJoinStaticPeerStatusTestId,
-  prepareHarnessPage,
-} from "./utils/harness";
+import { prepareHarnessPage } from "./utils/harness";
+import { TESTIDS } from "../shared/testids";
 
 /**
  * Exercises the real `/v1/static-hubs/join` WebSocket upgrade against the
@@ -75,7 +72,7 @@ test("static hub create (HTTP) + join (WebSocket) connects", async ({
   await test.step("both joiners receive the hub info", async () => {
     for (const componentId of [creatorId, joinerId]) {
       await expect(
-        page.getByTestId(getJoinStaticHubTestId(componentId)).first()
+        page.getByTestId(TESTIDS.joinStaticHubId(componentId)).first()
       ).toHaveText(hubId);
     }
   });
@@ -83,7 +80,7 @@ test("static hub create (HTTP) + join (WebSocket) connects", async ({
   await test.step("peer status connected", async () => {
     for (const componentId of [creatorId, joinerId]) {
       await expect(
-        page.getByTestId(getJoinStaticPeerStatusTestId(componentId)).first()
+        page.getByTestId(TESTIDS.joinStaticPeerStatus(componentId)).first()
       )
         .toHaveText("connected", { timeout: 30 * 1000 });
     }
