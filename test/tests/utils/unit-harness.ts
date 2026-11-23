@@ -3,6 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { gotoStubPage } from "./stub-page";
 
+export type { PeerSnapshot, SdpIceSend } from "../../unit-harness/index";
+
 /**
  * In-page unit harness bundle (built by `test/scripts/build-harness.mjs`
  * via `pretest`). Lives one directory below the spec files, so resolve

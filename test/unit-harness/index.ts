@@ -274,7 +274,7 @@ class NoopTopology implements Topology {
   }
 }
 
-interface PeerSnapshot {
+export interface PeerSnapshot {
   status: string;
   rtcConnId: number;
   hasConnStateHandler: boolean;

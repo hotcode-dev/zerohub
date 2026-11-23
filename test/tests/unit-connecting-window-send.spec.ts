@@ -3,6 +3,7 @@ import {
   createUnitDriver,
   flushMicrotasks,
   prepareUnitHarnessPage,
+  type SdpIceSend,
 } from "./utils/unit-harness";
 
 /**
@@ -49,13 +50,6 @@ import {
  * harness (mocked `WebSocket`, mocked `RTCPeerConnection`, no-op topology)
  * and driven through `window.ZeroHubUnitHarness`.
  */
-
-type Send = {
-  kind: "offer" | "answer" | "iceCandidate";
-  peerId: string;
-  sdp?: string;
-  candidate?: string;
-};
 
 test.describe("ZeroHubClient SDP send across the reconnect CONNECTING window", () => {
   test("an ICE-timeout send on a CONNECTING socket does not throw and a later candidate delivers the offer exactly once", async ({
@@ -132,7 +126,7 @@ test.describe("ZeroHubClient SDP send across the reconnect CONNECTING window", (
       });
       await page.waitForTimeout(30);
 
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       // The SDP went out EXACTLY ONCE — the failed CONNECTING attempt did
       // not consume the single-send guard — plus the trickled candidate.
       const sdpSends = sends.filter((s) => s.kind !== "iceCandidate");
@@ -151,7 +145,7 @@ test.describe("ZeroHubClient SDP send across the reconnect CONNECTING window", (
         candidate: "candidate:2 1 udp 184549489 5.6.7.8 9010 typ srflx raddr 0.0.0.0 rport 0",
       });
       await page.waitForTimeout(30);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       expect(sends.filter((s) => s.kind !== "iceCandidate")).toHaveLength(1);
       expect(sends.filter((s) => s.kind === "iceCandidate")).toHaveLength(2);
     });
@@ -211,7 +205,7 @@ test.describe("ZeroHubClient SDP send across the reconnect CONNECTING window", (
       });
       await page.waitForTimeout(30);
 
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       const sdpSends = sends.filter((s) => s.kind !== "iceCandidate");
       expect(sdpSends).toHaveLength(1);
       expect(sdpSends[0].kind).toBe("offer");
@@ -226,7 +220,7 @@ test.describe("ZeroHubClient SDP send across the reconnect CONNECTING window", (
     await test.step("the single-send guard is now closed: no further SDP sends", async () => {
       await h.fireIceCandidate(id, "2", null);
       await page.waitForTimeout(30);
-      const sends = (await h.getSends(id)) as Send[];
+      const sends = (await h.getSends(id)) as SdpIceSend[];
       expect(sends.filter((s) => s.kind !== "iceCandidate")).toHaveLength(1);
     });
   });

@@ -3,6 +3,7 @@ import {
   createUnitDriver,
   prepareUnitHarnessPage,
   type UnitDriver,
+  type SdpIceSend,
 } from "./utils/unit-harness";
 
 /**
@@ -53,13 +54,6 @@ async function createSfuClient(
 
 type Driver = UnitDriver;
 
-type Send = {
-  kind: "offer" | "answer" | "iceCandidate";
-  peerId: string;
-  sdp?: string;
-  candidate?: string;
-};
-
 /**
  * Outlasts the fire-and-forget offer/answer the SFU topology's `sendOffer`
  * queued: the short `waitIceCandidatesTimeout` fallback (50ms, set by the
@@ -67,7 +61,7 @@ type Send = {
  * in a microtask chain. Returns the accumulated sends since the buffer's
  * last drain.
  */
-async function flushSends(h: Driver, id: number): Promise<Send[]> {
+async function flushSends(h: Driver, id: number): Promise<SdpIceSend[]> {
   await h.wait(150);
   return h.getSends(id);
 }
