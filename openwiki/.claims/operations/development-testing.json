@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:105181e45d837346792e2ba2e466b06dbf35d1de9468c024375726c7f1bdfded",
+  "pageVersion": "sha256:f969a357b235b39b4dd010ad3b0a8be2805cab52195793dfa19ff49c0a43e1fd",
   "claims": [
     {
       "id": "claim_9b265d25c6ea46ffb5cbb15403e8cd85",
@@ -76,7 +76,7 @@
       "evidence": [
         {
           "resource": "repo://test/tests/unit-ice-candidate-send.spec.ts",
-          "version": "repo-file-v1:sha256:4199b1fb63ba0f93a8153415c9e5df55e20d19b1fffecb93ab375a93f4b20667"
+          "version": "repo-file-v1:sha256:a587da1c58ebfff7a1f182f7cc18a9098c8e60cfb25955ca419d2ec77bffa45b"
         },
         {
           "resource": "repo://test/tests/unit-malformed-metadata.spec.ts",
@@ -96,7 +96,7 @@
         },
         {
           "resource": "repo://test/tests/unit-reconnect-peer-prune.spec.ts",
-          "version": "repo-file-v1:sha256:458fb065e9f827f868e6a9dc4b643d7253fcfdf703b707b4704739942ebb309c"
+          "version": "repo-file-v1:sha256:d3f2ba0d0029f5c1131fc45023928cc30805cad5b61ff505f17cc9dfd2c728a9"
         },
         {
           "resource": "repo://test/tests/unit-static-hub-endpoints.spec.ts",
@@ -108,13 +108,13 @@
         },
         {
           "resource": "repo://test/unit-harness/index.ts",
-          "version": "repo-file-v1:sha256:d71da991676fcdf7c2e8dd19f36d354df5db8720027c5b7fcac32b37e6cfb044"
+          "version": "repo-file-v1:sha256:68411bc45068d65fbed000b838d73deb070b9d4b0e14df2c3bd9c9a2aa1ff329"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.6.0",
-    "at": "2026-11-23T15:56:00.462Z"
+    "at": "2026-11-24T15:13:26.359Z"
   }
 }
