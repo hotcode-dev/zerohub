@@ -19,7 +19,7 @@ sources:
 generated: { by: "hermes", at: "2026-11-22T15:12:07.899Z" }
 verified:
   - by: openwiki/0.6.0
-    at: 2026-11-23T15:56:00.462Z
+    at: 2026-11-24T15:39:10.546Z
 ---
 
 # TypeScript Client SDK
