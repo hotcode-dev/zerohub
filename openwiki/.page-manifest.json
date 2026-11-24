@@ -2,46 +2,46 @@
   "schemaVersion": 1,
   "pages": {
     "/openwiki/architecture/overview.md": {
-      "pageVersion": "sha256:ad8ddbc499bd53e774281d2a564118ddac67b2f7398fae669cec3a19afbe3b67",
+      "pageVersion": "sha256:70e1a1ba7eade909683b49f449f77da46eb5db654948c3fca7b6475d81beec2c",
       "completedBy": "hermes",
-      "completedRunId": "58284ff9-620d-4cbb-8ba9-1f1e12921d87",
-      "gitHead": "90f56ca9456bf65c40d0a6d4f8727d8fc22b636d",
-      "sourceFingerprint": "sha256:5390f1ca44d34a8d5bec3e8d64befa19e0fcb14d59f4591666cd6326a946dad4"
+      "completedRunId": "ac95846c-3cc6-4f6f-a9c2-e76a3eb11b17",
+      "gitHead": "8145469428e05751b74d46913fd53c9b055ff368",
+      "sourceFingerprint": "sha256:36d1b142aaa8adc4e36bd8a48a7ae77c2bf2f6e56fde229f8d5441b7c7757563"
     },
     "/openwiki/architecture/signaling-protocol.md": {
-      "pageVersion": "sha256:6323753aedf8b4db7875bc9941e41e7d5063e8563f45301772cbc398a8bf1653",
+      "pageVersion": "sha256:9a86c4307ac357206b25d270f2d2c72040f3e16aa00f2212076f32395251471a",
       "completedBy": "hermes",
-      "completedRunId": "58284ff9-620d-4cbb-8ba9-1f1e12921d87",
-      "gitHead": "90f56ca9456bf65c40d0a6d4f8727d8fc22b636d",
-      "sourceFingerprint": "sha256:5390f1ca44d34a8d5bec3e8d64befa19e0fcb14d59f4591666cd6326a946dad4"
+      "completedRunId": "ac95846c-3cc6-4f6f-a9c2-e76a3eb11b17",
+      "gitHead": "8145469428e05751b74d46913fd53c9b055ff368",
+      "sourceFingerprint": "sha256:36d1b142aaa8adc4e36bd8a48a7ae77c2bf2f6e56fde229f8d5441b7c7757563"
     },
     "/openwiki/operations/development-testing.md": {
-      "pageVersion": "sha256:105181e45d837346792e2ba2e466b06dbf35d1de9468c024375726c7f1bdfded",
+      "pageVersion": "sha256:f969a357b235b39b4dd010ad3b0a8be2805cab52195793dfa19ff49c0a43e1fd",
       "completedBy": "hermes",
-      "completedRunId": "58284ff9-620d-4cbb-8ba9-1f1e12921d87",
-      "gitHead": "90f56ca9456bf65c40d0a6d4f8727d8fc22b636d",
-      "sourceFingerprint": "sha256:5390f1ca44d34a8d5bec3e8d64befa19e0fcb14d59f4591666cd6326a946dad4"
+      "completedRunId": "ac95846c-3cc6-4f6f-a9c2-e76a3eb11b17",
+      "gitHead": "8145469428e05751b74d46913fd53c9b055ff368",
+      "sourceFingerprint": "sha256:36d1b142aaa8adc4e36bd8a48a7ae77c2bf2f6e56fde229f8d5441b7c7757563"
     },
     "/openwiki/quickstart.md": {
-      "pageVersion": "sha256:8442c29418ad4a98e1eacfabd3a2b7ad02db0c23dc49ac92f00c8cc5dceea61a",
+      "pageVersion": "sha256:8fdbd68c8e71c0a04f6fea0f03163a2c9056f7e99bf9473775eb7563ce6fd74c",
       "completedBy": "hermes",
-      "completedRunId": "58284ff9-620d-4cbb-8ba9-1f1e12921d87",
-      "gitHead": "90f56ca9456bf65c40d0a6d4f8727d8fc22b636d",
-      "sourceFingerprint": "sha256:5390f1ca44d34a8d5bec3e8d64befa19e0fcb14d59f4591666cd6326a946dad4"
+      "completedRunId": "ac95846c-3cc6-4f6f-a9c2-e76a3eb11b17",
+      "gitHead": "8145469428e05751b74d46913fd53c9b055ff368",
+      "sourceFingerprint": "sha256:36d1b142aaa8adc4e36bd8a48a7ae77c2bf2f6e56fde229f8d5441b7c7757563"
     },
     "/openwiki/subsystems/client-sdk.md": {
-      "pageVersion": "sha256:99ddfe71ced8075ef1cfcf0d30a573abaefa8129e56dedbf233dacf600066868",
+      "pageVersion": "sha256:b42270b05a374a65cddaf4a4967e2102b48aeb1e1a71ce51deed7291fd76427e",
       "completedBy": "hermes",
-      "completedRunId": "58284ff9-620d-4cbb-8ba9-1f1e12921d87",
-      "gitHead": "90f56ca9456bf65c40d0a6d4f8727d8fc22b636d",
-      "sourceFingerprint": "sha256:5390f1ca44d34a8d5bec3e8d64befa19e0fcb14d59f4591666cd6326a946dad4"
+      "completedRunId": "ac95846c-3cc6-4f6f-a9c2-e76a3eb11b17",
+      "gitHead": "8145469428e05751b74d46913fd53c9b055ff368",
+      "sourceFingerprint": "sha256:36d1b142aaa8adc4e36bd8a48a7ae77c2bf2f6e56fde229f8d5441b7c7757563"
     },
     "/openwiki/subsystems/server-signaling.md": {
-      "pageVersion": "sha256:e54e1511658b6a704a4dcc2314b927b96f03dd9787759f657013e8c5848e52ea",
+      "pageVersion": "sha256:3f0ce65cbe3a13a719a2a4d4ddf4b7bf600b99ae8d053f3129b848a4d2d9b228",
       "completedBy": "hermes",
-      "completedRunId": "58284ff9-620d-4cbb-8ba9-1f1e12921d87",
-      "gitHead": "90f56ca9456bf65c40d0a6d4f8727d8fc22b636d",
-      "sourceFingerprint": "sha256:5390f1ca44d34a8d5bec3e8d64befa19e0fcb14d59f4591666cd6326a946dad4"
+      "completedRunId": "ac95846c-3cc6-4f6f-a9c2-e76a3eb11b17",
+      "gitHead": "8145469428e05751b74d46913fd53c9b055ff368",
+      "sourceFingerprint": "sha256:36d1b142aaa8adc4e36bd8a48a7ae77c2bf2f6e56fde229f8d5441b7c7757563"
     }
   }
 }
